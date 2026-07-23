@@ -29,12 +29,12 @@ export const Modal = ({ children, onClose }) => (
       width:520, maxWidth:'92vw', maxHeight:'90vh', overflow:'auto' }}>{children}</div>
   </div>
 );
-export const Confirm = ({ message, onYes, onNo }) => (
+export const Confirm = ({ message, onYes, onNo, label='Delete', danger=true }) => (
   <Modal onClose={onNo}>
     <p style={{ ...font, color:T.ink, fontSize:14 }}>{message}</p>
     <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:16 }}>
       <Btn variant="ghost" onClick={onNo}>Keep it</Btn>
-      <Btn onClick={onYes} style={{ background:T.absent }}>Delete</Btn>
+      <Btn onClick={onYes} style={{ background: danger ? T.absent : T.maroon }}>{label}</Btn>
     </div>
   </Modal>
 );

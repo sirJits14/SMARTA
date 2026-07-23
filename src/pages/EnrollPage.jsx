@@ -149,6 +149,8 @@ export default function EnrollPage({ schoolYear }) {
           message={`Withdraw ${fullName(confirmWithdraw)} from ${sectionLabel(selSection)}?`}
           onYes={async () => { await withdrawEnrollment(confirmWithdraw.id, schoolYear, 'dropped'); setConfirmWithdraw(null); }}
           onNo={() => setConfirmWithdraw(null)}
+          label="Withdraw"
+          danger={false}
         />
       )}
 
@@ -157,6 +159,8 @@ export default function EnrollPage({ schoolYear }) {
           message={`${fullName(confirmMove.student)} is already enrolled in ${sectionLabel(confirmMove.existingSection)} for SY ${schoolYear}. Enrolling again will move them to ${sectionLabel(confirmMove.section)}.`}
           onYes={confirmMoveNow}
           onNo={() => setConfirmMove(null)}
+          label="Move learner"
+          danger={false}
         />
       )}
     </div>
