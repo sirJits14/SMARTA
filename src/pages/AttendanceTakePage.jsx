@@ -39,35 +39,38 @@ export default function AttendanceTakePage({ schoolYear }) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // (Re)seed local marks whenever the section, date, or the stored doc changes.
-  useEffect(() => {
-    const docsByDate = attendanceDoc ? { [date]: attendanceDoc } : {};
-    const next = {};
-    for (const s of roster) next[s.id] = markFor(docsByDate, date, s.id);
-    setMarks(next);
-    setSaved(false);
-  }, [sectionId, date, attendanceDoc, roster]);
+  // `marks` holds ONLY the taps the registrar has made this session — a session-override
+  // map, not a full seeded snapshot. Clear overrides only when the section or date changes,
+  // so unrelated collection churn (students/enrollments onSnapshot firing on any write) can
+  // never reset or clobber unsaved taps.
+  useEffect(() => { setMarks({}); setSaved(false); }, [sectionId, date]);
+
+  const docsByDate = attendanceDoc ? { [date]: attendanceDoc } : {};
+  const shownMark = (id) => marks[id] ?? markFor(docsByDate, date, id);
 
   const cycle = (studentId) => {
-    setMarks((prev) => ({ ...prev, [studentId]: NEXT[prev[studentId] || 'P'] }));
+    setMarks((prev) => ({ ...prev, [studentId]: NEXT[shownMark(studentId)] }));
     setSaved(false);
   };
 
   const tally = useMemo(() => {
     let present = 0, late = 0, absent = 0, excused = 0;
     for (const s of roster) {
-      const m = marks[s.id] || 'P';
+      const m = shownMark(s.id);
       if (m === 'A') absent++;
       else if (m === 'E') excused++;
       else { present++; if (m === 'L') late++; }
     }
     return { present, late, absent, excused };
-  }, [roster, marks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster, marks, attendanceDoc, date]);
 
   const doSave = async () => {
     setSaving(true);
     try {
-      await saveMarks({ sectionId, date, schoolYear, marks });
+      const full = {};
+      for (const s of roster) full[s.id] = shownMark(s.id);
+      await saveMarks({ sectionId, date, schoolYear, marks: full });
       setSaved(true);
     } finally {
       setSaving(false);
@@ -123,7 +126,7 @@ export default function AttendanceTakePage({ schoolYear }) {
 
           <div style={{ ...S.card, padding:0, overflow:'hidden' }}>
             {roster.map((s, i) => {
-              const mark = marks[s.id] || 'P';
+              const mark = shownMark(s.id);
               return (
                 <div
                   key={s.id}

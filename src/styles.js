@@ -2,7 +2,7 @@
 export const T = {
   ink:'#16233b', maroon:'#7a1f2b', gold:'#e0a422',
   paper:'#f5f7fa', line:'#d9dee6', surface:'#ffffff',
-  present:'#1f9d57', late:'#d98a15', absent:'#c23b3b', excused:'#5b6b82',
+  present:'#157f43', late:'#9a6300', absent:'#c23b3b', excused:'#5b6b82',
   display:"'Fraunces',Georgia,serif",
   body:"'Public Sans',system-ui,sans-serif",
   num:{ fontFamily:"'Public Sans',system-ui,sans-serif", fontVariantNumeric:'tabular-nums' },
