@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase.js';
 import { T, S } from '../styles.js';
@@ -13,7 +13,7 @@ export default function Login({ onSignedIn }) {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), pw);
       const snap = await getDoc(doc(db, 'users', email.trim().toLowerCase()));
-      if (!snap.exists()) { setErr('This account has no registrar profile yet. Ask an admin to add one.'); setBusy(false); return; }
+      if (!snap.exists()) { await signOut(auth); setErr('This account has no registrar profile yet. Ask an admin to add one.'); setBusy(false); return; }
       onSignedIn({ email: email.trim().toLowerCase(), ...snap.data() });
     } catch { setErr('That email and password did not match.'); }
     setBusy(false);
