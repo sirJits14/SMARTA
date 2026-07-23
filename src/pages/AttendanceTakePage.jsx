@@ -49,7 +49,7 @@ export default function AttendanceTakePage({ schoolYear }) {
   const shownMark = (id) => marks[id] ?? markFor(docsByDate, date, id);
 
   const cycle = (studentId) => {
-    setMarks((prev) => ({ ...prev, [studentId]: NEXT[shownMark(studentId)] }));
+    setMarks((prev) => ({ ...prev, [studentId]: NEXT[prev[studentId] ?? markFor(docsByDate, date, studentId)] }));
     setSaved(false);
   };
 
