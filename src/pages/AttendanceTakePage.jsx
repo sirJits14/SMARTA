@@ -139,16 +139,15 @@ export default function AttendanceTakePage({ schoolYear }) {
                   style={{
                     display:'flex', alignItems:'center', gap:16, cursor:'pointer',
                     padding:'14px 18px', userSelect:'none',
-                    borderLeft:`6px solid ${MARK_COLOR[mark]}`,
                     borderBottom: i === roster.length - 1 ? 'none' : `1px solid ${T.line}`,
                   }}
                 >
                   <span style={{ ...T.num, fontSize:12, color:T.excused, width:110, flexShrink:0 }}>{s.lrn}</span>
                   <span style={{ flex:1, fontSize:14, fontWeight:600, color:T.ink }}>{fullName(s)}</span>
                   <span style={{
-                    ...T.num, fontSize:12, fontWeight:700, color:MARK_COLOR[mark],
-                    border:`1px solid ${MARK_COLOR[mark]}`, borderRadius:999,
-                    padding:'4px 12px', flexShrink:0,
+                    fontSize:12, fontWeight:600, color:'#fff',
+                    background:MARK_COLOR[mark], borderRadius:999,
+                    padding:'2px 10px', flexShrink:0,
                   }}>{MARK_LABEL[mark]}</span>
                 </div>
               );
