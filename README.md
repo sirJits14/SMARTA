@@ -92,3 +92,11 @@ After deploying, you can verify that unauthenticated access is denied:
 - Simulate a read request on `/students` with no authentication.
 - Expected: request is denied.
 - Sign in with the registrar account in the app and verify data loads normally.
+
+## Known limitations (v1)
+
+- **Monthly attendance uses the section's *current* class list.** The summary grid and SF2 export build their roster from learners whose enrollment status is currently "enrolled". So if you withdraw a learner mid-month, they (and any marks already recorded for them that month) drop off that month's grid and SF2. And a learner enrolled partway through the month is counted Present by default for the school days before they were enrolled. For an official DepEd monthly form, generate/print it for a section whose roster was stable that month; enrollment-window-aware attendance is a planned enhancement.
+
+- **Student list filters:** the Students page supports search (name/LRN) and a status filter; filtering by grade/section/strand is planned for a later version (those derive from enrollment data).
+
+- **Save feedback:** a failed save (e.g. a permissions error) currently doesn't show an error banner; offline edits are queued by Firestore and saved when the connection returns. A visible save-error message is a planned improvement.

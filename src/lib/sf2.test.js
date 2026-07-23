@@ -20,4 +20,7 @@ it('builds a worksheet with learner rows and correct totals', () => {
   // day 1 cell shows 'A', day 2 blank; present total 1, absent total 1
   expect(row1.getCell(3).value).toBe('A');
   expect(row1.getCell(4).value === '' || row1.getCell(4).value == null).toBe(true);
+  const totalsCol = 3 + schoolDays.length;      // must match sf2.js
+  expect(row1.getCell(totalsCol).value).toBe(1);     // Present total
+  expect(row1.getCell(totalsCol + 1).value).toBe(1); // Absent total
 });
