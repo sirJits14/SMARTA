@@ -32,10 +32,12 @@ export default function StudentForm({ students, editing, onClose }) {
         <Field label="Birthdate" error={errors.birthdate}><Inp type="date" value={f.birthdate||''} onChange={(e)=>set('birthdate', e.target.value)} /></Field>
       </div>
       <Field label="Address"><Inp value={f.address||''} onChange={(e)=>set('address', e.target.value)} /></Field>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
         <Field label="Guardian name"><Inp value={f.guardianName||''} onChange={(e)=>set('guardianName', e.target.value)} /></Field>
+        <Field label="Guardian relationship"><Inp value={f.guardianRelationship||''} onChange={(e)=>set('guardianRelationship', e.target.value)} /></Field>
         <Field label="Guardian contact"><Inp style={T.num} value={f.guardianContact||''} onChange={(e)=>set('guardianContact', e.target.value)} /></Field>
       </div>
+      <Field label="Contact number"><Inp style={T.num} value={f.contactNumber||''} onChange={(e)=>set('contactNumber', e.target.value)} /></Field>
       {editing && <Field label="Status"><Sel value={f.status||'active'} onChange={(e)=>set('status', e.target.value)}>{STUDENT_STATUS.map((s)=><option key={s} value={s}>{s}</option>)}</Sel></Field>}
       <div style={{ fontSize:12, fontWeight:600, margin:'8px 0 4px' }}>Documents on file</div>
       <div style={{ display:'flex', gap:14, flexWrap:'wrap', marginBottom:14 }}>
