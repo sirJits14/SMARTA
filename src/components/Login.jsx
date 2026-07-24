@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field } from './ui.jsx';
+import bnhsLogo from '../assets/bnhs_logo.png';
 
 export default function Login({ onSignedIn }) {
   const [email, setEmail] = useState(''); const [pw, setPw] = useState('');
@@ -21,7 +22,7 @@ export default function Login({ onSignedIn }) {
   return (
     <div style={{ ...S.page, display: 'grid', placeItems: 'center' }}>
       <div style={{ ...S.card, width: 360 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 17, marginBottom: 16 }}>B</div>
+        <img src={bnhsLogo} alt="Bukidnon National High School seal" width={40} height={40} style={{ marginBottom: 16 }} />
         <h1 style={{ fontFamily: T.display, color: T.ink, fontSize: 22, margin: '0 0 2px', fontWeight: 700 }}>BNHS SIMS</h1>
         <p style={{ fontFamily: T.body, color: T.inkMuted, fontSize: 12, marginTop: 0, marginBottom: 20 }}>Registrar sign-in</p>
         {err && <div style={{ fontFamily: T.body, background: 'rgba(220,38,38,0.08)', color: T.absent, borderRadius: 10, padding: '9px 12px', fontSize: 12, marginBottom: 14 }}>{err}</div>}

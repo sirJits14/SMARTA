@@ -1,5 +1,6 @@
 import { T } from '../styles.js';
 import { Btn } from './ui.jsx';
+import bnhsLogo from '../assets/bnhs_logo.png';
 const NAV = [
   { k: 'dashboard', label: 'Dashboard' },
   { k: 'students', label: 'Students' },
@@ -13,7 +14,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
     <div style={{ fontFamily: T.body, color: T.ink, minHeight: '100vh', background: T.bg, display: 'grid', gridTemplateColumns: '220px 1fr' }}>
       <aside className="app-sidebar" style={{ background: T.surface, borderRight: `1px solid ${T.border}`, padding: '24px 16px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, padding: '0 8px' }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>B</div>
+          <img src={bnhsLogo} alt="Bukidnon National High School seal" width={32} height={32} style={{ flexShrink: 0 }} />
           <span style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.ink }}>BNHS SIMS</span>
         </div>
         <nav style={{ flex: 1 }}>
