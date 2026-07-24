@@ -68,9 +68,7 @@ export default function AttendanceTakePage({ schoolYear }) {
   const doSave = async () => {
     setSaving(true);
     try {
-      const full = {};
-      for (const s of roster) full[s.id] = shownMark(s.id);
-      await saveMarks({ sectionId, date, schoolYear, marks: full });
+      await saveMarks({ sectionId, date, schoolYear, marks });
       setSaved(true);
     } finally {
       setSaving(false);
