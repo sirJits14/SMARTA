@@ -7,6 +7,7 @@ import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
 import Shell from './components/Shell.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
 import StudentsPage from './pages/StudentsPage.jsx';
 import SectionsPage from './pages/SectionsPage.jsx';
 import EnrollPage from './pages/EnrollPage.jsx';
@@ -26,10 +27,10 @@ function AttendanceArea({ schoolYear }) {
               onClick={() => setTab(key)}
               style={{
                 fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
-                cursor: 'pointer', padding: '9px 18px', borderRadius: T.radius, border: 'none',
-                background: active ? T.brassPlate : 'transparent',
-                color: T.manila, opacity: active ? 1 : 0.65,
-                transition: 'background 0.15s ease-out, opacity 0.15s ease-out',
+                cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
+                background: active ? T.primary : 'transparent',
+                color: active ? '#fff' : T.inkMuted,
+                transition: 'background 0.15s ease-out, color 0.15s ease-out',
               }}
             >{label}</button>
           );
@@ -45,7 +46,7 @@ function AttendanceArea({ schoolYear }) {
 export default function App() {
   const [me, setMe] = useState(null);
   const [ready, setReady] = useState(false);
-  const [page, setPage] = useState('students');
+  const [page, setPage] = useState('dashboard');
   const settings = useDoc('settings/app');
   const schoolYear = settings?.currentSchoolYear || currentSchoolYear();
 
@@ -67,6 +68,7 @@ export default function App() {
     <>
       {reducedMotionGuard}
       <Shell me={me} page={page} setPage={setPage} schoolYear={schoolYear} onLogout={()=>{ signOut(auth); setMe(null); }}>
+        {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
         {page==='students' && <StudentsPage schoolYear={schoolYear} />}
         {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
         {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
