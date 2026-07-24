@@ -20,13 +20,14 @@ export default function Login({ onSignedIn }) {
   };
   return (
     <div style={{ ...S.page, display: 'grid', placeItems: 'center' }}>
-      <div style={{ ...S.card, width: 340 }}>
-        <h1 style={{ fontFamily: T.display, color: T.ink, fontSize: 22, margin: '0 0 2px', fontWeight: 600 }}>BNHS Learner Records</h1>
-        <p style={{ fontFamily: T.body, color: T.ink, opacity: 0.65, fontSize: 12, marginTop: 0, letterSpacing: '0.02em' }}>Registrar sign-in</p>
-        {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 10 }}>{err}</div>}
+      <div style={{ ...S.card, width: 360 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 17, marginBottom: 16 }}>B</div>
+        <h1 style={{ fontFamily: T.display, color: T.ink, fontSize: 22, margin: '0 0 2px', fontWeight: 700 }}>BNHS SIMS</h1>
+        <p style={{ fontFamily: T.body, color: T.inkMuted, fontSize: 12, marginTop: 0, marginBottom: 20 }}>Registrar sign-in</p>
+        {err && <div style={{ fontFamily: T.body, background: 'rgba(220,38,38,0.08)', color: T.absent, borderRadius: 10, padding: '9px 12px', fontSize: 12, marginBottom: 14 }}>{err}</div>}
         <Field label="Email"><Inp type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && go()} /></Field>
         <Field label="Password"><Inp type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && go()} /></Field>
-        <Btn onClick={go} disabled={busy} style={{ width: '100%', marginTop: 4, opacity: busy ? 0.55 : 1 }}>{busy ? 'Signing in…' : 'Sign in'}</Btn>
+        <Btn onClick={go} disabled={busy} style={{ width: '100%', marginTop: 6, opacity: busy ? 0.6 : 1 }}>{busy ? 'Signing in…' : 'Sign in'}</Btn>
       </div>
     </div>
   );
