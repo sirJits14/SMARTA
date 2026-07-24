@@ -4,7 +4,7 @@ import { fullName, depedSort } from '../lib/roster.js';
 import { enrollStudent, withdrawEnrollment } from '../data/enrollments.js';
 import { ENROLL_TYPE } from '../lib/constants.js';
 import { T, S } from '../styles.js';
-import { Btn, Sel, Field, Confirm, EmptyState } from '../components/ui.jsx';
+import { Btn, Sel, Field, Card, Confirm, EmptyState } from '../components/ui.jsx';
 
 const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
@@ -64,18 +64,18 @@ export default function EnrollPage({ schoolYear }) {
 
   return (
     <div>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-        <h1 style={{ fontFamily:T.display, margin:0 }}>Enrollment</h1>
-        <span style={{ ...T.num, fontSize:13, color:T.excused }}>SY {schoolYear}</span>
+      <div style={S.plate}>
+        <h1 style={S.h1}>Enrollment</h1>
+        <span style={{ ...T.num, fontSize: 12, color: T.manila, opacity: 0.75 }}>SY {schoolYear}</span>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, alignItems:'start' }}>
-        <div style={S.card}>
-          <h2 style={{ fontFamily:T.display, fontSize:16, margin:'0 0 12px' }}>Class lists</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+        <Card style={{ padding: 20 }}>
+          <h2 style={S.h2}>Class lists</h2>
           {sectionsSY.length === 0 ? (
             <EmptyState title="No sections yet" hint={`Add a section for SY ${schoolYear} before enrolling learners.`} />
           ) : (
             <>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {sectionsSY.map((s) => (
                   <Btn key={s.id} variant={s.id === selectedSectionId ? 'solid' : 'ghost'}
                     onClick={() => setSelectedSectionId(s.id)}>{sectionLabel(s)}</Btn>
@@ -86,17 +86,17 @@ export default function EnrollPage({ schoolYear }) {
               ) : classList.length === 0 ? (
                 <EmptyState title="No learners enrolled here yet" hint="Enroll a learner into this section using the form on the right." />
               ) : (
-                <div style={{ border:`1px solid ${T.line}`, borderRadius:10, overflow:'hidden' }}>
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-                    <thead><tr style={{ background:T.paper, textAlign:'left' }}>
-                      <th style={{ padding:'10px 12px', borderBottom:`1px solid ${T.line}` }}>Name</th>
-                      <th style={{ padding:'10px 12px', borderBottom:`1px solid ${T.line}` }}></th>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead><tr style={S.thead}>
+                      <th style={S.th}>Name</th>
+                      <th style={S.th}></th>
                     </tr></thead>
                     <tbody>{classList.map((s) => (
-                      <tr key={s.id} style={{ borderBottom:`1px solid ${T.line}` }}>
-                        <td style={{ padding:'10px 12px' }}>{fullName(s)}</td>
-                        <td style={{ padding:'10px 12px', textAlign:'right' }}>
-                          <Btn variant="ghost" onClick={() => setConfirmWithdraw(s)} style={{ color:T.absent }}>Withdraw</Btn>
+                      <tr key={s.id}>
+                        <td style={{ ...S.td, fontWeight: 600 }}>{fullName(s)}</td>
+                        <td style={{ ...S.td, textAlign: 'right' }}>
+                          <Btn variant="ghost" onClick={() => setConfirmWithdraw(s)} style={{ color: T.absent, borderColor: T.absent }}>Withdraw</Btn>
                         </td>
                       </tr>))}
                     </tbody>
@@ -105,10 +105,10 @@ export default function EnrollPage({ schoolYear }) {
               )}
             </>
           )}
-        </div>
+        </Card>
 
-        <div style={S.card}>
-          <h2 style={{ fontFamily:T.display, fontSize:16, margin:'0 0 12px' }}>Enroll a learner</h2>
+        <Card style={{ padding: 20 }}>
+          <h2 style={S.h2}>Enroll a learner</h2>
           {students.length === 0 ? (
             <EmptyState title="No learners yet" hint="Add learners on the Students page before enrolling them." />
           ) : sectionsSY.length === 0 ? (
@@ -136,12 +136,12 @@ export default function EnrollPage({ schoolYear }) {
                   {sectionsSY.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}
                 </Sel>
               </Field>
-              <div style={{ display:'flex', justifyContent:'flex-end' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Btn onClick={doEnroll} disabled={!studentId || !targetSectionId}>Enroll</Btn>
               </div>
             </>
           )}
-        </div>
+        </Card>
       </div>
 
       {confirmWithdraw && (

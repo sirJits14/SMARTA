@@ -5,13 +5,13 @@ import { localDate } from '../lib/dates.js';
 import { markFor } from '../lib/attendance.js';
 import { attendanceId, saveMarks } from '../data/attendance.js';
 import { MARK_LABEL } from '../lib/constants.js';
-import { T, S, MARK_COLOR } from '../styles.js';
-import { Sel, Inp, Btn, Field, EmptyState } from '../components/ui.jsx';
+import { T, S } from '../styles.js';
+import { Sel, Inp, Btn, Field, Card, GuideTab, EmptyState } from '../components/ui.jsx';
 
 const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
 // Cycling one tap at a time: Present -> Late -> Absent -> Excused -> Present.
-const NEXT = { P:'L', L:'A', A:'E', E:'P' };
+const NEXT = { P: 'L', L: 'A', A: 'E', E: 'P' };
 
 export default function AttendanceTakePage({ schoolYear }) {
   const sections = useCollection('sections');
@@ -80,51 +80,49 @@ export default function AttendanceTakePage({ schoolYear }) {
   return (
     <div>
       <style>{`
-        .stamp-row { transition: border-color 120ms ease, background 120ms ease; }
+        .stamp-row { transition: background 120ms ease; }
         @media (prefers-reduced-motion: reduce) { .stamp-row { transition: none; } }
-        .stamp-row:focus-visible { outline: 2px solid ${T.ink}; outline-offset: 2px; }
-        .stamp-row:hover { background: ${T.paper}; }
+        .stamp-row:focus-visible { outline: 2px solid ${T.brassDeep}; outline-offset: -2px; }
+        .stamp-row:hover { background: rgba(201,185,138,0.22); }
       `}</style>
 
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-        <h1 style={{ fontFamily:T.display, margin:0 }}>Attendance</h1>
-        <span style={{ ...T.num, fontSize:13, color:T.excused }}>SY {schoolYear}</span>
+      <div style={S.plate}>
+        <h1 style={S.h1}>Attendance</h1>
+        <span style={{ ...T.num, fontSize: 12, color: T.manila, opacity: 0.75 }}>SY {schoolYear}</span>
       </div>
 
-      <div style={{ display:'flex', gap:16, marginBottom:16, flexWrap:'wrap' }}>
-        <div style={{ minWidth:260 }}>
-          <Field label="Section">
-            <Sel value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
-              <option value="">Choose a section…</option>
-              {sectionsSY.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}
-            </Sel>
-          </Field>
+      <Card style={{ padding: 20, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 260 }}>
+            <Field label="Section">
+              <Sel value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
+                <option value="">Choose a section…</option>
+                {sectionsSY.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}
+              </Sel>
+            </Field>
+          </div>
+          <div style={{ minWidth: 180 }}>
+            <Field label="Date">
+              <Inp type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
+          </div>
         </div>
-        <div style={{ minWidth:180 }}>
-          <Field label="Date">
-            <Inp type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </Field>
-        </div>
-      </div>
+      </Card>
 
       {!sectionId ? (
-        <div style={S.card}>
-          <EmptyState title="Pick a section" hint="Choose a section above to start taking attendance." />
-        </div>
+        <Card style={{ padding: 20 }}><EmptyState title="Pick a section" hint="Choose a section above to start taking attendance." /></Card>
       ) : roster.length === 0 ? (
-        <div style={S.card}>
-          <EmptyState title="No learners enrolled here yet" hint="Enroll learners into this section on the Enrollment page first." />
-        </div>
+        <Card style={{ padding: 20 }}><EmptyState title="No learners enrolled here yet" hint="Enroll learners into this section on the Enrollment page first." /></Card>
       ) : (
         <>
           {/* Tally ribbon */}
-          <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:16 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
             <TallyChip label="Present" value={tally.present} sub={tally.late ? `${tally.late} late` : null} color={T.present} />
             <TallyChip label="Absent" value={tally.absent} color={T.absent} />
             <TallyChip label="Excused" value={tally.excused} color={T.excused} />
           </div>
 
-          <div style={{ ...S.card, padding:0, overflow:'hidden' }}>
+          <Card style={{ padding: 0, overflow: 'hidden' }}>
             {roster.map((s, i) => {
               const mark = shownMark(s.id);
               return (
@@ -137,25 +135,21 @@ export default function AttendanceTakePage({ schoolYear }) {
                   onClick={() => cycle(s.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycle(s.id); } }}
                   style={{
-                    display:'flex', alignItems:'center', gap:16, cursor:'pointer',
-                    padding:'14px 18px', userSelect:'none',
+                    display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer',
+                    padding: '13px 18px', userSelect: 'none',
                     borderBottom: i === roster.length - 1 ? 'none' : `1px solid ${T.line}`,
                   }}
                 >
-                  <span style={{ ...T.num, fontSize:12, color:T.excused, width:110, flexShrink:0 }}>{s.lrn}</span>
-                  <span style={{ flex:1, fontSize:14, fontWeight:600, color:T.ink }}>{fullName(s)}</span>
-                  <span style={{
-                    fontSize:12, fontWeight:600, color:'#fff',
-                    background:MARK_COLOR[mark], borderRadius:999,
-                    padding:'2px 10px', flexShrink:0,
-                  }}>{MARK_LABEL[mark]}</span>
+                  <span style={{ ...T.num, fontSize: 12, color: T.ink, opacity: 0.6, width: 110, flexShrink: 0 }}>{s.lrn}</span>
+                  <span style={{ flex: 1, fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>{fullName(s)}</span>
+                  <GuideTab mark={mark} />
                 </div>
               );
             })}
-          </div>
+          </Card>
 
-          <div style={{ display:'flex', alignItems:'center', gap:12, justifyContent:'flex-end', marginTop:16 }}>
-            {saved && <span style={{ ...T.num, fontSize:13, color:T.present, fontWeight:600 }}>Saved ✓</span>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
+            {saved && <span style={{ fontFamily: T.body, fontSize: 13, color: T.manila, fontWeight: 600 }}>Saved ✓</span>}
             <Btn onClick={doSave} disabled={saving}>{saving ? 'Saving…' : 'Save attendance'}</Btn>
           </div>
         </>
@@ -166,11 +160,11 @@ export default function AttendanceTakePage({ schoolYear }) {
 
 function TallyChip({ label, value, sub, color }) {
   return (
-    <div style={{ ...S.card, padding:'10px 18px', display:'flex', alignItems:'baseline', gap:8 }}>
-      <span style={{ width:10, height:10, borderRadius:999, background:color, display:'inline-block' }} />
-      <span style={{ fontSize:13, fontWeight:600, color:T.ink }}>{label}</span>
-      <span style={{ ...T.num, fontSize:18, fontWeight:700, color }}>{value}</span>
-      {sub && <span style={{ ...T.num, fontSize:12, color:T.excused }}>({sub})</span>}
-    </div>
+    <Card style={{ padding: '9px 16px', display: 'flex', alignItems: 'baseline', gap: 9 }}>
+      <span style={{ width: 9, height: 9, borderRadius: T.radius, background: color, display: 'inline-block', flexShrink: 0 }} />
+      <span style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.ink, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</span>
+      <span style={{ ...T.num, fontSize: 18, fontWeight: 700, color }}>{value}</span>
+      {sub && <span style={{ ...T.num, fontSize: 11, color: T.ink, opacity: 0.55 }}>({sub})</span>}
+    </Card>
   );
 }
