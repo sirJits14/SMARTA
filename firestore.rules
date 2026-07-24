@@ -8,10 +8,5 @@ service cloud.firestore {
     match /student_attendance/{id}  { allow read, write: if signedIn(); }
     match /settings/{id}            { allow read, write: if signedIn(); }
     match /users/{id}               { allow read: if signedIn(); allow write: if signedIn(); }
-
-    // Used only by the standalone bnhs-teacher-kiosk app — this project's
-    // own web app never reads or writes these two collections.
-    match /teachers/{id}            { allow read, write: if signedIn(); }
-    match /records/{id}             { allow read, write: if signedIn(); }
   }
 }
