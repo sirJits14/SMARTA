@@ -136,7 +136,7 @@ export default function AttendanceTakePage({ schoolYear }) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer',
                     padding: '13px 18px', userSelect: 'none',
-                    borderBottom: i === roster.length - 1 ? 'none' : `1px solid ${T.line}`,
+                    borderBottom: i === roster.length - 1 ? 'none' : `1px solid ${T.border}`,
                   }}
                 >
                   <span style={{ ...T.num, fontSize: 12, color: T.ink, opacity: 0.6, width: 110, flexShrink: 0 }}>{s.lrn}</span>
