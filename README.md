@@ -93,6 +93,23 @@ After deploying, you can verify that unauthenticated access is denied:
 - Expected: request is denied.
 - Sign in with the registrar account in the app and verify data loads normally.
 
+## Teacher Kiosk Support Collections
+
+This project's Firestore also holds two collections used **only** by the
+separate `bnhs-teacher-kiosk` app — this app's own UI never reads or writes
+them:
+
+- `teachers` — `{empId, name, dept, shift}`, one document per teacher.
+- `records` — one document per teacher per day (`{teacherId}_{date}`),
+  written by the kiosk when a teacher scans in.
+
+These exist so the kiosk can operate against this project instead of
+`bnhs-attendance`'s. The teacher roster is populated once via
+`scripts/migrate-teachers-from-attendance.mjs` (see that file's header
+comment for usage) — a one-time, human-run copy from `bnhs-attendance`'s
+existing `teachers` collection, not an ongoing sync. Re-running it later is
+safe (it overwrites by ID, never duplicates) if the roster needs a refresh.
+
 ## Known limitations (v1)
 
 - **Monthly attendance uses the section's *current* class list.** The summary grid and SF2 export build their roster from learners whose enrollment status is currently "enrolled". So if you withdraw a learner mid-month, they (and any marks already recorded for them that month) drop off that month's grid and SF2. And a learner enrolled partway through the month is counted Present by default for the school days before they were enrolled. For an official DepEd monthly form, generate/print it for a section whose roster was stable that month; enrollment-window-aware attendance is a planned enhancement.
