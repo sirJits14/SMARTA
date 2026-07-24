@@ -66,7 +66,6 @@ export default function EnrollPage({ schoolYear }) {
     <div>
       <div style={S.plate}>
         <h1 style={S.h1}>Enrollment</h1>
-        <span style={{ ...T.num, fontSize: 12, color: T.manila, opacity: 0.75 }}>SY {schoolYear}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
         <Card style={{ padding: 20 }}>
