@@ -6,7 +6,7 @@ import { markFor } from '../lib/attendance.js';
 import { attendanceId, saveMarks } from '../data/attendance.js';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, S } from '../styles.js';
-import { Sel, Inp, Btn, Field, Card, GuideTab, EmptyState } from '../components/ui.jsx';
+import { Sel, Inp, Btn, Field, Card, StatusPill, EmptyState } from '../components/ui.jsx';
 
 const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
@@ -82,13 +82,12 @@ export default function AttendanceTakePage({ schoolYear }) {
       <style>{`
         .stamp-row { transition: background 120ms ease; }
         @media (prefers-reduced-motion: reduce) { .stamp-row { transition: none; } }
-        .stamp-row:focus-visible { outline: 2px solid ${T.brassDeep}; outline-offset: -2px; }
-        .stamp-row:hover { background: rgba(201,185,138,0.22); }
+        .stamp-row:focus-visible { outline: 2px solid ${T.primary}; outline-offset: -2px; }
+        .stamp-row:hover { background: rgba(91,79,232,0.05); }
       `}</style>
 
       <div style={S.plate}>
         <h1 style={S.h1}>Attendance</h1>
-        <span style={{ ...T.num, fontSize: 12, color: T.manila, opacity: 0.75 }}>SY {schoolYear}</span>
       </div>
 
       <Card style={{ padding: 20, marginBottom: 16 }}>
@@ -142,14 +141,14 @@ export default function AttendanceTakePage({ schoolYear }) {
                 >
                   <span style={{ ...T.num, fontSize: 12, color: T.ink, opacity: 0.6, width: 110, flexShrink: 0 }}>{s.lrn}</span>
                   <span style={{ flex: 1, fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>{fullName(s)}</span>
-                  <GuideTab mark={mark} />
+                  <StatusPill mark={mark} />
                 </div>
               );
             })}
           </Card>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
-            {saved && <span style={{ fontFamily: T.body, fontSize: 13, color: T.manila, fontWeight: 600 }}>Saved ✓</span>}
+            {saved && <span style={{ fontFamily: T.body, fontSize: 13, color: T.present, fontWeight: 600 }}>Saved ✓</span>}
             <Btn onClick={doSave} disabled={saving}>{saving ? 'Saving…' : 'Save attendance'}</Btn>
           </div>
         </>
