@@ -63,7 +63,6 @@ export default function AttendanceSummaryPage({ schoolYear }) {
     <div>
       <div style={S.plate}>
         <h1 style={S.h1}>Attendance summary</h1>
-        <span style={{ ...T.num, fontSize: 12, color: T.manila, opacity: 0.75 }}>SY {schoolYear}</span>
       </div>
 
       <Card style={{ padding: 20, marginBottom: 16 }}>
@@ -110,8 +109,8 @@ export default function AttendanceSummaryPage({ schoolYear }) {
                 const t = totals[s.id];
                 return (
                   <tr key={s.id}>
-                    <td style={{ ...S.td, ...T.num, position: 'sticky', left: 0, background: T.manila }}>{idx + 1}</td>
-                    <td style={{ ...S.td, fontWeight: 600, color: T.ink, position: 'sticky', left: 28, background: T.manila }}>{fullName(s)}</td>
+                    <td style={{ ...S.td, ...T.num, position: 'sticky', left: 0, background: T.surface }}>{idx + 1}</td>
+                    <td style={{ ...S.td, fontWeight: 600, color: T.ink, position: 'sticky', left: 28, background: T.surface }}>{fullName(s)}</td>
                     {schoolDays.map((d) => {
                       const m = markFor(docsByDate, d, s.id);
                       return (
