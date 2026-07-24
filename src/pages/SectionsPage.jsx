@@ -79,7 +79,7 @@ export default function SectionsPage({ schoolYear }) {
       ) : (
         groups.map(([grade, list]) => (
           <div key={grade} style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 14, color: T.manila, opacity: 0.9, marginBottom: 8, letterSpacing: '0.01em' }}>Grade {grade}</div>
+            <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 14, color: T.ink, marginBottom: 8 }}>Grade {grade}</div>
             <Card style={{ padding: 0, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead><tr style={S.thead}>
