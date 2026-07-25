@@ -4,16 +4,11 @@ import { fullName, depedSort } from '../lib/roster.js';
 import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
 import { markFor, summarizeMonth } from '../lib/attendance.js';
 import { buildSF2Workbook } from '../lib/sf2.js';
+import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S, MARK_COLOR } from '../styles.js';
 import { Sel, Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
 
 const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
-
-async function download(wb, filename) {
-  const buf = await wb.xlsx.writeBuffer();
-  const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
-}
 
 export default function AttendanceSummaryPage({ schoolYear }) {
   const sections = useCollection('sections');
@@ -56,7 +51,7 @@ export default function AttendanceSummaryPage({ schoolYear }) {
 
   const doExport = async () => {
     const wb = buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText });
-    await download(wb, `SF2_${section.name}_${ym}.xlsx`);
+    await downloadWorkbook(wb, `SF2_${section.name}_${ym}.xlsx`);
   };
 
   return (
