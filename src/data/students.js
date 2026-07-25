@@ -2,7 +2,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { localDate } from '../lib/dates.js';
 
-const DOCS_DEFAULT = { form137:false, birthCert:false, goodMoral:false, form138:false };
+export const DOCS_DEFAULT = { form137:false, birthCert:false, goodMoral:false, form138:false };
 
 export const createStudent = (form) =>
   addDoc(collection(db, 'students'), {
