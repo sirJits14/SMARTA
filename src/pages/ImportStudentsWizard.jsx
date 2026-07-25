@@ -15,6 +15,7 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
   const [plan, setPlan] = useState(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [commitError, setCommitError] = useState('');
   const fileInputRef = useRef(null);
 
   const downloadTemplate = () => downloadWorkbook(buildImportTemplateWorkbook(), 'bnhs-sims-student-import-template.xlsx');
@@ -39,10 +40,16 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
 
   const runImport = async () => {
     setBusy(true);
-    const res = await commitImportPlan({ plan, sections, schoolYear });
-    setResult(res);
-    setBusy(false);
-    setStep('result');
+    setCommitError('');
+    try {
+      const res = await commitImportPlan({ plan, sections, schoolYear });
+      setResult(res);
+      setStep('result');
+    } catch (err) {
+      setCommitError('Something went wrong while importing. Some rows may have already been written — check the Students table, then try importing again; already-imported rows will be safely re-matched by LRN.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const importCount = plan ? plan.summary.newCount + plan.summary.updateCount : 0;
@@ -94,6 +101,11 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
               ))}</tbody>
             </table>
           </div>
+          {commitError && (
+            <div style={{ fontFamily: T.body, background: 'rgba(220,38,38,0.1)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginTop: 12 }}>
+              {commitError}
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
             <Btn variant="ghost" onClick={onClose} disabled={busy}>Cancel</Btn>
             <Btn onClick={runImport} disabled={busy || importCount === 0}>
