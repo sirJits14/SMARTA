@@ -91,12 +91,16 @@ export default function IDCardsPage({ schoolYear }) {
             box-sizing: border-box !important;
             min-height: 0 !important;
             overflow: hidden !important;
-            padding: 2mm !important;
+            padding: 3mm !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
           }
-          .id-card-qr { width: 26mm !important; height: 26mm !important; margin: 0 auto 1.5mm !important; }
-          .id-card-name { font-size: 8pt !important; line-height: 1.15 !important; }
-          .id-card-lrn { font-size: 7pt !important; }
-          .id-card-section { font-size: 6.5pt !important; line-height: 1.15 !important; }
+          .id-card-qr { width: 34mm !important; height: 34mm !important; margin: 0 auto 1.5mm !important; }
+          .id-card-name { font-size: 9pt !important; line-height: 1.15 !important; }
+          .id-card-lrn { font-size: 8pt !important; }
+          .id-card-section { font-size: 7.5pt !important; line-height: 1.15 !important; }
         }
       `}</style>
 
