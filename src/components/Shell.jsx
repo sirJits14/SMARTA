@@ -11,7 +11,7 @@ const NAV = [
 ];
 export default function Shell({ me, page, setPage, schoolYear, onLogout, children }) {
   return (
-    <div style={{ fontFamily: T.body, color: T.ink, minHeight: '100vh', background: T.bg, display: 'grid', gridTemplateColumns: '220px 1fr' }}>
+    <div className="app-shell" style={{ fontFamily: T.body, color: T.ink, minHeight: '100vh', background: T.bg, display: 'grid', gridTemplateColumns: '220px 1fr' }}>
       <aside className="app-sidebar" style={{ background: T.surface, borderRight: `1px solid ${T.border}`, padding: '24px 16px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, padding: '0 8px' }}>
           <img src={bnhsLogo} alt="Bukidnon National High School seal" width={32} height={32} style={{ flexShrink: 0 }} />
