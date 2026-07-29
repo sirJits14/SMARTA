@@ -84,13 +84,19 @@ export default function IDCardsPage({ schoolYear }) {
             width: 194mm;
             height: 281mm;
             gap: 4mm;
+            overflow: hidden;
           }
           .id-cards-sheet:not(:last-child) { break-after: page; }
-          .id-card { padding: 3mm !important; }
-          .id-card-qr { width: 32mm !important; height: 32mm !important; margin: 0 auto 2mm !important; }
-          .id-card-name { font-size: 9pt !important; }
-          .id-card-lrn { font-size: 8pt !important; }
-          .id-card-section { font-size: 7pt !important; }
+          .id-card {
+            box-sizing: border-box !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            padding: 2mm !important;
+          }
+          .id-card-qr { width: 26mm !important; height: 26mm !important; margin: 0 auto 1.5mm !important; }
+          .id-card-name { font-size: 8pt !important; line-height: 1.15 !important; }
+          .id-card-lrn { font-size: 7pt !important; }
+          .id-card-section { font-size: 6.5pt !important; line-height: 1.15 !important; }
         }
       `}</style>
 
