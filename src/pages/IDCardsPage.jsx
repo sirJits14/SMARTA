@@ -73,7 +73,7 @@ export default function IDCardsPage({ schoolYear }) {
         .id-cards-sheet { display: contents; }
         @media print {
           .app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading { display: none !important; }
-          .app-shell { grid-template-columns: 1fr !important; min-height: 0 !important; }
+          .app-shell { grid-template-columns: 1fr !important; height: auto !important; overflow: visible !important; }
           main { padding: 0 !important; overflow: visible !important; }
           @page { size: A4; margin: 8mm; }
           .id-cards-grid { display: block !important; }

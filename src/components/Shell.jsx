@@ -12,8 +12,10 @@ const NAV = [
 ];
 export default function Shell({ me, page, setPage, schoolYear, onLogout, children }) {
   return (
-    <div className="app-shell" style={{ fontFamily: T.body, color: T.ink, minHeight: '100vh', background: T.bg, display: 'grid', gridTemplateColumns: '220px 1fr' }}>
-      <aside className="app-sidebar" style={{ background: T.surface, borderRight: `1px solid ${T.border}`, padding: '24px 16px', display: 'flex', flexDirection: 'column' }}>
+    <>
+      <style>{`body { margin: 0; }`}</style>
+      <div className="app-shell" style={{ fontFamily: T.body, color: T.ink, height: '100vh', overflow: 'hidden', background: T.bg, display: 'grid', gridTemplateColumns: '220px 1fr' }}>
+      <aside className="app-sidebar" style={{ background: T.surface, borderRight: `1px solid ${T.border}`, padding: '24px 16px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, padding: '0 8px' }}>
           <img src={bnhsLogo} alt="Bukidnon National High School seal" width={32} height={32} style={{ flexShrink: 0 }} />
           <span style={{ fontFamily: T.display, fontSize: 15, fontWeight: 700, color: T.ink }}>BNHS SIMS</span>
@@ -39,12 +41,13 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
           <Btn variant="ghost" onClick={onLogout} style={{ width: '100%' }}>Sign out</Btn>
         </div>
       </aside>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div className="app-topbar" style={{ height: 60, borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 28px', background: T.surface, flexShrink: 0 }}>
           <span style={{ ...T.num, background: 'rgba(91,79,232,0.08)', color: T.primary, borderRadius: T.pill, padding: '4px 12px', fontSize: 12, fontWeight: 700 }}>SY {schoolYear}</span>
         </div>
         <main style={{ padding: 28, overflow: 'auto', flex: 1 }}>{children}</main>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
