@@ -5,6 +5,7 @@ const NAV = [
   { k: 'dashboard', label: 'Dashboard' },
   { k: 'students', label: 'Students' },
   { k: 'sections', label: 'Sections' },
+  { k: 'schedules', label: 'Schedules' },
   { k: 'enroll', label: 'Enrollment' },
   { k: 'attendance', label: 'Attendance' },
   { k: 'idcards', label: 'ID Cards' },

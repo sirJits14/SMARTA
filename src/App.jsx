@@ -10,6 +10,7 @@ import Shell from './components/Shell.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import StudentsPage from './pages/StudentsPage.jsx';
 import SectionsPage from './pages/SectionsPage.jsx';
+import SchedulesPage from './pages/SchedulesPage.jsx';
 import EnrollPage from './pages/EnrollPage.jsx';
 import AttendanceTakePage from './pages/AttendanceTakePage.jsx';
 import AttendanceSummaryPage from './pages/AttendanceSummaryPage.jsx';
@@ -72,6 +73,7 @@ export default function App() {
         {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
         {page==='students' && <StudentsPage schoolYear={schoolYear} />}
         {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
+        {page==='schedules' && <SchedulesPage />}
         {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
         {page==='attendance' && <AttendanceArea schoolYear={schoolYear} />}
         {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
