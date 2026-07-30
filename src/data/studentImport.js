@@ -21,7 +21,7 @@ export async function commitImportPlan({ plan, sections, schoolYear }) {
     newSectionIdByKey.set(sec.key, ref.id);
     writes.push({
       ref,
-      data: { name: sec.name, gradeLevel: sec.gradeLevel, track: null, strand: null, schoolYear, adviserName: '' },
+      data: { name: sec.name, gradeLevel: sec.gradeLevel, track: null, strand: null, schoolYear, adviserName: '', scheduleId: null },
     });
   });
 
