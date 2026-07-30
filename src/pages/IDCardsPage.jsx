@@ -101,7 +101,7 @@ export default function IDCardsPage({ schoolYear }) {
           .id-card-qr { width: 34mm !important; height: 34mm !important; margin: 0 auto 1.5mm !important; }
           .id-card-name { font-size: 9pt !important; line-height: 1.15 !important; }
           .id-card-lrn { font-size: 8pt !important; }
-          .id-card-section { font-size: 7.5pt !important; line-height: 1.15 !important; }
+          .id-card-section { display: none !important; }
         }
       `}</style>
 
