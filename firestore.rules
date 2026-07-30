@@ -4,6 +4,7 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     match /students/{id}            { allow read, write: if signedIn(); }
     match /sections/{id}            { allow read, write: if signedIn(); }
+    match /schedules/{id}           { allow read, write: if signedIn(); }
     match /enrollments/{id}         { allow read, write: if signedIn(); }
     match /student_attendance/{id}  { allow read, write: if signedIn(); }
     match /settings/{id}            { allow read, write: if signedIn(); }
