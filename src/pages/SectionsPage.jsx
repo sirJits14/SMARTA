@@ -74,6 +74,14 @@ export default function SectionsPage({ schoolYear }) {
     rows.forEach((s) => { if (!m.has(s.gradeLevel)) m.set(s.gradeLevel, []); m.get(s.gradeLevel).push(s); });
     return [...m.entries()];
   }, [rows]);
+  // Grade-level submenu: pick one grade's sections at a time instead of
+  // stacking every grade's table on the page at once. `selectedGrade` is
+  // sticky across data refreshes; activeGrade falls back to the first
+  // available grade whenever the selection isn't (or is no longer, e.g.
+  // after switching school year) one of the currently loaded grades.
+  const [selectedGrade, setSelectedGrade] = useState(null);
+  const activeGrade = groups.some(([g]) => g === selectedGrade) ? selectedGrade : (groups[0]?.[0] ?? null);
+  const activeList = groups.find(([g]) => g === activeGrade)?.[1] || [];
   return (
     <div>
       <div style={S.plate}>
@@ -85,30 +93,45 @@ export default function SectionsPage({ schoolYear }) {
           <EmptyState title="No sections yet" hint={`Add your first section for SY ${schoolYear} with the button above.`} />
         </Card>
       ) : (
-        groups.map(([grade, list]) => (
-          <div key={grade} style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 14, color: T.ink, marginBottom: 8 }}>Grade {grade}</div>
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead><tr style={S.thead}>
-                  {['Section', 'Strand', 'Adviser', 'Schedule', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
-                </tr></thead>
-                <tbody>{list.map((s) => (
-                  <tr key={s.id}>
-                    <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
-                    <td style={S.td}>{s.strand || '—'}</td>
-                    <td style={S.td}>{s.adviserName || '—'}</td>
-                    <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
-                    <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
-                      <Btn variant="ghost" onClick={() => setConfirm(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
-                    </td>
-                  </tr>))}
-                </tbody>
-              </table>
-            </Card>
+        <>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+            {groups.map(([grade, list]) => {
+              const active = grade === activeGrade;
+              return (
+                <button
+                  key={grade}
+                  onClick={() => setSelectedGrade(grade)}
+                  style={{
+                    fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+                    cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
+                    background: active ? T.primary : 'transparent',
+                    color: active ? '#fff' : T.inkMuted,
+                    transition: 'background 0.15s ease-out, color 0.15s ease-out',
+                  }}
+                >Grade {grade} ({list.length})</button>
+              );
+            })}
           </div>
-        ))
+          <Card style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={S.thead}>
+                {['Section', 'Strand', 'Adviser', 'Schedule', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+              </tr></thead>
+              <tbody>{activeList.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
+                  <td style={S.td}>{s.strand || '—'}</td>
+                  <td style={S.td}>{s.adviserName || '—'}</td>
+                  <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
+                  <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
+                    <Btn variant="ghost" onClick={() => setConfirm(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                  </td>
+                </tr>))}
+              </tbody>
+            </table>
+          </Card>
+        </>
       )}
       {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
