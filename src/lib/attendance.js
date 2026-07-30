@@ -16,3 +16,16 @@ export function summarizeMonth({ roster, schoolDays, docsByDate }) {
   }
   return out;
 }
+
+// Formats a kiosk-recorded scan time ("HH:MM", 24-hour, the same format
+// bnhs-student-kiosk's localTime() and this app's own schedules.timeIn/
+// timeOut already use) as a 12-hour label with AM/PM, matching the
+// kiosk's own ConfirmScreen.jsx display convention. Returns an em dash
+// when the student hasn't scanned in/out yet.
+export function formatScanTime(hhmm) {
+  if (!hhmm) return '—';
+  const [h, m] = hhmm.split(':').map(Number);
+  const h12 = h % 12 || 12;
+  const ap = h >= 12 ? 'PM' : 'AM';
+  return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ap}`;
+}
