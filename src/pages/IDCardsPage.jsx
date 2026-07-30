@@ -72,7 +72,7 @@ export default function IDCardsPage({ schoolYear }) {
       <style>{`
         .id-cards-sheet { display: contents; }
         @media print {
-          .app-sidebar, .app-topbar, .id-cards-controls { display: none !important; }
+          .app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading { display: none !important; }
           .app-shell { grid-template-columns: 1fr !important; min-height: 0 !important; }
           main { padding: 0 !important; overflow: visible !important; }
           @page { size: A4; margin: 8mm; }
@@ -96,6 +96,7 @@ export default function IDCardsPage({ schoolYear }) {
             flex-direction: column !important;
             justify-content: center !important;
             align-items: center !important;
+            border-radius: 0 !important;
           }
           .id-card-qr { width: 34mm !important; height: 34mm !important; margin: 0 auto 1.5mm !important; }
           .id-card-name { font-size: 9pt !important; line-height: 1.15 !important; }
@@ -104,7 +105,7 @@ export default function IDCardsPage({ schoolYear }) {
         }
       `}</style>
 
-      <div style={S.plate}>
+      <div className="id-cards-heading" style={S.plate}>
         <h1 style={S.h1}>ID Cards</h1>
       </div>
 
