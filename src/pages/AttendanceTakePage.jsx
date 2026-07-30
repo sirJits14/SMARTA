@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useCollection, useDoc } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { localDate } from '../lib/dates.js';
-import { markFor } from '../lib/attendance.js';
+import { markFor, formatScanTime } from '../lib/attendance.js';
 import { attendanceId, saveMarks } from '../data/attendance.js';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, S } from '../styles.js';
@@ -119,16 +119,27 @@ export default function AttendanceTakePage({ schoolYear }) {
             <TallyChip label="Excused" value={tally.excused} color={T.excused} />
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0 18px 8px' }}>
+            <span style={{ ...S.th, width: 110, flexShrink: 0, padding: 0, borderBottom: 'none' }}>LRN</span>
+            <span style={{ ...S.th, flex: 1, padding: 0, borderBottom: 'none' }}>Name</span>
+            <span style={{ ...S.th, width: 78, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time In</span>
+            <span style={{ ...S.th, width: 78, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time Out</span>
+            <span style={{ ...S.th, flexShrink: 0, padding: 0, borderBottom: 'none' }}>Status</span>
+          </div>
+
           <Card style={{ padding: 0, overflow: 'hidden' }}>
             {roster.map((s, i) => {
               const mark = shownMark(s.id);
+              const timeIn = attendanceDoc?.timeIn?.[s.id];
+              const timeOut = attendanceDoc?.timeOut?.[s.id];
+              const scanLabel = `${timeIn ? ` Time in ${formatScanTime(timeIn)}.` : ''}${timeOut ? ` Time out ${formatScanTime(timeOut)}.` : ''}`;
               return (
                 <div
                   key={s.id}
                   className="stamp-row"
                   role="button"
                   tabIndex={0}
-                  aria-label={`${fullName(s)}, currently marked ${MARK_LABEL[mark]}. Activate to change.`}
+                  aria-label={`${fullName(s)}, currently marked ${MARK_LABEL[mark]}.${scanLabel} Activate to change.`}
                   onClick={() => cycle(s.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cycle(s.id); } }}
                   style={{
@@ -139,6 +150,8 @@ export default function AttendanceTakePage({ schoolYear }) {
                 >
                   <span style={{ ...T.num, fontSize: 12, color: T.ink, opacity: 0.6, width: 110, flexShrink: 0 }}>{s.lrn}</span>
                   <span style={{ flex: 1, fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>{fullName(s)}</span>
+                  <span style={{ ...T.num, fontSize: 12, color: T.inkMuted, width: 78, flexShrink: 0, textAlign: 'center' }}>{formatScanTime(timeIn)}</span>
+                  <span style={{ ...T.num, fontSize: 12, color: T.inkMuted, width: 78, flexShrink: 0, textAlign: 'center' }}>{formatScanTime(timeOut)}</span>
                   <StatusPill mark={mark} />
                 </div>
               );
