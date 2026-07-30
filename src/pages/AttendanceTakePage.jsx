@@ -124,7 +124,7 @@ export default function AttendanceTakePage({ schoolYear }) {
             <span style={{ ...S.th, flex: '0 1 280px', minWidth: 140, padding: 0, borderBottom: 'none' }}>Name</span>
             <span style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time In</span>
             <span style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time Out</span>
-            <span style={{ ...S.th, flexShrink: 0, padding: 0, borderBottom: 'none' }}>Status</span>
+            <span style={{ ...S.th, width: 90, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Status</span>
           </div>
 
           <Card style={{ padding: 0, overflow: 'hidden' }}>
@@ -152,7 +152,9 @@ export default function AttendanceTakePage({ schoolYear }) {
                   <span style={{ flex: '0 1 280px', minWidth: 140, fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>{fullName(s)}</span>
                   <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeIn ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeIn ? 'rgba(91,79,232,0.06)' : 'transparent' }}>{formatScanTime(timeIn)}</span>
                   <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeOut ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeOut ? 'rgba(91,79,232,0.06)' : 'transparent' }}>{formatScanTime(timeOut)}</span>
-                  <StatusPill mark={mark} />
+                  <span style={{ width: 90, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                    <StatusPill mark={mark} />
+                  </span>
                 </div>
               );
             })}
