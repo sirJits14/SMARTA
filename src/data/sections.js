@@ -7,6 +7,7 @@ const shape = (f) => ({
   track: isSHS(f.gradeLevel) ? (f.track||null) : null,
   strand: isSHS(f.gradeLevel) ? (f.strand||null) : null,
   schoolYear:f.schoolYear, adviserName:f.adviserName?.trim()||'',
+  scheduleId: f.scheduleId || null,
 });
 export const createSection = (f) => addDoc(collection(db, 'sections'), shape(f));
 export const updateSection = (id, f) => setDoc(doc(db, 'sections', id), shape(f), { merge:true });

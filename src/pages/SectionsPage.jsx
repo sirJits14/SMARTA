@@ -5,8 +5,8 @@ import { GRADES, isSHS, TRACKS, STRANDS } from '../lib/constants.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
 
-function SectionForm({ editing, schoolYear, onClose }) {
-  const [f, setF] = useState(editing || { gradeLevel: '', name: '', track: '', strand: '', adviserName: '', schoolYear });
+function SectionForm({ editing, schoolYear, schedules, onClose }) {
+  const [f, setF] = useState(editing || { gradeLevel: '', name: '', track: '', strand: '', adviserName: '', scheduleId: '', schoolYear });
   const [err, setErr] = useState('');
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const setGrade = (v) => setF((p) => ({ ...p, gradeLevel: v, ...(isSHS(v) ? {} : { track: '', strand: '' }) }));
@@ -44,6 +44,12 @@ function SectionForm({ editing, schoolYear, onClose }) {
         </div>
       )}
       <Field label="Adviser name"><Inp value={f.adviserName || ''} onChange={(e) => set('adviserName', e.target.value)} /></Field>
+      <Field label="Schedule">
+        <Sel value={f.scheduleId || ''} onChange={(e) => set('scheduleId', e.target.value)}>
+          <option value="">No schedule set</option>
+          {schedules.map((sc) => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
+        </Sel>
+      </Field>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
         <Btn onClick={save}>{editing ? 'Save changes' : 'Add section'}</Btn>
@@ -54,6 +60,8 @@ function SectionForm({ editing, schoolYear, onClose }) {
 
 export default function SectionsPage({ schoolYear }) {
   const sections = useCollection('sections');
+  const schedules = useCollection('schedules');
+  const scheduleById = useMemo(() => new Map(schedules.map((s) => [s.id, s])), [schedules]);
   const [form, setForm] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const rows = useMemo(() =>
@@ -83,13 +91,14 @@ export default function SectionsPage({ schoolYear }) {
             <Card style={{ padding: 0, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead><tr style={S.thead}>
-                  {['Section', 'Strand', 'Adviser', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+                  {['Section', 'Strand', 'Adviser', 'Schedule', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
                 </tr></thead>
                 <tbody>{list.map((s) => (
                   <tr key={s.id}>
                     <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
                     <td style={S.td}>{s.strand || '—'}</td>
                     <td style={S.td}>{s.adviserName || '—'}</td>
+                    <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
                     <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
                       <Btn variant="ghost" onClick={() => setConfirm(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
@@ -101,7 +110,7 @@ export default function SectionsPage({ schoolYear }) {
           </div>
         ))
       )}
-      {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} onClose={() => setForm(null)} />}
+      {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
     </div>
   );
