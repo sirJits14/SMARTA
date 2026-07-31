@@ -23,7 +23,7 @@ function writeDailyTotals(ws, students, schoolDays, docsByDate, row) {
   return tallies;
 }
 
-function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex, pageLabel }) {
+function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex }) {
   ws.getCell('C6').value = schoolId;
   ws.getCell('K6').value = section.schoolYear;
   ws.getCell('X6').value = monthLabelText;
@@ -46,18 +46,28 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
     ws.getRow(62).getCell(4 + i).value = maleTallies[i] + femaleTallies[i];
   });
 
-  ws.getCell('AJ66').value = enrolledAsOfCutoff; // no per-gender breakdown available for this historical cutoff figure; only the combined total is written
+  // No real historical-enrollment-date tracking exists yet (dateEnrolled is
+  // set to the day a registrar keys the record in, not the student's actual
+  // enrollment date), so a cutoff count of exactly 0 almost always means "no
+  // data available" rather than a real zero -- leave both figures blank for
+  // the registrar to fill in by hand instead of printing a misleading 0/0%.
+  if (enrolledAsOfCutoff > 0) {
+    ws.getCell('AJ66').value = enrolledAsOfCutoff;
+    ws.getCell('AJ72').value = summary.percentEnrolment;
+  }
   ws.getCell('AH70').value = summary.maleTotal;
   ws.getCell('AI70').value = summary.femaleTotal;
   ws.getCell('AJ70').value = summary.registeredEndOfMonth;
-  ws.getCell('AJ72').value = summary.percentEnrolment;
+  ws.getCell('AH74').value = summary.maleAvgDailyAttendance;
+  ws.getCell('AI74').value = summary.femaleAvgDailyAttendance;
   ws.getCell('AJ74').value = summary.avgDailyAttendance;
+  ws.getCell('AH75').value = summary.malePercentAttendance;
+  ws.getCell('AI75').value = summary.femalePercentAttendance;
   ws.getCell('AJ75').value = summary.percentAttendance;
   ws.getCell('AC64').value = monthLabelText;
   ws.getCell('AG64').value = schoolDays.length;
 
   ws.getCell('AD88').value = section.adviserName || '';
-  ws.getCell('A92').value = `School Form 2: Page ${pageLabel}`;
 }
 
 export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
@@ -77,6 +87,8 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
   const dailyTalliesCombined = schoolDays.map((_, i) => maleTallies[i] + femaleTallies[i]);
   const { percentEnrolment, avgDailyAttendance, percentAttendance } =
     summaryFigures({ enrolledAsOfCutoff, registeredEndOfMonth, dailyTalliesCombined, schoolDays });
+  const maleFigures = summaryFigures({ enrolledAsOfCutoff: 0, registeredEndOfMonth: male.length, dailyTalliesCombined: maleTallies, schoolDays });
+  const femaleFigures = summaryFigures({ enrolledAsOfCutoff: 0, registeredEndOfMonth: female.length, dailyTalliesCombined: femaleTallies, schoolDays });
   const summary = {
     maleTotal: male.length,
     femaleTotal: female.length,
@@ -84,10 +96,14 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
     percentEnrolment,
     avgDailyAttendance,
     percentAttendance,
+    maleAvgDailyAttendance: maleFigures.avgDailyAttendance,
+    malePercentAttendance: maleFigures.percentAttendance,
+    femaleAvgDailyAttendance: femaleFigures.avgDailyAttendance,
+    femalePercentAttendance: femaleFigures.percentAttendance,
   };
 
   if (male.length <= MALE_CAP && female.length <= FEMALE_CAP) {
-    fillSheet(templateSheet, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex: { male: 0, female: 0 }, pageLabel: '1 of 1' });
+    fillSheet(templateSheet, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex: { male: 0, female: 0 } });
     return wb;
   }
 
@@ -121,7 +137,7 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
       male: maleChunk,
       female: femaleChunk,
       schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff,
-      summary, startIndex: { male: maleSeen, female: femaleSeen }, pageLabel: `${i + 1} of ${pageCount}`,
+      summary, startIndex: { male: maleSeen, female: femaleSeen },
     });
     maleSeen += maleChunk.length;
     femaleSeen += femaleChunk.length;

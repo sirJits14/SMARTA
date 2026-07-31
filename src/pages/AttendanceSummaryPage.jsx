@@ -13,7 +13,7 @@ import { Sel, Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
 function firstFridayOfJune(schoolYear) {
   const year = Number(schoolYear.split('-')[0]);
   const d = new Date(year, 5, 1); // June 1
-  while (d.getDay() !== 5) d.setDate(d.getDate() + 1); // 5 = Friday
+  for (let i = 0; i < 7 && d.getDay() !== 5; i++) d.setDate(d.getDate() + 1); // 5 = Friday, at most 6 steps
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
