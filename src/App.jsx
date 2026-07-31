@@ -15,6 +15,7 @@ import EnrollPage from './pages/EnrollPage.jsx';
 import AttendanceTakePage from './pages/AttendanceTakePage.jsx';
 import AttendanceSummaryPage from './pages/AttendanceSummaryPage.jsx';
 import IDCardsPage from './pages/IDCardsPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 
 function AttendanceArea({ schoolYear }) {
   const [tab, setTab] = useState('take');
@@ -77,6 +78,7 @@ export default function App() {
         {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
         {page==='attendance' && <AttendanceArea schoolYear={schoolYear} />}
         {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
+        {page==='settings' && <SettingsPage />}
       </Shell>
     </>
   );

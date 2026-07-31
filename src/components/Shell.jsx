@@ -9,6 +9,7 @@ const NAV = [
   { k: 'enroll', label: 'Enrollment' },
   { k: 'attendance', label: 'Attendance' },
   { k: 'idcards', label: 'ID Cards' },
+  { k: 'settings', label: 'Settings' },
 ];
 export default function Shell({ me, page, setPage, schoolYear, onLogout, children }) {
   return (
