@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useCollection } from '../hooks/useCollection.js';
+import { useCollection, useDoc } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
 import { markFor, summarizeMonth, formatScanTime } from '../lib/attendance.js';
@@ -8,6 +8,15 @@ import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S, MARK_COLOR } from '../styles.js';
 import { Sel, Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
 
+// DepEd's "Enrolment as of 1st Friday of June" cutoff for a given school
+// year (e.g. "2026-2027" -> the 1st Friday of June 2026).
+function firstFridayOfJune(schoolYear) {
+  const year = Number(schoolYear.split('-')[0]);
+  const d = new Date(year, 5, 1); // June 1
+  while (d.getDay() !== 5) d.setDate(d.getDate() + 1); // 5 = Friday
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
 export default function AttendanceSummaryPage({ schoolYear }) {
@@ -15,6 +24,7 @@ export default function AttendanceSummaryPage({ schoolYear }) {
   const enrollments = useCollection('enrollments');
   const students = useCollection('students');
   const attendance = useCollection('student_attendance');
+  const settings = useDoc('settings/app');
 
   const sectionsSY = useMemo(() =>
     sections
@@ -49,9 +59,25 @@ export default function AttendanceSummaryPage({ schoolYear }) {
     summarizeMonth({ roster: roster.map((s) => s.id), schoolDays, docsByDate }),
     [roster, schoolDays, docsByDate]);
 
+  const [exportError, setExportError] = useState('');
+
   const doExport = async () => {
-    const wb = buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText });
-    await downloadWorkbook(wb, `SF2_${section.name}_${ym}.xlsx`);
+    setExportError('');
+    try {
+      const cutoff = firstFridayOfJune(section.schoolYear);
+      const enrolledAsOfCutoff = enrollments.filter((e) =>
+        e.sectionId === section.id && e.schoolYear === section.schoolYear && e.dateEnrolled <= cutoff
+      ).length;
+      const wb = await buildSF2Workbook({
+        section, roster, schoolDays, docsByDate, monthLabelText,
+        schoolId: settings?.schoolId || '',
+        schoolName: settings?.schoolName || '',
+        enrolledAsOfCutoff,
+      });
+      await downloadWorkbook(wb, `SF2_${section.name}_${ym}.xlsx`);
+    } catch {
+      setExportError('Could not generate the report. Please try again.');
+    }
   };
 
   return (
@@ -74,7 +100,10 @@ export default function AttendanceSummaryPage({ schoolYear }) {
             <Field label="Month"><Inp type="month" value={ym} onChange={(e) => setYm(e.target.value)} /></Field>
           </div>
           {sectionId && roster.length > 0 && (
-            <div style={{ marginBottom: 12 }}><Btn onClick={doExport}>Export SF2 (Excel)</Btn></div>
+            <div style={{ marginBottom: 12 }}>
+              <Btn onClick={doExport}>Export SF2 (Excel)</Btn>
+              {exportError && <div style={{ fontFamily: T.body, color: T.absent, fontSize: 12, marginTop: 6 }}>{exportError}</div>}
+            </div>
           )}
         </div>
       </Card>
