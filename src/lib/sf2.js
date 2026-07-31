@@ -5,11 +5,11 @@ import { splitByGender, rowsFor, dailyTallies, summaryFigures } from './sf2Templ
 
 const DAY_LETTER = ['S', 'M', 'T', 'W', 'TH', 'F', 'S']; // Date#getDay() index 0=Sun..6=Sat
 
-function writeRoster(ws, students, schoolDays, docsByDate, startRow) {
+function writeRoster(ws, students, schoolDays, docsByDate, startRow, startIndex) {
   const rows = rowsFor(students, schoolDays, docsByDate);
   rows.forEach((row, i) => {
     const r = ws.getRow(startRow + i);
-    r.getCell(1).value = i + 1; // A: running count
+    r.getCell(1).value = startIndex + i + 1; // A: running count, continues across overflow pages
     r.getCell(2).value = fullName(row.student); // B (anchor of the B:C merge)
     row.marks.forEach((mark, dayIdx) => { r.getCell(4 + dayIdx).value = mark; }); // D..AB
     r.getCell(29).value = row.absentTotal; // AC
@@ -23,46 +23,41 @@ function writeDailyTotals(ws, students, schoolDays, docsByDate, row) {
   return tallies;
 }
 
-function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
-  ws.getCell('B6').value = schoolId;
-  ws.getCell('H6').value = section.schoolYear;
-  ws.getCell('Q6').value = monthLabelText;
-  ws.getCell('B8').value = schoolName;
-  ws.getCell('T8').value = section.gradeLevel;
-  ws.getCell('Z8').value = section.name;
+function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex, pageLabel }) {
+  ws.getCell('C6').value = schoolId;
+  ws.getCell('K6').value = section.schoolYear;
+  ws.getCell('X6').value = monthLabelText;
+  ws.getCell('C8').value = schoolName;
+  ws.getCell('X8').value = section.gradeLevel;
+  ws.getCell('AC8').value = section.name;
 
   schoolDays.forEach((date, i) => {
-    const [, , d] = date.split('-');
-    const dow = new Date(date).getDay();
-    ws.getRow(11).getCell(4 + i).value = Number(d);
+    const [y, m, d] = date.split('-').map(Number);
+    const dow = new Date(y, m - 1, d).getDay();
+    ws.getRow(11).getCell(4 + i).value = d;
     ws.getRow(12).getCell(4 + i).value = DAY_LETTER[dow];
   });
 
-  writeRoster(ws, male, schoolDays, docsByDate, 14);
-  writeRoster(ws, female, schoolDays, docsByDate, 36);
+  writeRoster(ws, male, schoolDays, docsByDate, 14, startIndex.male);
+  writeRoster(ws, female, schoolDays, docsByDate, 36, startIndex.female);
   const maleTallies = writeDailyTotals(ws, male, schoolDays, docsByDate, 35);
   const femaleTallies = writeDailyTotals(ws, female, schoolDays, docsByDate, 61);
   schoolDays.forEach((_, i) => {
     ws.getRow(62).getCell(4 + i).value = maleTallies[i] + femaleTallies[i];
   });
 
-  const registeredEndOfMonth = male.length + female.length;
-  const dailyTalliesCombined = schoolDays.map((_, i) => maleTallies[i] + femaleTallies[i]);
-  const { percentEnrolment, avgDailyAttendance, percentAttendance } =
-    summaryFigures({ enrolledAsOfCutoff, registeredEndOfMonth, dailyTalliesCombined, schoolDays });
-
-  ws.getCell('AH66').value = enrolledAsOfCutoff; // reuses the combined cutoff figure for M/F/Total pending per-gender history tracking
-  ws.getCell('AJ66').value = enrolledAsOfCutoff;
-  ws.getCell('AH70').value = male.length;
-  ws.getCell('AI70').value = female.length;
-  ws.getCell('AJ70').value = registeredEndOfMonth;
-  ws.getCell('AJ72').value = percentEnrolment;
-  ws.getCell('AJ74').value = avgDailyAttendance;
-  ws.getCell('AJ75').value = percentAttendance;
+  ws.getCell('AJ66').value = enrolledAsOfCutoff; // no per-gender breakdown available for this historical cutoff figure; only the combined total is written
+  ws.getCell('AH70').value = summary.maleTotal;
+  ws.getCell('AI70').value = summary.femaleTotal;
+  ws.getCell('AJ70').value = summary.registeredEndOfMonth;
+  ws.getCell('AJ72').value = summary.percentEnrolment;
+  ws.getCell('AJ74').value = summary.avgDailyAttendance;
+  ws.getCell('AJ75').value = summary.percentAttendance;
   ws.getCell('AC64').value = monthLabelText;
   ws.getCell('AG64').value = schoolDays.length;
 
   ws.getCell('AD88').value = section.adviserName || '';
+  ws.getCell('A92').value = `School Form 2: Page ${pageLabel}`;
 }
 
 export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
@@ -76,8 +71,23 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
   const MALE_CAP = 21;
   const FEMALE_CAP = 25;
 
+  const registeredEndOfMonth = male.length + female.length;
+  const maleTallies = dailyTallies(male, schoolDays, docsByDate);
+  const femaleTallies = dailyTallies(female, schoolDays, docsByDate);
+  const dailyTalliesCombined = schoolDays.map((_, i) => maleTallies[i] + femaleTallies[i]);
+  const { percentEnrolment, avgDailyAttendance, percentAttendance } =
+    summaryFigures({ enrolledAsOfCutoff, registeredEndOfMonth, dailyTalliesCombined, schoolDays });
+  const summary = {
+    maleTotal: male.length,
+    femaleTotal: female.length,
+    registeredEndOfMonth,
+    percentEnrolment,
+    avgDailyAttendance,
+    percentAttendance,
+  };
+
   if (male.length <= MALE_CAP && female.length <= FEMALE_CAP) {
-    fillSheet(templateSheet, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff });
+    fillSheet(templateSheet, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex: { male: 0, female: 0 }, pageLabel: '1 of 1' });
     return wb;
   }
 
@@ -87,15 +97,22 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
   const maleChunks = chunk(male, MALE_CAP);
   const femaleChunks = chunk(female, FEMALE_CAP);
   const pageCount = Math.max(maleChunks.length, femaleChunks.length, 1);
+  let maleSeen = 0;
+  let femaleSeen = 0;
   for (let i = 0; i < pageCount; i++) {
     const ws = i === 0 ? templateSheet : wb.addWorksheet(`SF2 (${i + 1})`, { properties: templateSheet.properties });
     if (i > 0) cloneSheetLayout(templateSheet, ws);
+    const maleChunk = maleChunks[i] || [];
+    const femaleChunk = femaleChunks[i] || [];
     fillSheet(ws, {
       section,
-      male: maleChunks[i] || [],
-      female: femaleChunks[i] || [],
+      male: maleChunk,
+      female: femaleChunk,
       schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff,
+      summary, startIndex: { male: maleSeen, female: femaleSeen }, pageLabel: `${i + 1} of ${pageCount}`,
     });
+    maleSeen += maleChunk.length;
+    femaleSeen += femaleChunk.length;
   }
   return wb;
 }
@@ -108,4 +125,5 @@ function chunk(items, size) {
 
 function cloneSheetLayout(source, target) {
   target.model = { ...source.model, name: target.name, id: target.id };
+  source.model.merges.forEach((range) => target.mergeCells(range));
 }
