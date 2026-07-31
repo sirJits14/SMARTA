@@ -97,14 +97,26 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
   const maleChunks = chunk(male, MALE_CAP);
   const femaleChunks = chunk(female, FEMALE_CAP);
   const pageCount = Math.max(maleChunks.length, femaleChunks.length, 1);
+
+  // Clone every extra sheet from templateSheet while it is still pristine --
+  // BEFORE any fillSheet call writes data into it. Filling page 1 first and
+  // cloning from it afterward would copy page 1's own rows/values onto
+  // every overflow page (target.model = {...source.model} copies cell data,
+  // not just layout), leaving stale duplicate rows on every page after the
+  // first.
+  const sheets = [templateSheet];
+  for (let i = 1; i < pageCount; i++) {
+    const ws = wb.addWorksheet(`SF2 (${i + 1})`, { properties: templateSheet.properties });
+    cloneSheetLayout(templateSheet, ws);
+    sheets.push(ws);
+  }
+
   let maleSeen = 0;
   let femaleSeen = 0;
   for (let i = 0; i < pageCount; i++) {
-    const ws = i === 0 ? templateSheet : wb.addWorksheet(`SF2 (${i + 1})`, { properties: templateSheet.properties });
-    if (i > 0) cloneSheetLayout(templateSheet, ws);
     const maleChunk = maleChunks[i] || [];
     const femaleChunk = femaleChunks[i] || [];
-    fillSheet(ws, {
+    fillSheet(sheets[i], {
       section,
       male: maleChunk,
       female: femaleChunk,
