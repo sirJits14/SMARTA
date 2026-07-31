@@ -7,7 +7,7 @@ import { Sel, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
 
 const sectionLabel = (s) => s ? `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
-const SHEET_SIZE = 16;
+const SHEET_SIZE = 20;
 
 function chunk(items, size) {
   const out = [];
@@ -80,10 +80,10 @@ export default function IDCardsPage({ schoolYear }) {
           .id-cards-sheet {
             display: grid !important;
             grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            grid-template-rows: repeat(5, 1fr);
             width: 194mm;
             height: 281mm;
-            gap: 4mm;
+            gap: 3mm;
             overflow: hidden;
           }
           .id-cards-sheet:not(:last-child) { break-after: page; }
@@ -91,16 +91,16 @@ export default function IDCardsPage({ schoolYear }) {
             box-sizing: border-box !important;
             min-height: 0 !important;
             overflow: hidden !important;
-            padding: 3mm !important;
+            padding: 2.5mm !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: center !important;
             align-items: center !important;
             border-radius: 0 !important;
           }
-          .id-card-qr { width: 34mm !important; height: 34mm !important; margin: 0 auto 1.5mm !important; }
+          .id-card-qr { width: 34mm !important; height: 34mm !important; margin: 0 auto 1mm !important; }
           .id-card-name { font-size: 9pt !important; line-height: 1.15 !important; }
-          .id-card-lrn { font-size: 8pt !important; }
+          .id-card-lrn { font-size: 8pt !important; margin-top: 0 !important; }
           .id-card-section { display: none !important; }
         }
       `}</style>
