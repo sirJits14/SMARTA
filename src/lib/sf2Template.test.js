@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { markChar, splitByGender, dailyPresentCount, rowsFor, dailyTallies, summaryFigures } from './sf2Template.js';
+import { markChar, splitByGender, dailyPresentCount, rowsFor, dailyTallies, summaryFigures, mondayFirstOrder } from './sf2Template.js';
 
 describe('markChar', () => {
   it('maps each internal code to its SF2 letter', () => {
@@ -61,6 +61,30 @@ describe('dailyTallies', () => {
     const students = [{ id: 's1' }, { id: 's2' }, { id: 's3' }];
     const schoolDays = ['2026-07-01', '2026-07-02'];
     expect(dailyTallies(students, schoolDays, docsByDate)).toEqual([2, 2]);
+  });
+});
+
+describe('mondayFirstOrder', () => {
+  it('rotates the day list so it starts at the first Monday, wrapping earlier days to the end', () => {
+    // July 2026: 1=Wed, 2=Thu, 3=Fri, 6=Mon, 7=Tue
+    const schoolDays = ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-06', '2026-07-07'];
+    expect(mondayFirstOrder(schoolDays)).toEqual([
+      '2026-07-06', '2026-07-07', '2026-07-01', '2026-07-02', '2026-07-03',
+    ]);
+  });
+
+  it('leaves the list unchanged when it already starts on a Monday', () => {
+    const schoolDays = ['2026-07-06', '2026-07-07', '2026-07-08'];
+    expect(mondayFirstOrder(schoolDays)).toEqual(['2026-07-06', '2026-07-07', '2026-07-08']);
+  });
+
+  it('returns an empty array unchanged', () => {
+    expect(mondayFirstOrder([])).toEqual([]);
+  });
+
+  it('leaves the list unchanged if no day in it is a Monday (defensive -- not reachable via real school-day data)', () => {
+    const schoolDays = ['2026-07-01']; // a single Wednesday
+    expect(mondayFirstOrder(schoolDays)).toEqual(['2026-07-01']);
   });
 });
 

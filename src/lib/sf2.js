@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import sf2TemplateUrl from '../assets/sf2-template.xlsx?url';
 import { fullName } from './roster.js';
-import { splitByGender, rowsFor, dailyTallies, summaryFigures } from './sf2Template.js';
+import { splitByGender, rowsFor, dailyTallies, summaryFigures, mondayFirstOrder } from './sf2Template.js';
 
 const DAY_LETTER = ['S', 'M', 'T', 'W', 'TH', 'F', 'S']; // Date#getDay() index 0=Sun..6=Sat
 
@@ -70,7 +70,12 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
   ws.getCell('AD88').value = section.adviserName || '';
 }
 
-export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
+export async function buildSF2Workbook({ section, roster, schoolDays: rawSchoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
+  // Reordered once, here, so every downstream cell (date/day-letter header
+  // row, each student's daily marks, the daily tally rows) stays consistent
+  // automatically -- everything below just iterates schoolDays in order.
+  const schoolDays = mondayFirstOrder(rawSchoolDays);
+
   const res = await fetch(sf2TemplateUrl);
   const buffer = await res.arrayBuffer();
   const wb = new ExcelJS.Workbook();
