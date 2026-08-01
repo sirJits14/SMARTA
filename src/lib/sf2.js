@@ -1,25 +1,25 @@
 import ExcelJS from 'exceljs';
 import sf2TemplateUrl from '../assets/sf2-template.xlsx?url';
 import { fullName } from './roster.js';
-import { splitByGender, rowsFor, dailyTallies, summaryFigures, mondayFirstOrder } from './sf2Template.js';
+import { splitByGender, rowsFor, dailyTallies, summaryFigures, mondayAlignmentOffset } from './sf2Template.js';
 
 const DAY_LETTER = ['S', 'M', 'T', 'W', 'TH', 'F', 'S']; // Date#getDay() index 0=Sun..6=Sat
 
-function writeRoster(ws, students, schoolDays, docsByDate, startRow, startIndex) {
+function writeRoster(ws, students, schoolDays, docsByDate, startRow, startIndex, colOffset) {
   const rows = rowsFor(students, schoolDays, docsByDate);
   rows.forEach((row, i) => {
     const r = ws.getRow(startRow + i);
     r.getCell(1).value = startIndex + i + 1; // A: running count, continues across overflow pages
     r.getCell(2).value = fullName(row.student); // B (anchor of the B:C merge)
-    row.marks.forEach((mark, dayIdx) => { r.getCell(4 + dayIdx).value = mark; }); // D..AB
+    row.marks.forEach((mark, dayIdx) => { r.getCell(4 + colOffset + dayIdx).value = mark; }); // D..AB, shifted by the Monday-alignment offset
     r.getCell(29).value = row.absentTotal; // AC
     r.getCell(30).value = row.tardyTotal; // AD
   });
 }
 
-function writeDailyTotals(ws, students, schoolDays, docsByDate, row) {
+function writeDailyTotals(ws, students, schoolDays, docsByDate, row, colOffset) {
   const tallies = dailyTallies(students, schoolDays, docsByDate);
-  tallies.forEach((count, dayIdx) => { ws.getRow(row).getCell(4 + dayIdx).value = count; });
+  tallies.forEach((count, dayIdx) => { ws.getRow(row).getCell(4 + colOffset + dayIdx).value = count; });
   return tallies;
 }
 
@@ -31,19 +31,21 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
   ws.getCell('X8').value = section.gradeLevel;
   ws.getCell('AC8').value = section.name;
 
+  const colOffset = mondayAlignmentOffset(schoolDays);
+
   schoolDays.forEach((date, i) => {
     const [y, m, d] = date.split('-').map(Number);
     const dow = new Date(y, m - 1, d).getDay();
-    ws.getRow(11).getCell(4 + i).value = d;
-    ws.getRow(12).getCell(4 + i).value = DAY_LETTER[dow];
+    ws.getRow(11).getCell(4 + colOffset + i).value = d;
+    ws.getRow(12).getCell(4 + colOffset + i).value = DAY_LETTER[dow];
   });
 
-  writeRoster(ws, male, schoolDays, docsByDate, 14, startIndex.male);
-  writeRoster(ws, female, schoolDays, docsByDate, 36, startIndex.female);
-  const maleTallies = writeDailyTotals(ws, male, schoolDays, docsByDate, 35);
-  const femaleTallies = writeDailyTotals(ws, female, schoolDays, docsByDate, 61);
+  writeRoster(ws, male, schoolDays, docsByDate, 14, startIndex.male, colOffset);
+  writeRoster(ws, female, schoolDays, docsByDate, 36, startIndex.female, colOffset);
+  const maleTallies = writeDailyTotals(ws, male, schoolDays, docsByDate, 35, colOffset);
+  const femaleTallies = writeDailyTotals(ws, female, schoolDays, docsByDate, 61, colOffset);
   schoolDays.forEach((_, i) => {
-    ws.getRow(62).getCell(4 + i).value = maleTallies[i] + femaleTallies[i];
+    ws.getRow(62).getCell(4 + colOffset + i).value = maleTallies[i] + femaleTallies[i];
   });
 
   // No real historical-enrollment-date tracking exists yet (dateEnrolled is
@@ -76,12 +78,7 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
   ws.getCell('AD88').value = section.adviserName || '';
 }
 
-export async function buildSF2Workbook({ section, roster, schoolDays: rawSchoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
-  // Reordered once, here, so every downstream cell (date/day-letter header
-  // row, each student's daily marks, the daily tally rows) stays consistent
-  // automatically -- everything below just iterates schoolDays in order.
-  const schoolDays = mondayFirstOrder(rawSchoolDays);
-
+export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
   const res = await fetch(sf2TemplateUrl);
   const buffer = await res.arrayBuffer();
   const wb = new ExcelJS.Workbook();
