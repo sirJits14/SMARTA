@@ -61,6 +61,12 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
   ws.getCell('AH74').value = summary.maleAvgDailyAttendance;
   ws.getCell('AI74').value = summary.femaleAvgDailyAttendance;
   ws.getCell('AJ74').value = summary.avgDailyAttendance;
+  // AH75 alone (unlike its row-mates AI75/AJ75) carries a pre-existing '0%'
+  // number format in the real template -- Excel would multiply our already-
+  // in-percentage-points value by 100 again for display (e.g. 98.4 -> a
+  // garbled "9840%"). Override it so all three cells in the row render the
+  // same plain-number way.
+  ws.getCell('AH75').numFmt = 'General';
   ws.getCell('AH75').value = summary.malePercentAttendance;
   ws.getCell('AI75').value = summary.femalePercentAttendance;
   ws.getCell('AJ75').value = summary.percentAttendance;
