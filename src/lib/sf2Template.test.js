@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { markChar, splitByGender, dailyPresentCount, rowsFor, dailyTallies, summaryFigures, mondayFirstOrder } from './sf2Template.js';
+import { markChar, splitByGender, dailyPresentCount, rowsFor, dailyTallies, summaryFigures, mondayAlignmentOffset } from './sf2Template.js';
 
 describe('markChar', () => {
   it('maps each internal code to its SF2 letter', () => {
@@ -64,27 +64,23 @@ describe('dailyTallies', () => {
   });
 });
 
-describe('mondayFirstOrder', () => {
-  it('rotates the day list so it starts at the first Monday, wrapping earlier days to the end', () => {
-    // July 2026: 1=Wed, 2=Thu, 3=Fri, 6=Mon, 7=Tue
-    const schoolDays = ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-06', '2026-07-07'];
-    expect(mondayFirstOrder(schoolDays)).toEqual([
-      '2026-07-06', '2026-07-07', '2026-07-01', '2026-07-02', '2026-07-03',
-    ]);
+describe('mondayAlignmentOffset', () => {
+  it('is 0 when the first school day is already a Monday', () => {
+    expect(mondayAlignmentOffset(['2026-07-06', '2026-07-07'])).toBe(0);
   });
 
-  it('leaves the list unchanged when it already starts on a Monday', () => {
-    const schoolDays = ['2026-07-06', '2026-07-07', '2026-07-08'];
-    expect(mondayFirstOrder(schoolDays)).toEqual(['2026-07-06', '2026-07-07', '2026-07-08']);
+  it('is the weekday-index of the first school day otherwise (Wednesday = 2)', () => {
+    // 2026-07-01 is a Wednesday
+    expect(mondayAlignmentOffset(['2026-07-01', '2026-07-02', '2026-07-03'])).toBe(2);
   });
 
-  it('returns an empty array unchanged', () => {
-    expect(mondayFirstOrder([])).toEqual([]);
+  it('is 4 when the first school day is a Friday', () => {
+    // 2026-07-03 is a Friday
+    expect(mondayAlignmentOffset(['2026-07-03'])).toBe(4);
   });
 
-  it('leaves the list unchanged if no day in it is a Monday (defensive -- not reachable via real school-day data)', () => {
-    const schoolDays = ['2026-07-01']; // a single Wednesday
-    expect(mondayFirstOrder(schoolDays)).toEqual(['2026-07-01']);
+  it('is 0 for an empty list', () => {
+    expect(mondayAlignmentOffset([])).toBe(0);
   });
 });
 

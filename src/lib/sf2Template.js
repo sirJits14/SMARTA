@@ -42,20 +42,23 @@ export function dailyTallies(students, schoolDays, docsByDate) {
   return schoolDays.map((date) => dailyPresentCount(students, date, docsByDate));
 }
 
-// Rotates a chronological school-day list so it starts at that month's
-// first Monday, wrapping any earlier days (a partial first week, e.g. a
-// month that starts on a Wednesday) to the end of the list instead of the
-// front. This only reorders -- it never adds, drops, or duplicates a day,
-// so it's always safe against the SF2 template's fixed 25-column capacity
-// regardless of which weekday the month happens to start on.
-export function mondayFirstOrder(schoolDays) {
-  const isMonday = (date) => {
-    const [y, m, d] = date.split('-').map(Number);
-    return new Date(y, m - 1, d).getDay() === 1;
-  };
-  const idx = schoolDays.findIndex(isMonday);
-  if (idx <= 0) return schoolDays;
-  return [...schoolDays.slice(idx), ...schoolDays.slice(0, idx)];
+// Returns how many blank filler columns should precede the first real
+// school day so that every column's weekday position aligns to a fixed
+// Mon-Fri cycle (column 1 is always "the Monday slot", even if the
+// month's first school day isn't a Monday). Dates stay in pure
+// chronological order -- this only shifts where the FIRST real date is
+// placed, it never reorders the days themselves.
+//
+// Always <= 4, and always safe against the template's fixed 25-column
+// capacity: offset + schoolDays.length together equal the weekday count of
+// a single Monday-anchored span of at most 35 calendar days (4 offset days
+// + up to 31 days in the month), and 35 calendar days contain at most 5
+// full Mon-Fri weeks = 25 weekdays. No runtime capacity check is needed.
+export function mondayAlignmentOffset(schoolDays) {
+  if (schoolDays.length === 0) return 0;
+  const [y, m, d] = schoolDays[0].split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay(); // schoolDays never includes Sat(6)/Sun(0), so this is always 1(Mon)-5(Fri)
+  return dow - 1;
 }
 
 const round1 = (n) => Math.round(n * 10) / 10;
