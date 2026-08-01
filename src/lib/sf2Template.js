@@ -58,7 +58,11 @@ export function mondayAlignmentOffset(schoolDays) {
   if (schoolDays.length === 0) return 0;
   const [y, m, d] = schoolDays[0].split('-').map(Number);
   const dow = new Date(y, m - 1, d).getDay(); // schoolDays never includes Sat(6)/Sun(0), so this is always 1(Mon)-5(Fri)
-  return dow - 1;
+  // Clamped defensively: if a future change to schoolDaysInMonth() ever let
+  // a weekend day lead the list, an unclamped offset would either overrun
+  // the day columns into the Absent/Tardy totals (Sat, dow=6 -> 5) or write
+  // into the merged name cell (Sun, dow=0 -> -1).
+  return Math.max(0, Math.min(4, dow - 1));
 }
 
 const round1 = (n) => Math.round(n * 10) / 10;
