@@ -4,16 +4,12 @@ import { useCollection } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { T, S } from '../styles.js';
 import { Sel, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
+import {
+  ID_CARD_PRINT_STYLES,
+  chunkIdCardsIntoSheets,
+} from './idCardPrintLayout.js';
 
 const sectionLabel = (s) => s ? `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}` : '—';
-
-const SHEET_SIZE = 20;
-
-function chunk(items, size) {
-  const out = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
-}
 
 function IDCard({ student, section }) {
   const [qrSrc, setQrSrc] = useState(null);
@@ -65,45 +61,11 @@ export default function IDCardsPage({ schoolYear }) {
     return depedSort(students.filter((s) => ids.has(s.id)));
   }, [enrollments, students, section]);
 
-  const sheets = useMemo(() => chunk(roster, SHEET_SIZE), [roster]);
+  const sheets = useMemo(() => chunkIdCardsIntoSheets(roster), [roster]);
 
   return (
     <div>
-      <style>{`
-        .id-cards-sheet { display: contents; }
-        @media print {
-          .app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading { display: none !important; }
-          .app-shell { grid-template-columns: 1fr !important; height: auto !important; overflow: visible !important; }
-          main { padding: 0 !important; overflow: visible !important; }
-          @page { size: A4; margin: 8mm; }
-          .id-cards-grid { display: block !important; }
-          .id-cards-sheet {
-            display: grid !important;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            width: 194mm;
-            height: 281mm;
-            gap: 3mm;
-            overflow: hidden;
-          }
-          .id-cards-sheet:not(:last-child) { break-after: page; }
-          .id-card {
-            box-sizing: border-box !important;
-            min-height: 0 !important;
-            overflow: hidden !important;
-            padding: 2.5mm !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            align-items: center !important;
-            border-radius: 0 !important;
-          }
-          .id-card-qr { width: 34mm !important; height: 34mm !important; margin: 0 auto 1mm !important; }
-          .id-card-name { font-size: 9pt !important; line-height: 1.15 !important; }
-          .id-card-lrn { font-size: 8pt !important; margin-top: 0 !important; }
-          .id-card-section { display: none !important; }
-        }
-      `}</style>
+      <style>{ID_CARD_PRINT_STYLES}</style>
 
       <div className="id-cards-heading" style={S.plate}>
         <h1 style={S.h1}>ID Cards</h1>
