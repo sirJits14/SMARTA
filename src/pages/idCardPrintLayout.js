@@ -47,6 +47,7 @@ export const ID_CARD_PRINT_STYLES = `
       box-shadow: none !important;
     }
     .id-card-qr {
+      box-sizing: border-box !important;
       width: 16mm !important;
       height: 16mm !important;
       flex: 0 0 16mm !important;
