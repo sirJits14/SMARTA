@@ -38,6 +38,9 @@ describe('ID card print layout', () => {
     expect(ID_CARD_PRINT_STYLES).toContain('height: 281mm;');
     expect(ID_CARD_PRINT_STYLES).toContain('gap: 1mm;');
     expect(ID_CARD_PRINT_STYLES).toContain('width: 16mm !important;');
+    expect(ID_CARD_PRINT_STYLES).toMatch(
+      /\.id-card-qr\s*\{[^}]*box-sizing: border-box !important;/s,
+    );
     expect(ID_CARD_PRINT_STYLES).toContain('-webkit-line-clamp: 2;');
     expect(ID_CARD_PRINT_STYLES).toContain('.id-card-section { display: none !important; }');
   });
