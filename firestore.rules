@@ -1,13 +1,48 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    match /students/{id}            { allow read, write: if signedIn(); }
-    match /sections/{id}            { allow read, write: if signedIn(); }
-    match /schedules/{id}           { allow read, write: if signedIn(); }
-    match /enrollments/{id}         { allow read, write: if signedIn(); }
-    match /student_attendance/{id}  { allow read, write: if signedIn(); }
-    match /settings/{id}            { allow read, write: if signedIn(); }
-    match /users/{id}               { allow read: if signedIn(); allow write: if signedIn(); }
+
+    // A signed-in user is not automatically staff. The registrar UI
+    // (Login.jsx / App.jsx) already checks for a users/{email} profile
+    // and signs out anyone without one — but that check runs in the
+    // browser, so anyone talking to Firestore directly bypasses it.
+    // This makes it the server's rule instead of the client's.
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && exists(
+             /databases/$(database)/documents/users/$(request.auth.token.email.lower())
+           );
+    }
+
+    // Registrar-only records. Locked to staff.
+    match /students/{id}     { allow read, write: if isStaff(); }
+    match /sections/{id}     { allow read, write: if isStaff(); }
+    match /schedules/{id}    { allow read, write: if isStaff(); }
+    match /enrollments/{id}  { allow read, write: if isStaff(); }
+    match /settings/{id}     { allow read, write: if isStaff(); }
+
+    // Accounts are provisioned by hand; the app only ever reads users/.
+    // No client may write here, staff included.
+    match /users/{id}        { allow read: if isStaff(); allow write: if false; }
+
+    // INTERIM — see TODO below. The student kiosk writes scan times here
+    // using a custom-token identity that has no users/ profile, so
+    // isStaff() would block attendance scanning school-wide. Until the
+    // kiosk token's claim is confirmed, this stays at "any authenticated
+    // caller" — no weaker than the previous rules, and the kiosk already
+    // authenticates (signInWithCustomToken), so this is not world-open.
+    //
+    // TODO(secure student_attendance): the kiosk mints its token via the
+    // Firebase Admin SDK. Add a custom claim there — e.g.
+    //   admin.auth().createCustomToken(uid, { kiosk: true })
+    // then tighten this rule to:
+    //   allow read: if isStaff();
+    //   allow write: if isStaff() || request.auth.token.kiosk == true;
+    // so students can be marked present but only staff can read the
+    // roster-wide attendance history.
+    match /student_attendance/{id} { allow read, write: if request.auth != null; }
+
+    // Anything not matched above is denied by default. No catch-all rule.
   }
 }
