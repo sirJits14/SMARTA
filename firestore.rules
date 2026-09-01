@@ -1,13 +1,62 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    match /students/{id}            { allow read, write: if signedIn(); }
-    match /sections/{id}            { allow read, write: if signedIn(); }
-    match /schedules/{id}           { allow read, write: if signedIn(); }
-    match /enrollments/{id}         { allow read, write: if signedIn(); }
-    match /student_attendance/{id}  { allow read, write: if signedIn(); }
-    match /settings/{id}            { allow read, write: if signedIn(); }
-    match /users/{id}               { allow read: if signedIn(); allow write: if signedIn(); }
+
+    // A signed-in user is not automatically staff. The registrar UI
+    // (Login.jsx / App.jsx) checks for a users/{email} profile and signs
+    // out anyone without one — but only in the browser, so a direct
+    // Firestore call bypasses it. This makes it the server's rule.
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && exists(
+             /databases/$(database)/documents/users/$(request.auth.token.email.lower())
+           );
+    }
+
+    // ---- IMPORTANT: why reads below are open to any signed-in caller ----
+    // The student kiosk (bnhs-student-kiosk) signs in ANONYMOUSLY and then
+    // subscribes to the WHOLE students/enrollments/sections/schedules
+    // collections to resolve a scanned LRN in the browser. So these reads
+    // must stay open to any authenticated caller, which includes any
+    // anonymous session — i.e. anyone on the internet. That roster-read
+    // exposure is NOT closed by these rules and cannot be while the kiosk
+    // reads the roster anonymously. See TODO(kiosk-identity) below; closing
+    // it is an architectural change to the kiosk, not a rules tweak.
+    //
+    // What these rules DO close, today, with no risk to the kiosk:
+    //   * only staff can WRITE/DELETE the roster (anon could before);
+    //   * user account records are staff-read-only and client-write-never.
+
+    match /students/{id}     { allow read: if request.auth != null; allow write: if isStaff(); }
+    match /enrollments/{id}  { allow read: if request.auth != null; allow write: if isStaff(); }
+    match /sections/{id}     { allow read: if request.auth != null; allow write: if isStaff(); }
+    match /schedules/{id}    { allow read: if request.auth != null; allow write: if isStaff(); }
+    match /settings/{id}     { allow read: if request.auth != null; allow write: if isStaff(); }
+
+    // Accounts are provisioned by hand; no client writes here, staff included.
+    match /users/{id}        { allow read: if isStaff(); allow write: if false; }
+
+    // The kiosk both reads and writes attendance anonymously, so this stays
+    // open to any authenticated caller. Residual risk: an anonymous caller
+    // can forge or wipe attendance. Closing this needs the same kiosk
+    // identity work as the roster read.
+    match /student_attendance/{id} { allow read, write: if request.auth != null; }
+
+    // Anything not matched above is denied by default.
+
+    // TODO(kiosk-identity): the roster-read and attendance-write exposures
+    // both stem from the kiosk using signInAnonymously (bnhs-student-kiosk
+    // src/firebase.js). Two ways to close them, either of which then lets
+    // these rules distinguish the real kiosk from the anonymous public:
+    //   A. Move the LRN lookup to a Cloud Function so the kiosk needs NO
+    //      roster read at all; students/enrollments become isStaff()-only.
+    //      Best: the roster never leaves the server.
+    //   B. Sign the kiosk in with a custom token carrying { kiosk: true },
+    //      minted by a small backend, then gate roster reads and attendance
+    //      writes on isStaff() || request.auth.token.kiosk == true, and deny
+    //      the anonymous public entirely.
+    // Both are real changes to the kiosk app; pick one in a separate design
+    // pass before relying on this data being private.
   }
 }
