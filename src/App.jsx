@@ -74,7 +74,7 @@ export default function App() {
       {reducedMotionGuard}
       <Shell me={me} page={page} setPage={setPage} schoolYear={schoolYear} onLogout={()=>{ signOut(auth); setMe(null); }}>
         {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
-        {page==='students' && <StudentsPage schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} />}
+        {page==='students' && <StudentsPage schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
         {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
         {page==='schedules' && <SchedulesPage />}
         {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}

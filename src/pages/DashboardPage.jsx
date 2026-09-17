@@ -46,7 +46,7 @@ export default function DashboardPage({ schoolYear, setPage }) {
           value={stats.attendance.presentRate === null ? '—' : `${stats.attendance.presentRate}%`}
           hint={stats.attendance.sectionsMarked === 0 ? 'Not yet taken today' : `${stats.attendance.sectionsMarked} section${stats.attendance.sectionsMarked === 1 ? '' : 's'} marked`}
         />
-        <StatTile label="Unassigned" value={stats.unassigned} onClick={() => setPage('students', { gradeFilter: UNASSIGNED })} />
+        <StatTile label="Unassigned" value={stats.unassigned} onClick={() => setPage('students', { gradeFilter: UNASSIGNED, status: 'active' })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 20, alignItems: 'start' }}>
@@ -80,10 +80,17 @@ export default function DashboardPage({ schoolYear, setPage }) {
 }
 
 function StatTile({ label, value, hint, onClick }) {
+  const Tag = onClick ? 'button' : 'div';
   return (
     <Card
+      as={Tag}
       onClick={onClick}
-      style={{ padding: 20, cursor: onClick ? 'pointer' : 'default' }}
+      aria-label={onClick ? `${label}: ${value} students. View them.` : undefined}
+      style={{
+        padding: 20,
+        cursor: onClick ? 'pointer' : 'default',
+        ...(onClick ? { border: 'none', background: 'none', textAlign: 'left', width: '100%', font: 'inherit', display: 'block' } : {}),
+      }}
     >
       <div style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.inkMuted, marginBottom: 8 }}>{label}</div>
       <div style={{ ...T.num, fontSize: 28, fontWeight: 800, color: T.ink }}>{value}</div>
