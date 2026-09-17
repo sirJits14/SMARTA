@@ -1,10 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { activeStudentCount, enrolledCount, countByGrade, todayAttendance, recentEnrollments } from './dashboardStats.js';
+import { activeStudentCount, enrolledCount, countByGrade, todayAttendance, recentEnrollments, unassignedCount } from './dashboardStats.js';
 
 describe('activeStudentCount', () => {
   it('counts only active students', () => {
     const students = [{ status: 'active' }, { status: 'active' }, { status: 'dropped' }, { status: 'transferred' }];
     expect(activeStudentCount(students)).toBe(2);
+  });
+});
+
+describe('unassignedCount', () => {
+  it('counts active students with no enrolled row for the school year', () => {
+    const students = [
+      { id: 's1', status: 'active' },
+      { id: 's2', status: 'active' },
+      { id: 's3', status: 'active' },
+      { id: 's4', status: 'dropped' },
+    ];
+    const enrollments = [
+      { studentId: 's1', schoolYear: '2026-2027', status: 'enrolled' },
+      { studentId: 's2', schoolYear: '2025-2026', status: 'enrolled' },
+      { studentId: 's3', schoolYear: '2026-2027', status: 'dropped' },
+    ];
+    // s1: enrolled this SY -> assigned. s2: enrolled, but wrong SY -> unassigned.
+    // s3: has a row this SY but not 'enrolled' -> unassigned. s4: inactive -> excluded.
+    expect(unassignedCount(students, enrollments, '2026-2027')).toBe(2);
+  });
+
+  it('returns 0 when every active student is enrolled', () => {
+    const students = [{ id: 's1', status: 'active' }];
+    const enrollments = [{ studentId: 's1', schoolYear: '2026-2027', status: 'enrolled' }];
+    expect(unassignedCount(students, enrollments, '2026-2027')).toBe(0);
   });
 });
 

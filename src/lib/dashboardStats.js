@@ -2,6 +2,15 @@ export function activeStudentCount(students) {
   return students.filter((s) => s.status === 'active').length;
 }
 
+export function unassignedCount(students, enrollments, schoolYear) {
+  const enrolledIds = new Set(
+    enrollments
+      .filter((e) => e.schoolYear === schoolYear && e.status === 'enrolled')
+      .map((e) => e.studentId)
+  );
+  return students.filter((s) => s.status === 'active' && !enrolledIds.has(s.id)).length;
+}
+
 export function enrolledCount(enrollments, schoolYear) {
   return enrollments.filter((e) => e.schoolYear === schoolYear && e.status === 'enrolled').length;
 }
