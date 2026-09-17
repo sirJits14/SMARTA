@@ -49,7 +49,9 @@ function AttendanceArea({ schoolYear }) {
 export default function App() {
   const [me, setMe] = useState(null);
   const [ready, setReady] = useState(false);
-  const [page, setPage] = useState('dashboard');
+  const [page, setPageRaw] = useState('dashboard');
+  const [pageParams, setPageParams] = useState(null);
+  const setPage = (next, params = null) => { setPageRaw(next); setPageParams(params); };
   const settings = useDoc('settings/app');
   const schoolYear = settings?.currentSchoolYear || currentSchoolYear();
 
@@ -72,7 +74,7 @@ export default function App() {
       {reducedMotionGuard}
       <Shell me={me} page={page} setPage={setPage} schoolYear={schoolYear} onLogout={()=>{ signOut(auth); setMe(null); }}>
         {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
-        {page==='students' && <StudentsPage schoolYear={schoolYear} />}
+        {page==='students' && <StudentsPage schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} />}
         {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
         {page==='schedules' && <SchedulesPage />}
         {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
