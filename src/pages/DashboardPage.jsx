@@ -89,7 +89,7 @@ function StatTile({ label, value, hint, onClick }) {
       style={{
         padding: 20,
         cursor: onClick ? 'pointer' : 'default',
-        ...(onClick ? { border: 'none', background: 'none', textAlign: 'left', width: '100%', font: 'inherit', display: 'block' } : {}),
+        ...(onClick ? { textAlign: 'left', width: '100%', font: 'inherit', display: 'block' } : {}),
       }}
     >
       <div style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.inkMuted, marginBottom: 8 }}>{label}</div>
