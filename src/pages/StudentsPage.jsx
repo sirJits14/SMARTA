@@ -38,7 +38,7 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
     const en = enrollmentByStudent.get(s.id);
     if (status === UNASSIGNED) { if (en) return false; }
     else if (status && s.status !== status) return false;
-    if (gradeFilter === UNASSIGNED) return !en;
+    if (gradeFilter === UNASSIGNED || sectionFilter === UNASSIGNED) return !en;
     if (gradeFilter && (!en || String(en.gradeLevel) !== gradeFilter)) return false;
     if (sectionFilter && (!en || en.sectionId !== sectionFilter)) return false;
     return true;
@@ -70,9 +70,10 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
             </Sel>
           </div>
           <div style={{ minWidth: 160 }}>
-            <Sel value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} disabled={!gradeFilter || gradeFilter === UNASSIGNED}>
+            <Sel value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} disabled={gradeFilter === UNASSIGNED}>
               <option value="">All sections</option>
               {sectionsForGradeFilter.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              <option value={UNASSIGNED}>No Section Assigned</option>
             </Sel>
           </div>
         </div>
