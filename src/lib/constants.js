@@ -1,5 +1,6 @@
 export const GRADES = [7, 8, 9, 10, 11, 12];
 export const isSHS = (grade) => Number(grade) >= 11;
+export const UNASSIGNED = '__unassigned__';
 
 export const TRACKS = ['Academic', 'TVL', 'Sports', 'Arts and Design'];
 export const STRANDS = {

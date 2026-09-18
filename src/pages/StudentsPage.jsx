@@ -2,20 +2,18 @@ import { useMemo, useState } from 'react';
 import { useCollection } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { deleteStudent } from '../data/students.js';
-import { STUDENT_STATUS, GRADES } from '../lib/constants.js';
+import { STUDENT_STATUS, GRADES, UNASSIGNED } from '../lib/constants.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Sel, Card, Confirm, EmptyState } from '../components/ui.jsx';
 import StudentForm from './StudentForm.jsx';
 import ImportStudentsWizard from './ImportStudentsWizard.jsx';
 
-const UNASSIGNED = '__unassigned__';
-
-export default function StudentsPage({ schoolYear }) {
+export default function StudentsPage({ schoolYear, initialGradeFilter, initialStatus }) {
   const students = useCollection('students');
   const sections = useCollection('sections');
   const enrollments = useCollection('enrollments');
-  const [q, setQ] = useState(''); const [status, setStatus] = useState('');
-  const [gradeFilter, setGradeFilter] = useState(''); const [sectionFilter, setSectionFilter] = useState('');
+  const [q, setQ] = useState(''); const [status, setStatus] = useState(initialStatus || '');
+  const [gradeFilter, setGradeFilter] = useState(initialGradeFilter || ''); const [sectionFilter, setSectionFilter] = useState('');
   const [form, setForm] = useState(null); const [confirm, setConfirm] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 

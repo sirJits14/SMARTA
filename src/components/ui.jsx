@@ -59,9 +59,9 @@ export const EmptyState = ({ title, hint }) => (
 
 // --- Signature components -------------------------------------------------
 
-export const Card = ({ style, children, ...p }) => (
-  <div {...p} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius,
-    boxShadow: T.cardShadow, ...style }}>{children}</div>
+export const Card = ({ as: Tag = 'div', style, children, ...p }) => (
+  <Tag {...p} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius,
+    boxShadow: T.cardShadow, ...style }}>{children}</Tag>
 );
 
 // StatusPill: the attendance/status control. Renders as a real <button> when
