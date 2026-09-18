@@ -33,9 +33,8 @@ describe('ID card print layout', () => {
 
   it('generates the fixed A4 grid and compact card sizing', () => {
     expect(ID_CARD_PRINT_STYLES).toContain('grid-template-columns: repeat(8, 1fr);');
-    expect(ID_CARD_PRINT_STYLES).toContain('grid-template-rows: repeat(10, 1fr);');
+    expect(ID_CARD_PRINT_STYLES).toContain('grid-auto-rows: 27mm;');
     expect(ID_CARD_PRINT_STYLES).toContain('width: 194mm;');
-    expect(ID_CARD_PRINT_STYLES).toContain('height: 281mm;');
     expect(ID_CARD_PRINT_STYLES).toContain('gap: 1mm;');
     expect(ID_CARD_PRINT_STYLES).toContain('width: 16mm !important;');
     expect(ID_CARD_PRINT_STYLES).toMatch(
@@ -43,5 +42,21 @@ describe('ID card print layout', () => {
     );
     expect(ID_CARD_PRINT_STYLES).toContain('-webkit-line-clamp: 2;');
     expect(ID_CARD_PRINT_STYLES).toContain('.id-card-section { display: none !important; }');
+  });
+
+  it('never reserves a fixed full-page height for the sheet, so a partial roster does not overflow onto a spurious blank page', () => {
+    const sheetRuleMatch = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\s*\{\s*display: grid[^}]*\}/s);
+    expect(sheetRuleMatch).not.toBeNull();
+    expect(sheetRuleMatch[0]).not.toMatch(/height:\s*281mm/);
+    expect(sheetRuleMatch[0]).not.toMatch(/grid-template-rows/);
+
+    // A full 10-row sheet must still fit within the 281mm printable area
+    // (297mm A4 minus 8mm top/bottom @page margins), with a safety buffer
+    // so print engines don't round a flush-to-the-edge box onto a new page.
+    const rowHeightMatch = sheetRuleMatch[0].match(/grid-auto-rows:\s*([\d.]+)mm/);
+    expect(rowHeightMatch).not.toBeNull();
+    const rowHeightMm = Number(rowHeightMatch[1]);
+    const fullSheetHeightMm = rowHeightMm * ID_CARD_PRINT_LAYOUT.rows + 1 * (ID_CARD_PRINT_LAYOUT.rows - 1);
+    expect(fullSheetHeightMm).toBeLessThan(281);
   });
 });

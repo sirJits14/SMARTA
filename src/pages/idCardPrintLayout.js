@@ -1,5 +1,14 @@
 const columns = 8;
 const rows = 10;
+// Row height is intentionally shy of an even split of the 281mm printable
+// height (297mm A4 minus the 8mm top/bottom @page margins): a block sized to
+// *exactly* fill the printable area gives print engines zero rounding
+// tolerance, which reliably produces a spurious blank trailing page. A full
+// 10-row sheet at this height (270mm + 9 gaps of 1mm = 279mm) leaves a 2mm
+// buffer. Rows are sized with grid-auto-rows rather than a fixed sheet
+// height so a roster that doesn't fill a whole sheet only reserves the rows
+// it actually uses, instead of always claiming the full page height.
+const ROW_HEIGHT_MM = 27;
 
 export const ID_CARD_PRINT_LAYOUT = Object.freeze({
   columns,
@@ -26,9 +35,8 @@ export const ID_CARD_PRINT_STYLES = `
     .id-cards-sheet {
       display: grid !important;
       grid-template-columns: repeat(${ID_CARD_PRINT_LAYOUT.columns}, 1fr);
-      grid-template-rows: repeat(${ID_CARD_PRINT_LAYOUT.rows}, 1fr);
+      grid-auto-rows: ${ROW_HEIGHT_MM}mm;
       width: 194mm;
-      height: 281mm;
       gap: 1mm;
       overflow: hidden;
     }
