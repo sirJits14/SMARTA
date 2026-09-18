@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fullName, depedSort } from './roster.js';
+import { fullName, depedSort, alphabeticalSort } from './roster.js';
 
 describe('fullName', () => {
   it('formats "Last, First M."', () => {
@@ -24,6 +24,24 @@ describe('depedSort', () => {
     const input = [{ lastName:'B', firstName:'B', sex:'F' }, { lastName:'A', firstName:'A', sex:'M' }];
     const copy = [...input];
     depedSort(input);
+    expect(input).toEqual(copy);
+  });
+});
+
+describe('alphabeticalSort', () => {
+  it('orders purely alphabetically by last name then first name, ignoring sex', () => {
+    const input = [
+      { lastName: 'Santos', firstName: 'Maria', sex: 'F' },
+      { lastName: 'Bautista', firstName: 'Pedro', sex: 'M' },
+      { lastName: 'Aquino', firstName: 'Rosa', sex: 'F' },
+      { lastName: 'Bautista', firstName: 'Andres', sex: 'M' },
+    ];
+    expect(alphabeticalSort(input).map(s => s.firstName)).toEqual(['Rosa', 'Andres', 'Pedro', 'Maria']);
+  });
+  it('does not mutate input', () => {
+    const input = [{ lastName: 'B', firstName: 'B' }, { lastName: 'A', firstName: 'A' }];
+    const copy = [...input];
+    alphabeticalSort(input);
     expect(input).toEqual(copy);
   });
 });

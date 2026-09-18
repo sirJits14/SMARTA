@@ -12,3 +12,10 @@ export function depedSort(students) {
   const females = students.filter((s) => s.sex === 'F').sort(cmp);
   return [...males, ...females];
 }
+
+export function alphabeticalSort(students) {
+  return [...students].sort((a, b) =>
+    a.lastName.localeCompare(b.lastName, 'en', { sensitivity: 'base' }) ||
+    a.firstName.localeCompare(b.firstName, 'en', { sensitivity: 'base' })
+  );
+}
