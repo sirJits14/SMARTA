@@ -26,12 +26,14 @@ export function chunkIdCardsIntoSheets(items) {
 
 export const ID_CARD_PRINT_STYLES = `
   .id-cards-sheet { display: contents; }
+  .id-cards-print-only { display: none; }
   @media print {
-    .app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading { display: none !important; }
+    .app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading, .section-detail-modal-overlay { display: none !important; }
     .app-shell { grid-template-columns: 1fr !important; height: auto !important; overflow: visible !important; }
     main { padding: 0 !important; overflow: visible !important; }
     @page { size: A4; margin: 8mm; }
     .id-cards-grid { display: block !important; }
+    .id-cards-print-only { display: block !important; }
     .id-cards-sheet {
       display: grid !important;
       grid-template-columns: repeat(${ID_CARD_PRINT_LAYOUT.columns}, 1fr);
