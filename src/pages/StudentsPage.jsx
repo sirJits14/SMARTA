@@ -34,8 +34,10 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
 
   const rows = useMemo(() => depedSort(students.filter((s) => {
     const hit = `${s.lastName} ${s.firstName} ${s.lrn}`.toLowerCase().includes(q.toLowerCase());
-    if (!hit || (status && s.status !== status)) return false;
+    if (!hit) return false;
     const en = enrollmentByStudent.get(s.id);
+    if (status === UNASSIGNED) { if (en) return false; }
+    else if (status && s.status !== status) return false;
     if (gradeFilter === UNASSIGNED) return !en;
     if (gradeFilter && (!en || String(en.gradeLevel) !== gradeFilter)) return false;
     if (sectionFilter && (!en || en.sectionId !== sectionFilter)) return false;
@@ -57,6 +59,7 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
           <div style={{ minWidth: 160 }}>
             <Sel value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All statuses</option>{STUDENT_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+              <option value={UNASSIGNED}>No Section Assigned</option>
             </Sel>
           </div>
           <div style={{ minWidth: 140 }}>
