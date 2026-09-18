@@ -34,8 +34,8 @@ export const Field = ({ label, error, children }) => (
     {error && <span style={{ ...font, display: 'block', color: T.absent, fontSize: 11, marginTop: 4 }}>{error}</span>}
   </label>
 );
-export const Modal = ({ children, onClose, width = 520 }) => (
-  <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,51,0.45)',
+export const Modal = ({ children, onClose, width = 520, overlayClassName = '' }) => (
+  <div onClick={onClose} className={overlayClassName} style={{ position: 'fixed', inset: 0, background: 'rgba(30,27,51,0.45)',
     display: 'grid', placeItems: 'center', zIndex: 50 }}>
     <div onClick={(e) => e.stopPropagation()} style={{ background: T.surface, borderRadius: T.radius, padding: 24,
       width, maxWidth: '92vw', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 50px rgba(30,27,51,0.25)' }}>{children}</div>

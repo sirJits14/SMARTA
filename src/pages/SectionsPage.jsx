@@ -2,8 +2,12 @@ import { useMemo, useState } from 'react';
 import { useCollection } from '../hooks/useCollection.js';
 import { createSection, updateSection, deleteSection } from '../data/sections.js';
 import { GRADES, isSHS, TRACKS, STRANDS } from '../lib/constants.js';
+import { alphabeticalSort, depedSort } from '../lib/roster.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
+import StudentForm from './StudentForm.jsx';
+import SectionDetailModal from './SectionDetailModal.jsx';
+import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
 
 function SectionForm({ editing, schoolYear, schedules, onClose }) {
   const [f, setF] = useState(editing || { gradeLevel: '', name: '', track: '', strand: '', adviserName: '', scheduleId: '', schoolYear });
@@ -62,6 +66,7 @@ export default function SectionsPage({ schoolYear }) {
   const sections = useCollection('sections');
   const schedules = useCollection('schedules');
   const enrollments = useCollection('enrollments');
+  const students = useCollection('students');
   const scheduleById = useMemo(() => new Map(schedules.map((s) => [s.id, s])), [schedules]);
   const enrolledCountBySection = useMemo(() => {
     const m = new Map();
@@ -70,8 +75,20 @@ export default function SectionsPage({ schoolYear }) {
     });
     return m;
   }, [enrollments, schoolYear]);
+  const enrolledStudentIdsBySection = useMemo(() => {
+    const m = new Map();
+    enrollments.forEach((e) => {
+      if (e.status === 'enrolled') {
+        if (!m.has(e.sectionId)) m.set(e.sectionId, new Set());
+        m.get(e.sectionId).add(e.studentId);
+      }
+    });
+    return m;
+  }, [enrollments]);
   const [form, setForm] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [detailSection, setDetailSection] = useState(null);
+  const [editingStudent, setEditingStudent] = useState(null);
   const rows = useMemo(() =>
     sections
       .filter((s) => s.schoolYear === schoolYear)
@@ -90,60 +107,79 @@ export default function SectionsPage({ schoolYear }) {
   const [selectedGrade, setSelectedGrade] = useState(null);
   const activeGrade = groups.some(([g]) => g === selectedGrade) ? selectedGrade : (groups[0]?.[0] ?? null);
   const activeList = groups.find(([g]) => g === activeGrade)?.[1] || [];
+  const detailRoster = useMemo(() => {
+    if (!detailSection) return [];
+    const ids = enrolledStudentIdsBySection.get(detailSection.id) || new Set();
+    return students.filter((s) => ids.has(s.id));
+  }, [detailSection, enrolledStudentIdsBySection, students]);
+  const detailRosterAlpha = useMemo(() => alphabeticalSort(detailRoster), [detailRoster]);
+  const detailRosterDeped = useMemo(() => depedSort(detailRoster), [detailRoster]);
   return (
     <div>
-      <div style={S.plate}>
-        <h1 style={S.h1}>Sections</h1>
-        <Btn onClick={() => setForm({ schoolYear })}>Add section</Btn>
-      </div>
-      {rows.length === 0 ? (
-        <Card style={{ padding: 20 }}>
-          <EmptyState title="No sections yet" hint={`Add your first section for SY ${schoolYear} with the button above.`} />
-        </Card>
-      ) : (
-        <>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
-            {groups.map(([grade, list]) => {
-              const active = grade === activeGrade;
-              return (
-                <button
-                  key={grade}
-                  onClick={() => setSelectedGrade(grade)}
-                  style={{
-                    fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
-                    cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-                    background: active ? T.primary : 'transparent',
-                    color: active ? '#fff' : T.inkMuted,
-                    transition: 'background 0.15s ease-out, color 0.15s ease-out',
-                  }}
-                >Grade {grade} ({list.length})</button>
-              );
-            })}
-          </div>
-          <Card style={{ padding: 0, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead><tr style={S.thead}>
-                {['Section', 'Strand', 'Adviser', 'Schedule', 'Enrolled', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
-              </tr></thead>
-              <tbody>{activeList.map((s) => (
-                <tr key={s.id}>
-                  <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
-                  <td style={S.td}>{s.strand || '—'}</td>
-                  <td style={S.td}>{s.adviserName || '—'}</td>
-                  <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
-                  <td style={{ ...S.td, ...T.num }}>{enrolledCountBySection.get(s.id) || 0}</td>
-                  <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
-                    <Btn variant="ghost" onClick={() => setConfirm(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
-                  </td>
-                </tr>))}
-              </tbody>
-            </table>
+      <div className="sections-page-chrome">
+        <div style={S.plate}>
+          <h1 style={S.h1}>Sections</h1>
+          <Btn onClick={() => setForm({ schoolYear })}>Add section</Btn>
+        </div>
+        {rows.length === 0 ? (
+          <Card style={{ padding: 20 }}>
+            <EmptyState title="No sections yet" hint={`Add your first section for SY ${schoolYear} with the button above.`} />
           </Card>
-        </>
-      )}
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+              {groups.map(([grade, list]) => {
+                const active = grade === activeGrade;
+                return (
+                  <button
+                    key={grade}
+                    onClick={() => setSelectedGrade(grade)}
+                    style={{
+                      fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+                      cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
+                      background: active ? T.primary : 'transparent',
+                      color: active ? '#fff' : T.inkMuted,
+                      transition: 'background 0.15s ease-out, color 0.15s ease-out',
+                    }}
+                  >Grade {grade} ({list.length})</button>
+                );
+              })}
+            </div>
+            <Card style={{ padding: 0, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr style={S.thead}>
+                  {['Section', 'Strand', 'Adviser', 'Schedule', 'Enrolled', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+                </tr></thead>
+                <tbody>{activeList.map((s) => (
+                  <tr key={s.id} onClick={() => setDetailSection(s)} style={{ cursor: 'pointer' }}>
+                    <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
+                    <td style={S.td}>{s.strand || '—'}</td>
+                    <td style={S.td}>{s.adviserName || '—'}</td>
+                    <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
+                    <td style={{ ...S.td, ...T.num }}>{enrolledCountBySection.get(s.id) || 0}</td>
+                    <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setForm(s); }} style={{ marginRight: 6 }}>Edit</Btn>
+                      <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setConfirm(s); }} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                    </td>
+                  </tr>))}
+                </tbody>
+              </table>
+            </Card>
+          </>
+        )}
+      </div>
       {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
+      {detailSection && (
+        <SectionDetailModal
+          section={detailSection}
+          roster={detailRosterAlpha}
+          onClose={() => setDetailSection(null)}
+          onEditStudent={(s) => setEditingStudent(s)}
+        />
+      )}
+      {detailSection && <IdCardsPrintSheets section={detailSection} roster={detailRosterDeped} printOnly />}
+      {editingStudent && <StudentForm students={students} editing={editingStudent} onClose={() => setEditingStudent(null)} />}
     </div>
   );
 }
