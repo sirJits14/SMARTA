@@ -4,18 +4,17 @@ export function fullName(s) {
   return `${s.lastName}, ${s.firstName}${mi}${ext}`;
 }
 
-export function depedSort(students) {
-  const cmp = (a, b) =>
-    a.lastName.localeCompare(b.lastName, 'en', { sensitivity: 'base' }) ||
+function byLastThenFirstName(a, b) {
+  return a.lastName.localeCompare(b.lastName, 'en', { sensitivity: 'base' }) ||
     a.firstName.localeCompare(b.firstName, 'en', { sensitivity: 'base' });
-  const males = students.filter((s) => s.sex === 'M').sort(cmp);
-  const females = students.filter((s) => s.sex === 'F').sort(cmp);
+}
+
+export function depedSort(students) {
+  const males = students.filter((s) => s.sex === 'M').sort(byLastThenFirstName);
+  const females = students.filter((s) => s.sex === 'F').sort(byLastThenFirstName);
   return [...males, ...females];
 }
 
 export function alphabeticalSort(students) {
-  return [...students].sort((a, b) =>
-    a.lastName.localeCompare(b.lastName, 'en', { sensitivity: 'base' }) ||
-    a.firstName.localeCompare(b.firstName, 'en', { sensitivity: 'base' })
-  );
+  return [...students].sort(byLastThenFirstName);
 }

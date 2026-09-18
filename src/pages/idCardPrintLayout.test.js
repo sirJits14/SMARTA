@@ -61,10 +61,10 @@ describe('ID card print layout', () => {
   });
 
   it('reveals the print-only wrapper only under @media print, and hides the section-detail modal overlay when printing', () => {
-    expect(ID_CARD_PRINT_STYLES).toMatch(/\.id-cards-print-only\s*\{\s*display:\s*none;\s*\}/);
+    expect(ID_CARD_PRINT_STYLES).toMatch(/\.id-cards-print-only\s*\{\s*display:\s*none\s*!important;\s*\}/);
     expect(ID_CARD_PRINT_STYLES).toContain('.id-cards-print-only { display: block !important; }');
     expect(ID_CARD_PRINT_STYLES).toMatch(
-      /\.app-sidebar,\s*\.app-topbar,\s*\.id-cards-controls,\s*\.id-cards-heading,\s*\.section-detail-modal-overlay\s*\{\s*display:\s*none\s*!important;\s*\}/,
+      /\.app-sidebar,\s*\.app-topbar,\s*\.id-cards-controls,\s*\.id-cards-heading,\s*\.section-detail-modal-overlay,\s*\.sections-page-chrome\s*\{\s*display:\s*none\s*!important;\s*\}/,
     );
   });
 });

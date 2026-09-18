@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { fullName } from '../lib/roster.js';
 import { T } from '../styles.js';
@@ -37,7 +37,7 @@ function IdCard({ student, section }) {
 }
 
 export default function IdCardsPrintSheets({ roster, section, printOnly = false }) {
-  const sheets = chunkIdCardsIntoSheets(roster);
+  const sheets = useMemo(() => chunkIdCardsIntoSheets(roster), [roster]);
   const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only' : 'id-cards-grid';
 
   return (
