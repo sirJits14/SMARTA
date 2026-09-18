@@ -61,7 +61,15 @@ function SectionForm({ editing, schoolYear, schedules, onClose }) {
 export default function SectionsPage({ schoolYear }) {
   const sections = useCollection('sections');
   const schedules = useCollection('schedules');
+  const enrollments = useCollection('enrollments');
   const scheduleById = useMemo(() => new Map(schedules.map((s) => [s.id, s])), [schedules]);
+  const enrolledCountBySection = useMemo(() => {
+    const m = new Map();
+    enrollments.forEach((e) => {
+      if (e.schoolYear === schoolYear && e.status === 'enrolled') m.set(e.sectionId, (m.get(e.sectionId) || 0) + 1);
+    });
+    return m;
+  }, [enrollments, schoolYear]);
   const [form, setForm] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const rows = useMemo(() =>
@@ -115,7 +123,7 @@ export default function SectionsPage({ schoolYear }) {
           <Card style={{ padding: 0, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr style={S.thead}>
-                {['Section', 'Strand', 'Adviser', 'Schedule', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+                {['Section', 'Strand', 'Adviser', 'Schedule', 'Enrolled', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
               </tr></thead>
               <tbody>{activeList.map((s) => (
                 <tr key={s.id}>
@@ -123,6 +131,7 @@ export default function SectionsPage({ schoolYear }) {
                   <td style={S.td}>{s.strand || '—'}</td>
                   <td style={S.td}>{s.adviserName || '—'}</td>
                   <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
+                  <td style={{ ...S.td, ...T.num }}>{enrolledCountBySection.get(s.id) || 0}</td>
                   <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
                     <Btn variant="ghost" onClick={() => setConfirm(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
