@@ -4,3 +4,13 @@ dist
 .env.local
 .firebase
 .worktrees/
+.emulator-data/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+functions/node_modules
+parent/node_modules
+parent/dist
+parent/.env
+parent/.env.local
