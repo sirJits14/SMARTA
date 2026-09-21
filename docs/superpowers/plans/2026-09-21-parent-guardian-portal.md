@@ -442,7 +442,7 @@ Edit `package.json` `scripts` and `devDependencies`:
   "deploy": "npm run build && firebase deploy --only hosting:sims"
 },
 "devDependencies": {
-  "@firebase/rules-unit-testing": "^4.0.0",
+  "@firebase/rules-unit-testing": "^5.0.2",
   "@vitejs/plugin-react": "^6.0.1",
   "firebase-tools": "^14.0.0",
   "vite": "^8.0.12",
