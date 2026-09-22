@@ -1,6 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRoute } from './hooks/useRoute.js';
 import { useAuth } from './hooks/useAuth.js';
+import { useDoc } from './hooks/useDoc.js';
+import { callable } from './firebase.js';
 import Shell from './components/Shell.jsx';
 import { Spinner, EmptyState } from './components/ui.jsx';
 import S from './strings.js';
@@ -23,6 +25,10 @@ const CONSENT_KEY = 'bnhs-parent-consent';
 export default function App() {
   const { route, navigate } = useRoute();
   const { user, profile } = useAuth();
+  // Only subscribed once a profile exists -- Consent.jsx reads this same
+  // doc itself for the pre-activation flow, so this is purely for the
+  // already-linked re-consent gate below.
+  const portal = useDoc(profile ? 'settings/parent_portal' : null).data;
   // Verify.jsx confirms email verification client-side (user.reload() +
   // a forced getIdToken(true)) without a page reload -- a hard navigation
   // here would race the SDK's async write of the refreshed token to
@@ -48,6 +54,20 @@ export default function App() {
   if (!user) return <SignIn />;
   if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate}><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Shell>;
   if (profile === undefined) return <Spinner label={S.loading} />;
+
+  // Re-consent gate: an already-linked guardian (profile exists) whose
+  // stored consentVersion has fallen behind the live
+  // settings/parent_portal.consentVersion (staff raised it in Portal
+  // Settings) is blocked here until they re-accept -- spec §7, "Re-shown
+  // when consentVersion changes". activateCode's own reconciliation only
+  // runs on a NEW activation, so this is the only path that catches a
+  // guardian who never activates again. portal === undefined means still
+  // loading; wait for it rather than flashing the app first.
+  if (profile) {
+    if (portal === undefined) return <Spinner label={S.loading} />;
+    const liveConsentVersion = portal?.consentVersion ?? 1;
+    if (profile.consentVersion !== liveConsentVersion) return <Shell route={route} navigate={navigate}><Suspense fallback={<Spinner label={S.loading} />}><Consent user={user} profile={profile} route={route} navigate={navigate} onAccepted={() => { callable('acceptConsentFn')({}).catch(() => {}); }} /></Suspense></Shell>;
+  }
 
   // First-time flow: consent (stored locally until the first activation
   // records it server-side) → activation. Deep links to /activate?c= survive.

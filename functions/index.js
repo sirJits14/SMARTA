@@ -6,7 +6,7 @@ import { defineString } from 'firebase-functions/params';
 import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
 import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js';
-import { issueActivationCodes, revokeCode, activateCode } from './src/handlers/codes.js';
+import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
 import { registerKiosk, deactivateKiosk } from './src/handlers/kiosks.js';
 import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
@@ -37,6 +37,7 @@ const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
 export const issueActivationCodesFn = staffCall(issueActivationCodes);
 export const revokeCodeFn = staffCall(revokeCode);
 export const activateCodeFn = guardianCall(activateCode);
+export const acceptConsentFn = guardianCall(acceptConsent);
 
 export const requestAccessFn = guardianCall(requestAccess);
 export const resolveAccessRequestFn = staffCall(resolveAccessRequest);

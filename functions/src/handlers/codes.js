@@ -119,3 +119,17 @@ export async function activateCode(ctx, data) {
   logEvent('activation_succeeded', { uid, studentId });
   return { studentId, displayName: displayName(student), sectionLabel: sectionLabel(section) };
 }
+
+// Guardian. activateCode only reconciles consentVersion when a NEW learner
+// is activated, so an already-linked guardian who never activates again
+// would never re-consent after settings/parent_portal.consentVersion is
+// raised (spec §7, "Re-shown when consentVersion changes"). This is the
+// path for that case. The live version is read fresh here -- a client-
+// submitted version is never trusted for this write.
+export async function acceptConsent(ctx) {
+  const { db, uid } = ctx;
+  const portal = (await db.doc('settings/parent_portal').get()).data() || {};
+  const consentVersion = portal.consentVersion ?? 1;
+  await db.doc(`guardians/${uid}`).set({ consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion }, { merge: true });
+  return { consentVersion };
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { db, clearAll, seedSchool } from './helpers.js';
-import { issueActivationCodes, revokeCode, activateCode } from '../../src/handlers/codes.js';
+import { db, clearAll, seedSchool, ts } from './helpers.js';
+import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from '../../src/handlers/codes.js';
 import { hashCode } from '../../src/lib/activationCode.js';
 
 const NOW = new Date('2026-09-21T08:00:00+08:00');
@@ -81,5 +81,29 @@ describe('activateCode', () => {
     const code2 = await issue();
     await activateCode(guardian(), { code: code2, relationship: 'Mother', consentVersion: 1 });
     expect((await db().doc('guardian_links/gNew_S1').get()).data().status).toBe('active');
+  });
+});
+
+describe('acceptConsent', () => {
+  // seedSchool() links gA to S1 already (an "already-linked" guardian) with
+  // no reconsent flow having ever touched their profile.
+  it('updates the caller to the CURRENT live consentVersion, ignoring anything the client sent', async () => {
+    await db().doc('guardians/gA').set({ consentVersion: 1, consentAcceptedAt: ts('2026-01-01T00:00:00Z') }, { merge: true });
+    await db().doc('settings/parent_portal').set({ consentVersion: 3 }, { merge: true });
+    const r = await acceptConsent(guardian('gA'), { consentVersion: 999, uid: 'gB' });
+    expect(r).toEqual({ consentVersion: 3 });
+    const profile = (await db().doc('guardians/gA').get()).data();
+    expect(profile.consentVersion).toBe(3);
+    expect(profile.consentAcceptedAt.toMillis()).toBeGreaterThan(Date.parse('2026-01-01T00:00:00Z'));
+  });
+  it('only ever writes the caller\'s own guardians/{uid} doc', async () => {
+    await db().doc('settings/parent_portal').set({ consentVersion: 2 }, { merge: true });
+    await acceptConsent(guardian('gA'));
+    expect((await db().doc('guardians/gB').get()).data().consentVersion).toBeUndefined();
+  });
+  it('defaults to consentVersion 1 when settings/parent_portal has none set', async () => {
+    await db().doc('settings/parent_portal').set({ notificationsPaused: false });
+    const r = await acceptConsent(guardian('gA'));
+    expect(r).toEqual({ consentVersion: 1 });
   });
 });
