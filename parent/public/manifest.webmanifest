@@ -1,0 +1,13 @@
+{
+  "name": "BNHS Learner Records",
+  "short_name": "BNHS Records",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F4FC",
+  "theme_color": "#5B4FE8",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

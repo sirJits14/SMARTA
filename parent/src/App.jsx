@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { useRoute } from './hooks/useRoute.js';
 import { useAuth } from './hooks/useAuth.js';
 import Shell from './components/Shell.jsx';
 import { Spinner, EmptyState } from './components/ui.jsx';
 import S from './strings.js';
+import { onForegroundMessage } from './lib/notifications.js';
 import SignIn from './screens/SignIn.jsx';
 import Verify from './screens/Verify.jsx';
 import Consent from './screens/Consent.jsx';
@@ -19,6 +21,13 @@ const CONSENT_KEY = 'bnhs-parent-consent';
 export default function App() {
   const { route, navigate } = useRoute();
   const { user, profile } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    let off = () => {};
+    onForegroundMessage(() => navigate('/inbox')).then((unsub) => { off = unsub; });
+    return () => off();
+  }, [user, navigate]);
 
   if (user === undefined) return <Spinner label={S.loading} />;
   if (!user) return <SignIn />;
