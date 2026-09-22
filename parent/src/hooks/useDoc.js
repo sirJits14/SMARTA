@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase.js';
+import { db, appCheckReady } from '../firebase.js';
 
 export function useDoc(path) {
   const [state, setState] = useState({ data: undefined, error: null });
   useEffect(() => {
     if (!path) { setState({ data: undefined, error: null }); return; }
-    return onSnapshot(doc(db, path),
-      { includeMetadataChanges: true },
-      (s) => setState({ data: s.exists() ? { id: s.id, ...s.data() } : null, error: null, fromCache: s.metadata.fromCache }),
-      (e) => setState({ data: null, error: e.code || 'error' }));
+    // Wait for App Check to attach before the first listener subscribes --
+    // a permission-denied from subscribing too early never self-heals on
+    // its own once App Check is ready (see firebase.js's appCheckReady).
+    let cancelled = false; let unsub = () => {};
+    appCheckReady.then(() => {
+      if (cancelled) return;
+      unsub = onSnapshot(doc(db, path),
+        { includeMetadataChanges: true },
+        (s) => setState({ data: s.exists() ? { id: s.id, ...s.data() } : null, error: null, fromCache: s.metadata.fromCache }),
+        (e) => setState({ data: null, error: e.code || 'error' }));
+    });
+    return () => { cancelled = true; unsub(); };
   }, [path]);
   return state;
 }
@@ -20,7 +28,12 @@ export function useQuery(buildQuery, deps) {
   useEffect(() => {
     const q = buildQuery();
     if (!q) { setState({ rows: undefined, error: null }); return; }
-    return onSnapshot(q, (s) => setState({ rows: s.docs.map((d) => ({ id: d.id, ...d.data() })), error: null }), (e) => setState({ rows: [], error: e.code || 'error' }));
+    let cancelled = false; let unsub = () => {};
+    appCheckReady.then(() => {
+      if (cancelled) return;
+      unsub = onSnapshot(q, (s) => setState({ rows: s.docs.map((d) => ({ id: d.id, ...d.data() })), error: null }), (e) => setState({ rows: [], error: e.code || 'error' }));
+    });
+    return () => { cancelled = true; unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return state;

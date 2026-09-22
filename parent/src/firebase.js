@@ -13,14 +13,18 @@ export const app = initializeApp({
 
 if (import.meta.env.VITE_APPCHECK_DEBUG_TOKEN) self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
 // firebase/app-check pulls in the reCAPTCHA client; load it in the background
-// instead of blocking the initial chunk on it. initializeAppCheck() itself is
-// fire-and-forget (nothing downstream awaits its return value), so a brief
-// async hop before it runs is behaviorally transparent.
-if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
-  import('firebase/app-check').then(({ initializeAppCheck, ReCaptchaV3Provider }) => {
-    initializeAppCheck(app, { provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true });
-  });
-}
+// instead of blocking the initial chunk on it (first paint must not wait on
+// the reCAPTCHA download). `appCheckReady` resolves once initializeAppCheck()
+// has actually run (or immediately, if no site key is configured), so a
+// listener call site can `await appCheckReady` right before subscribing --
+// closing the race where a Firestore permission-denied fires before App
+// Check has attached and never self-heals once it does. This adds at most
+// one async hop before a listener attaches, never before the app renders.
+export const appCheckReady = import.meta.env.VITE_RECAPTCHA_SITE_KEY
+  ? import('firebase/app-check').then(({ initializeAppCheck, ReCaptchaV3Provider }) => {
+      initializeAppCheck(app, { provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true });
+    })
+  : Promise.resolve();
 
 export const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }) });
 export const auth = getAuth(app);
