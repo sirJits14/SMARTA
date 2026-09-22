@@ -6,8 +6,8 @@ import { Btn, Inp, Field, Card } from '../../components/ui.jsx';
 
 export default function PortalSettingsTab({ me }) {
   const portal = useDoc('settings/parent_portal');
-  const [note, setNote] = useState(''); const [announcement, setAnnouncement] = useState(''); const [url, setUrl] = useState('');
-  useEffect(() => { if (portal) { setAnnouncement(portal.announcement || ''); setUrl(portal.privacyNoticeUrl || ''); } }, [portal]);
+  const [note, setNote] = useState(''); const [announcement, setAnnouncement] = useState(''); const [url, setUrl] = useState(''); const [consentVersion, setConsentVersion] = useState(1);
+  useEffect(() => { if (portal) { setAnnouncement(portal.announcement || ''); setUrl(portal.privacyNoticeUrl || ''); setConsentVersion(portal.consentVersion ?? 1); } }, [portal]);
   const paused = portal?.notificationsPaused === true;
 
   const togglePause = () => updatePortalSettings(paused
@@ -28,8 +28,8 @@ export default function PortalSettingsTab({ me }) {
         <h2 style={S.h2}>Portal banner and privacy notice</h2>
         <Field label="Announcement shown to all parents (blank = none)"><Inp value={announcement} onChange={(e) => setAnnouncement(e.target.value)} /></Field>
         <Field label="Privacy notice URL"><Inp value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
-        <Field label="Consent version (raise it to require every parent to re-accept)"><Inp type="number" value={portal?.consentVersion ?? 1} onChange={(e) => updatePortalSettings({ consentVersion: Number(e.target.value) }, me)} style={{ width: 120 }} /></Field>
-        <Btn onClick={() => updatePortalSettings({ announcement: announcement.trim(), privacyNoticeUrl: url.trim() }, me)}>Save</Btn>
+        <Field label="Consent version (raise it to require every parent to re-accept)"><Inp type="number" value={consentVersion} onChange={(e) => setConsentVersion(Number(e.target.value))} style={{ width: 120 }} /></Field>
+        <Btn onClick={() => updatePortalSettings({ announcement: announcement.trim(), privacyNoticeUrl: url.trim(), consentVersion }, me)}>Save</Btn>
       </Card>
     </>
   );
