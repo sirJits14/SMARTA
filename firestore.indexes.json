@@ -1,0 +1,40 @@
+{
+  "indexes": [
+    { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "guardianUid", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "scan_events", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "scannedDate", "order": "ASCENDING" }, { "fieldPath": "deviceId", "order": "ASCENDING" } ] },
+    { "collectionGroup": "reports", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "reports", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "guardianUid", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "access_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "access_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "guardianUid", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "activation_codes", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" } ] },
+    { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "revokedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiredAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "reports", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "resolvedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "access_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "resolvedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "enrollments", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] }
+  ],
+  "fieldOverrides": [
+    { "collectionGroup": "devices", "fieldPath": "refreshedAt", "indexes": [
+      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] },
+    { "collectionGroup": "devices", "fieldPath": "disabledAt", "indexes": [
+      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] },
+    { "collectionGroup": "inbox", "fieldPath": "createdAt", "indexes": [
+      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] },
+    { "collectionGroup": "events", "fieldPath": "scannedDate", "indexes": [
+      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] }
+  ]
+}

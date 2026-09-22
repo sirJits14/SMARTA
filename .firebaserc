@@ -1,1 +1,11 @@
-{ "projects": { "default": "bnhs-sims" } }
+{
+  "projects": { "default": "bnhs-sims" },
+  "targets": {
+    "bnhs-sims": {
+      "hosting": {
+        "sims": ["bnhs-sims"],
+        "parent": ["bnhs-parent"]
+      }
+    }
+  }
+}

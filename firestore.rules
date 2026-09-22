@@ -2,61 +2,134 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // A signed-in user is not automatically staff. The registrar UI
-    // (Login.jsx / App.jsx) checks for a users/{email} profile and signs
-    // out anyone without one — but only in the browser, so a direct
-    // Firestore call bypasses it. This makes it the server's rule.
+    // ---------- identities (spec §8) ----------
+    function signedIn() { return request.auth != null; }
+    function notAnonymous() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    // Staff = has a users/{email} profile. Provisioned by hand; never client-written.
     function isStaff() {
-      return request.auth != null
-        && request.auth.token.email != null
-        && exists(
-             /databases/$(database)/documents/users/$(request.auth.token.email.lower())
-           );
+      return signedIn() && request.auth.token.email != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower()));
+    }
+    // Kiosk = a per-device account allow-listed (and active) in kiosks/{uid}.
+    function kioskDoc() { return get(/databases/$(database)/documents/kiosks/$(request.auth.uid)); }
+    function isKiosk() {
+      return signedIn() && exists(/databases/$(database)/documents/kiosks/$(request.auth.uid))
+        && kioskDoc().data.active == true;
+    }
+    // Guardian = a real (non-anonymous) account with a verified email.
+    function isGuardian() { return notAnonymous() && request.auth.token.email_verified == true; }
+    function own(uid) { return signedIn() && request.auth.uid == uid; }
+    function hasLink(studentId) {
+      return isGuardian()
+        && get(/databases/$(database)/documents/guardian_links/$(request.auth.uid + '_' + studentId)).data.status == 'active';
+    }
+    function bounded(n) { return request.query.limit <= n; }
+    function affectedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
-    // ---- IMPORTANT: why reads below are open to any signed-in caller ----
-    // The student kiosk (bnhs-student-kiosk) signs in ANONYMOUSLY and then
-    // subscribes to the WHOLE students/enrollments/sections/schedules
-    // collections to resolve a scanned LRN in the browser. So these reads
-    // must stay open to any authenticated caller, which includes any
-    // anonymous session — i.e. anyone on the internet. That roster-read
-    // exposure is NOT closed by these rules and cannot be while the kiosk
-    // reads the roster anonymously. See TODO(kiosk-identity) below; closing
-    // it is an architectural change to the kiosk, not a rules tweak.
-    //
-    // What these rules DO close, today, with no risk to the kiosk:
-    //   * only staff can WRITE/DELETE the roster (anon could before);
-    //   * user account records are staff-read-only and client-write-never.
+    // ---------- roster (staff + kiosk only; the anonymous public is gone) ----------
+    match /students/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
+    match /enrollments/{id} { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
+    match /sections/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
+    match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
+    match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
+    match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isStaff(); }
+    match /users/{id}       { allow read: if isStaff(); allow write: if false; }
 
-    match /students/{id}     { allow read: if request.auth != null; allow write: if isStaff(); }
-    match /enrollments/{id}  { allow read: if request.auth != null; allow write: if isStaff(); }
-    match /sections/{id}     { allow read: if request.auth != null; allow write: if isStaff(); }
-    match /schedules/{id}    { allow read: if request.auth != null; allow write: if isStaff(); }
-    match /settings/{id}     { allow read: if request.auth != null; allow write: if isStaff(); }
+    // Confirmed attendance. Staff edit freely; the kiosk merges only its known fields.
+    match /student_attendance/{id} {
+      allow read: if isStaff() || isKiosk();
+      allow write: if isStaff()
+        || (isKiosk() && request.resource.data.keys().hasOnly(
+             ['sectionId', 'date', 'schoolYear', 'marks', 'timeIn', 'timeOut', 'rosterInitialized', 'updatedAt']));
+    }
 
-    // Accounts are provisioned by hand; no client writes here, staff included.
-    match /users/{id}        { allow read: if isStaff(); allow write: if false; }
+    // ---------- kiosks ----------
+    match /kiosks/{uid} {
+      allow read: if isStaff() || (own(uid) && resource.data.active == true);
+      allow create, delete: if false;                       // registerKiosk / deactivateKiosk callables
+      allow update: if own(uid) && affectedOnly(['lastSeenAt']);
+    }
 
-    // The kiosk both reads and writes attendance anonymously, so this stays
-    // open to any authenticated caller. Residual risk: an anonymous caller
-    // can forge or wipe attendance. Closing this needs the same kiosk
-    // identity work as the roster read.
-    match /student_attendance/{id} { allow read, write: if request.auth != null; }
+    // ---------- raw scan log (append-only) ----------
+    match /scan_events/{id} {
+      allow read: if isStaff();
+      allow create: if isKiosk()
+        && id.split('_')[0] == request.auth.uid
+        && request.resource.data.keys().hasOnly(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
+             'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source'])
+        && request.resource.data.keys().hasAll(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
+             'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source'])
+        && request.resource.data.deviceId == request.auth.uid
+        && request.resource.data.source == 'kiosk'
+        && request.resource.data.kind in ['in', 'out']
+        && request.resource.data.studentId is string
+        && request.resource.data.sectionId is string
+        && request.resource.data.schoolYear is string
+        && request.resource.data.scannedAt is timestamp
+        && request.resource.data.scannedDate is string
+        && request.resource.data.scannedTime is string
+        && request.resource.data.receivedAt == request.time;
+      allow update, delete: if false;
+    }
 
-    // Anything not matched above is denied by default.
+    // ---------- parent-facing projections (Functions write; guardians read via link) ----------
+    match /learners/{studentId} {
+      allow get: if hasLink(studentId) || isStaff();
+      allow list: if isStaff();
+      allow write: if false;
+      match /events/{eventId} {
+        allow get: if hasLink(studentId) || isStaff();
+        allow list: if (hasLink(studentId) && bounded(50)) || isStaff();
+        allow write: if false;
+      }
+    }
 
-    // TODO(kiosk-identity): the roster-read and attendance-write exposures
-    // both stem from the kiosk using signInAnonymously (bnhs-student-kiosk
-    // src/firebase.js). Two ways to close them, either of which then lets
-    // these rules distinguish the real kiosk from the anonymous public:
-    //   A. Move the LRN lookup to a Cloud Function so the kiosk needs NO
-    //      roster read at all; students/enrollments become isStaff()-only.
-    //      Best: the roster never leaves the server.
-    //   B. Sign the kiosk in with a custom token carrying { kiosk: true },
-    //      minted by a small backend, then gate roster reads and attendance
-    //      writes on isStaff() || request.auth.token.kiosk == true, and deny
-    //      the anonymous public entirely.
-    // Both are real changes to the kiosk app; pick one in a separate design
-    // pass before relying on this data being private.
+    // ---------- guardians ----------
+    match /guardians/{uid} {
+      allow read: if own(uid) || isStaff();
+      allow create, delete: if false;
+      allow update: if own(uid) && affectedOnly(['notificationsEnabled', 'displayName', 'lastOpenedAt']);
+
+      match /devices/{tokenHash} {
+        allow read: if own(uid);
+        allow create, update: if own(uid)
+          && request.resource.data.keys().hasOnly(['token', 'platform', 'createdAt', 'refreshedAt', 'enabled', 'failureCount'])
+          && request.resource.data.token is string && request.resource.data.token.size() < 4096
+          && request.resource.data.enabled is bool;
+        allow delete: if own(uid);
+      }
+      match /inbox/{id} {
+        allow get: if own(uid);
+        allow list: if own(uid) && bounded(50);
+        allow update: if own(uid) && affectedOnly(['readAt']);
+        allow create, delete: if false;
+      }
+    }
+
+    match /guardian_links/{id} {
+      allow get: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow write: if false;
+    }
+
+    // ---------- staff-only records written by Functions ----------
+    match /activation_codes/{id} { allow read: if isStaff(); allow write: if false; }
+    match /audit_log/{id}        { allow read: if isStaff(); allow write: if false; }
+    match /rate_limits/{id}      { allow read, write: if false; }
+
+    match /access_requests/{id} {
+      allow get: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow write: if false;                                // requestAccess / resolveAccessRequest callables
+    }
+    match /reports/{id} {
+      allow get: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow write: if false;                                // submitReport / resolveReport callables
+    }
   }
 }

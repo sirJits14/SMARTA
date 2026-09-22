@@ -1,0 +1,21 @@
+{
+  "name": "bnhs-sims-functions",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "scripts": {
+    "pretest": "node ../scripts/syncShared.mjs",
+    "test": "vitest run src",
+    "pretest:emulator": "node ../scripts/syncShared.mjs",
+    "test:emulator": "vitest run test/emulator --no-file-parallelism",
+    "serve": "node ../scripts/syncShared.mjs && firebase emulators:start --only functions,firestore,auth,pubsub"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}
