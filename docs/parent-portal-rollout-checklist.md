@@ -40,10 +40,10 @@ outcome is recorded in this file with the date and who verified it.
 - [ ] Exit: adviser confirms the handout worked; measured reads/writes per active guardian × 8,000 projects to ≤ PHP 600/month; registrar backlog (open requests + reports) ≤ 2 days.
 
 ## Stage 4 — School-wide, one grade level per week (7 → 12)
-- [ ] Weekly review: Firestore usage vs ceilings (reads ≤ 60K/day, writes ≤ 35K/day, deletes ≤ 10K/day, retention nights excepted), cost, `push_failures`, report volume, registrar workload.
+- [ ] Weekly review: Firestore usage vs ceilings (reads ≤ 60K/day, writes ≤ 35K/day, deletes ≤ 10K/day, retention nights excepted), cost, `pushes_failed`, report volume, registrar workload.
 - [ ] Stop condition: any ceiling exceeded 2× on a normal day, or registrar backlog > 2 days → pause expansion, investigate.
 
 ## Stage 5 — Steady state
 - [ ] Nightly jobs verified in Cloud Scheduler (3 jobs, last run success).
 - [ ] SY-rollover rehearsal on the emulator before March (change `currentSchoolYear`, run `expireLinks`, confirm inbox notices).
-- [ ] Decision on paid fallback (SMS/WhatsApp) taken only from measured push adoption and `push_failures` — not before.
+- [ ] Decision on paid fallback (SMS/WhatsApp) taken only from measured push adoption and `pushes_failed` — not before.
