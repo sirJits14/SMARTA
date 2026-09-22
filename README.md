@@ -93,6 +93,58 @@ After deploying, you can verify that unauthenticated access is denied:
 - Expected: request is denied.
 - Sign in with the registrar account in the app and verify data loads normally.
 
+## Parent portal
+
+The parent/guardian portal (live at `bnhs-parent`) gives parents secure,
+school-verified access to their learner's gate-scan times via one-time
+activation slips issued at enrollment. Parents can configure phone
+notifications and report incorrect records; registrars can pause the system,
+manage kiosk devices and guardian access, and review reports.
+
+**Code and configuration:**
+- **Portal app:** `parent/` (Vite + React; tests via Vitest)
+- **Backend functions:** `functions/` (Node.js; Firestore write-triggered
+  scan reconciliation, nightly link expiry, push notifications)
+- **Firestore security rules:** `firestore.rules` (tied to guardian and kiosk
+  authentication; also tested under emulation)
+
+**Local dev setup:**
+1. `npm install` (root), `npm --prefix functions install`,
+   `npm --prefix parent install`.
+2. Copy `.env.example` to `.env` and fill in your Firebase web-app config.
+3. Start the local emulators and then the apps:
+   ```bash
+   npm run emulators              # Firebase local emulator suite
+   npm --prefix parent run dev    # Portal app at http://localhost:5173
+   ```
+   Then use the kiosk (`/setup` at the same dev server, or from
+   `bnhs-student-kiosk` repo) to scan and trigger functions.
+
+**Testing:**
+- Run all tests (root, functions, parent, and emulator-backed rules tests):
+  ```bash
+  npm run test:all
+  ```
+- Individual suites: `npm test`, `npm --prefix functions test`, `npm --prefix parent test`.
+- Emulator-backed rules and functions:
+  ```bash
+  npx firebase emulators:exec --only firestore,auth --project bnhs-sims-ci \
+    "npx vitest run -c vitest.rules.config.js && npm --prefix functions run test:emulator"
+  ```
+
+**Deployment & operations:**
+- See `docs/parent-portal-runbook.md` for registrar runbook (kiosk management,
+  custody changes, rollback, cost alarms, etc.)
+- See `docs/parent-portal-privacy-notice.md` for the privacy policy shown to
+  parents in the portal.
+- See `docs/parent-portal-adviser-guide.md` for the one-pager to give to
+  form advisers when handing out activation slips.
+
+**CI:** GitHub Actions workflow (`.github/workflows/ci.yml`) runs all tests
+and the emulator-backed rules tests on every push and PR.
+
+---
+
 ## Known limitations (v1)
 
 - **Monthly attendance uses the section's *current* class list.** The summary grid and SF2 export build their roster from learners whose enrollment status is currently "enrolled". So if you withdraw a learner mid-month, they (and any marks already recorded for them that month) drop off that month's grid and SF2. And a learner enrolled partway through the month is counted Present by default for the school days before they were enrolled. For an official DepEd monthly form, generate/print it for a section whose roster was stable that month; enrollment-window-aware attendance is a planned enhancement.

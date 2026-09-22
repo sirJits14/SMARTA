@@ -1,0 +1,23 @@
+name: ci
+on:
+  push: { branches: [master] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }   # Firestore emulator needs a JRE
+      - run: npm ci
+      - run: npm --prefix functions ci
+      - run: npm --prefix parent ci
+      - run: npm test
+      - run: npm --prefix functions test
+      - run: npm --prefix parent test
+      - run: npm run build
+      - run: npm --prefix parent run build && npm --prefix parent run size
+      - run: npx firebase emulators:exec --only firestore,auth --project bnhs-sims-ci "npx vitest run -c vitest.rules.config.js && npm --prefix functions run test:emulator"
+        env: { GCLOUD_PROJECT: bnhs-sims-ci }
