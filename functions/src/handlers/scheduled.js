@@ -96,7 +96,11 @@ export async function reconcileEvents(deps) {
     const data = r.data();
     if (data.kind === 'void') continue;
     const projected = await db.doc(`learners/${data.studentId}/events/${r.id}`).get();
-    if (projected.exists) continue;
+    // fanOutDone (not just the projection existing) is required: the
+    // projection is written before guardian inbox fan-out runs, so a raw
+    // event whose fan-out loop threw partway through would otherwise look
+    // indistinguishable from a fully-delivered one here.
+    if (projected.exists && projected.data().fanOutDone === true) continue;
     missing++;
     const res = await handleScanEvent(deps, { eventId: r.id, data, suppressPush: true });
     if (res.outcome !== 'processed') failed++;

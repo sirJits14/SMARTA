@@ -1,7 +1,18 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { db, clearAll, seedSchool, fakeMessaging, scanDoc, ts } from './helpers.js';
-import { handleScanEvent } from '../../src/handlers/scanEvent.js';
+import { handleScanEvent, clearDeviceRate } from '../../src/handlers/scanEvent.js';
 import { clearCache } from '../../src/cache.js';
+import { logWarn } from '../../src/log.js';
+
+// firebase-functions' logger.warn() writes via an UNPATCHED_CONSOLE
+// reference it captures at ITS OWN module-load time (see
+// node_modules/firebase-functions/lib/logger/common.js) specifically to
+// survive third-party console monkey-patching -- which also defeats
+// vi.spyOn(console, 'warn') here. Mocking this module directly (scoped to
+// this test file only) is the reliable way to observe a logWarn call; no
+// other test in this file asserts on log output, so this changes nothing
+// for them.
+vi.mock('../../src/log.js', () => ({ logEvent: vi.fn(), logWarn: vi.fn() }));
 
 const NOW = () => new Date('2026-09-21T07:12:30+08:00');
 const deps = (messaging = fakeMessaging()) => ({ db: db(), messaging, portalUrl: 'https://p.test', now: NOW });
@@ -10,7 +21,7 @@ const run = async (d, eventId, data, extra = {}) => {
   return handleScanEvent(d, { eventId, data, ...extra });
 };
 
-beforeEach(async () => { await clearAll(); clearCache(); await seedSchool(); });
+beforeEach(async () => { await clearAll(); clearCache(); clearDeviceRate(); await seedSchool(); });
 
 describe('handleScanEvent', () => {
   it('projects the event, updates the summary, fans out inbox items, pushes to enabled devices only', async () => {
@@ -19,7 +30,7 @@ describe('handleScanEvent', () => {
     expect(r.outcome).toBe('processed');
 
     const ev = (await db().doc('learners/S1/events/k1_S1_202609210712').get()).data();
-    expect(ev).toMatchObject({ kind: 'in', scannedDate: '2026-09-21', scannedTime: '07:12', deviceLabel: 'Main Gate', status: 'recorded', delayedSync: false, clockSkew: false, source: 'kiosk' });
+    expect(ev).toMatchObject({ kind: 'in', scannedDate: '2026-09-21', scannedTime: '07:12', deviceLabel: 'Main Gate', status: 'recorded', delayedSync: false, clockSkew: false, source: 'kiosk', fanOutDone: true });
 
     const learner = (await db().doc('learners/S1').get()).data();
     expect(learner.displayName).toBe('Ana Cruz');
@@ -107,5 +118,38 @@ describe('handleScanEvent', () => {
     await run(deps(m), 'k1_S1_202609210712', scanDoc(), { suppressPush: true });
     expect(m.sent).toHaveLength(0);
     expect((await db().doc('guardians/gA/inbox/k1_S1_202609210712').get()).data().pushStatus).toBe('skipped_suppressed');
+  });
+
+  describe('device rate anomaly (spec §5)', () => {
+    // These drive 60+ real handleScanEvent calls each (needed to actually
+    // cross the per-minute threshold end-to-end through the emulator), well
+    // past vitest's 5s default per-test timeout. logWarn itself is mocked
+    // at the top of this file (see the vi.mock comment above) -- reading
+    // straight from the imported logWarn is simpler and more reliable than
+    // spying on console/stdio, which firebase-functions' logger bypasses.
+    const anomalies = () => logWarn.mock.calls.filter(([event]) => event === 'device_rate_anomaly').map(([, fields]) => fields);
+
+    it('warns once a single device exceeds 60 processed events within the same minute bucket', async () => {
+      logWarn.mockClear();
+      const d = deps();
+      for (let i = 0; i < 61; i++) await run(d, 'k1_S1_202609210712', scanDoc());
+      expect(anomalies()[0]).toMatchObject({ deviceId: 'k1', count: 61 });
+    }, 30000);
+
+    it('does not warn at or under the 60/minute threshold', async () => {
+      logWarn.mockClear();
+      const d = deps();
+      for (let i = 0; i < 60; i++) await run(d, 'k1_S1_202609210712', scanDoc());
+      expect(anomalies()).toEqual([]);
+    }, 30000);
+
+    it('staff-source events (no physical kiosk device) are never counted', async () => {
+      logWarn.mockClear();
+      const d = deps();
+      for (let i = 0; i < 61; i++) {
+        await run(d, `staff_S1_${i}`, { studentId: 'S1', sectionId: 'SEC1', schoolYear: '2026-2027', kind: 'in', deviceId: 'staff', scannedAt: ts('2026-09-21T09:00:00+08:00'), scannedDate: '2026-09-21', scannedTime: '09:00', receivedAt: ts('2026-09-21T09:00:01+08:00'), source: 'staff' });
+      }
+      expect(anomalies()).toEqual([]);
+    }, 30000);
   });
 });

@@ -68,6 +68,28 @@ describe('reconcileEvents', () => {
     expect(d.messaging.sent).toHaveLength(0);
     expect((await reconcileEvents(d)).missing).toBe(0);
   });
+
+  it('re-processes a raw event whose projection exists but fan-out never finished (partial failure); skips one whose fan-out completed', async () => {
+    const d = deps();
+    // Projection exists (its transaction committed) but fan-out was
+    // interrupted before writing the fanOutDone marker -- this is the
+    // "guardians never got their inbox entry" gap the marker closes. Shaped
+    // to match the real `projected` object handleScanEvent's own
+    // transaction writes (scanEvent.js), since reconcileEvents' reprocessing
+    // run feeds these same docs straight into recomputeSummary.
+    await db().doc('scan_events/k1_S1_202609200712').set(scanDoc({ scannedAt: ts('2026-09-20T07:12:00+08:00'), scannedDate: '2026-09-20', receivedAt: ts('2026-09-20T07:12:10+08:00') }));
+    await db().doc('learners/S1/events/k1_S1_202609200712').set({ kind: 'in', scannedAt: ts('2026-09-20T07:12:00+08:00'), scannedDate: '2026-09-20', scannedTime: '07:12', receivedAt: ts('2026-09-20T07:12:10+08:00'), effectiveAt: ts('2026-09-20T07:12:00+08:00'), deviceLabel: 'Main Gate', status: 'recorded', delayedSync: false, clockSkew: false, source: 'kiosk' });
+
+    await db().doc('scan_events/k1_S1_202609200800').set(scanDoc({ scannedAt: ts('2026-09-20T08:00:00+08:00'), scannedDate: '2026-09-20', scannedTime: '08:00', receivedAt: ts('2026-09-20T08:00:10+08:00') }));
+    await db().doc('learners/S1/events/k1_S1_202609200800').set({ kind: 'in', scannedAt: ts('2026-09-20T08:00:00+08:00'), scannedDate: '2026-09-20', scannedTime: '08:00', receivedAt: ts('2026-09-20T08:00:10+08:00'), effectiveAt: ts('2026-09-20T08:00:00+08:00'), deviceLabel: 'Main Gate', status: 'recorded', delayedSync: false, clockSkew: false, source: 'kiosk', fanOutDone: true });
+
+    const r = await reconcileEvents(d);
+    expect(r.missing).toBe(1);
+    expect((await db().doc('learners/S1/events/k1_S1_202609200712').get()).data().fanOutDone).toBe(true);
+    expect((await db().doc('guardians/gA/inbox/k1_S1_202609200712').get()).exists).toBe(true);
+    expect((await db().doc('guardians/gA/inbox/k1_S1_202609200800').get()).exists).toBe(false);
+    expect(d.messaging.sent).toHaveLength(0);
+  });
 });
 
 describe('auditSettingsChange', () => {

@@ -5,18 +5,21 @@ const DEAD = new Set(['messaging/registration-token-not-registered', 'messaging/
 export const MAX_FAILURES = 5;
 
 // Sends the fixed push to every enabled device of one guardian and applies
-// FCM's per-token verdicts to the device docs (spec §6 step 4).
-export async function sendToGuardian({ db, messaging, portalUrl }, { guardianUid, inboxId, studentId }) {
-  const devSnap = await db.collection(`guardians/${guardianUid}/devices`).where('enabled', '==', true).get();
-  if (devSnap.empty) return { status: 'skipped_no_device', pruned: 0 };
+// FCM's per-token verdicts to the device docs (spec §6 step 4). devDocs is
+// the caller's own already-fetched enabled-devices query snapshot docs
+// (QueryDocumentSnapshot-shaped: .data()/.ref) -- the caller (scanEvent.js)
+// needs that same query for its own device-count gate right before this is
+// called, so this no longer re-queries Firestore for it.
+export async function sendToGuardian({ db, messaging, portalUrl }, { inboxId, studentId, devDocs }) {
+  if (devDocs.length === 0) return { status: 'skipped_no_device', pruned: 0 };
 
-  const tokens = devSnap.docs.map((d) => d.data().token);
+  const tokens = devDocs.map((d) => d.data().token);
   const res = await messaging.sendEachForMulticast(pushPayload({ tokens, inboxId, studentId, portalUrl }));
 
   const batch = db.batch();
   let pruned = 0, anySuccess = false;
   res.responses.forEach((r, i) => {
-    const docSnap = devSnap.docs[i];
+    const docSnap = devDocs[i];
     if (r.success) { anySuccess = true; return; }
     if (DEAD.has(r.error?.code)) { batch.delete(docSnap.ref); pruned++; return; }
     const failureCount = (docSnap.data().failureCount || 0) + 1;

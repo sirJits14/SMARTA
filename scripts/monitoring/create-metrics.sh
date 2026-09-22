@@ -15,6 +15,8 @@ metric activation_failures  "${BASE}\"activation_failed\""
 metric reconcile_missing    "${BASE}\"reconcile_done\" AND jsonPayload.missing>0"
 metric pushes_sent          "${BASE}\"scan_processed\" AND jsonPayload.pushesSent>0"
 metric pushes_failed        "${BASE}\"scan_processed\" AND jsonPayload.pushesFailed>0"
+metric tokens_pruned        "${BASE}\"scan_processed\" AND jsonPayload.tokensPruned>0"
+metric device_rate_anomaly  'resource.type="cloud_run_revision" AND jsonPayload.event="device_rate_anomaly"'
 metric function_errors      'resource.type="cloud_run_revision" AND severity>=ERROR'
 
 echo "Metrics created. Now in Cloud Console → Monitoring → Alerting create policies:"

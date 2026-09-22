@@ -12,6 +12,26 @@ const CACHE_MS = 30_000;
 const RECENT_QUERY = 40;
 const PENDING_RESEND_MS = 5 * 60 * 1000;
 
+// Per-instance, per-device rolling-minute counter for the forged/
+// malfunctioning-kiosk rate anomaly warning (spec §5 edge cases). This is a
+// detective control only -- the kiosk is already constrained by App Check +
+// the device/enrollment checks below. A Firestore-backed cross-instance
+// counter would be over-engineering for a handful of low-volume kiosks; an
+// in-memory counter that resets each minute bucket is correct at this
+// scale (instance recycling only ever under-counts, never false-alarms).
+// scannedTime is already minute-granular and is the kiosk's own clock, so
+// it's the natural bucket -- no new clock source needed.
+const RATE_LIMIT_PER_MIN = 60;
+const deviceRate = new Map();
+function checkDeviceRate(deviceId, data) {
+  const bucket = `${data.scannedDate}T${data.scannedTime}`;
+  const prior = deviceRate.get(deviceId);
+  const count = prior && prior.bucket === bucket ? prior.count + 1 : 1;
+  deviceRate.set(deviceId, { bucket, count });
+  if (count > RATE_LIMIT_PER_MIN) logWarn('device_rate_anomaly', { deviceId, bucket, count });
+}
+export function clearDeviceRate() { deviceRate.clear(); }
+
 // Spec §5. The only writer of learners/* and guardians/*/inbox/*. Every step
 // is keyed on eventId so a re-delivered trigger is a no-op.
 export async function handleScanEvent({ db, messaging, portalUrl, now = () => new Date() }, { eventId, data, suppressPush = false }) {
@@ -23,6 +43,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
   const kiosk = isStaff ? { label: 'School office', active: true }
     : await cached(`kiosk:${deviceId}`, CACHE_MS, async () => (await db.doc(`kiosks/${deviceId}`).get()).data() || null);
   if (!kiosk || kiosk.active !== true) { logWarn('scan_rejected', { eventId, deviceId, reason: 'device' }); return { outcome: 'rejected:device' }; }
+  if (!isStaff) checkDeviceRate(deviceId, data);
 
   // 2. enrollment
   const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
@@ -94,17 +115,30 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
     if (!eventGate.send) { await inboxRef.set({ ...item, pushStatus: eventGate.status }, { merge: true }); continue; }
 
     const guardian = (await db.doc(`guardians/${uid}`).get()).data() || {};
-    const devCount = (await db.collection(`guardians/${uid}/devices`).where('enabled', '==', true).count().get()).data().count;
-    const gGate = guardianPushGate({ notificationsEnabled: guardian.notificationsEnabled !== false, tokenCount: devCount });
+    // Fetched once here and reused by sendToGuardian below (its tokens and
+    // failure-count updates need the same docs) instead of each querying
+    // guardians/{uid}/devices separately.
+    const devSnap = await db.collection(`guardians/${uid}/devices`).where('enabled', '==', true).get();
+    const gGate = guardianPushGate({ notificationsEnabled: guardian.notificationsEnabled !== false, tokenCount: devSnap.size });
     if (gGate) { await inboxRef.set({ ...item, pushStatus: gGate }, { merge: true }); continue; }
 
     if (!prior) await inboxRef.set(item);
-    const res = await sendToGuardian({ db, messaging, portalUrl }, { guardianUid: uid, inboxId: eventId, studentId });
+    const res = await sendToGuardian({ db, messaging, portalUrl }, { inboxId: eventId, studentId, devDocs: devSnap.docs });
     pruned += res.pruned;
     if (res.status === 'sent') pushesSent++; else if (res.status === 'failed') pushesFailed++;
     await inboxRef.set({ pushStatus: res.status, pushSentAt: FieldValue.serverTimestamp() }, { merge: true });
   }
   if (pushesSent > 0) await learnerRef.set({ lastPush: { kind, at: Timestamp.fromDate(now()) } }, { merge: true });
+
+  // Marks the fan-out loop above as having run to completion (success or
+  // per-guardian-skipped -- either way it didn't throw). reconcileEvents'
+  // "is this event done" check needs this: the learner projection above is
+  // written in its own transaction BEFORE fan-out runs, so a throw partway
+  // through fan-out (after that transaction already committed) would
+  // otherwise be indistinguishable from a fully-delivered event once the
+  // projection alone is checked. void events have no eventRef/projection
+  // (reconcileEvents already skips them outright), so this is skipped too.
+  if (kind !== 'void') await eventRef.set({ fanOutDone: true }, { merge: true });
 
   logEvent('scan_processed', { eventId, deviceId, kind, source, delayedSync: cls.delayedSync, clockSkew: cls.clockSkew,
     guardians: links.size, pushesSent, pushesFailed, tokensPruned: pruned, latencyMs: Date.now() - t0 });
