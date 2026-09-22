@@ -15,6 +15,7 @@ import EnrollPage from './pages/EnrollPage.jsx';
 import AttendanceTakePage from './pages/AttendanceTakePage.jsx';
 import AttendanceSummaryPage from './pages/AttendanceSummaryPage.jsx';
 import IDCardsPage from './pages/IDCardsPage.jsx';
+import GuardiansPage from './pages/GuardiansPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 
 function AttendanceArea({ schoolYear }) {
@@ -80,6 +81,7 @@ export default function App() {
         {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
         {page==='attendance' && <AttendanceArea schoolYear={schoolYear} />}
         {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
+        {page==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
         {page==='settings' && <SettingsPage />}
       </Shell>
     </>
