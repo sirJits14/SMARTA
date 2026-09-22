@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRoute } from './hooks/useRoute.js';
 import { useAuth } from './hooks/useAuth.js';
 import Shell from './components/Shell.jsx';
@@ -23,6 +23,13 @@ const CONSENT_KEY = 'bnhs-parent-consent';
 export default function App() {
   const { route, navigate } = useRoute();
   const { user, profile } = useAuth();
+  // Verify.jsx confirms email verification client-side (user.reload() +
+  // a forced getIdToken(true)) without a page reload -- a hard navigation
+  // here would race the SDK's async write of the refreshed token to
+  // IndexedDB and can resurrect the pre-verification (unverified) token,
+  // which then gets sent on the very next guardian-callable request. This
+  // flag is the soft-transition signal in place of that reload.
+  const [verifiedOverride, setVerifiedOverride] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -33,7 +40,7 @@ export default function App() {
 
   if (user === undefined) return <Spinner label={S.loading} />;
   if (!user) return <SignIn />;
-  if (!user.emailVerified) return <Shell route={route} navigate={navigate}><Verify user={user} /></Shell>;
+  if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate}><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Shell>;
   if (profile === undefined) return <Spinner label={S.loading} />;
 
   // First-time flow: consent (stored locally until the first activation

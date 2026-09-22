@@ -39,8 +39,35 @@ async function functionsInstance() {
   if (import.meta.env.VITE_USE_EMULATORS === 'true') connectFunctionsEmulator(_functions, '127.0.0.1', 5001);
   return _functions;
 }
+// The SDK's cached ID token can lag behind auth.currentUser's own profile
+// flags -- most importantly, right after a guardian verifies their email:
+// user.reload() updates currentUser.emailVerified immediately, but the
+// cached ID token (whatever getIdToken() returns without forcing) can keep
+// carrying the pre-verification email_verified:false claim for a while
+// after that, through some further async settling inside the SDK that a
+// single force-refresh issued right next to reload() doesn't reliably
+// outlast. Every guardian-callable request sends exactly that cached
+// claim, so a guardian who just verified and moves straight to Activate
+// gets rejected with "Verify your email first" even though the UI has
+// already moved on. Rather than chase that internal timing, catch the
+// mismatch right before the network call that actually depends on it:
+// if the profile says verified but the cached token disagrees, force one
+// fresh mint here. This only costs an extra round trip in that specific
+// mismatch window, not on every call.
+function decodeJwtPayload(token) {
+  const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)));
+}
+async function freshEnoughToken() {
+  const user = auth.currentUser;
+  if (!user || !user.emailVerified) return;
+  const cached = await user.getIdToken();
+  if (!decodeJwtPayload(cached).email_verified) await user.getIdToken(true);
+}
+
 export const callable = (name) => async (data) => {
   const [{ httpsCallable }, fns] = await Promise.all([import('firebase/functions'), functionsInstance()]);
+  await freshEnoughToken();
   return httpsCallable(fns, name)(data);
 };
 
