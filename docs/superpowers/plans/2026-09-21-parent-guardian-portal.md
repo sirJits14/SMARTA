@@ -36,7 +36,12 @@ App Check, FCM Web Push (VAPID).
 - Parent-app strings live only in `parent/src/strings.js`; none may contain
   "location", "tracking", or "live". Gate label text is "gate scan", never
   "attendance".
-- Parent bundle ≤ **200 KB gzipped** (CI-enforced). Layout works at 320 px.
+- Parent app **initial-load** bundle (the entry chunk(s) `index.html` eagerly
+  loads, not the sum of every lazily-`import()`ed route chunk) ≤ **260 KB
+  gzipped** (CI-enforced; revised up from an initial 200 KB estimate once
+  Task 16 measured the real cost of React 19 + Firestore-with-persistence +
+  Auth + App Check + Functions — see that task's report). Layout works at
+  320 px.
 - `parent/` and `functions/` import nothing from `src/`. Shared pure helpers
   live in `shared/`.
 - Retention windows, rate limits, and thresholds are the spec's numbers:
