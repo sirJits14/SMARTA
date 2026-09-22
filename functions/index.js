@@ -1,6 +1,7 @@
 import { setGlobalOptions } from 'firebase-functions/v2';
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onCall } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineString } from 'firebase-functions/params';
 import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
@@ -10,6 +11,8 @@ import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricte
 import { registerKiosk, deactivateKiosk } from './src/handlers/kiosks.js';
 import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
 import { deleteGuardianAccount } from './src/handlers/account.js';
+import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
+import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -47,3 +50,13 @@ export const resolveReportFn = staffCall(resolveReport);
 export const correctEventFn = staffCall(correctEvent);
 export const addManualEventFn = staffCall(addManualEvent);
 export const deleteGuardianAccountFn = guardianCall(deleteGuardianAccount);
+
+const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
+const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };
+
+export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED }, () => expireLinks(jobDeps()));
+export const pruneDevicesJob = onSchedule({ schedule: '40 1 * * *', ...SCHED }, () => pruneDevices(jobDeps()));
+export const reconcileEventsJob = onSchedule({ schedule: '20 2 * * *', ...SCHED }, () => reconcileEvents(jobDeps()));
+
+export const onParentPortalSettingsChanged = onDocumentWritten('settings/parent_portal', (event) =>
+  auditSettingsChange(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));
