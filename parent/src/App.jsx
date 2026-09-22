@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { useRoute } from './hooks/useRoute.js';
 import { useAuth } from './hooks/useAuth.js';
 import Shell from './components/Shell.jsx';
@@ -7,14 +7,16 @@ import S from './strings.js';
 import { onForegroundMessage } from './lib/notifications.js';
 import SignIn from './screens/SignIn.jsx';
 import Verify from './screens/Verify.jsx';
-import Consent from './screens/Consent.jsx';
-import Activate from './screens/Activate.jsx';
-import Home from './screens/Home.jsx';
-import History from './screens/History.jsx';
-import Inbox from './screens/Inbox.jsx';
-import Report from './screens/Report.jsx';
-import RequestAccess from './screens/RequestAccess.jsx';
-import Settings from './screens/Settings.jsx';
+// Screens below are only needed once a route is resolved, so they're
+// route-split out of the sign-in/verify chunk to keep the initial load light.
+const Consent = lazy(() => import('./screens/Consent.jsx'));
+const Activate = lazy(() => import('./screens/Activate.jsx'));
+const Home = lazy(() => import('./screens/Home.jsx'));
+const History = lazy(() => import('./screens/History.jsx'));
+const Inbox = lazy(() => import('./screens/Inbox.jsx'));
+const Report = lazy(() => import('./screens/Report.jsx'));
+const RequestAccess = lazy(() => import('./screens/RequestAccess.jsx'));
+const Settings = lazy(() => import('./screens/Settings.jsx'));
 
 const CONSENT_KEY = 'bnhs-parent-consent';
 
@@ -53,5 +55,5 @@ export default function App() {
     case 'settings': screen = <Settings {...props} />; break;
     default: screen = <EmptyState title={S.notFound} />;
   }
-  return <Shell route={route} navigate={navigate}>{screen}</Shell>;
+  return <Shell route={route} navigate={navigate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
 }
