@@ -8,6 +8,8 @@ import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js
 import { issueActivationCodes, revokeCode, activateCode } from './src/handlers/codes.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
 import { registerKiosk, deactivateKiosk } from './src/handlers/kiosks.js';
+import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
+import { deleteGuardianAccount } from './src/handlers/account.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -39,3 +41,9 @@ export const revokeLinkFn = staffCall(revokeLink);
 export const setActivationRestrictedFn = staffCall(setActivationRestricted);
 export const registerKioskFn = staffCall(registerKiosk);
 export const deactivateKioskFn = staffCall(deactivateKiosk);
+
+export const submitReportFn = guardianCall(submitReport);
+export const resolveReportFn = staffCall(resolveReport);
+export const correctEventFn = staffCall(correctEvent);
+export const addManualEventFn = staffCall(addManualEvent);
+export const deleteGuardianAccountFn = guardianCall(deleteGuardianAccount);
