@@ -1,8 +1,11 @@
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { onCall } from 'firebase-functions/v2/https';
 import { defineString } from 'firebase-functions/params';
-import { db, messaging } from './src/admin.js';
+import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
+import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js';
+import { issueActivationCodes, revokeCode, activateCode } from './src/handlers/codes.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -15,3 +18,15 @@ export const onScanEventCreated = onDocumentCreated({ document: 'scan_events/{ev
   if (!snap) return;
   await handleScanEvent(deps(), { eventId: event.params.eventId, data: snap.data() });
 });
+
+const callDeps = () => ({ db, auth, now: () => new Date() });
+const guardianCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
+  try { return await fn({ ...callDeps(), ...guardianIdentity(req) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+});
+const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
+  try { return await fn({ ...callDeps(), ...(await staffIdentity(db, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+});
+
+export const issueActivationCodesFn = staffCall(issueActivationCodes);
+export const revokeCodeFn = staffCall(revokeCode);
+export const activateCodeFn = guardianCall(activateCode);
