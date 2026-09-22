@@ -31,6 +31,11 @@ describe('expireLinks', () => {
     expect((await db().doc('guardians/gOld').get()).exists).toBe(false);
     expect(d.auth.deleted).toEqual(['gOld']);
   });
+  it('returns a zeroed result and does not throw when settings/app.currentSchoolYear is unset', async () => {
+    await db().doc('settings/app').set({ currentSchoolYear: null }, { merge: true });
+    const r = await expireLinks(deps());
+    expect(r).toEqual({ expired: 0, oldRevoked: 0, oldExpired: 0, oldCodes: 0, oldAudit: 0, dormant: 0 });
+  });
 });
 
 describe('pruneDevices (+ inbox/event retention)', () => {
@@ -45,6 +50,11 @@ describe('pruneDevices (+ inbox/event retention)', () => {
     const r = await pruneDevices(deps());
     expect(r).toMatchObject({ devices: 2, inbox: 1, events: 1, scanEvents: 1, resolved: 1 });
     expect((await db().doc('guardians/gA/inbox/new').get()).exists).toBe(true);
+  });
+  it('returns a zeroed result and does not throw when settings/app.currentSchoolYear is unset', async () => {
+    await db().doc('settings/app').set({ currentSchoolYear: null }, { merge: true });
+    const r = await pruneDevices(deps());
+    expect(r).toEqual({ devices: 0, inbox: 0, events: 0, scanEvents: 0, resolved: 0 });
   });
 });
 

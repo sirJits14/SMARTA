@@ -24,6 +24,10 @@ const ms = (x) => Timestamp.fromMillis(x);
 export async function expireLinks({ db, auth, now }) {
   const nowMs = now().getTime();
   const sy = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
+  if (!sy) {
+    logWarn('retention_skipped', { job: 'expireLinks', reason: 'settings/app.currentSchoolYear is not set' });
+    return { expired: 0, oldRevoked: 0, oldExpired: 0, oldCodes: 0, oldAudit: 0, dormant: 0 };
+  }
   const cut = retentionCutoffs({ currentSchoolYear: sy, nowMs });
 
   let expired = 0;
@@ -62,6 +66,10 @@ export async function expireLinks({ db, auth, now }) {
 export async function pruneDevices({ db, now }) {
   const nowMs = now().getTime();
   const sy = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
+  if (!sy) {
+    logWarn('retention_skipped', { job: 'pruneDevices', reason: 'settings/app.currentSchoolYear is not set' });
+    return { devices: 0, inbox: 0, events: 0, scanEvents: 0, resolved: 0 };
+  }
   const cut = retentionCutoffs({ currentSchoolYear: sy, nowMs });
   const stale = await deleteMatching(db, db.collectionGroup('devices').where('refreshedAt', '<', ms(cut.devicesStaleBeforeMs)));
   const disabled = await deleteMatching(db, db.collectionGroup('devices').where('disabledAt', '<', ms(cut.devicesDisabledBeforeMs)));
