@@ -13,6 +13,14 @@ Guardians → Kiosk devices → **Deactivate**. The device stops scanning within
 seconds. To rotate its password instead: Firebase console → Authentication →
 the kiosk user → Reset password, then sign in again at the kiosk's `/setup`.
 
+**Re-activating a device that is still powered on:** clicking **Re-activate**
+in Kiosk devices only flips the record in Firestore. The kiosk tab's own
+live connection to that record dies the moment it was deactivated (rules
+deny it read access once inactive) and does not reconnect on its own — the
+device will keep showing "not authorized" until someone **reloads the page
+on the kiosk itself**. Tell whoever is on-site to refresh the kiosk after
+you re-activate it.
+
 ## Register a new kiosk
 1. Firebase console → Authentication → Add user: `kiosk-<gate>@bnhs.local`,
    password = 16+ random characters (generate one; store it in the office safe).
