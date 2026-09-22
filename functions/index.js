@@ -6,6 +6,8 @@ import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
 import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, revokeCode, activateCode } from './src/handlers/codes.js';
+import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
+import { registerKiosk, deactivateKiosk } from './src/handlers/kiosks.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -30,3 +32,10 @@ const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
 export const issueActivationCodesFn = staffCall(issueActivationCodes);
 export const revokeCodeFn = staffCall(revokeCode);
 export const activateCodeFn = guardianCall(activateCode);
+
+export const requestAccessFn = guardianCall(requestAccess);
+export const resolveAccessRequestFn = staffCall(resolveAccessRequest);
+export const revokeLinkFn = staffCall(revokeLink);
+export const setActivationRestrictedFn = staffCall(setActivationRestricted);
+export const registerKioskFn = staffCall(registerKiosk);
+export const deactivateKioskFn = staffCall(deactivateKiosk);
