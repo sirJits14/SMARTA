@@ -4884,9 +4884,37 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Create: `parent/scripts/checkSize.mjs`
 - Modify: `parent/package.json` (already has `"size"` script)
 
-- [ ] **Step 1: Size check**
+- [x] **Step 1: Size check** — DONE, but not as originally specified here.
+  See below for what actually shipped and why; this Step 1 text is kept for
+  history, not as a description of the current `checkSize.mjs`.
 
-`parent/scripts/checkSize.mjs`:
+**What actually happened (superseding the script and limit below):** the
+naive "sum every file in `dist/assets/`" script below, run against the real
+build, measured 263.7 KB — over its own 200 KB limit. Lazy-loading
+`firebase/messaging`/`firebase/functions`/`firebase/app-check` and
+route-splitting the 8 screens via `React.lazy()` reduced the entry chunk but
+could not reduce the *sum of every chunk* (splitting moves bytes into
+separate files, it doesn't shrink the total) — the sum-everything
+methodology was itself wrong for a "first paint" budget, since a browser
+never downloads a lazily-`import()`ed route's code until that route is
+visited. The script was rewritten to parse `dist/index.html` for the chunk(s)
+actually referenced by an eager `<script type="module">` or
+`<link rel="modulepreload">`, and sum only those. Measured that way, the
+entry chunk is ~248 KB gzipped — still over 200 KB, because React 19 +
+Firestore-with-offline-persistence + Auth + App Check + Functions cannot fit
+under 200 KB gzipped without dropping the offline-persistence UX goal. The
+user decided to revise the budget to **260 KB gzipped, initial-load-only**
+rather than cut that feature; the Global Constraints section above and the
+design spec were updated to match. See
+`docs/superpowers/plans/2026-09-21-parent-guardian-portal.md`'s Global
+Constraints and the design spec §7 for the current, authoritative numbers,
+and the actual `parent/scripts/checkSize.mjs` on disk for the current script
+(it explicitly guards against finding zero eager paths, which would
+otherwise silently "pass" at a false 0 KB).
+
+Original (superseded) `parent/scripts/checkSize.mjs` content, kept for
+history only — do not use this version, it measures the wrong thing and
+enforces a limit that was revised:
 
 ```js
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -4905,12 +4933,6 @@ for (const f of readdirSync(dir)) {
 console.log(`total: ${(total / 1024).toFixed(1)} KB gz (limit ${(LIMIT / 1024).toFixed(0)} KB)`);
 if (total > LIMIT) { console.error('Bundle budget exceeded'); process.exit(1); }
 ```
-
-Run: `npm --prefix parent run build && npm --prefix parent run size`
-Expected: prints per-file sizes and passes. If the total exceeds 200 KB,
-the usual culprit is `firebase/messaging` or `firebase/functions` being
-statically imported in the initial chunk; move `getMessaging` usage behind
-a dynamic `import()` in `notifications.js` before revisiting anything else.
 
 - [ ] **Step 2: Emulator walkthrough (manual, must pass before Phase 5)**
 
@@ -4939,14 +4961,13 @@ a dynamic `import()` in `notifications.js` before revisiting anything else.
 9. DevTools → Application → Manifest: installable; Service Workers: active.
 10. Responsive mode at 320 px: no horizontal scroll on any screen.
 
-- [ ] **Step 3: Commit**
-
-```bash
-git add parent/scripts
-git commit -m "chore(parent): enforce 200 KB gzipped bundle budget
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-```
+- [x] **Step 3: Commit** — DONE, as three commits rather than one, reflecting
+  the investigation above: `f0efd79` (original script), `1d267df`
+  (lazy-loading fix attempt), `86dcfd0` (measurement fix + budget revision to
+  260 KB, with the spec/plan updated). All three carry
+  `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` (the session's
+  actual attribution at the time — not the "Claude Opus 5" this plan
+  document was originally written under).
 
 ---
 
