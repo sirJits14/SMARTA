@@ -30,6 +30,12 @@ export default function App() {
   // which then gets sent on the very next guardian-callable request. This
   // flag is the soft-transition signal in place of that reload.
   const [verifiedOverride, setVerifiedOverride] = useState(false);
+  // Scoped to the signed-in uid so a stale true from a previous guardian
+  // (e.g. a shared family device: A verifies and continues, signs out, B
+  // signs in with a genuinely unverified account in the same tab) can never
+  // let B skip the Verify gate -- onAuthStateChanged firing for a new user
+  // is exactly the "identity changed" signal this resets on.
+  useEffect(() => { setVerifiedOverride(false); }, [user?.uid]);
 
   useEffect(() => {
     if (!user) return;
