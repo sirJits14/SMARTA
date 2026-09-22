@@ -53,17 +53,25 @@ If parent traffic is the cause: pause notifications; if needed run
 Re-enable with a normal parent deploy.
 
 ## Rollbacks
-- Parent site: `npx firebase hosting:rollback --site bnhs-parent` (or the
-  console → Hosting → release history).
+- Parent site: **there is no `firebase hosting:rollback` CLI command** — use
+  Firebase console → Hosting → the `bnhs-parent` site → Release history →
+  the "⋮" menu on a prior release → **Rollback**. This is the only reliable
+  way; do not try to invent a CLI equivalent under pressure. (If you'd
+  rather redeploy from source instead: `git checkout <previous tag> --
+  parent && npm --prefix parent run build && npx firebase deploy --only
+  hosting:parent`.)
 - Functions: `git checkout <previous tag> -- functions && npx firebase deploy --only functions`.
   Raw scans keep accumulating; the nightly reconcile fills gaps.
 - Rules: `git checkout <previous tag> -- firestore.rules && npx firebase deploy --only firestore:rules`.
 
 ## Data-subject requests (DPA)
 - Access: the parent's own portal. Correction: Reports flow. Erasure: the
-  parent can delete their account in Settings; or Learner access → Revoke,
-  and ask the developer to run `deleteGuardianAccount` for that UID if the
-  parent cannot sign in.
+  parent can delete their account in Settings (self-service: `deleteGuardianAccountFn`
+  only ever deletes the CALLER's own account, it is not an admin tool for an
+  arbitrary UID). If the parent cannot sign in to do this themselves,
+  Learner access → Revoke removes their access to the learner immediately;
+  full account/profile deletion at that point needs a developer to write a
+  one-off Admin SDK script (there is no console or CLI shortcut for it).
 - Breach or suspected misuse: pause notifications, deactivate the affected
   kiosk or revoke the affected link, export the Audit log tab for the date
   range, and notify the school's privacy focal person.

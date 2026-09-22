@@ -115,10 +115,12 @@ manage kiosk devices and guardian access, and review reports.
 3. Start the local emulators and then the apps:
    ```bash
    npm run emulators              # Firebase local emulator suite
-   npm --prefix parent run dev    # Portal app at http://localhost:5173
+   npm --prefix parent run dev    # Portal app at http://localhost:5174
    ```
-   Then use the kiosk (`/setup` at the same dev server, or from
-   `bnhs-student-kiosk` repo) to scan and trigger functions.
+   To also exercise a scan end-to-end, run the kiosk from its own repo
+   (`bnhs-student-kiosk`, `npm run dev`, default port 5173) and sign the
+   device in at its `/setup` route — the parent app has no `/setup` route
+   of its own, that page only exists in the kiosk app.
 
 **Testing:**
 - Run all tests (root, functions, parent, and emulator-backed rules tests):
