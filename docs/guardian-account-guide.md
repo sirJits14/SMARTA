@@ -1,7 +1,8 @@
 # Guardian account guide — create & verify your account
 
-For parents/guardians using the BNHS Learner Records parent portal
-(`https://bnhs-parent.web.app`). Matches the flow in `parent/src/screens/`
+For parents/guardians using the **BNHS Learner's Attendance** parent portal
+(`https://bnhs-parent.web.app`; installed on a phone's Home Screen it shows
+as **BukNHS SMARTA**). Matches the flow in `parent/src/screens/`
 and the copy in `parent/src/strings.js` — update both together if either
 changes.
 
