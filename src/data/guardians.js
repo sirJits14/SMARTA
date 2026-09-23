@@ -14,6 +14,8 @@ export const call = {
   setActivationRestricted: fn('setActivationRestrictedFn'),
   registerKiosk: fn('registerKioskFn'),
   deactivateKiosk: fn('deactivateKioskFn'),
+  provisionKiosk: fn('provisionKioskFn'),
+  resetKioskPassword: fn('resetKioskPasswordFn'),
   resolveReport: fn('resolveReportFn'),
   correctEvent: fn('correctEventFn'),
   addManualEvent: fn('addManualEventFn'),

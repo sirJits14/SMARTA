@@ -1,5 +1,6 @@
 import { initializeApp, getApps, deleteApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 // Requires FIRESTORE_EMULATOR_HOST (set by `firebase emulators:exec`).
 if (!process.env.FIRESTORE_EMULATOR_HOST) throw new Error('Run via: npm run test:functions (emulator required)');
@@ -9,10 +10,16 @@ export function app() {
   return getApps()[0] || initializeApp({ projectId: process.env.GCLOUD_PROJECT });
 }
 export const db = () => getFirestore(app());
+export const auth = () => getAuth(app());
 
 export async function clearAll() {
   const host = process.env.FIRESTORE_EMULATOR_HOST;
   await fetch(`http://${host}/emulator/v1/projects/${process.env.GCLOUD_PROJECT}/databases/(default)/documents`, { method: 'DELETE' });
+}
+
+export async function clearAllAuthUsers() {
+  const host = process.env.FIREBASE_AUTH_EMULATOR_HOST;
+  await fetch(`http://${host}/emulator/v1/projects/${process.env.GCLOUD_PROJECT}/accounts`, { method: 'DELETE' });
 }
 
 // A messaging stub that records what would have been sent and lets tests

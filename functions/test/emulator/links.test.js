@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { db, clearAll, seedSchool } from './helpers.js';
+import { db, auth, clearAll, clearAllAuthUsers, seedSchool } from './helpers.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from '../../src/handlers/links.js';
-import { registerKiosk, deactivateKiosk } from '../../src/handlers/kiosks.js';
+import { registerKiosk, deactivateKiosk, provisionKiosk, resetKioskPassword } from '../../src/handlers/kiosks.js';
 
 const NOW = new Date('2026-09-21T08:00:00+08:00');
 const staff = () => ({ db: db(), now: () => NOW, uid: 'staff1', email: 'registrar@bnhs.edu' });
 const guardian = (uid = 'gNew') => ({ db: db(), now: () => NOW, uid, email: `${uid}@gmail.com`, displayName: 'Maria' });
 const req = { studentLrn: '100000000001', learnerNameTyped: 'Ana Cruz', relationship: 'Guardian', contactNumber: '09171234567', message: 'Lost slip' };
 
-beforeEach(async () => { await clearAll(); await seedSchool(); await db().doc('users/registrar@bnhs.edu').set({ role: 'registrar' }); });
+beforeEach(async () => { await clearAll(); await clearAllAuthUsers(); await seedSchool(); await db().doc('users/registrar@bnhs.edu').set({ role: 'registrar' }); });
 
 describe('access requests', () => {
   it('creates an open request; max 3 open per guardian', async () => {
@@ -53,5 +53,26 @@ describe('kiosks', () => {
     await deactivateKiosk(staff(), { uid: 'kNew', reason: 'stolen' });
     expect((await db().doc('kiosks/kNew').get()).data().active).toBe(false);
     expect((await db().collection('audit_log').where('targetId', '==', 'kNew').get()).size).toBe(2);
+  });
+
+  it('provisions a real Auth account and allow-lists it in one call', async () => {
+    const result = await provisionKiosk({ ...staff(), auth: auth() }, { label: 'Side Gate' });
+    expect(result.email).toBe('kiosk-side-gate@bnhs.local');
+    expect(result.password.length).toBeGreaterThanOrEqual(20);
+
+    const userRecord = await auth().getUser(result.uid);
+    expect(userRecord.email).toBe('kiosk-side-gate@bnhs.local');
+    expect((await db().doc(`kiosks/${result.uid}`).get()).data()).toMatchObject({ label: 'Side Gate', active: true, createdBy: 'registrar@bnhs.edu' });
+    expect((await db().collection('audit_log').where('action', '==', 'kiosk.provisioned').get()).size).toBe(1);
+  });
+
+  it('assigns a new password to an existing device without changing its uid', async () => {
+    const { uid, password: firstPassword } = await provisionKiosk({ ...staff(), auth: auth() }, { label: 'Back Gate' });
+    const result = await resetKioskPassword({ ...staff(), auth: auth() }, { uid });
+
+    expect(result.uid).toBe(uid);
+    expect(result.email).toBe('kiosk-back-gate@bnhs.local');
+    expect(result.password).not.toBe(firstPassword);
+    expect((await db().collection('audit_log').where('action', '==', 'kiosk.password_reset').get()).size).toBe(1);
   });
 });
