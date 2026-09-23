@@ -39,7 +39,11 @@ sign-in, writes `student_attendance` only). To keep scanning working:
 Removal steps:
 1. Register each v1 kiosk's anonymous uid via Guardians → Kiosk devices. Find
    it in the Functions logs: `legacy_scan_unregistered_writer` → `authId`.
-2. After every v1 kiosk is replaced by v2 at K1/K2, delete the bridge (the
+2. Deploy `onLegacyAttendanceScan` (delete the old ungated trigger):
+   - `npx firebase functions:delete onLegacyAttendanceSynced --region asia-southeast1 --project bnhs-sims`
+   - Confirm with `npx firebase functions:list --project bnhs-sims` that only `onLegacyAttendanceScan` triggers on `student_attendance`.
+   - Then check Functions logs for `legacy_scan_unregistered_writer` entries showing a real uid in `authId` after the first gate scans. The old trigger bridges any signed-in writer, so leaving it deployed keeps the forged-entry hole open.
+3. After every v1 kiosk is replaced by v2 at K1/K2, delete the bridge (the
    `onLegacyAttendanceScan` export in `functions/index.js`,
    `functions/src/handlers/legacyAttendanceSync.js` and its tests, and the
    `attendance-sync` branch in `functions/src/handlers/scanEvent.js`) and

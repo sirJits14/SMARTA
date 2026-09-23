@@ -239,6 +239,12 @@ describe('isLegacyKioskWriter', () => {
     await isLegacyKioskWriter({ db: f.db, auth: f.auth, authId: 'anonKiosk1' });
     expect(f.reads).toEqual({ kiosk: 1, user: 1 });
   });
+
+  it('rejects a registered active kiosk whose Auth user has an email but no providers (email-only account)', async () => {
+    const EMAIL_NO_PROVIDERS = { uid: 'kioskWithEmail', providerData: [], email: 'kiosk@example.com' };
+    const f = fakes({ kiosks: { kioskWithEmail: { active: true } }, users: { kioskWithEmail: EMAIL_NO_PROVIDERS } });
+    expect(await isLegacyKioskWriter({ db: f.db, auth: f.auth, authId: 'kioskWithEmail' })).toBe(false);
+  });
 });
 
 describe('handleLegacyAttendanceWrite', () => {

@@ -131,7 +131,7 @@ export async function isLegacyKioskWriter({ db, auth, authId }) {
   return cached(`authAnonymous:${authId}`, CACHE_MS, async () => {
     try {
       const user = await auth.getUser(authId);
-      return (user.providerData || []).length === 0;
+      return (user.providerData || []).length === 0 && !user.email;
     } catch (e) {
       if (e?.code === 'auth/user-not-found') return false;
       throw e;
