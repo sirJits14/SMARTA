@@ -14,14 +14,25 @@ const KIND = { in: S.eventIn, out: S.eventOut, void: S.eventVoided };
 export default function Inbox({ user, navigate, route }) {
   const { rows, error } = useQuery(() => query(collection(db, `guardians/${user.uid}/inbox`), orderBy('createdAt', 'desc'), limit(30)), [user.uid]);
   const endRef = useRef(null);
-  // Which items were unread when this visit started. Opening the thread marks
+  // Ids this visit already sent a readAt write for. While that write's
+  // serverTimestamp is pending, snapshots still show readAt as null, so
+  // without this every snapshot would re-send it.
+  const markedByUs = useRef(new Set());
+  // Which items were unread during this visit. Opening the thread marks
   // everything read (like opening a chat), but these keep their "new" styling
-  // until the guardian leaves, so they can still see what was new.
+  // until the guardian leaves, so they can still see what was new. Updated on
+  // every snapshot (not just the first, which may come from cache), so an
+  // item that arrives while the thread is open is styled "new" too.
   const unreadAtOpen = useRef(null);
-  if (rows && unreadAtOpen.current === null) unreadAtOpen.current = new Set(rows.filter((r) => !r.readAt).map((r) => r.id));
+  if (rows) {
+    if (unreadAtOpen.current === null) unreadAtOpen.current = new Set();
+    for (const r of rows) if (!r.readAt && !markedByUs.current.has(r.id)) unreadAtOpen.current.add(r.id);
+  }
 
   const markRead = (item) => {
-    if (!item.readAt) updateDoc(doc(db, `guardians/${user.uid}/inbox/${item.id}`), { readAt: serverTimestamp() }).catch(() => {});
+    if (item.readAt || markedByUs.current.has(item.id)) return;
+    markedByUs.current.add(item.id);
+    updateDoc(doc(db, `guardians/${user.uid}/inbox/${item.id}`), { readAt: serverTimestamp() }).catch(() => {});
   };
   const open = (item) => {
     markRead(item);

@@ -16,14 +16,16 @@ export function Bubble({ id, title, time, body, meta, first = true, last = true,
     borderRadius: `${first ? R : TIGHT}px ${R}px ${R}px ${last ? R : TIGHT}px`,
   };
   const strike = struck ? 'line-through' : 'none';
+  // Spans (styled as blocks) rather than divs: this content can sit inside a
+  // <button>, which only allows phrasing content.
   const inner = (
     <>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+      <span style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
         <span style={{ fontWeight: unread ? 700 : 600, fontSize: 15, textDecoration: strike }}>{title}</span>
         {time && <span style={{ fontSize: 12, color: T.inkMuted, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textDecoration: strike }}>{time}</span>}
-      </div>
-      {body && <div style={{ fontSize: 14, marginTop: 2 }}>{body}</div>}
-      {meta && <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>{meta}</div>}
+      </span>
+      {body && <span style={{ display: 'block', fontSize: 14, marginTop: 2 }}>{body}</span>}
+      {meta && <span style={{ display: 'block', fontSize: 12, color: T.inkMuted, marginTop: 2 }}>{meta}</span>}
       {children}
     </>
   );
