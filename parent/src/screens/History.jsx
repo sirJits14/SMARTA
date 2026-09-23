@@ -63,7 +63,7 @@ export default function History({ studentId, navigate, route }) {
                 >
                   {!voided && (
                     <button type="button" onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)}
-                      style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: 32, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
+                      style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: T.tap, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
                       {S.reportThis}
                     </button>
                   )}
