@@ -10,7 +10,7 @@ import { formatDateLabel, formatScanTime } from '../../../shared/dates.js';
 const KIND = { in: S.eventIn, out: S.eventOut, void: S.eventVoided };
 
 export default function Inbox({ user, navigate, route }) {
-  const { rows } = useQuery(() => query(collection(db, `guardians/${user.uid}/inbox`), orderBy('createdAt', 'desc'), limit(30)), [user.uid]);
+  const { rows, error } = useQuery(() => query(collection(db, `guardians/${user.uid}/inbox`), orderBy('createdAt', 'desc'), limit(30)), [user.uid]);
   const open = async (item) => {
     if (!item.readAt) updateDoc(doc(db, `guardians/${user.uid}/inbox/${item.id}`), { readAt: serverTimestamp() }).catch(() => {});
     if (item.type === 'attendance') navigate(`/learner/${item.studentId}?event=${item.eventId}`);
@@ -18,6 +18,7 @@ export default function Inbox({ user, navigate, route }) {
   useEffect(() => { const target = rows?.find((r) => r.id === route.query.item); if (target) open(target); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [rows === undefined, route.query.item]);
 
   if (rows === undefined) return <Spinner label={S.loading} />;
+  if (error) return <EmptyState title={S.inboxTitle} hint={S.inboxError} />;
   if (rows.length === 0) return <EmptyState title={S.inboxTitle} hint={S.inboxEmpty} />;
   return (
     <>

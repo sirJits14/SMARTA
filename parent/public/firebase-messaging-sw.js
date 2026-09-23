@@ -7,7 +7,7 @@ self.addEventListener('push', (event) => {
   try { payload = event.data ? event.data.json() : {}; } catch { payload = {}; }
   const n = payload.notification || {};
   const link = (payload.fcmOptions && payload.fcmOptions.link) || (payload.data && payload.data.inboxId ? `/inbox?item=${payload.data.inboxId}` : '/inbox');
-  event.waitUntil(self.registration.showNotification(n.title || 'BNHS Learner Records', {
+  event.waitUntil(self.registration.showNotification(n.title || "BNHS Learner's Attendance", {
     body: n.body || 'BNHS recorded a new attendance event. Tap to view securely.',
     tag: n.tag || (payload.data && payload.data.inboxId) || 'bnhs',
     icon: '/icons/icon-192.png',

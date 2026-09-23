@@ -6,7 +6,13 @@
     <meta name="theme-color" content="#5B4FE8" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <title>BNHS Learner Records</title>
+    <!-- iOS Safari's "Add to Home Screen" ignores manifest.webmanifest's
+         name/short_name and falls back to <title> unless this is set, so
+         it needs its own tag to get the same install-time name as Android/
+         Chrome (manifest.webmanifest "name") without changing the browser
+         tab title above. -->
+    <meta name="apple-mobile-web-app-title" content="BukNHS SMARTA" />
+    <title>BNHS Learner's Attendance</title>
   </head>
   <body>
     <div id="root"></div>

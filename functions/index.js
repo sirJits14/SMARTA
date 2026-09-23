@@ -3,8 +3,10 @@ import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/fire
 import { onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineString } from 'firebase-functions/params';
+import { Timestamp } from 'firebase-admin/firestore';
 import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
+import { detectLegacyScans, toScanEventData, legacyEventId } from './src/handlers/legacyAttendanceSync.js';
 import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
@@ -24,6 +26,22 @@ export const onScanEventCreated = onDocumentCreated({ document: 'scan_events/{ev
   const snap = event.data;
   if (!snap) return;
   await handleScanEvent(deps(), { eventId: event.params.eventId, data: snap.data() });
+});
+
+// TEMP(kiosk-v1-compat): see src/handlers/legacyAttendanceSync.js -- bridges
+// kiosk v1's student_attendance writes into the same pipeline scan_events
+// feeds, until kiosk v2 is deployed and devices are registered (K1/K2 in
+// docs/parent-portal-rollout-checklist.md). Delete this export, the import
+// above, and the 'attendance-sync' branch in scanEvent.js once that's done.
+export const onLegacyAttendanceSynced = onDocumentWritten({ document: 'student_attendance/{docId}', retry: true }, async (event) => {
+  const before = event.data?.before?.data() || null;
+  const after = event.data?.after?.data() || null;
+  const scans = detectLegacyScans({ before, after });
+  if (scans.length === 0) return;
+  const receivedAt = Timestamp.now();
+  for (const scan of scans) {
+    await handleScanEvent(deps(), { eventId: legacyEventId(scan), data: toScanEventData(scan, receivedAt) });
+  }
 });
 
 const callDeps = () => ({ db, auth, now: () => new Date() });

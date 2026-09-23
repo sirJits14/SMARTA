@@ -30,21 +30,35 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
 
-    // ---------- roster (staff + kiosk only; the anonymous public is gone) ----------
-    match /students/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /enrollments/{id} { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /sections/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
+    // ---------- roster (staff + kiosk; TEMP: anonymous public still allowed) ----------
+    // TEMP(kiosk-v1-compat): `|| signedIn()` on the five lines below restores
+    // the pre-migration behavior (any authenticated caller, including the
+    // kiosk's anonymous sign-in) because the deployed kiosk hardware is still
+    // running v1 and hasn't gone through K1 (deploy kiosk v2) + K2 (register
+    // devices) from docs/parent-portal-rollout-checklist.md. isKiosk() is
+    // kept alongside it as the target state -- once every physical kiosk is
+    // on v2 and registered in kiosks/{uid}, delete every `|| signedIn()` in
+    // this block (and the one on student_attendance below) to close the
+    // anonymous-public gap for good, matching the original intent of
+    // commit 6645a40.
+    match /students/{id}    { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isStaff(); }
+    match /enrollments/{id} { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isStaff(); }
+    match /sections/{id}    { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isStaff(); }
+    match /schedules/{id}   { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isStaff(); }
+    match /settings/app     { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isStaff(); }
     match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isStaff(); }
     match /users/{id}       { allow read: if isStaff(); allow write: if false; }
 
-    // Confirmed attendance. Staff edit freely; the kiosk merges only its known fields.
+    // Confirmed attendance. Staff edit freely; the registered kiosk merges
+    // only its known fields; TEMP(kiosk-v1-compat): any signed-in caller
+    // (the still-anonymous v1 kiosk) keeps unrestricted read/write access,
+    // matching pre-migration behavior, until K1/K2 land -- see note above.
     match /student_attendance/{id} {
-      allow read: if isStaff() || isKiosk();
+      allow read: if isStaff() || isKiosk() || signedIn();
       allow write: if isStaff()
         || (isKiosk() && request.resource.data.keys().hasOnly(
-             ['sectionId', 'date', 'schoolYear', 'marks', 'timeIn', 'timeOut', 'rosterInitialized', 'updatedAt']));
+             ['sectionId', 'date', 'schoolYear', 'marks', 'timeIn', 'timeOut', 'rosterInitialized', 'updatedAt']))
+        || signedIn();
     }
 
     // ---------- kiosks ----------
