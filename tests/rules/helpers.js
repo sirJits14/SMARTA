@@ -5,6 +5,10 @@ const password = { sign_in_provider: 'password' };
 export const STAFF = { uid: 'staff1', token: { email: 'registrar@bnhs.edu', email_verified: true, firebase: password } };
 export const KIOSK = { uid: 'kiosk1', token: { email: 'kiosk-gate1@bnhs.edu', email_verified: true, firebase: password } };
 export const KIOSK_INACTIVE = { uid: 'kiosk9', token: { email: 'kiosk-old@bnhs.edu', email_verified: true, firebase: password } };
+// A kiosk UID containing an underscore -- Firebase Auth UIDs can contain
+// '_' and '-'. Regression fixture for the id.split('_')[0] fragility a
+// prefix-based `.matches()` check fixes (see scan_events' create rule).
+export const KIOSK_UNDERSCORE = { uid: 'ki_osk1', token: { email: 'kiosk-gate2@bnhs.edu', email_verified: true, firebase: password } };
 export const GUARDIAN_A = { uid: 'gA', token: { email: 'a@gmail.com', email_verified: true, firebase: { sign_in_provider: 'google.com' } } };
 export const GUARDIAN_B = { uid: 'gB', token: { email: 'b@gmail.com', email_verified: true, firebase: password } };
 export const GUARDIAN_UNVERIFIED = { uid: 'gU', token: { email: 'u@gmail.com', email_verified: false, firebase: password } };

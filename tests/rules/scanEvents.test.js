@@ -1,7 +1,7 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
-import { setup, seedBaseline, as, ok, denied, STAFF, KIOSK, KIOSK_INACTIVE, GUARDIAN_A, seed } from './helpers.js';
+import { setup, seedBaseline, as, ok, denied, STAFF, KIOSK, KIOSK_INACTIVE, KIOSK_UNDERSCORE, GUARDIAN_A, seed } from './helpers.js';
 
 // rules-unit-testing hands out compat Firestore instances, so the server
 // timestamp sentinel must come from the compat namespace too.
@@ -21,6 +21,11 @@ const ID = 'kiosk1_S1_202609210712';
 describe('scan_events', () => {
   it('active kiosk creates a well-formed event', async () => {
     await ok(as(env, KIOSK).doc(`scan_events/${ID}`).set(valid()));
+  });
+  it('a kiosk whose UID itself contains an underscore can still create', async () => {
+    await seed(env, (db) => db.doc('kiosks/ki_osk1').set({ label: 'Gate 2', active: true }));
+    const id = 'ki_osk1_S1_in_202609210712';
+    await ok(as(env, KIOSK_UNDERSCORE).doc(`scan_events/${id}`).set(valid({ deviceId: 'ki_osk1' })));
   });
   it('rejects bad shape, wrong device, non-server receivedAt, wrong id prefix, bad kind', async () => {
     const db = as(env, KIOSK);

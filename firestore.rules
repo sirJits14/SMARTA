@@ -71,8 +71,12 @@ service cloud.firestore {
     // ---------- raw scan log (append-only) ----------
     match /scan_events/{id} {
       allow read: if isStaff();
+      // Prefix-checks the whole id rather than splitting on '_' and
+      // comparing only the first segment -- Firebase Auth UIDs can
+      // themselves contain '_', which would otherwise truncate the
+      // comparison and deny every create from that device.
       allow create: if isKiosk()
-        && id.split('_')[0] == request.auth.uid
+        && id.matches(request.auth.uid + '_.*')
         && request.resource.data.keys().hasOnly(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
              'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source'])
         && request.resource.data.keys().hasAll(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
