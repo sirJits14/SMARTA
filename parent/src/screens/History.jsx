@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import S from '../strings.js';
 import { T } from '../styles.js';
-import { Btn, Card, Banner, Spinner, EmptyState } from '../components/ui.jsx';
-import { Bubble } from '../components/Bubble.jsx';
+import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
+import { Bubble, DayDivider } from '../components/Bubble.jsx';
 import { useDoc } from '../hooks/useDoc.js';
-import { groupByDate, eventTitle } from '../lib/format.js';
-import { stackDay, dayLabel } from '../lib/thread.js';
+import { eventTitle } from '../lib/format.js';
+import { historyThread } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 
 const PAGE = 30;
@@ -31,7 +31,19 @@ export default function History({ studentId, navigate, route }) {
     setLast(snap.docs[snap.docs.length - 1] || null); setMore(snap.size === PAGE); setBusy(false);
   };
   useEffect(() => { load(null).catch(() => setMore(false)); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [studentId, learner?.updatedAt?.seconds]);
-  useEffect(() => { const id = route.query.event; if (id) document.getElementById(`ev-${id}`)?.scrollIntoView({ block: 'center' }); }, [rows, route.query.event]);
+  // Distance from the bottom of the page to hold while older scans are added
+  // above, so loading them doesn't yank the parent away from where they were.
+  const keepFromBottom = useRef(null);
+  const loadOlder = () => { keepFromBottom.current = document.documentElement.scrollHeight - window.scrollY; load(last).catch(() => { keepFromBottom.current = null; setBusy(false); }); };
+  // Land on the latest scan, at the bottom, like a text thread -- or on the
+  // scan a notification pointed at.
+  useLayoutEffect(() => {
+    const page = document.documentElement;
+    if (keepFromBottom.current !== null) { window.scrollTo(0, page.scrollHeight - keepFromBottom.current); keepFromBottom.current = null; return; }
+    const target = route.query.event && document.getElementById(`ev-${route.query.event}`);
+    if (target) target.scrollIntoView({ block: 'center' });
+    else window.scrollTo(0, page.scrollHeight);
+  }, [rows, route.query.event, learner === undefined]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error === 'permission-denied') return <Banner tone="warn">{S.accessEnded}</Banner>;
   if (learner === undefined) return <Spinner label={S.loading} />;
@@ -40,40 +52,36 @@ export default function History({ studentId, navigate, route }) {
     <>
       <h1 style={{ fontSize: 20, margin: '4px 0 0' }}>{learner?.displayName}</h1>
       <div style={{ color: T.inkMuted, fontSize: 13, marginBottom: 12 }}>{learner?.sectionLabel} · {S.historyTitle}</div>
+      {more && rows.length > 0 && <Btn variant="ghost" disabled={busy} onClick={loadOlder} style={{ width: '100%' }}>{S.historyLoadOlder}</Btn>}
       {rows.length === 0 && !busy && <EmptyState title={S.historyEmpty} />}
-      {groupByDate(rows).map((g) => {
-        const target = g.items.some((ev) => ev.id === route.query.event);
-        const stack = stackDay(g.items);
-        return (
-          <Card key={g.date} style={target ? { border: `1.5px solid ${T.primary}` } : undefined}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: T.inkMuted, marginBottom: 8 }}>{dayLabel(g.date, today)}</div>
-            {stack.map((ev, i) => {
-              const voided = ev.status === 'voided';
-              return (
-                <Bubble
-                  key={ev.id}
-                  id={`ev-${ev.id}`}
-                  first={i === 0}
-                  last={i === stack.length - 1}
-                  highlight={route.query.event === ev.id}
-                  struck={voided}
-                  title={eventTitle(ev)}
-                  time={formatScanTime(ev.scannedTime)}
-                  meta={eventMeta(ev)}
-                >
-                  {!voided && (
-                    <button type="button" onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)}
-                      style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: T.tap, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
-                      {S.reportThis}
-                    </button>
-                  )}
-                </Bubble>
-              );
-            })}
-          </Card>
-        );
-      })}
-      {more && <Btn variant="ghost" disabled={busy} onClick={() => load(last)} style={{ width: '100%' }}>{S.historyLoadMore}</Btn>}
+      {historyThread(rows, today).map((day) => (
+        <div key={day.date}>
+          <DayDivider label={day.label} />
+          {day.items.map((ev, i) => {
+            const voided = ev.status === 'voided';
+            return (
+              <Bubble
+                key={ev.id}
+                id={`ev-${ev.id}`}
+                first={i === 0}
+                last={i === day.items.length - 1}
+                highlight={route.query.event === ev.id}
+                struck={voided}
+                title={eventTitle(ev)}
+                time={formatScanTime(ev.scannedTime)}
+                meta={eventMeta(ev)}
+              >
+                {!voided && (
+                  <button type="button" onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)}
+                    style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: T.tap, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
+                    {S.reportThis}
+                  </button>
+                )}
+              </Bubble>
+            );
+          })}
+        </div>
+      ))}
     </>
   );
 }

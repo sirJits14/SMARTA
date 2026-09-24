@@ -1,12 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { groupByDate, eventTitle, latestScanToday } from './format.js';
+import { eventTitle, latestScanToday } from './format.js';
 describe('format', () => {
-  it('groups newest-first by date with labels', () => {
-    const g = groupByDate([{ id: 'a', scannedDate: '2026-09-21', kind: 'in' }, { id: 'b', scannedDate: '2026-09-20', kind: 'out' }, { id: 'c', scannedDate: '2026-09-21', kind: 'out' }]);
-    expect(g.map((x) => x.date)).toEqual(['2026-09-21', '2026-09-20']);
-    expect(g[0].label).toBe('Mon 21 Sep');
-    expect(g[0].items.map((i) => i.id)).toEqual(['a', 'c']);
-  });
   it('titles events by kind/status', () => {
     expect(eventTitle({ kind: 'in', status: 'recorded' })).toBe('Entered school');
     expect(eventTitle({ kind: 'out', status: 'recorded' })).toBe('Left school');
