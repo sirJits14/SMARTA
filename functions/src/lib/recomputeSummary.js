@@ -15,6 +15,10 @@ export function recomputeSummary({ events, todayDate, recentLimit = 10 }) {
       firstIn: firstIn ? { time: firstIn.scannedTime, eventId: firstIn.id } : null,
       lastOut: lastOut ? { time: lastOut.scannedTime, eventId: lastOut.id } : null,
       status,
+      // `today` is sorted newest-first (inherited from `live`); reverse for
+      // the natural chronological reading order a parent expects -- the
+      // earliest tap of the day first, most recent last.
+      events: [...today].reverse().map((e) => ({ kind: e.kind, time: e.scannedTime, eventId: e.id })),
     },
     recent: live.slice(0, recentLimit).map((e) => ({ id: e.id, kind: e.kind, scannedDate: e.scannedDate, scannedTime: e.scannedTime })),
   };

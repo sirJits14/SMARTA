@@ -17,8 +17,11 @@ function LearnerCard({ link, navigate }) {
     <Card>
       <div style={{ fontWeight: 800, fontSize: 18 }}>{data?.displayName || '—'}</div>
       <div style={{ color: T.inkMuted, fontSize: 13, marginBottom: 10 }}>{data?.sectionLabel}</div>
-      <div style={{ fontSize: 16, marginBottom: 4 }}>{today.entered}</div>
-      {today.left && <div style={{ fontSize: 16, marginBottom: 10 }}>{today.left}</div>}
+      {today.empty
+        ? <div style={{ fontSize: 16, marginBottom: 10 }}>{today.empty}</div>
+        : today.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: 16, marginBottom: i === today.lines.length - 1 ? 10 : 4 }}>{line}</div>
+          ))}
       <Btn variant="ghost" onClick={() => navigate(`/learner/${link.studentId}`)}>{S.homeViewHistory}</Btn>
     </Card>
   );

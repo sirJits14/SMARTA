@@ -9,9 +9,14 @@ export function groupByDate(events) {
 export const eventTitle = (e) => (e.kind === 'in' ? S.eventIn : S.eventOut);
 
 export function describeToday(today, todayDate) {
-  if (!today || today.date !== todayDate || (!today.firstIn && !today.lastOut)) return { entered: S.homeTodayNone, left: null };
-  return {
-    entered: today.firstIn ? `${S.homeEntered} ${formatScanTime(today.firstIn.time)}` : S.homeTodayNone,
-    left: today.lastOut ? `${S.homeLeft} ${formatScanTime(today.lastOut.time)}` : S.homeNoExit,
-  };
+  if (!today || today.date !== todayDate) return { lines: [], empty: S.homeTodayNone };
+  const events = today.events || [
+    ...(today.firstIn ? [{ kind: 'in', time: today.firstIn.time }] : []),
+    ...(today.lastOut ? [{ kind: 'out', time: today.lastOut.time }] : []),
+  ];
+  if (!events.length) return { lines: [], empty: S.homeTodayNone };
+  const lines = events.map((e) => `${e.kind === 'in' ? S.homeEntered : S.homeLeft} ${formatScanTime(e.time)}`);
+  if (!events.some((e) => e.kind === 'in')) lines.unshift(S.homeTodayNone);
+  if (events[events.length - 1].kind === 'in') lines.push(S.homeNoExit);
+  return { lines, empty: null };
 }
