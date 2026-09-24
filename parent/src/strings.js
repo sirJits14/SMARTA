@@ -52,7 +52,7 @@ const S = {
   notifBannerButton: 'Turn on notifications',
   historyTitle: 'Gate scans',
   historyEmpty: 'No gate scans recorded yet.',
-  historyLoadMore: 'Load more',
+  historyLoadOlder: 'Load older scans',
   eventIn: 'Entered school',
   eventOut: 'Left school',
   eventVoided: 'Corrected by the school',

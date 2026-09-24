@@ -1,11 +1,6 @@
 import S from '../strings.js';
-import { formatDateLabel, formatScanTime } from '../../../shared/dates.js';
+import { formatScanTime } from '../../../shared/dates.js';
 
-export function groupByDate(events) {
-  const by = new Map();
-  for (const e of events) { if (!by.has(e.scannedDate)) by.set(e.scannedDate, []); by.get(e.scannedDate).push(e); }
-  return [...by.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([date, items]) => ({ date, label: formatDateLabel(date), items }));
-}
 export const eventTitle = (e) => (e.kind === 'in' ? S.eventIn : S.eventOut);
 
 // Home card shows only the latest scan of today; the full list lives on History.

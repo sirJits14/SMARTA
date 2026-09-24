@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { itemMoment, dayLabel, toFeed, stackDay } from './thread.js';
+import { itemMoment, dayLabel, toFeed, stackDay, historyThread } from './thread.js';
 
 const ts = (iso) => ({ toDate: () => new Date(iso), toMillis: () => Date.parse(iso) });
 const att = (over) => ({ type: 'attendance', studentId: 'S1', learnerName: 'Ana Cruz', kind: 'in', scannedDate: '2026-09-23', scannedTime: '07:12', createdAt: ts('2026-09-23T07:12:30+08:00'), ...over });
@@ -90,5 +90,23 @@ describe('stackDay', () => {
   it('breaks same-minute ties by effectiveAt', () => {
     const e = (id, iso) => ({ id, scannedTime: '07:12', effectiveAt: ts(iso) });
     expect(stackDay([e('second', '2026-09-23T07:12:40+08:00'), e('first', '2026-09-23T07:12:05+08:00')]).map((x) => x.id)).toEqual(['first', 'second']);
+  });
+});
+
+describe('historyThread', () => {
+  it('reads like a text thread: days oldest -> newest, scans oldest -> newest within a day', () => {
+    // Firestore hands History its page newest-first.
+    const page = [
+      { id: 'd2-out', scannedDate: '2026-09-23', scannedTime: '16:05' },
+      { id: 'd2-in', scannedDate: '2026-09-23', scannedTime: '07:12' },
+      { id: 'd1-out', scannedDate: '2026-09-22', scannedTime: '16:03' },
+      { id: 'd0-in', scannedDate: '2026-09-21', scannedTime: '07:40' },
+    ];
+    const days = historyThread(page, '2026-09-23');
+    expect(days.map((d) => d.label)).toEqual(['Mon 21 Sep', 'Yesterday', 'Today']);
+    expect(days.map((d) => d.items.map((e) => e.id))).toEqual([['d0-in'], ['d1-out'], ['d2-in', 'd2-out']]);
+  });
+  it('is empty for no scans', () => {
+    expect(historyThread([], '2026-09-23')).toEqual([]);
   });
 });
