@@ -29,6 +29,7 @@ describe('recomputeSummary', () => {
     const r = recomputeSummary({ events: [ev('late', 'in', '2026-09-21', '07:05', 5), ev('first', 'out', '2026-09-21', '16:00', 160)], todayDate: '2026-09-21' });
     expect(r.today.firstIn.eventId).toBe('late');
     expect(r.today.status).toBe('out');
+    expect(r.today.events.map((e) => e.eventId)).toEqual(['late', 'first']);
   });
 
   it('lists every event of the day in chronological order, not just first-in/last-out', () => {

@@ -16,6 +16,7 @@ export function describeToday(today, todayDate) {
   ];
   if (!events.length) return { lines: [], empty: S.homeTodayNone };
   const lines = events.map((e) => `${e.kind === 'in' ? S.homeEntered : S.homeLeft} ${formatScanTime(e.time)}`);
+  if (!events.some((e) => e.kind === 'in')) lines.unshift(S.homeTodayNone);
   if (events[events.length - 1].kind === 'in') lines.push(S.homeNoExit);
   return { lines, empty: null };
 }

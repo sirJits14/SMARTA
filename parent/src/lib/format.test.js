@@ -19,6 +19,11 @@ describe('format', () => {
     expect(describeToday({ date: '2026-09-21', status: 'out', events: [
       { kind: 'in', time: '07:12' }, { kind: 'out', time: '12:00' }, { kind: 'in', time: '12:45' }, { kind: 'out', time: '16:05' },
     ] }, '2026-09-21')).toEqual({ lines: ['Entered 07:12 AM', 'Left 12:00 PM', 'Entered 12:45 PM', 'Left 04:05 PM'], empty: null });
+    expect(describeToday({ date: '2026-09-21', status: 'in', events: [
+      { kind: 'in', time: '07:12' }, { kind: 'out', time: '12:00' }, { kind: 'in', time: '12:45' },
+    ] }, '2026-09-21')).toEqual({ lines: ['Entered 07:12 AM', 'Left 12:00 PM', 'Entered 12:45 PM', 'No exit recorded yet'], empty: null });
+    expect(describeToday({ date: '2026-09-21', status: 'out', events: [{ kind: 'out', time: '16:05' }] }, '2026-09-21'))
+      .toEqual({ lines: ['No entry recorded today', 'Left 04:05 PM'], empty: null });
     expect(describeToday({ date: '2026-09-20', status: 'out', events: [{ kind: 'in', time: '07:12' }, { kind: 'out', time: '16:05' }] }, '2026-09-21'))
       .toEqual({ lines: [], empty: 'No entry recorded today' });
     expect(describeToday(null, '2026-09-21')).toEqual({ lines: [], empty: 'No entry recorded today' });
@@ -28,5 +33,7 @@ describe('format', () => {
       .toEqual({ lines: ['Entered 07:12 AM', 'No exit recorded yet'], empty: null });
     expect(describeToday({ date: '2026-09-21', status: 'out', firstIn: { time: '07:12' }, lastOut: { time: '16:05' } }, '2026-09-21'))
       .toEqual({ lines: ['Entered 07:12 AM', 'Left 04:05 PM'], empty: null });
+    expect(describeToday({ date: '2026-09-21', status: 'out', firstIn: null, lastOut: { time: '16:05' } }, '2026-09-21'))
+      .toEqual({ lines: ['No entry recorded today', 'Left 04:05 PM'], empty: null });
   });
 });
