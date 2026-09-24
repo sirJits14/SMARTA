@@ -56,7 +56,8 @@ the page. No screen layouts change.
   `ResizeObserver` plus a `useLayoutEffect` on the active key read the active
   button's `offsetLeft` / `offsetWidth` and set `transform: translateX(..)` and
   `width`. Transition `transform, width 250ms cubic-bezier(.2,.8,.2,1)`. The
-  label reveals via `max-width` + `opacity` over the same 250ms. The chip is not
+  button layout switches instantly (so the measured target is final); only the
+  chip slides, and the label fades/slides in via a 250ms keyframe. The chip is not
   rendered when `activeTab` is `null`. The chip does not animate on first paint
   (transitions are enabled only after the first measurement).
 - The existing global `prefers-reduced-motion` rule in `main.jsx` already turns
@@ -70,7 +71,9 @@ the page. No screen layouts change.
 ### 4. `parent/src/components/ui.jsx` (light touch)
 
 - `Card`: background `rgba(255,255,255,0.78)`, border `1px solid rgba(255,255,255,0.7)`,
-  a faint shadow `0 4px 24px rgba(30,27,51,0.06)`, and the `glass` class for the blur.
+  a faint shadow `0 4px 24px rgba(30,27,51,0.06)` and the blur — all via a
+  `.glass-card` class in `glass.css` (so the no-blur fallback can override it).
+  The sign-in screen drops its opaque page background so the glows show there too.
 - `Banner`: add the `glass` class and a white hairline border; the existing tinted
   backgrounds and text colors stay, so tone meanings are unchanged.
 - Inputs, buttons, `EmptyState`, `Spinner`: unchanged.
