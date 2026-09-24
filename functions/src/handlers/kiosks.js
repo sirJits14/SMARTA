@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { audit } from '../audit.js';
 import { str } from '../lib/validators.js';
+import { CallableError } from '../errors.js';
 
 const EMAIL_DOMAIN = 'bnhs.local';
 const MAX_EMAIL_ATTEMPTS = 5;
@@ -62,7 +63,9 @@ export async function provisionKiosk(ctx, data) {
 // only the Auth credential moves.
 export async function resetKioskPassword(ctx, data) {
   const { db, auth, email: staffEmail } = ctx;
-  const uid = str(data.uid, { name: 'uid', min: 1, max: 128 });
+  const uid = str(data.uid, { name: 'uid', min: 4, max: 128 });
+  const kioskDoc = await db.doc(`kiosks/${uid}`).get();
+  if (!kioskDoc.exists) throw new CallableError('not-found', 'Kiosk not found');
   const password = generatePassword();
   const userRecord = await auth.updateUser(uid, { password });
   await audit(db, { action: 'kiosk.password_reset', actorType: 'staff', actorUid: staffEmail, targetType: 'kiosk', targetId: uid });

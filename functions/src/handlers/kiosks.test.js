@@ -3,7 +3,12 @@ import { provisionKiosk, resetKioskPassword } from './kiosks.js';
 
 vi.mock('../audit.js', () => ({ audit: vi.fn() }));
 
-const fakeDb = () => ({ doc: vi.fn(() => ({ set: vi.fn().mockResolvedValue(undefined) })) });
+const fakeDb = ({ exists = true } = {}) => ({
+  doc: vi.fn(() => ({
+    set: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue({ exists }),
+  })),
+});
 
 describe('provisionKiosk', () => {
   it('slugifies the label into the kiosk email and returns a generated password', async () => {
@@ -56,12 +61,21 @@ describe('provisionKiosk', () => {
 
 describe('resetKioskPassword', () => {
   it('generates a new password for the existing uid and returns its email', async () => {
-    const updateUser = vi.fn().mockResolvedValue({ uid: 'k1', email: 'kiosk-main-gate@bnhs.local' });
-    const ctx = { db: fakeDb(), auth: { updateUser }, email: 'registrar@bnhs.edu' };
+    const updateUser = vi.fn().mockResolvedValue({ uid: 'kiosk1', email: 'kiosk-main-gate@bnhs.local' });
+    const ctx = { db: fakeDb({ exists: true }), auth: { updateUser }, email: 'registrar@bnhs.edu' };
 
-    const result = await resetKioskPassword(ctx, { uid: 'k1' });
+    const result = await resetKioskPassword(ctx, { uid: 'kiosk1' });
 
-    expect(updateUser).toHaveBeenCalledWith('k1', { password: expect.any(String) });
-    expect(result).toEqual({ uid: 'k1', email: 'kiosk-main-gate@bnhs.local', password: expect.any(String) });
+    expect(updateUser).toHaveBeenCalledWith('kiosk1', { password: expect.any(String) });
+    expect(result).toEqual({ uid: 'kiosk1', email: 'kiosk-main-gate@bnhs.local', password: expect.any(String) });
+  });
+
+  it('rejects a uid with no matching kiosks doc and does not touch Auth', async () => {
+    const updateUser = vi.fn();
+    const ctx = { db: fakeDb({ exists: false }), auth: { updateUser }, email: 'registrar@bnhs.edu' };
+
+    await expect(resetKioskPassword(ctx, { uid: 'unknownUid' })).rejects.toThrow();
+
+    expect(updateUser).not.toHaveBeenCalled();
   });
 });
