@@ -7,7 +7,8 @@ export const Btn = ({ variant = 'solid', style, ...p }) => (
     color: variant === 'ghost' ? T.primary : '#fff',
     border: variant === 'ghost' ? `1.5px solid ${T.primary}` : 'none', opacity: p.disabled ? 0.6 : 1, ...style }} />
 );
-export const Card = ({ style, ...p }) => <section {...p} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, marginBottom: 12, ...style }} />;
+// Surface (translucent white, hairline, blur, no-blur fallback) comes from .glass-card in glass.css.
+export const Card = ({ style, className, ...p }) => <section {...p} className={className ? `glass-card ${className}` : 'glass-card'} style={{ borderRadius: T.radius, padding: 16, marginBottom: 12, ...style }} />;
 export const Field = ({ label, children, hint }) => (
   <label style={{ ...font, display: 'block', marginBottom: 14 }}>
     <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T.inkMuted, marginBottom: 6 }}>{label}</span>
@@ -19,7 +20,8 @@ const inputStyle = { ...font, width: '100%', boxSizing: 'border-box', minHeight:
 export const Inp = (p) => <input {...p} style={{ ...inputStyle, ...p.style }} />;
 export const Sel = (p) => <select {...p} style={{ ...inputStyle, ...p.style }} />;
 export const Banner = ({ tone = 'info', children, action }) => (
-  <div role={tone === 'danger' ? 'alert' : 'status'} style={{ ...font, fontSize: 14, borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
+  <div role={tone === 'danger' ? 'alert' : 'status'} className="glass" style={{ ...font, fontSize: 14, borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
+    border: '1px solid rgba(255,255,255,0.7)',
     background: tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(91,79,232,0.08)',
     color: tone === 'danger' ? T.danger : tone === 'warn' ? T.warn : T.primaryDeep }}>
     <span>{children}</span>{action}
