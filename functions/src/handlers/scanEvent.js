@@ -38,12 +38,19 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
   const t0 = Date.now();
   const { studentId, schoolYear, kind, deviceId, source } = data;
   const isStaff = source === 'staff';
+  // TEMP(kiosk-v1-compat): synthesized by src/handlers/legacyAttendanceSync.js
+  // from kiosk v1's student_attendance timeIn/timeOut writes -- there's no
+  // registered kiosks/{uid} doc for these, so it needs its own identity
+  // branch, same as isStaff. Delete alongside that bridge once kiosk v2 is
+  // live everywhere (docs/parent-portal-rollout-checklist.md K1/K2).
+  const isAttendanceSync = source === 'attendance-sync';
 
   // 1. device
   const kiosk = isStaff ? { label: 'School office', active: true }
+    : isAttendanceSync ? { label: 'School gate', active: true }
     : await cached(`kiosk:${deviceId}`, CACHE_MS, async () => (await db.doc(`kiosks/${deviceId}`).get()).data() || null);
   if (!kiosk || kiosk.active !== true) { logWarn('scan_rejected', { eventId, deviceId, reason: 'device' }); return { outcome: 'rejected:device' }; }
-  if (!isStaff) checkDeviceRate(deviceId, data);
+  if (!isStaff && !isAttendanceSync) checkDeviceRate(deviceId, data);
 
   // 2. enrollment
   const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();

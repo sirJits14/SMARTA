@@ -4,7 +4,7 @@
 export const FORBIDDEN = ['location', 'tracking', 'live'];
 
 const S = {
-  appName: 'BNHS Learner Records',
+  appName: "BNHS Learner's Attendance",
   tagline: 'For parents and guardians of BNHS learners.',
   signInGoogle: 'Sign in with Google',
   signInEmail: 'Sign in with email',
@@ -63,6 +63,10 @@ const S = {
   inboxTitle: 'Inbox',
   inboxEmpty: 'Nothing here yet. New gate scans and messages from the school appear here.',
   inboxNewEvent: 'New gate scan',
+  inboxFromSchool: 'From the school',
+  dayToday: 'Today',
+  dayYesterday: 'Yesterday',
+  inboxError: 'Could not load your inbox right now. Please try again in a moment.',
   reportTitle: 'Report a record',
   reportReason: 'What seems wrong?',
   reportReasonWrongTime: 'The time is wrong',

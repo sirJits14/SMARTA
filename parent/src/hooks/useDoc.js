@@ -31,7 +31,13 @@ export function useQuery(buildQuery, deps) {
     let cancelled = false; let unsub = () => {};
     appCheckReady.then(() => {
       if (cancelled) return;
-      unsub = onSnapshot(q, (s) => setState({ rows: s.docs.map((d) => ({ id: d.id, ...d.data() })), error: null }), (e) => setState({ rows: [], error: e.code || 'error' }));
+      unsub = onSnapshot(q, (s) => setState({ rows: s.docs.map((d) => ({ id: d.id, ...d.data() })), error: null }), (e) => {
+        // Callers must check `error` -- rows is [] here, which otherwise
+        // renders identically to a genuinely empty list (that's how a
+        // missing Firestore index went unnoticed on the Inbox).
+        console.warn('useQuery failed:', e.code, e.message);
+        setState({ rows: [], error: e.code || 'error' });
+      });
     });
     return () => { cancelled = true; unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

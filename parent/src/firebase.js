@@ -21,8 +21,8 @@ if (import.meta.env.VITE_APPCHECK_DEBUG_TOKEN) self.FIREBASE_APPCHECK_DEBUG_TOKE
 // Check has attached and never self-heals once it does. This adds at most
 // one async hop before a listener attaches, never before the app renders.
 export const appCheckReady = import.meta.env.VITE_RECAPTCHA_SITE_KEY
-  ? import('firebase/app-check').then(({ initializeAppCheck, ReCaptchaV3Provider }) => {
-      initializeAppCheck(app, { provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true });
+  ? import('firebase/app-check').then(({ initializeAppCheck, ReCaptchaEnterpriseProvider }) => {
+      initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true });
     })
   : Promise.resolve();
 

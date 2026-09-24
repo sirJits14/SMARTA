@@ -4,27 +4,18 @@ import { db } from '../firebase.js';
 import S from '../strings.js';
 import { T } from '../styles.js';
 import { Btn, Card, Banner, Spinner, EmptyState } from '../components/ui.jsx';
+import { Bubble } from '../components/Bubble.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 import { groupByDate, eventTitle } from '../lib/format.js';
-import { formatScanTime } from '../../../shared/dates.js';
+import { stackDay, dayLabel } from '../lib/thread.js';
+import { formatScanTime, localDate } from '../../../shared/dates.js';
 
 const PAGE = 30;
 
-export function EventRow({ ev, studentId, navigate, highlight }) {
+function eventMeta(ev) {
   const voided = ev.status === 'voided';
-  return (
-    <div id={`ev-${ev.id}`} style={{ padding: '10px 0', borderBottom: `1px solid ${T.border}`, background: highlight ? 'rgba(91,79,232,0.06)' : 'transparent' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontWeight: 600, textDecoration: voided ? 'line-through' : 'none' }}>{eventTitle(ev)}</span>
-        <span style={{ fontVariantNumeric: 'tabular-nums', textDecoration: voided ? 'line-through' : 'none' }}>{formatScanTime(ev.scannedTime)}</span>
-      </div>
-      <div style={{ fontSize: 12, color: T.inkMuted }}>
-        {ev.deviceLabel}{ev.delayedSync ? ` · ${S.eventLate}` : ''}{ev.source === 'staff' && !voided ? ` · ${S.eventManual}` : ''}
-        {voided ? ` · ${S.eventVoided}${ev.voidReason ? `: ${ev.voidReason}` : ''}` : ''}
-      </div>
-      {!voided && <button onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)} style={{ background: 'none', border: 'none', color: T.primary, padding: '6px 0', minHeight: 32, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>{S.reportThis}</button>}
-    </div>
-  );
+  return `${ev.deviceLabel || ''}${ev.delayedSync ? ` · ${S.eventLate}` : ''}${ev.source === 'staff' && !voided ? ` · ${S.eventManual}` : ''}`
+    + `${voided ? ` · ${S.eventVoided}${ev.voidReason ? `: ${ev.voidReason}` : ''}` : ''}`;
 }
 
 export default function History({ studentId, navigate, route }) {
@@ -44,17 +35,44 @@ export default function History({ studentId, navigate, route }) {
 
   if (error === 'permission-denied') return <Banner tone="warn">{S.accessEnded}</Banner>;
   if (learner === undefined) return <Spinner label={S.loading} />;
+  const today = localDate();
   return (
     <>
       <h1 style={{ fontSize: 20, margin: '4px 0 0' }}>{learner?.displayName}</h1>
       <div style={{ color: T.inkMuted, fontSize: 13, marginBottom: 12 }}>{learner?.sectionLabel} · {S.historyTitle}</div>
       {rows.length === 0 && !busy && <EmptyState title={S.historyEmpty} />}
-      {groupByDate(rows).map((g) => (
-        <Card key={g.date}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: T.inkMuted, marginBottom: 4 }}>{g.label}</div>
-          {g.items.map((ev) => <EventRow key={ev.id} ev={ev} studentId={studentId} navigate={navigate} highlight={route.query.event === ev.id} />)}
-        </Card>
-      ))}
+      {groupByDate(rows).map((g) => {
+        const target = g.items.some((ev) => ev.id === route.query.event);
+        const stack = stackDay(g.items);
+        return (
+          <Card key={g.date} style={target ? { border: `1.5px solid ${T.primary}` } : undefined}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: T.inkMuted, marginBottom: 8 }}>{dayLabel(g.date, today)}</div>
+            {stack.map((ev, i) => {
+              const voided = ev.status === 'voided';
+              return (
+                <Bubble
+                  key={ev.id}
+                  id={`ev-${ev.id}`}
+                  first={i === 0}
+                  last={i === stack.length - 1}
+                  highlight={route.query.event === ev.id}
+                  struck={voided}
+                  title={eventTitle(ev)}
+                  time={formatScanTime(ev.scannedTime)}
+                  meta={eventMeta(ev)}
+                >
+                  {!voided && (
+                    <button type="button" onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)}
+                      style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: T.tap, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
+                      {S.reportThis}
+                    </button>
+                  )}
+                </Bubble>
+              );
+            })}
+          </Card>
+        );
+      })}
       {more && <Btn variant="ghost" disabled={busy} onClick={() => load(last)} style={{ width: '100%' }}>{S.historyLoadMore}</Btn>}
     </>
   );

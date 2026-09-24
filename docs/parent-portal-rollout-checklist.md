@@ -7,7 +7,7 @@ outcome is recorded in this file with the date and who verified it.
 - [ ] Project on Blaze; budget PHP 1,500 with 50/100/200 % alerts (owner + registrar emails).
 - [ ] Authentication → Sign-in method: Email/Password on, Google on, Anonymous still ON (turned off in step K4).
 - [ ] Cloud Messaging → Web Push certificates → generate key pair → `VITE_FIREBASE_VAPID_KEY` in `parent/.env`.
-- [ ] App Check → register the three web apps with reCAPTCHA v3 (one site key covering the three hostnames); enforcement OFF for now; debug tokens registered for dev machines.
+- [ ] App Check → register the three web apps with reCAPTCHA Enterprise (one site key covering the three hostnames); enforcement OFF for now; debug tokens registered for dev machines.
 - [ ] Hosting → add site `bnhs-parent`; `firebase target:apply hosting sims bnhs-sims`; `firebase target:apply hosting parent bnhs-parent`.
 - [ ] Firestore → `settings/parent_portal` = `{ notificationsPaused: true, consentVersion: 1, privacyNoticeUrl: "<published notice URL>" }`.
 - [ ] Privacy notice reviewed by the school head; focal person named in it.
@@ -24,6 +24,33 @@ outcome is recorded in this file with the date and who verified it.
 - [ ] K3 Deploy indexes + rules + functions: `npx firebase deploy --only firestore,functions`. Verify scanning at every gate immediately. Rollback = redeploy previous `firestore.rules`.
 - [ ] K4 Disable Anonymous sign-in in the console.
 - [ ] K5 After one clean school day (Scan log tab shows every gate; Functions logs show `scan_processed`, zero `scan_rejected:device`): App Check → enforce for Firestore, then Functions.
+
+### Actual production state (2026-09-23)
+The steps above did not run in order: K3 (rules + functions + indexes) was
+deployed before K1/K2, while the gates still run kiosk v1 (anonymous
+sign-in, writes `student_attendance` only). To keep scanning working:
+- TEMP(kiosk-v1-compat) `|| signedIn()` fallbacks are live in `firestore.rules`
+  (roster reads, `settings/app`, `student_attendance` read/write).
+- The `onLegacyAttendanceScan` function bridges v1 `student_attendance`
+  timeIn/timeOut writes into parent-portal entries. It only accepts writes
+  from a registered, active kiosk whose Auth account is anonymous; any other
+  writer is dropped with a `legacy_scan_unregistered_writer` warning.
+
+Removal steps:
+1. Register each v1 kiosk's anonymous uid via Guardians → Kiosk devices. Find
+   it in the Functions logs: `legacy_scan_unregistered_writer` → `authId`.
+2. Deploy `onLegacyAttendanceScan` (delete the old ungated trigger):
+   - `npx firebase functions:delete onLegacyAttendanceSynced --region asia-southeast1 --project bnhs-sims`
+   - Confirm with `npx firebase functions:list --project bnhs-sims` that only `onLegacyAttendanceScan` triggers on `student_attendance`.
+   - Then check Functions logs for `legacy_scan_unregistered_writer` entries showing a real uid in `authId` after the first gate scans. The old trigger bridges any signed-in writer, so leaving it deployed keeps the forged-entry hole open.
+3. After every v1 kiosk is replaced by v2 at K1/K2, delete the bridge (the
+   `onLegacyAttendanceScan` export in `functions/index.js`,
+   `functions/src/handlers/legacyAttendanceSync.js` and its tests, and the
+   `attendance-sync` branch in `functions/src/handlers/scanEvent.js`) and
+   every `|| signedIn()` fallback in `firestore.rules`, and flip the TEMP
+   assertions in `tests/rules/existing.test.js` back to `denied()`. Also
+   deactivate the step-1 anonymous kiosk registrations, since an active
+   `kiosks/{uid}` doc still passes `isKiosk()` in the rules.
 
 ## Stage 1 — Internal staff test (3 school days)
 - [ ] Deploy parent site: `npm --prefix parent run build && npx firebase deploy --only hosting:parent`.

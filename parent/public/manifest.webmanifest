@@ -1,6 +1,6 @@
 {
-  "name": "BNHS Learner Records",
-  "short_name": "BNHS Records",
+  "name": "BukNHS SMARTA",
+  "short_name": "SMARTA",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
