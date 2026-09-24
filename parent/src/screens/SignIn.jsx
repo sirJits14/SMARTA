@@ -17,7 +17,7 @@ export default function SignIn() {
   const reset = () => run(async () => { await sendPasswordResetEmail(auth, email.trim()); setMsg({ tone: 'info', text: S.resetSent }); }, S.resetSent);
 
   return (
-    <div style={{ fontFamily: T.font, background: T.bg, minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 16 }}>
+    <div style={{ fontFamily: T.font, minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 16 }}>
       <Card style={{ width: '100%', maxWidth: 400 }}>
         <img src="/icons/icon-192.png" alt="" width={48} height={48} />
         <h1 style={{ fontSize: 22, margin: '8px 0 2px' }}>{S.appName}</h1>

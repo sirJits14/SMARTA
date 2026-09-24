@@ -1,0 +1,106 @@
+/* Glass layer for the parent portal. Lives in CSS (not inline styles)
+   because backdrop-filter fallbacks, pseudo-element glows, aria-current
+   selectors and keyframes can't be expressed inline. Colors mirror
+   src/styles.js tokens. */
+
+body { background: #F5F4FC; /* T.bg */ }
+
+/* Soft color glows behind everything so frosted surfaces read as glass. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 42vmax at 0% 0%, rgba(91, 79, 232, 0.22), transparent 70%),
+    radial-gradient(circle 36vmax at 100% 45%, rgba(167, 139, 250, 0.26), transparent 70%),
+    radial-gradient(circle 40vmax at 8% 100%, rgba(249, 168, 212, 0.24), transparent 70%);
+}
+
+.glass {
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 24px rgba(30, 27, 51, 0.06);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* ---- Floating pill nav ---- */
+.gnav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(calc(100% - 32px), 360px);
+  box-sizing: border-box;
+  display: flex;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px rgba(70, 56, 194, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  z-index: 10;
+}
+
+.gnav-chip {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  border-radius: 999px;
+  background: rgba(91, 79, 232, 0.12);
+  pointer-events: none;
+}
+.gnav-chip--anim { transition: transform 250ms cubic-bezier(.2, .8, .2, 1), width 250ms cubic-bezier(.2, .8, .2, 1); }
+
+.gnav-btn {
+  position: relative; /* above the chip */
+  flex: 1 1 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6B6890; /* T.inkMuted */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.gnav-btn[aria-current="page"] { flex: 0 0 auto; color: #5B4FE8; /* T.primary */ }
+.gnav-btn:focus-visible { outline: 2px solid #5B4FE8; outline-offset: 2px; }
+
+/* Inactive labels stay in the DOM for screen readers but are visually hidden. */
+.gnav-btn:not([aria-current="page"]) .gnav-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+.gnav-btn[aria-current="page"] .gnav-label { white-space: nowrap; animation: gnav-label-in 250ms ease-out; }
+@keyframes gnav-label-in { from { opacity: 0; transform: translateX(-4px); } }
+
+/* No blur support: solid surfaces rather than unreadable see-through ones. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gnav { background: #FFFFFF; border-color: #E7E5F5; }
+  .glass-card { background: #FFFFFF; border-color: #E7E5F5; }
+}
