@@ -28,14 +28,12 @@ export function toScannedAt(date, hhmm) {
 
 // Pure: diffs before/after timeIn/timeOut maps on a student_attendance doc
 // and returns the scans that are new since the last write: a key that's
-// absent before, or whose value changed. A changed value (a kiosk-side
-// correction) maps to the SAME legacyEventId as the original scan, so
-// handleScanEvent overwrites that learner event's time in place; the
-// guardian's existing inbox item keeps the old time and no new push is
-// sent. "One timeIn, one timeOut per student per section-day" is the
-// ceiling of what this data model records -- same granularity the
-// registrar's own Attendance tab already shows -- so this bridge cannot
-// surface more scans per day than that.
+// absent before, or whose value changed. A changed value is a NEW tap, not
+// a correction: the kiosk writes the latest scan time into timeIn/timeOut
+// on every tap of a learner who is already present, overwriting the
+// previous one. The map only ever holds that latest time, so each changed
+// value is surfaced as its own scan (see legacyEventId) -- a tap that
+// leaves the value unchanged (same minute) carries nothing to detect.
 export function detectLegacyScans({ before, after }) {
   if (!after) return [];
   const { sectionId, date, schoolYear } = after;
@@ -53,15 +51,18 @@ export function detectLegacyScans({ before, after }) {
   return scans;
 }
 
-// A stable, idempotent id per (section, date, student, kind) -- a re-run of
-// the same write (trigger redelivery) produces the same id, so
-// handleScanEvent's own idempotency (everything keyed on eventId) makes
-// this a no-op rather than a duplicate event. A corrected value for the
-// same key also reuses the id (see detectLegacyScans). Prefixed distinctly
-// from real kiosk device ids (which are Firebase Auth uids) so collision is
-// not a concern.
+// A stable, idempotent id per (section, date, student, kind, minute) -- one
+// per tap, like kiosk v2's scan_events ids. A re-run of the same write
+// (trigger redelivery) produces the same id, so handleScanEvent's own
+// idempotency (everything keyed on eventId) makes it a no-op rather than a
+// duplicate event. A later tap by a learner who is already present gets a
+// NEW id, so it's added to the day's timeline and inbox (with its own
+// push, subject to the usual gates) instead of overwriting the earlier tap
+// in place and being skipped by the inbox fan-out. Prefixed distinctly from
+// real kiosk device ids (which are Firebase Auth uids) so collision is not
+// a concern.
 export function legacyEventId(scan) {
-  return `legacy_${scan.sectionId}_${scan.scannedDate}_${scan.studentId}_${scan.kind}`;
+  return `legacy_${scan.sectionId}_${scan.scannedDate}_${scan.studentId}_${scan.kind}_${scan.scannedTime.replace(':', '')}`;
 }
 
 export function toScanEventData(scan, receivedAt) {

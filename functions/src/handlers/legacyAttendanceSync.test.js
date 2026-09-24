@@ -58,17 +58,17 @@ describe('detectLegacyScans', () => {
     ]);
   });
 
-  it('re-emits a changed value (a correction) under the same event id, so it overwrites that event in place', () => {
-    const before = { ...base, timeIn: { S1: '07:12' } };
-    const after = { ...base, timeIn: { S1: '07:05' } };
+  it('treats a changed value as a new tap by a learner who is already present, with its own event id', () => {
+    const before = { ...base, timeIn: { S1: '07:12' }, timeOut: { S1: '12:00' } };
+    const after = { ...base, timeIn: { S1: '07:12' }, timeOut: { S1: '16:05' } };
     const scans = detectLegacyScans({ before, after });
     expect(scans).toEqual([
-      { studentId: 'S1', sectionId: 'SEC1', schoolYear: '2026-2027', kind: 'in', scannedDate: '2026-09-23', scannedTime: '07:05' },
+      { studentId: 'S1', sectionId: 'SEC1', schoolYear: '2026-2027', kind: 'out', scannedDate: '2026-09-23', scannedTime: '16:05' },
     ]);
-    // Same id as the original 07:12 scan: handleScanEvent rewrites that
-    // learner event's time; the existing inbox item keeps the old time and
-    // no new push goes out.
-    expect(legacyEventId(scans[0])).toBe(legacyEventId({ ...scans[0], scannedTime: '07:12' }));
+    // A different id from the earlier 12:00 tap: handleScanEvent adds it to
+    // the day's timeline and fans out a new inbox item, instead of
+    // overwriting the 12:00 event in place and skipping the inbox.
+    expect(legacyEventId(scans[0])).not.toBe(legacyEventId({ ...scans[0], scannedTime: '12:00' }));
   });
 
   it('is a no-op when timeIn/timeOut are unchanged', () => {
@@ -79,11 +79,14 @@ describe('detectLegacyScans', () => {
 });
 
 describe('legacyEventId', () => {
-  it('is stable for the same scan and distinct across kind/date/student', () => {
-    const scan = { sectionId: 'SEC1', scannedDate: '2026-09-23', studentId: 'S1', kind: 'in' };
-    expect(legacyEventId(scan)).toBe('legacy_SEC1_2026-09-23_S1_in');
+  it('is stable for the same scan and distinct across kind/date/student/time', () => {
+    const scan = { sectionId: 'SEC1', scannedDate: '2026-09-23', studentId: 'S1', kind: 'in', scannedTime: '07:12' };
+    expect(legacyEventId(scan)).toBe('legacy_SEC1_2026-09-23_S1_in_0712');
     expect(legacyEventId(scan)).toBe(legacyEventId({ ...scan }));
     expect(legacyEventId({ ...scan, kind: 'out' })).not.toBe(legacyEventId(scan));
+    expect(legacyEventId({ ...scan, scannedDate: '2026-09-24' })).not.toBe(legacyEventId(scan));
+    expect(legacyEventId({ ...scan, studentId: 'S2' })).not.toBe(legacyEventId(scan));
+    expect(legacyEventId({ ...scan, scannedTime: '07:45' })).not.toBe(legacyEventId(scan));
   });
 });
 
@@ -295,7 +298,7 @@ describe('handleLegacyAttendanceWrite', () => {
     expect(r).toEqual({ outcome: 'processed', processed: 1 });
     expect(processScan).toHaveBeenCalledTimes(1);
     const [eventId, data] = processScan.mock.calls[0];
-    expect(eventId).toBe('legacy_SEC1_2026-09-23_S1_in');
+    expect(eventId).toBe('legacy_SEC1_2026-09-23_S1_in_0712');
     expect(data).toMatchObject({ studentId: 'S1', kind: 'in', source: 'attendance-sync', scannedTime: '07:12' });
     expect(data.receivedAt.toDate().toISOString()).toBe(EVENT_TIME);
 
@@ -308,7 +311,7 @@ describe('handleLegacyAttendanceWrite', () => {
     const processScan = vi.fn(async () => {});
     const r = await run(f, processScan, { after: { ...base, timeIn: { S1: '7:12 AM', S2: '07:15' } } });
     expect(r).toEqual({ outcome: 'processed', processed: 1 });
-    expect(processScan.mock.calls.map((c) => c[0])).toEqual(['legacy_SEC1_2026-09-23_S2_in']);
+    expect(processScan.mock.calls.map((c) => c[0])).toEqual(['legacy_SEC1_2026-09-23_S2_in_0715']);
     expect(logWarn).toHaveBeenCalledWith('legacy_scan_invalid', { docId: 'SEC1_2026-09-23', studentId: 'S1', reason: 'time' });
   });
 
@@ -334,6 +337,6 @@ describe('handleLegacyAttendanceWrite', () => {
     const f = registered();
     const processScan = vi.fn(async (eventId) => { if (eventId.includes('_S1_')) throw new Error('transient'); });
     await expect(run(f, processScan, { after: { ...base, timeIn: { S1: '07:12', S2: '07:15' } } })).rejects.toThrow('transient');
-    expect(processScan.mock.calls.map((c) => c[0])).toEqual(['legacy_SEC1_2026-09-23_S1_in', 'legacy_SEC1_2026-09-23_S2_in']);
+    expect(processScan.mock.calls.map((c) => c[0])).toEqual(['legacy_SEC1_2026-09-23_S1_in_0712', 'legacy_SEC1_2026-09-23_S2_in_0715']);
   });
 });

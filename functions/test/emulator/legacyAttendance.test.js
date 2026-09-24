@@ -32,11 +32,11 @@ const write = (authId) => ({
   docId: 'SEC1_2026-09-21', authId, authType: 'unknown', eventTime: EVENT_TIME,
   before: null, after: { sectionId: 'SEC1', date: '2026-09-21', schoolYear: '2026-2027', timeIn: { S1: '08:12' } },
 });
-const bridge = (messaging = fakeMessaging()) => ({
+const bridge = (messaging = fakeMessaging(), now = NOW) => ({
   db: db(), auth: auth(),
-  processScan: (eventId, data) => handleScanEvent({ db: db(), messaging, portalUrl: 'https://p.test', now: NOW }, { eventId, data }),
+  processScan: (eventId, data) => handleScanEvent({ db: db(), messaging, portalUrl: 'https://p.test', now }, { eventId, data }),
 });
-const legacyEvent = () => db().doc('learners/S1/events/legacy_SEC1_2026-09-21_S1_in').get();
+const legacyEvent = () => db().doc('learners/S1/events/legacy_SEC1_2026-09-21_S1_in_0812').get();
 
 beforeEach(async () => { await clearAll(); await clearAuth(); clearCache(); clearDeviceRate(); await seedSchool(); });
 
@@ -75,13 +75,36 @@ describe('handleLegacyAttendanceWrite (end to end)', () => {
     expect(ev.receivedAt.toDate().toISOString()).toBe(EVENT_TIME);
   });
 
+  it('gives a learner who is already present a new timeline entry and inbox item for every later tap', async () => {
+    const uid = await signUpAnonymous();
+    await db().doc(`kiosks/${uid}`).set({ label: 'Gate v1', active: true });
+    const m = fakeMessaging();
+    const tap = (eventTime, before, after) => handleLegacyAttendanceWrite(bridge(m, () => new Date(eventTime)),
+      { docId: 'SEC1_2026-09-21', authId: uid, authType: 'unknown', eventTime, before, after });
+
+    const entered = { sectionId: 'SEC1', date: '2026-09-21', schoolYear: '2026-2027', timeIn: { S1: '08:12' } };
+    const leftAtNoon = { ...entered, timeOut: { S1: '11:30' } };
+    // The kiosk overwrites timeOut with the latest tap's time.
+    const leftAgain = { ...entered, timeOut: { S1: '16:05' } };
+    await tap('2026-09-21T00:12:30.000Z', null, entered);
+    await tap('2026-09-21T03:30:30.000Z', entered, leftAtNoon);
+    await tap('2026-09-21T08:05:30.000Z', leftAtNoon, leftAgain);
+
+    const learner = (await db().doc('learners/S1').get()).data();
+    expect(learner.today.events.map((e) => `${e.kind} ${e.time}`)).toEqual(['in 08:12', 'out 11:30', 'out 16:05']);
+    expect(learner.today.lastOut.time).toBe('16:05');
+    const inbox = (await db().collection('guardians/gA/inbox').get()).docs.map((d) => d.data());
+    expect(inbox.map((i) => `${i.kind} ${i.scannedTime}`).sort()).toEqual(['in 08:12', 'out 11:30', 'out 16:05']);
+    expect(m.sent).toHaveLength(3);
+  });
+
   it('creates nothing for an unregistered anonymous writer (the reported hole)', async () => {
     const uid = await signUpAnonymous();
     const m = fakeMessaging();
     const r = await handleLegacyAttendanceWrite(bridge(m), write(uid));
     expect(r.outcome).toBe('rejected:writer');
     expect((await legacyEvent()).exists).toBe(false);
-    expect((await db().doc('guardians/gA/inbox/legacy_SEC1_2026-09-21_S1_in').get()).exists).toBe(false);
+    expect((await db().doc('guardians/gA/inbox/legacy_SEC1_2026-09-21_S1_in_0812').get()).exists).toBe(false);
     expect(m.sent).toHaveLength(0);
   });
 });
