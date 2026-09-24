@@ -10,11 +10,11 @@ export const MAX_FAILURES = 5;
 // (QueryDocumentSnapshot-shaped: .data()/.ref) -- the caller (scanEvent.js)
 // needs that same query for its own device-count gate right before this is
 // called, so this no longer re-queries Firestore for it.
-export async function sendToGuardian({ db, messaging, portalUrl }, { inboxId, studentId, devDocs }) {
+export async function sendToGuardian({ db, messaging, portalUrl }, { inboxId, studentId, devDocs, deviceLabel }) {
   if (devDocs.length === 0) return { status: 'skipped_no_device', pruned: 0 };
 
   const tokens = devDocs.map((d) => d.data().token);
-  const res = await messaging.sendEachForMulticast(pushPayload({ tokens, inboxId, studentId, portalUrl }));
+  const res = await messaging.sendEachForMulticast(pushPayload({ tokens, inboxId, studentId, portalUrl, deviceLabel }));
 
   const batch = db.batch();
   let pruned = 0, anySuccess = false;

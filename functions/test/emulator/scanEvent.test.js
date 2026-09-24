@@ -39,14 +39,14 @@ describe('handleScanEvent', () => {
     expect(learner.lastPush.kind).toBe('in');
 
     const inboxA = (await db().doc('guardians/gA/inbox/k1_S1_202609210712').get()).data();
-    expect(inboxA).toMatchObject({ type: 'attendance', studentId: 'S1', learnerName: 'Ana Cruz', kind: 'in', scannedTime: '07:12', pushStatus: 'sent' });
+    expect(inboxA).toMatchObject({ type: 'attendance', studentId: 'S1', learnerName: 'Ana Cruz', kind: 'in', scannedTime: '07:12', pushStatus: 'sent', deviceLabel: 'Main Gate' });
     const inboxB = (await db().doc('guardians/gB/inbox/k1_S1_202609210712').get()).data();
     expect(inboxB.pushStatus).toBe('skipped_disabled');
     expect((await db().doc('guardians/gC/inbox/k1_S1_202609210712').get()).exists).toBe(false);
 
     expect(m.sent).toHaveLength(1);
     expect(m.sent[0].tokens.sort()).toEqual(['tokA1', 'tokA2']);
-    expect(m.sent[0].notification.body).toBe('BNHS recorded a new attendance event. Tap to view securely.');
+    expect(m.sent[0].notification.body).toBe('BNHS recorded a new attendance event at Main Gate. Tap to view securely.');
   });
 
   it('is idempotent: re-running the same event sends nothing new', async () => {

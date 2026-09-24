@@ -68,6 +68,7 @@ export default function Inbox({ user, navigate, route }) {
                   unread={unreadAtOpen.current?.has(item.id)}
                   title={item.type === 'attendance' ? (KIND[item.kind] || S.inboxNewEvent) : item.title}
                   body={item.type === 'attendance' ? null : item.body}
+                  meta={item.type === 'attendance' ? item.deviceLabel : undefined}
                   time={formatScanTime(item.time)}
                   onClick={item.type === 'attendance' ? () => open(item) : undefined}
                 />
