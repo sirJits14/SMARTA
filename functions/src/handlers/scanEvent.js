@@ -118,6 +118,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
     const item = {
       type: 'attendance', studentId, learnerName, kind, scannedDate: data.scannedDate, scannedTime: data.scannedTime,
       eventId: kind === 'void' ? data.voidsEventId : eventId, createdAt: prior?.createdAt || FieldValue.serverTimestamp(), pushStatus: 'pending',
+      deviceLabel: kiosk.label,
     };
     if (!eventGate.send) { await inboxRef.set({ ...item, pushStatus: eventGate.status }, { merge: true }); continue; }
 
@@ -130,7 +131,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
     if (gGate) { await inboxRef.set({ ...item, pushStatus: gGate }, { merge: true }); continue; }
 
     if (!prior) await inboxRef.set(item);
-    const res = await sendToGuardian({ db, messaging, portalUrl }, { inboxId: eventId, studentId, devDocs: devSnap.docs });
+    const res = await sendToGuardian({ db, messaging, portalUrl }, { inboxId: eventId, studentId, devDocs: devSnap.docs, deviceLabel: kiosk.label });
     pruned += res.pruned;
     if (res.status === 'sent') pushesSent++; else if (res.status === 'failed') pushesFailed++;
     await inboxRef.set({ pushStatus: res.status, pushSentAt: FieldValue.serverTimestamp() }, { merge: true });
