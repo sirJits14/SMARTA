@@ -1,11 +1,41 @@
+import { randomBytes } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { audit } from '../audit.js';
 import { str } from '../lib/validators.js';
+import { CallableError } from '../errors.js';
 
+const EMAIL_DOMAIN = 'bnhs.local';
+const MAX_EMAIL_ATTEMPTS = 5;
+
+const slugify = (label) => label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'device';
+
+// base64url avoids characters that need escaping when copy-pasted into a
+// plain <input> or a terminal; 18 random bytes -> 24 chars, ~144 bits.
+const generatePassword = () => randomBytes(18).toString('base64url');
+
+// Confirms uid is a real kiosk-domain Auth account, independent of whatever
+// a kiosks/{uid} Firestore doc claims -- deactivateKiosk's upsert can create
+// that doc for any uid, so doc existence alone never proves uid is a kiosk.
+async function assertKioskAccount(auth, uid) {
+  const existing = await auth.getUser(uid);
+  if (!existing.email?.endsWith(`@${EMAIL_DOMAIN}`)) throw new CallableError('permission-denied', 'Only kiosk device accounts are allowed here');
+  return existing;
+}
+
+// Reactivation only: the SIMS UI's only remaining caller is the "Re-activate"
+// button in DevicesTab.jsx, which always passes an existing device's own uid.
+// Requires the kiosks/{uid} doc to already exist, AND (via assertKioskAccount)
+// that uid to be a real kiosk-domain Auth account -- deactivateKiosk's upsert
+// can create a kiosks/{uid} doc for an arbitrary uid (e.g. a guardian's), and
+// without the second check this would still "reactivate" it, granting that
+// account isKiosk() rules privileges with no real relationship to a device.
 export async function registerKiosk(ctx, data) {
-  const { db, email } = ctx;
+  const { db, auth, email } = ctx;
   const uid = str(data.uid, { name: 'uid', min: 4, max: 128 });
   const label = str(data.label, { name: 'label', min: 2, max: 40 });
+  const existing = await db.doc(`kiosks/${uid}`).get();
+  if (!existing.exists) throw new CallableError('not-found', 'No such kiosk device to reactivate.');
+  await assertKioskAccount(auth, uid);
   await db.doc(`kiosks/${uid}`).set({ label, active: true, createdBy: email, createdAt: FieldValue.serverTimestamp() }, { merge: true });
   await audit(db, { action: 'kiosk.registered', actorType: 'staff', actorUid: email, targetType: 'kiosk', targetId: uid, details: { label } });
   return { ok: true };
@@ -18,4 +48,46 @@ export async function deactivateKiosk(ctx, data) {
   await db.doc(`kiosks/${uid}`).set({ active: false, deactivatedAt: FieldValue.serverTimestamp(), deactivatedBy: email }, { merge: true });
   await audit(db, { action: 'kiosk.deactivated', actorType: 'staff', actorUid: email, targetType: 'kiosk', targetId: uid, details: { reason } });
   return { ok: true };
+}
+
+// Creates the device's own Firebase Auth account AND its kiosks/{uid}
+// allow-list doc, so staff never has to visit the Firebase Console or
+// handle a raw Auth UID. The generated email/password is returned to the
+// caller exactly once -- nothing here persists the plaintext password.
+export async function provisionKiosk(ctx, data) {
+  const { db, auth, email: staffEmail } = ctx;
+  const label = str(data.label, { name: 'label', min: 2, max: 40 });
+  const base = slugify(label);
+  const password = generatePassword();
+
+  let userRecord;
+  for (let attempt = 0; ; attempt += 1) {
+    const candidateEmail = attempt === 0 ? `kiosk-${base}@${EMAIL_DOMAIN}` : `kiosk-${base}-${attempt + 1}@${EMAIL_DOMAIN}`;
+    try {
+      userRecord = await auth.createUser({ email: candidateEmail, password });
+      break;
+    } catch (e) {
+      if (e.code === 'auth/email-already-exists' && attempt < MAX_EMAIL_ATTEMPTS - 1) continue;
+      throw e;
+    }
+  }
+
+  await db.doc(`kiosks/${userRecord.uid}`).set({ label, active: true, createdBy: staffEmail, createdAt: FieldValue.serverTimestamp() }, { merge: true });
+  await audit(db, { action: 'kiosk.provisioned', actorType: 'staff', actorUid: staffEmail, targetType: 'kiosk', targetId: userRecord.uid, details: { label, email: userRecord.email } });
+  return { uid: userRecord.uid, email: userRecord.email, password };
+}
+
+// Regenerates the password for an already-registered device (lost sticky
+// note, suspected compromise). The uid and kiosks/{uid} doc are unchanged --
+// only the Auth credential moves.
+export async function resetKioskPassword(ctx, data) {
+  const { db, auth, email: staffEmail } = ctx;
+  const uid = str(data.uid, { name: 'uid', min: 4, max: 128 });
+  const kioskDoc = await db.doc(`kiosks/${uid}`).get();
+  if (!kioskDoc.exists) throw new CallableError('not-found', 'Kiosk not found');
+  await assertKioskAccount(auth, uid);
+  const password = generatePassword();
+  const userRecord = await auth.updateUser(uid, { password });
+  await audit(db, { action: 'kiosk.password_reset', actorType: 'staff', actorUid: staffEmail, targetType: 'kiosk', targetId: uid });
+  return { uid, email: userRecord.email, password };
 }

@@ -8,7 +8,7 @@ import { handleScanEvent } from './src/handlers/scanEvent.js';
 import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
-import { registerKiosk, deactivateKiosk } from './src/handlers/kiosks.js';
+import { registerKiosk, deactivateKiosk, provisionKiosk, resetKioskPassword } from './src/handlers/kiosks.js';
 import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
 import { deleteGuardianAccount } from './src/handlers/account.js';
 import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
@@ -45,6 +45,8 @@ export const revokeLinkFn = staffCall(revokeLink);
 export const setActivationRestrictedFn = staffCall(setActivationRestricted);
 export const registerKioskFn = staffCall(registerKiosk);
 export const deactivateKioskFn = staffCall(deactivateKiosk);
+export const provisionKioskFn = staffCall(provisionKiosk);
+export const resetKioskPasswordFn = staffCall(resetKioskPassword);
 
 export const submitReportFn = guardianCall(submitReport);
 export const resolveReportFn = staffCall(resolveReport);
