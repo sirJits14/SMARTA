@@ -19,13 +19,19 @@ function GlassNav({ route, navigate }) {
   const [animate, setAnimate] = useState(false);
 
   useLayoutEffect(() => {
+    const activeEl = active && btnRefs.current[active];
     const measure = () => {
       const el = active && btnRefs.current[active];
-      setChip(el ? { x: el.offsetLeft, w: el.offsetWidth } : null);
+      setChip((prev) => {
+        if (!el) return null;
+        const x = el.offsetLeft, w = el.offsetWidth;
+        return prev && prev.x === x && prev.w === w ? prev : { x, w };
+      });
     };
     measure();
-    const ro = new ResizeObserver(measure); // rotation, font scaling
+    const ro = new ResizeObserver(measure); // rotation, font scaling, text-only zoom
     ro.observe(navRef.current);
+    if (activeEl) ro.observe(activeEl);
     return () => ro.disconnect();
   }, [active]);
 

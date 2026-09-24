@@ -19,14 +19,18 @@ export const Field = ({ label, children, hint }) => (
 const inputStyle = { ...font, width: '100%', boxSizing: 'border-box', minHeight: T.tap, fontSize: 16, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${T.border}`, background: T.surface, color: T.ink };
 export const Inp = (p) => <input {...p} style={{ ...inputStyle, ...p.style }} />;
 export const Sel = (p) => <select {...p} style={{ ...inputStyle, ...p.style }} />;
-export const Banner = ({ tone = 'info', children, action }) => (
-  <div role={tone === 'danger' ? 'alert' : 'status'} className="glass" style={{ ...font, fontSize: 14, borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
-    border: '1px solid rgba(255,255,255,0.7)',
-    background: tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(91,79,232,0.08)',
-    color: tone === 'danger' ? T.danger : tone === 'warn' ? T.warn : T.primaryDeep }}>
-    <span>{children}</span>{action}
-  </div>
-);
+export const Banner = ({ tone = 'info', children, action }) => {
+  const tint = tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(91,79,232,0.08)';
+  const textColor = tone === 'danger' ? '#B91C1C' : tone === 'warn' ? '#92400E' : T.primaryDeep;
+  return (
+    <div role={tone === 'danger' ? 'alert' : 'status'} className="glass" style={{ ...font, fontSize: 14, borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
+      border: '1px solid rgba(255,255,255,0.7)',
+      background: `linear-gradient(${tint}, ${tint}), rgba(255,255,255,0.85)`,
+      color: textColor }}>
+      <span>{children}</span>{action}
+    </div>
+  );
+};
 export const Spinner = ({ label }) => <p role="status" style={{ ...font, color: T.inkMuted, fontSize: 14 }}>{label}</p>;
 export const EmptyState = ({ title, hint }) => (
   <div style={{ ...font, textAlign: 'center', color: T.inkMuted, padding: '40px 16px' }}>

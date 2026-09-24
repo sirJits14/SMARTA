@@ -42,7 +42,7 @@ body::before {
   display: flex;
   padding: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 10px 30px rgba(70, 56, 194, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
@@ -90,6 +90,10 @@ body::before {
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  margin: -1px;
+  padding: 0;
+  border: 0;
   white-space: nowrap;
 }
 .gnav-btn[aria-current="page"] .gnav-label { white-space: nowrap; animation: gnav-label-in 250ms ease-out; }

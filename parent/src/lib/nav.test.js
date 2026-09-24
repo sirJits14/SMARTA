@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NAV_TABS, activeTab } from './nav.js';
+import { matchRoute } from './router.js';
 
 describe('NAV_TABS', () => {
   it('lists Home, Inbox, Settings in order with their paths', () => {
@@ -26,6 +27,14 @@ describe('activeTab', () => {
   it('lights nothing on onboarding and unknown screens', () => {
     for (const name of ['verify', 'consent', 'activate', 'requestAccess', 'notFound', undefined]) {
       expect(activeTab(name)).toBeNull();
+    }
+  });
+});
+
+describe('route drift guard', () => {
+  it('lights the matching tab for every NAV_TABS path via the real router', () => {
+    for (const tab of NAV_TABS) {
+      expect(activeTab(matchRoute(tab.path).name)).toBe(tab.key);
     }
   });
 });
