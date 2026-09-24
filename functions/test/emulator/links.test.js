@@ -48,11 +48,17 @@ describe('revokeLink / restricted', () => {
 
 describe('kiosks', () => {
   it('registers and deactivates a device with audit entries', async () => {
+    await db().doc('kiosks/kNew').set({ label: 'Old Label', active: false });
     await registerKiosk(staff(), { uid: 'kNew', label: 'Gate 2' });
     expect((await db().doc('kiosks/kNew').get()).data()).toMatchObject({ label: 'Gate 2', active: true, createdBy: 'registrar@bnhs.edu' });
     await deactivateKiosk(staff(), { uid: 'kNew', reason: 'stolen' });
     expect((await db().doc('kiosks/kNew').get()).data().active).toBe(false);
     expect((await db().collection('audit_log').where('targetId', '==', 'kNew').get()).size).toBe(2);
+  });
+
+  it('rejects registering/reactivating a uid with no existing kiosks doc', async () => {
+    await expect(registerKiosk(staff(), { uid: 'noSuchKiosk', label: 'Ghost Gate' })).rejects.toMatchObject({ code: 'not-found' });
+    expect((await db().doc('kiosks/noSuchKiosk').get()).exists).toBe(false);
   });
 
   it('provisions a real Auth account and allow-lists it in one call', async () => {
@@ -74,5 +80,22 @@ describe('kiosks', () => {
     expect(result.email).toBe('kiosk-back-gate@bnhs.local');
     expect(result.password).not.toBe(firstPassword);
     expect((await db().collection('audit_log').where('action', '==', 'kiosk.password_reset').get()).size).toBe(1);
+  });
+
+  it('blocks the registerKiosk + resetKioskPassword account-takeover chain against a non-kiosk Auth account', async () => {
+    await auth().createUser({ uid: 'nonKiosk1', email: 'guardian@gmail.com', password: 'whatever123' });
+
+    // registerKiosk is reactivate-only (Fix B) so it can no longer allow-list a
+    // brand-new uid on its own -- but that alone isn't the full story: a
+    // kiosks/{uid} doc could already exist for a non-kiosk uid for other
+    // reasons (a stale doc, manual data entry, ...), and registerKiosk will
+    // then happily "reactivate" it under that uid, same as it always could.
+    // resetKioskPassword's own Auth-domain check (Fix A) is what actually
+    // closes the takeover, regardless of how the doc came to exist.
+    await db().doc('kiosks/nonKiosk1').set({ label: 'stale', active: false });
+    await registerKiosk(staff(), { uid: 'nonKiosk1', label: 'fake' });
+    expect((await db().doc('kiosks/nonKiosk1').get()).data()).toMatchObject({ active: true });
+
+    await expect(resetKioskPassword({ ...staff(), auth: auth() }, { uid: 'nonKiosk1' })).rejects.toMatchObject({ code: 'permission-denied' });
   });
 });

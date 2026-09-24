@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { provisionKiosk, resetKioskPassword } from './kiosks.js';
+import { audit } from '../audit.js';
 
 vi.mock('../audit.js', () => ({ audit: vi.fn() }));
 
@@ -20,6 +21,7 @@ describe('provisionKiosk', () => {
     expect(createUser).toHaveBeenCalledWith({ email: 'kiosk-main-gate@bnhs.local', password: expect.any(String) });
     expect(createUser.mock.calls[0][0].password.length).toBeGreaterThanOrEqual(20);
     expect(result).toEqual({ uid: 'newUid1', email: 'kiosk-main-gate@bnhs.local', password: expect.any(String) });
+    expect(JSON.stringify(vi.mocked(audit).mock.calls)).not.toContain(result.password);
   });
 
   it('strips punctuation and collapses spaces when slugifying', async () => {
@@ -62,19 +64,33 @@ describe('provisionKiosk', () => {
 describe('resetKioskPassword', () => {
   it('generates a new password for the existing uid and returns its email', async () => {
     const updateUser = vi.fn().mockResolvedValue({ uid: 'kiosk1', email: 'kiosk-main-gate@bnhs.local' });
-    const ctx = { db: fakeDb({ exists: true }), auth: { updateUser }, email: 'registrar@bnhs.edu' };
+    const getUser = vi.fn().mockResolvedValue({ uid: 'kiosk1', email: 'kiosk-main-gate@bnhs.local' });
+    const ctx = { db: fakeDb({ exists: true }), auth: { updateUser, getUser }, email: 'registrar@bnhs.edu' };
 
     const result = await resetKioskPassword(ctx, { uid: 'kiosk1' });
 
     expect(updateUser).toHaveBeenCalledWith('kiosk1', { password: expect.any(String) });
     expect(result).toEqual({ uid: 'kiosk1', email: 'kiosk-main-gate@bnhs.local', password: expect.any(String) });
+    expect(JSON.stringify(vi.mocked(audit).mock.calls)).not.toContain(result.password);
   });
 
   it('rejects a uid with no matching kiosks doc and does not touch Auth', async () => {
     const updateUser = vi.fn();
-    const ctx = { db: fakeDb({ exists: false }), auth: { updateUser }, email: 'registrar@bnhs.edu' };
+    const getUser = vi.fn();
+    const ctx = { db: fakeDb({ exists: false }), auth: { updateUser, getUser }, email: 'registrar@bnhs.edu' };
 
-    await expect(resetKioskPassword(ctx, { uid: 'unknownUid' })).rejects.toThrow();
+    await expect(resetKioskPassword(ctx, { uid: 'unknownUid' })).rejects.toMatchObject({ code: 'not-found' });
+
+    expect(getUser).not.toHaveBeenCalled();
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the kiosks doc exists but the Auth account is not a kiosk device (account-takeover chain guard)', async () => {
+    const updateUser = vi.fn();
+    const getUser = vi.fn().mockResolvedValue({ uid: 'nonKiosk1', email: 'someone@gmail.com' });
+    const ctx = { db: fakeDb({ exists: true }), auth: { updateUser, getUser }, email: 'registrar@bnhs.edu' };
+
+    await expect(resetKioskPassword(ctx, { uid: 'nonKiosk1' })).rejects.toMatchObject({ code: 'permission-denied' });
 
     expect(updateUser).not.toHaveBeenCalled();
   });

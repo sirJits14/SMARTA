@@ -18,6 +18,7 @@ export default function DevicesTab() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [confirm, setConfirm] = useState(null);
+  const [confirmReset, setConfirmReset] = useState(null);
   const [credentials, setCredentials] = useState(null); // { label, email, password } | null
 
   const create = async () => {
@@ -61,7 +62,7 @@ export default function DevicesTab() {
                 <td style={{ ...S.td, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   {k.active
                     ? <>
-                        <Btn variant="ghost" onClick={() => resetPassword(k)}>Reset password</Btn>
+                        <Btn variant="ghost" onClick={() => setConfirmReset(k)}>Reset password</Btn>
                         <Btn variant="ghost" onClick={() => setConfirm(k)}>Deactivate</Btn>
                       </>
                     : <Btn variant="ghost" onClick={() => call.registerKiosk({ uid: k.id, label: k.label })}>Re-activate</Btn>}
@@ -72,8 +73,17 @@ export default function DevicesTab() {
         </table>
       </Card>
       {confirm && <Confirm message={`Deactivate "${confirm.label}"? The kiosk stops scanning within seconds.`} label="Deactivate" onYes={() => deactivate(confirm)} onNo={() => setConfirm(null)} />}
+      {confirmReset && (
+        <Confirm
+          message={`Reset the password for "${confirmReset.label}"? The device will be signed out within the hour and must be signed in again at /setup with the new password.`}
+          label="Reset password"
+          danger={false}
+          onYes={() => { const k = confirmReset; setConfirmReset(null); resetPassword(k); }}
+          onNo={() => setConfirmReset(null)}
+        />
+      )}
       {credentials && (
-        <Modal onClose={() => setCredentials(null)}>
+        <Modal onClose={() => {}}>
           <h2 style={S.h2}>{credentials.label} is ready</h2>
           <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>Copy these into that computer's <code>/setup</code> page now — the password won't be shown again.</p>
           <Field label="Device email">
