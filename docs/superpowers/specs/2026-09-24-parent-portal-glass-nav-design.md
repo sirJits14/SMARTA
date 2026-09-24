@@ -74,8 +74,10 @@ the page. No screen layouts change.
   a faint shadow `0 4px 24px rgba(30,27,51,0.06)` and the blur — all via a
   `.glass-card` class in `glass.css` (so the no-blur fallback can override it).
   The sign-in screen drops its opaque page background so the glows show there too.
-- `Banner`: add the `glass` class and a white hairline border; the existing tinted
-  backgrounds and text colors stay, so tone meanings are unchanged.
+- `Banner`: add the `glass` class and a white hairline border; banners keep their
+  tone tints layered over a `rgba(255,255,255,0.85)` white base, and use darker
+  banner-only text colors (warn `#92400E`, danger `#B91C1C`) so text meets 4.5:1
+  over the glows.
 - Inputs, buttons, `EmptyState`, `Spinner`: unchanged.
 - Text contrast on the frosted surfaces must stay ≥ 4.5:1 for body text; the
   surfaces are mostly opaque white over pale glows, so this holds with the
@@ -88,7 +90,7 @@ the page. No screen layouts change.
   indigo `#5B4FE8`, violet `#A78BFA`, pink `#F9A8D4` — at low opacity (≈0.18–0.28),
   placed top-left, right-middle, bottom-left. No images.
 - `.glass`: `backdrop-filter: blur(12px) saturate(160%)` (+ `-webkit-` prefix).
-- `.glass-nav`: `background: rgba(255,255,255,0.62)`, `border: 1px solid rgba(255,255,255,0.8)`,
+- `.glass-nav`: `background: rgba(255,255,255,0.78)`, `border: 1px solid rgba(255,255,255,0.8)`,
   `box-shadow: 0 10px 30px rgba(70,56,194,0.16), inset 0 1px 0 rgba(255,255,255,0.9)`,
   `backdrop-filter: blur(18px) saturate(180%)`.
 - **Fallback**: `@supports not (backdrop-filter: blur(1px))` → nav and cards get a
