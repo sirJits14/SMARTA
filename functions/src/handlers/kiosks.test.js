@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { provisionKiosk, resetKioskPassword } from './kiosks.js';
+import { registerKiosk, provisionKiosk, resetKioskPassword } from './kiosks.js';
 import { audit } from '../audit.js';
 
 vi.mock('../audit.js', () => ({ audit: vi.fn() }));
@@ -57,7 +57,21 @@ describe('provisionKiosk', () => {
 
   it('rejects a label that is too short', async () => {
     const ctx = { db: fakeDb(), auth: { createUser: vi.fn() }, email: 'registrar@bnhs.edu' };
-    await expect(provisionKiosk(ctx, { label: 'A' })).rejects.toThrow();
+    await expect(provisionKiosk(ctx, { label: 'A' })).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+});
+
+describe('registerKiosk', () => {
+  it('rejects reactivating a kiosks doc that is not backed by a real kiosk-domain Auth account', async () => {
+    const set = vi.fn().mockResolvedValue(undefined);
+    const get = vi.fn().mockResolvedValue({ exists: true });
+    const db = { doc: vi.fn(() => ({ set, get })) };
+    const getUser = vi.fn().mockResolvedValue({ uid: 'nonKiosk1', email: 'someone@gmail.com' });
+    const ctx = { db, auth: { getUser }, email: 'registrar@bnhs.edu' };
+
+    await expect(registerKiosk(ctx, { uid: 'nonKiosk1', label: 'fake' })).rejects.toMatchObject({ code: 'permission-denied' });
+
+    expect(set).not.toHaveBeenCalled();
   });
 });
 

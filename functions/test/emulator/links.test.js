@@ -48,8 +48,9 @@ describe('revokeLink / restricted', () => {
 
 describe('kiosks', () => {
   it('registers and deactivates a device with audit entries', async () => {
+    await auth().createUser({ uid: 'kNew', email: 'kiosk-gate2@bnhs.local', password: 'whatever123456' });
     await db().doc('kiosks/kNew').set({ label: 'Old Label', active: false });
-    await registerKiosk(staff(), { uid: 'kNew', label: 'Gate 2' });
+    await registerKiosk({ ...staff(), auth: auth() }, { uid: 'kNew', label: 'Gate 2' });
     expect((await db().doc('kiosks/kNew').get()).data()).toMatchObject({ label: 'Gate 2', active: true, createdBy: 'registrar@bnhs.edu' });
     await deactivateKiosk(staff(), { uid: 'kNew', reason: 'stolen' });
     expect((await db().doc('kiosks/kNew').get()).data().active).toBe(false);
@@ -82,20 +83,23 @@ describe('kiosks', () => {
     expect((await db().collection('audit_log').where('action', '==', 'kiosk.password_reset').get()).size).toBe(1);
   });
 
-  it('blocks the registerKiosk + resetKioskPassword account-takeover chain against a non-kiosk Auth account', async () => {
+  it('registerKiosk refuses to reactivate a kiosks doc that is not backed by a real kiosk-domain Auth account', async () => {
     await auth().createUser({ uid: 'nonKiosk1', email: 'guardian@gmail.com', password: 'whatever123' });
-
-    // registerKiosk is reactivate-only (Fix B) so it can no longer allow-list a
-    // brand-new uid on its own -- but that alone isn't the full story: a
-    // kiosks/{uid} doc could already exist for a non-kiosk uid for other
-    // reasons (a stale doc, manual data entry, ...), and registerKiosk will
-    // then happily "reactivate" it under that uid, same as it always could.
-    // resetKioskPassword's own Auth-domain check (Fix A) is what actually
-    // closes the takeover, regardless of how the doc came to exist.
+    // Simulates deactivateKiosk's upsert having created this doc for a
+    // non-kiosk uid (a stale doc, manual data entry, or the upsert itself).
     await db().doc('kiosks/nonKiosk1').set({ label: 'stale', active: false });
-    await registerKiosk(staff(), { uid: 'nonKiosk1', label: 'fake' });
-    expect((await db().doc('kiosks/nonKiosk1').get()).data()).toMatchObject({ active: true });
 
-    await expect(resetKioskPassword({ ...staff(), auth: auth() }, { uid: 'nonKiosk1' })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(registerKiosk({ ...staff(), auth: auth() }, { uid: 'nonKiosk1', label: 'fake' })).rejects.toMatchObject({ code: 'permission-denied' });
+    expect((await db().doc('kiosks/nonKiosk1').get()).data().active).toBe(false);
+  });
+
+  it('resetKioskPassword independently blocks a non-kiosk Auth account even if its kiosks doc is somehow active', async () => {
+    await auth().createUser({ uid: 'nonKiosk2', email: 'staffimposter@gmail.com', password: 'whatever123' });
+    // Seeded directly (not via registerKiosk, which now refuses this) to
+    // prove resetKioskPassword's own check is a real independent layer, not
+    // just inert now that registerKiosk also blocks it.
+    await db().doc('kiosks/nonKiosk2').set({ label: 'fake', active: true });
+
+    await expect(resetKioskPassword({ ...staff(), auth: auth() }, { uid: 'nonKiosk2' })).rejects.toMatchObject({ code: 'permission-denied' });
   });
 });
