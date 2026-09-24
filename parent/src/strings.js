@@ -47,7 +47,6 @@ const S = {
   homeTodayNone: 'No entry recorded today',
   homeEntered: 'Entered',
   homeLeft: 'Left',
-  homeNoExit: 'No exit recorded yet',
   homeViewHistory: 'View history',
   notifBannerTitle: 'Get a notification for new gate scans',
   notifBannerButton: 'Turn on notifications',
