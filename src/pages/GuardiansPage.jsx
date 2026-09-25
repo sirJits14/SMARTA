@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { T, S } from '../styles.js';
-import DevicesTab from './guardians/DevicesTab.jsx';
-import CodesTab from './guardians/CodesTab.jsx';
-import RequestsTab from './guardians/RequestsTab.jsx';
-import ReportsTab from './guardians/ReportsTab.jsx';
-import LinksTab from './guardians/LinksTab.jsx';
-import ScanLogTab from './guardians/ScanLogTab.jsx';
-import AuditTab from './guardians/AuditTab.jsx';
-import PortalSettingsTab from './guardians/PortalSettingsTab.jsx';
+
+// Same reasoning as App.jsx's page split, one level down: each tab (and, for
+// CodesTab, the qrcode-based activation-slip printing it pulls in) loads
+// only once actually selected, not all eight up front.
+const DevicesTab = lazy(() => import('./guardians/DevicesTab.jsx'));
+const CodesTab = lazy(() => import('./guardians/CodesTab.jsx'));
+const RequestsTab = lazy(() => import('./guardians/RequestsTab.jsx'));
+const ReportsTab = lazy(() => import('./guardians/ReportsTab.jsx'));
+const LinksTab = lazy(() => import('./guardians/LinksTab.jsx'));
+const ScanLogTab = lazy(() => import('./guardians/ScanLogTab.jsx'));
+const AuditTab = lazy(() => import('./guardians/AuditTab.jsx'));
+const PortalSettingsTab = lazy(() => import('./guardians/PortalSettingsTab.jsx'));
+
+const TabFallback = () => <div style={{ fontFamily: T.body, color: T.inkMuted, padding: 24 }}>Loading…</div>;
 
 const TABS = [
   ['codes', 'Activation slips'], ['requests', 'Access requests'], ['reports', 'Reports'], ['links', 'Learner access'],
@@ -25,14 +31,16 @@ export default function GuardiansPage({ schoolYear, me }) {
           return <button key={k} role="tab" aria-selected={active} onClick={() => setTab(k)} style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', cursor: 'pointer', padding: '9px 16px', borderRadius: T.pill, border: 'none', background: active ? T.primary : 'transparent', color: active ? '#fff' : T.inkMuted }}>{label}</button>;
         })}
       </div>
-      {tab === 'codes' && <CodesTab schoolYear={schoolYear} />}
-      {tab === 'requests' && <RequestsTab schoolYear={schoolYear} />}
-      {tab === 'reports' && <ReportsTab />}
-      {tab === 'links' && <LinksTab schoolYear={schoolYear} />}
-      {tab === 'devices' && <DevicesTab />}
-      {tab === 'scanlog' && <ScanLogTab />}
-      {tab === 'audit' && <AuditTab />}
-      {tab === 'settings' && <PortalSettingsTab me={me} />}
+      <Suspense fallback={<TabFallback />}>
+        {tab === 'codes' && <CodesTab schoolYear={schoolYear} />}
+        {tab === 'requests' && <RequestsTab schoolYear={schoolYear} />}
+        {tab === 'reports' && <ReportsTab />}
+        {tab === 'links' && <LinksTab schoolYear={schoolYear} />}
+        {tab === 'devices' && <DevicesTab />}
+        {tab === 'scanlog' && <ScanLogTab />}
+        {tab === 'audit' && <AuditTab />}
+        {tab === 'settings' && <PortalSettingsTab me={me} />}
+      </Suspense>
     </div>
   );
 }

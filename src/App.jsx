@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
@@ -7,16 +7,22 @@ import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
 import Shell from './components/Shell.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
-import StudentsPage from './pages/StudentsPage.jsx';
-import SectionsPage from './pages/SectionsPage.jsx';
-import SchedulesPage from './pages/SchedulesPage.jsx';
-import EnrollPage from './pages/EnrollPage.jsx';
-import AttendanceTakePage from './pages/AttendanceTakePage.jsx';
-import AttendanceSummaryPage from './pages/AttendanceSummaryPage.jsx';
-import IDCardsPage from './pages/IDCardsPage.jsx';
-import GuardiansPage from './pages/GuardiansPage.jsx';
-import SettingsPage from './pages/SettingsPage.jsx';
+// Route-split: each page (and everything only it imports, like exceljs for
+// Students/Attendance-summary or qrcode for ID Cards/Guardians->Codes) loads
+// only once actually navigated to, instead of all ten loading up front in
+// the single initial bundle.
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
+const StudentsPage = lazy(() => import('./pages/StudentsPage.jsx'));
+const SectionsPage = lazy(() => import('./pages/SectionsPage.jsx'));
+const SchedulesPage = lazy(() => import('./pages/SchedulesPage.jsx'));
+const EnrollPage = lazy(() => import('./pages/EnrollPage.jsx'));
+const AttendanceTakePage = lazy(() => import('./pages/AttendanceTakePage.jsx'));
+const AttendanceSummaryPage = lazy(() => import('./pages/AttendanceSummaryPage.jsx'));
+const IDCardsPage = lazy(() => import('./pages/IDCardsPage.jsx'));
+const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+
+const PageFallback = () => <div style={{ fontFamily: T.body, color: T.inkMuted, padding: 24 }}>Loading…</div>;
 
 function AttendanceArea({ schoolYear }) {
   const [tab, setTab] = useState('take');
@@ -40,9 +46,11 @@ function AttendanceArea({ schoolYear }) {
           );
         })}
       </div>
-      {tab === 'take'
-        ? <AttendanceTakePage schoolYear={schoolYear} />
-        : <AttendanceSummaryPage schoolYear={schoolYear} />}
+      <Suspense fallback={<PageFallback />}>
+        {tab === 'take'
+          ? <AttendanceTakePage schoolYear={schoolYear} />
+          : <AttendanceSummaryPage schoolYear={schoolYear} />}
+      </Suspense>
     </div>
   );
 }
@@ -74,15 +82,17 @@ export default function App() {
     <>
       {reducedMotionGuard}
       <Shell me={me} page={page} setPage={setPage} schoolYear={schoolYear} onLogout={()=>{ signOut(auth); setMe(null); }}>
-        {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
-        {page==='students' && <StudentsPage schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
-        {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
-        {page==='schedules' && <SchedulesPage />}
-        {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
-        {page==='attendance' && <AttendanceArea schoolYear={schoolYear} />}
-        {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
-        {page==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
-        {page==='settings' && <SettingsPage />}
+        <Suspense fallback={<PageFallback />}>
+          {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
+          {page==='students' && <StudentsPage schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
+          {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
+          {page==='schedules' && <SchedulesPage />}
+          {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
+          {page==='attendance' && <AttendanceArea schoolYear={schoolYear} />}
+          {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
+          {page==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
+          {page==='settings' && <SettingsPage />}
+        </Suspense>
       </Shell>
     </>
   );
