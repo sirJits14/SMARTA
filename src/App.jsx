@@ -46,9 +46,11 @@ function AttendanceArea({ schoolYear }) {
           );
         })}
       </div>
-      {tab === 'take'
-        ? <AttendanceTakePage schoolYear={schoolYear} />
-        : <AttendanceSummaryPage schoolYear={schoolYear} />}
+      <Suspense fallback={<PageFallback />}>
+        {tab === 'take'
+          ? <AttendanceTakePage schoolYear={schoolYear} />
+          : <AttendanceSummaryPage schoolYear={schoolYear} />}
+      </Suspense>
     </div>
   );
 }
