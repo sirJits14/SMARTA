@@ -1,7 +1,7 @@
 # SIMS registrar glassmorphism redesign
 
 Date: 2026-09-25
-Status: Design direction approved; written specification awaiting review.
+Status: Written specification approved by the user on 2026-09-25.
 Scope: Registrar application in `src/`, delivered in phases.
 
 ## Intent and approved direction
