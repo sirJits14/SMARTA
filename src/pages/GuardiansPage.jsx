@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { T, S } from '../styles.js';
+import loadingGif from '../assets/loading.gif';
 
 // Same reasoning as App.jsx's page split, one level down: each tab (and, for
 // CodesTab, the qrcode-based activation-slip printing it pulls in) loads
@@ -13,7 +14,11 @@ const ScanLogTab = lazy(() => import('./guardians/ScanLogTab.jsx'));
 const AuditTab = lazy(() => import('./guardians/AuditTab.jsx'));
 const PortalSettingsTab = lazy(() => import('./guardians/PortalSettingsTab.jsx'));
 
-const TabFallback = () => <div style={{ fontFamily: T.body, color: T.inkMuted, padding: 24 }}>Loading…</div>;
+const TabFallback = () => (
+  <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
+    <img src={loadingGif} alt="Loading" width={56} height={56} />
+  </div>
+);
 
 const TABS = [
   ['codes', 'Activation slips'], ['requests', 'Access requests'], ['reports', 'Reports'], ['links', 'Learner access'],

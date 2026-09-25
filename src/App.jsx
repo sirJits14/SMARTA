@@ -7,6 +7,7 @@ import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
 import Shell from './components/Shell.jsx';
+import loadingGif from './assets/loading.gif';
 // Route-split: each page (and everything only it imports, like exceljs for
 // Students/Attendance-summary or qrcode for ID Cards/Guardians->Codes) loads
 // only once actually navigated to, instead of all ten loading up front in
@@ -22,7 +23,19 @@ const IDCardsPage = lazy(() => import('./pages/IDCardsPage.jsx'));
 const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 
-const PageFallback = () => <div style={{ fontFamily: T.body, color: T.inkMuted, padding: 24 }}>Loading…</div>;
+const PageFallback = () => (
+  <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
+    <img src={loadingGif} alt="Loading" width={56} height={56} />
+  </div>
+);
+
+// Full-viewport boot screen, shown once while auth is resolving -- there is
+// no Shell/nav to sit inside yet, unlike PageFallback.
+const BootLoader = () => (
+  <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: T.bg }}>
+    <img src={loadingGif} alt="Loading" width={96} height={96} />
+  </div>
+);
 
 function AttendanceArea({ schoolYear }) {
   const [tab, setTab] = useState('take');
@@ -70,7 +83,7 @@ export default function App() {
     setReady(true);
   }), []);
 
-  if (!ready) return null;
+  if (!ready) return <BootLoader />;
 
   const reducedMotionGuard = (
     <style>{'@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }'}</style>

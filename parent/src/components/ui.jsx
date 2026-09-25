@@ -1,4 +1,5 @@
 import { T } from '../styles.js';
+import loadingGif from '../assets/loading.gif';
 const font = { fontFamily: T.font };
 
 export const Btn = ({ variant = 'solid', style, ...p }) => (
@@ -31,7 +32,11 @@ export const Banner = ({ tone = 'info', children, action }) => {
     </div>
   );
 };
-export const Spinner = ({ label }) => <p role="status" style={{ ...font, color: T.inkMuted, fontSize: 14 }}>{label}</p>;
+export const Spinner = ({ label }) => (
+  <div role="status" style={{ display: 'grid', placeItems: 'center', padding: 24 }}>
+    <img src={loadingGif} alt={label} width={48} height={48} />
+  </div>
+);
 export const EmptyState = ({ title, hint }) => (
   <div style={{ ...font, textAlign: 'center', color: T.inkMuted, padding: '40px 16px' }}>
     <div style={{ fontWeight: 700, color: T.ink, marginBottom: 6 }}>{title}</div>{hint && <div style={{ fontSize: 13 }}>{hint}</div>}
