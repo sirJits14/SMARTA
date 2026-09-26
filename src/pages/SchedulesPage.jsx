@@ -1,10 +1,14 @@
+import { useAsyncAction } from '../hooks/useAsyncAction.js';
+import { ActionFeedback } from '../components/ui.jsx';
+import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollection } from '../hooks/useCollection.js';
+import { useCollectionResource } from '../hooks/useCollection.js';
 import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedules.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
 
 function ScheduleForm({ editing, onClose }) {
+  const action = useAsyncAction();
   const [f, setF] = useState(editing || { name: '', timeIn: '', timeOut: '' });
   const [err, setErr] = useState('');
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
@@ -12,21 +16,24 @@ function ScheduleForm({ editing, onClose }) {
     if (!f.name?.trim()) { setErr('Schedule name is required.'); return; }
     if (!f.timeIn || !f.timeOut) { setErr('Time in and time out are required.'); return; }
     if (f.timeOut <= f.timeIn) { setErr('Time out must be later than time in.'); return; }
-    editing ? await updateSchedule(editing.id, f) : await createSchedule(f);
-    onClose();
+    await action.run('save', async () => {
+      editing ? await updateSchedule(editing.id, f) : await createSchedule(f);
+      onClose();
+    });
   };
   return (
-    <Modal onClose={onClose}>
-      <h2 style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit schedule' : 'New schedule'}</h2>
+    <Modal labelledBy="schedule-form-title" onClose={onClose} dismissible={!action.busy}>
+      <ActionFeedback action={action}/>
+      <h2 id="schedule-form-title" style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit schedule' : 'New schedule'}</h2>
       {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 12 }}>{err}</div>}
       <Field label="Schedule name"><Inp value={f.name || ''} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Morning Shift" /></Field>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
         <Field label="Time in"><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
         <Field label="Time out"><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
-        <Btn onClick={save}>{editing ? 'Save changes' : 'Add schedule'}</Btn>
+        <Btn variant="ghost" disabled={action.busy} onClick={onClose}>Cancel</Btn>
+        <Btn disabled={action.busy} onClick={save}>{editing ? 'Save changes' : 'Add schedule'}</Btn>
       </div>
     </Modal>
   );
@@ -35,8 +42,10 @@ function ScheduleForm({ editing, onClose }) {
 const sectionLabel = (s) => `${s.name} (Grade ${s.gradeLevel}, SY ${s.schoolYear})`;
 
 export default function SchedulesPage() {
-  const schedules = useCollection('schedules');
-  const sections = useCollection('sections');
+  const schedulesResource = useCollectionResource('schedules');
+  const schedules = schedulesResource.data;
+  const sectionsResource = useCollectionResource('sections');
+  const sections = sectionsResource.data;
   const [form, setForm] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [blocked, setBlocked] = useState(null);
@@ -49,9 +58,12 @@ export default function SchedulesPage() {
     setConfirm(schedule);
   };
 
+  const resources = [schedulesResource,sectionsResource];
+
   return (
-    <div>
-      <div style={S.plate}>
+    <EditorResources resources={resources}><div>
+      <ResourceState resources={resources}>
+      <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Schedules</h1>
         <Btn onClick={() => setForm({})}>Add schedule</Btn>
       </div>
@@ -61,7 +73,7 @@ export default function SchedulesPage() {
         </Card>
       ) : (
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead><tr style={S.thead}>
               {['Name', 'Time In', 'Time Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
             </tr></thead>
@@ -76,9 +88,10 @@ export default function SchedulesPage() {
                 </td>
               </tr>))}
             </tbody>
-          </table>
+          </table></div>
         </Card>
       )}
+      </ResourceState>
       {form && <ScheduleForm editing={form.id ? form : null} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSchedule(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {blocked && (
@@ -87,7 +100,7 @@ export default function SchedulesPage() {
           <p style={{ fontFamily: T.body, color: T.ink, fontSize: 13 }}>
             This schedule is still assigned to {blocked.inUse.length} section{blocked.inUse.length === 1 ? '' : 's'}:
           </p>
-          <ul style={{ fontFamily: T.body, fontSize: 13, color: T.ink, paddingLeft: 20, margin: '0 0 16px' }}>
+          <ul style={{ fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.ink, paddingLeft: 20, margin: '0 0 16px' }}>
             {blocked.inUse.map((s) => <li key={s.id}>{sectionLabel(s)}</li>)}
           </ul>
           <p style={{ fontFamily: T.body, color: T.inkMuted, fontSize: 12 }}>Reassign or clear the schedule on these sections first.</p>
@@ -96,6 +109,6 @@ export default function SchedulesPage() {
           </div>
         </Modal>
       )}
-    </div>
+    </div></EditorResources>
   );
 }

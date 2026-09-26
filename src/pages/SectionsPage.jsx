@@ -1,5 +1,9 @@
-import { useMemo, useState } from 'react';
-import { useCollection } from '../hooks/useCollection.js';
+import { usePrintReadiness } from '../hooks/usePrintReadiness.js';
+import { useAsyncAction } from '../hooks/useAsyncAction.js';
+import { ActionFeedback } from '../components/ui.jsx';
+import { EditorResources, ResourceState } from '../components/ui.jsx';
+import { useMemo, useRef, useState } from 'react';
+import { useCollectionResource } from '../hooks/useCollection.js';
 import { createSection, updateSection, deleteSection } from '../data/sections.js';
 import { GRADES, isSHS, TRACKS, STRANDS } from '../lib/constants.js';
 import { alphabeticalSort, depedSort } from '../lib/roster.js';
@@ -10,6 +14,7 @@ import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
 
 function SectionForm({ editing, schoolYear, schedules, onClose }) {
+  const action = useAsyncAction();
   const [f, setF] = useState(editing || { gradeLevel: '', name: '', track: '', strand: '', adviserName: '', scheduleId: '', schoolYear });
   const [err, setErr] = useState('');
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
@@ -17,12 +22,15 @@ function SectionForm({ editing, schoolYear, schedules, onClose }) {
   const setTrack = (v) => setF((p) => ({ ...p, track: v, strand: '' }));
   const save = async () => {
     if (!f.name?.trim() || !f.gradeLevel) { setErr('Section name and grade level are required.'); return; }
-    editing ? await updateSection(editing.id, f) : await createSection(f);
-    onClose();
+    await action.run('save', async () => {
+      editing ? await updateSection(editing.id, f) : await createSection(f);
+      onClose();
+    });
   };
   return (
-    <Modal onClose={onClose}>
-      <h2 style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit section' : 'New section'}</h2>
+    <Modal labelledBy="section-form-title" onClose={onClose} dismissible={!action.busy}>
+      <ActionFeedback action={action}/>
+      <h2 id="section-form-title" style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit section' : 'New section'}</h2>
       {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 12 }}>{err}</div>}
       <Field label="Section name"><Inp value={f.name || ''} onChange={(e) => set('name', e.target.value)} /></Field>
       <Field label="Grade level">
@@ -32,7 +40,7 @@ function SectionForm({ editing, schoolYear, schedules, onClose }) {
         </Sel>
       </Field>
       {isSHS(f.gradeLevel) && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
           <Field label="Track">
             <Sel value={f.track || ''} onChange={(e) => setTrack(e.target.value)}>
               <option value="">—</option>
@@ -55,18 +63,22 @@ function SectionForm({ editing, schoolYear, schedules, onClose }) {
         </Sel>
       </Field>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
-        <Btn onClick={save}>{editing ? 'Save changes' : 'Add section'}</Btn>
+        <Btn variant="ghost" disabled={action.busy} onClick={onClose}>Cancel</Btn>
+        <Btn disabled={action.busy} onClick={save}>{editing ? 'Save changes' : 'Add section'}</Btn>
       </div>
     </Modal>
   );
 }
 
 export default function SectionsPage({ schoolYear }) {
-  const sections = useCollection('sections');
-  const schedules = useCollection('schedules');
-  const enrollments = useCollection('enrollments');
-  const students = useCollection('students');
+  const sectionsResource = useCollectionResource('sections');
+  const sections = sectionsResource.data;
+  const schedulesResource = useCollectionResource('schedules');
+  const schedules = schedulesResource.data;
+  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollments = enrollmentsResource.data;
+  const studentsResource = useCollectionResource('students');
+  const students = studentsResource.data;
   const scheduleById = useMemo(() => new Map(schedules.map((s) => [s.id, s])), [schedules]);
   const enrolledCountBySection = useMemo(() => {
     const m = new Map();
@@ -114,10 +126,17 @@ export default function SectionsPage({ schoolYear }) {
   }, [detailSection, enrolledStudentIdsBySection, students]);
   const detailRosterAlpha = useMemo(() => alphabeticalSort(detailRoster), [detailRoster]);
   const detailRosterDeped = useMemo(() => depedSort(detailRoster), [detailRoster]);
+  const printRoot = useRef(null);
+  const printKey = (detailSection?.id || '') + ':' + detailRosterDeped.map(s => s.id + s.lrn).join(',');
+  const printReady = usePrintReadiness(printRoot, printKey, detailRosterDeped.length);
+
+  const resources = [sectionsResource,schedulesResource,enrollmentsResource,studentsResource];
+
   return (
-    <div>
+    <EditorResources resources={resources}><div>
+      <ResourceState resources={resources}>
       <div className="sections-page-chrome">
-        <div style={S.plate}>
+        <div className="sims-heading" style={S.plate}>
           <h1 style={S.h1}>Sections</h1>
           <Btn onClick={() => setForm({ schoolYear })}>Add section</Btn>
         </div>
@@ -146,13 +165,13 @@ export default function SectionsPage({ schoolYear }) {
               })}
             </div>
             <Card style={{ padding: 0, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead><tr style={S.thead}>
                   {['Section', 'Strand', 'Adviser', 'Schedule', 'Enrolled', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
                 </tr></thead>
                 <tbody>{activeList.map((s) => (
                   <tr key={s.id} onClick={() => setDetailSection(s)} style={{ cursor: 'pointer' }}>
-                    <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
+                    <td style={{ ...S.td, fontWeight: 600 }}><button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}>{s.name}</button></td>
                     <td style={S.td}>{s.strand || '—'}</td>
                     <td style={S.td}>{s.adviserName || '—'}</td>
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
@@ -163,23 +182,24 @@ export default function SectionsPage({ schoolYear }) {
                     </td>
                   </tr>))}
                 </tbody>
-              </table>
+              </table></div>
             </Card>
           </>
         )}
       </div>
+      </ResourceState>
       {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {detailSection && (
-        <SectionDetailModal
+        <SectionDetailModal printReady={printReady}
           section={detailSection}
           roster={detailRosterAlpha}
           onClose={() => setDetailSection(null)}
           onEditStudent={(s) => setEditingStudent(s)}
         />
       )}
-      {detailSection && <IdCardsPrintSheets section={detailSection} roster={detailRosterDeped} printOnly />}
+      {detailSection && <div ref={printRoot}><IdCardsPrintSheets section={detailSection} roster={detailRosterDeped} printOnly /></div>}
       {editingStudent && <StudentForm students={students} editing={editingStudent} onClose={() => setEditingStudent(null)} />}
-    </div>
+    </div></EditorResources>
   );
 }

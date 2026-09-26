@@ -17,6 +17,7 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
   const [result, setResult] = useState(null);
   const [commitError, setCommitError] = useState('');
   const fileInputRef = useRef(null);
+  const importLock = useRef(false);
 
   const downloadTemplate = () => downloadWorkbook(buildImportTemplateWorkbook(), 'bnhs-sims-student-import-template.xlsx');
 
@@ -39,6 +40,8 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
   };
 
   const runImport = async () => {
+    if (importLock.current) return;
+    importLock.current = true;
     setBusy(true);
     setCommitError('');
     try {
@@ -48,19 +51,19 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
     } catch (err) {
       setCommitError('Something went wrong while importing. Some rows may have already been written — check the Students table, then try importing again; already-imported rows will be safely re-matched by LRN.');
     } finally {
-      setBusy(false);
+      importLock.current = false; setBusy(false);
     }
   };
 
   const importCount = plan ? plan.summary.newCount + plan.summary.updateCount : 0;
 
   return (
-    <Modal onClose={onClose} width={720}>
-      <h2 style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>Import learners from Excel</h2>
+    <Modal labelledBy="import-title" onClose={onClose} dismissible={!busy} width={720}>
+      <h2 id="import-title" style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>Import learners from Excel</h2>
 
       {step === 'upload' && (
         <>
-          <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>
+          <p style={{ fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.inkMuted }}>
             Download the template, fill in one row per learner (bio-data plus Grade and Section), then upload it here.
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -80,11 +83,11 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
 
       {step === 'preview' && plan && (
         <>
-          <p style={{ fontFamily: T.body, fontSize: 13, color: T.ink, fontWeight: 600 }}>
+          <p style={{ fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.ink, fontWeight: 600 }}>
             {plan.summary.newCount} new · {plan.summary.updateCount} updates · {plan.summary.newSectionsCount} new section{plan.summary.newSectionsCount === 1 ? '' : 's'} to create · {plan.summary.errorCount} error{plan.summary.errorCount === 1 ? '' : 's'} skipped
           </p>
           <div style={{ overflowX: 'auto', maxHeight: 360, overflowY: 'auto', border: `1px solid ${T.border}`, borderRadius: T.radius }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead><tr style={S.thead}>
                 {['Row', 'Status', 'LRN', 'Name', 'Grade', 'Section', 'Detail'].map((h) => <th key={h} style={S.th}>{h}</th>)}
               </tr></thead>
@@ -99,7 +102,7 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
                   <td style={{ ...S.td, color: T.inkMuted }}>{r.errors ? Object.values(r.errors).join(' ') : ''}</td>
                 </tr>
               ))}</tbody>
-            </table>
+            </table></div>
           </div>
           {commitError && (
             <div style={{ fontFamily: T.body, background: 'rgba(220,38,38,0.1)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginTop: 12 }}>
