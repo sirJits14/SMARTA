@@ -1,4 +1,4 @@
-import { ResourceState } from '../components/ui.jsx';
+import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
 import { useCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
@@ -48,10 +48,11 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
     return true;
   })), [students, q, status, gradeFilter, sectionFilter, enrollmentByStudent]);
 
-  if ([studentsResource,sectionsResource,enrollmentsResource].some(r => r.loading || r.error)) return <ResourceState resources={[studentsResource,sectionsResource,enrollmentsResource]}/>;
+  const resources = [studentsResource,sectionsResource,enrollmentsResource];
 
   return (
-    <div>
+    <EditorResources resources={resources}><div>
+      <ResourceState resources={resources}>
       <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Students</h1>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -111,9 +112,10 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
           </div>
         )}
       </Card>
+      </ResourceState>
       {form && <StudentForm students={students} editing={form.id ? form : null} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${fullName(confirm)}? This cannot be undone.`} onYes={async () => { await deleteStudent(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {importOpen && <ImportStudentsWizard students={students} sections={sections} schoolYear={schoolYear} onClose={() => setImportOpen(false)} />}
-    </div>
+    </div></EditorResources>
   );
 }

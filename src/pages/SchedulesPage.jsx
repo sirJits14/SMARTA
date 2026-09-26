@@ -1,6 +1,6 @@
 import { useAsyncAction } from '../hooks/useAsyncAction.js';
 import { ActionFeedback } from '../components/ui.jsx';
-import { ResourceState } from '../components/ui.jsx';
+import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
 import { useCollectionResource } from '../hooks/useCollection.js';
 import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedules.js';
@@ -58,10 +58,11 @@ export default function SchedulesPage() {
     setConfirm(schedule);
   };
 
-  if ([schedulesResource,sectionsResource].some(r => r.loading || r.error)) return <ResourceState resources={[schedulesResource,sectionsResource]}/>;
+  const resources = [schedulesResource,sectionsResource];
 
   return (
-    <div>
+    <EditorResources resources={resources}><div>
+      <ResourceState resources={resources}>
       <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Schedules</h1>
         <Btn onClick={() => setForm({})}>Add schedule</Btn>
@@ -90,6 +91,7 @@ export default function SchedulesPage() {
           </table></div>
         </Card>
       )}
+      </ResourceState>
       {form && <ScheduleForm editing={form.id ? form : null} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSchedule(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {blocked && (
@@ -107,6 +109,6 @@ export default function SchedulesPage() {
           </div>
         </Modal>
       )}
-    </div>
+    </div></EditorResources>
   );
 }

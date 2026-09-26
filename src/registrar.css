@@ -1,6 +1,6 @@
 /* Registrar screen styles. Print and login retain their established styles. */
 @media screen {
-  .sims-ui { --sims-nav:rgba(255,255,255,.76); --sims-summary:rgba(255,255,255,.82); --sims-working:rgba(255,255,255,.97); --sims-radius:16px; --sims-field-font:14px; --sims-field-radius:12px; --sims-control-height:44px; --sims-ink:#25213b; --sims-muted:#656078; color:var(--sims-ink); font-family:Inter,system-ui,sans-serif; font-size:14px; }
+  .sims-ui { --sims-nav:rgba(255,255,255,.76); --sims-summary:rgba(255,255,255,.82); --sims-working:rgba(255,255,255,.97); --sims-radius:16px; --sims-field-font:14px; --sims-field-radius:12px; --sims-control-height:44px; --sims-control-border:#8c869a; --sims-ink:#25213b; --sims-muted:#656078; color:var(--sims-ink); font-family:Inter,system-ui,sans-serif; font-size:14px; }
   .sims-ui * { box-sizing:border-box; }
   .app-shell.sims-ui { height:100dvh; overflow:hidden; padding:24px; display:grid; grid-template-columns:232px minmax(0,1fr); gap:24px; background:radial-gradient(ellipse at 7% 95%,#f0d9de 0,transparent 48%),radial-gradient(ellipse at 94% 78%,#dcebf1 0,transparent 48%),radial-gradient(ellipse at 48% 10%,#e6dff4 0,transparent 60%),#f1eff5; }
   .app-shell.sims-ui.is-collapsed { grid-template-columns:72px minmax(0,1fr); }
@@ -142,3 +142,5 @@
 }
 
 @media screen and (max-width:767px) { .sims-ui { --sims-form-columns:minmax(0,1fr); } .sims-ui .sims-table-scroll { border-radius:12px; } }
+
+@media screen { .sims-ui .sims-section-link { border:0; padding:10px 0; min-height:44px; font:inherit; font-weight:600; text-align:left; background:transparent; color:#4638c2; cursor:pointer; text-decoration:underline; text-underline-offset:3px; } }

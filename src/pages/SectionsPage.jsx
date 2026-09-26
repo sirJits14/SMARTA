@@ -1,7 +1,7 @@
 import { usePrintReadiness } from '../hooks/usePrintReadiness.js';
 import { useAsyncAction } from '../hooks/useAsyncAction.js';
 import { ActionFeedback } from '../components/ui.jsx';
-import { ResourceState } from '../components/ui.jsx';
+import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useRef, useState } from 'react';
 import { useCollectionResource } from '../hooks/useCollection.js';
 import { createSection, updateSection, deleteSection } from '../data/sections.js';
@@ -130,10 +130,11 @@ export default function SectionsPage({ schoolYear }) {
   const printKey = (detailSection?.id || '') + ':' + detailRosterDeped.map(s => s.id + s.lrn).join(',');
   const printReady = usePrintReadiness(printRoot, printKey, detailRosterDeped.length);
 
-  if ([sectionsResource,schedulesResource,enrollmentsResource,studentsResource].some(r => r.loading || r.error)) return <ResourceState resources={[sectionsResource,schedulesResource,enrollmentsResource,studentsResource]}/>;
+  const resources = [sectionsResource,schedulesResource,enrollmentsResource,studentsResource];
 
   return (
-    <div>
+    <EditorResources resources={resources}><div>
+      <ResourceState resources={resources}>
       <div className="sections-page-chrome">
         <div className="sims-heading" style={S.plate}>
           <h1 style={S.h1}>Sections</h1>
@@ -170,7 +171,7 @@ export default function SectionsPage({ schoolYear }) {
                 </tr></thead>
                 <tbody>{activeList.map((s) => (
                   <tr key={s.id} onClick={() => setDetailSection(s)} style={{ cursor: 'pointer' }}>
-                    <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
+                    <td style={{ ...S.td, fontWeight: 600 }}><button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}>{s.name}</button></td>
                     <td style={S.td}>{s.strand || '—'}</td>
                     <td style={S.td}>{s.adviserName || '—'}</td>
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
@@ -186,6 +187,7 @@ export default function SectionsPage({ schoolYear }) {
           </>
         )}
       </div>
+      </ResourceState>
       {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {detailSection && (
@@ -198,6 +200,6 @@ export default function SectionsPage({ schoolYear }) {
       )}
       {detailSection && <div ref={printRoot}><IdCardsPrintSheets section={detailSection} roster={detailRosterDeped} printOnly /></div>}
       {editingStudent && <StudentForm students={students} editing={editingStudent} onClose={() => setEditingStudent(null)} />}
-    </div>
+    </div></EditorResources>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
+import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
@@ -74,7 +75,7 @@ export default function App() {
   const [page, setPageRaw] = useState('dashboard');
   const [pageParams, setPageParams] = useState(null);
   const [navigationSequence, setNavigationSequence] = useState(0);
-  const setPage = (next, params = null) => { setPageRaw(next); setPageParams(params); setNavigationSequence(n => n + 1); };
+  const setPage = (next, params = null) => { if (!shouldStartNavigation(page, next, params)) return; setPageRaw(next); setPageParams(params); setNavigationSequence(n => n + 1); };
   const settings = useDoc('settings/app');
   const schoolYear = settings?.currentSchoolYear || currentSchoolYear();
 

@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement, useId, useRef, useState } from 'react';
+import { createContext, useContext, Children, cloneElement, isValidElement, useId, useRef, useState } from 'react';
 import DialogFrame from './DialogFrame.jsx';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, MARK_COLOR } from '../styles.js';
@@ -14,19 +14,19 @@ export const Btn = ({ style, className = '', variant = 'solid', ...p }) => (
     ...style }} />
 );
 export const Inp = ({ style, className = '', ...p }) => (
-  <input {...p} className={`sims-input ${className}`} style={{ ...font, border: `1.5px solid ${T.border}`, borderRadius: 'var(--sims-field-radius, 10px)',
+  <input {...p} className={`sims-input ${className}`} style={{ ...font, border: `1.5px solid var(--sims-control-border, ${T.border})`, borderRadius: 'var(--sims-field-radius, 10px)',
     background: T.surface, padding: '10px 14px', fontSize: 'var(--sims-field-font, 13px)', width: '100%', boxSizing: 'border-box',
     color: T.ink, transition: 'border-color 0.15s ease-out', ...style }}
     onFocus={(e) => { e.target.style.borderColor = T.primary; p.onFocus?.(e); }}
-    onBlur={(e) => { e.target.style.borderColor = T.border; p.onBlur?.(e); }}
+    onBlur={(e) => { e.target.style.borderColor = `var(--sims-control-border, ${T.border})`; p.onBlur?.(e); }}
   />
 );
 export const Sel = ({ style, className = '', ...p }) => (
-  <select {...p} className={`sims-input ${className}`} style={{ ...font, border: `1.5px solid ${T.border}`, borderRadius: 'var(--sims-field-radius, 10px)',
+  <select {...p} className={`sims-input ${className}`} style={{ ...font, border: `1.5px solid var(--sims-control-border, ${T.border})`, borderRadius: 'var(--sims-field-radius, 10px)',
     background: T.surface, padding: '10px 14px', fontSize: 'var(--sims-field-font, 13px)', width: '100%', boxSizing: 'border-box',
     color: T.ink, transition: 'border-color 0.15s ease-out', ...style }}
     onFocus={(e) => { e.target.style.borderColor = T.primary; p.onFocus?.(e); }}
-    onBlur={(e) => { e.target.style.borderColor = T.border; p.onBlur?.(e); }}
+    onBlur={(e) => { e.target.style.borderColor = `var(--sims-control-border, ${T.border})`; p.onBlur?.(e); }}
   />
 );
 export function Field({ label, error, children }) {
@@ -52,13 +52,19 @@ export function Field({ label, error, children }) {
   </div>;
 }
 
+const EditorResourceContext = createContext([]);
+export const EditorResources = ({resources, children}) => <EditorResourceContext.Provider value={resources}>{children}</EditorResourceContext.Provider>;
+
 export function Modal({ children, onClose, width = 520, overlayClassName = '', title, labelledBy, dismissible = true }) {
   const titleId = useId();
+  const resources = useContext(EditorResourceContext);
+  const unavailable = resources.some(r => r.loading || r.error);
   return <DialogFrame label={title ? undefined : 'Dialog'} labelledBy={labelledBy || (title ? titleId : undefined)}
     onClose={onClose} dismissible={dismissible} className={overlayClassName}
     style={{ width, maxWidth:'calc(100vw - 32px)', fontFamily:T.body }}>
     {title && <h2 id={titleId} style={{ margin:'0 0 20px', fontSize:20 }}>{title}</h2>}
-    {children}
+    {unavailable && <><ResourceState resources={resources}/>{dismissible && <Btn variant="ghost" onClick={onClose}>Close dialog</Btn>}</>}
+    <fieldset disabled={unavailable} style={{border:0,padding:0,margin:0,minWidth:0}}>{children}</fieldset>
   </DialogFrame>;
 }
 export function Confirm({ message, onYes, onNo, label = 'Delete', danger = true, title = 'Confirm action' }) {
