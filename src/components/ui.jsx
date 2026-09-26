@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, useId, useRef, useState } from 'react';
+import { Children, cloneElement, isValidElement, useId, useRef, useState } from 'react';
 import DialogFrame from './DialogFrame.jsx';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, MARK_COLOR } from '../styles.js';
@@ -31,16 +31,27 @@ export const Sel = ({ style, className = '', ...p }) => (
 );
 export function Field({ label, error, children }) {
   const generated = useId();
-  const control = isValidElement(children) ? children : null;
-  const id = control?.props.id || generated;
-  const errorId = id + '-error';
-  return <label htmlFor={id} style={{ display:'block', marginBottom:14 }}>
-    <span style={{ ...font, display:'block', fontSize:12, fontWeight:600, color:T.inkMuted, marginBottom:6 }}>{label}</span>
-    {control ? cloneElement(control, { id, 'aria-invalid': error ? true : control.props['aria-invalid'],
-      'aria-describedby': [control.props['aria-describedby'], error ? errorId : null].filter(Boolean).join(' ') || undefined }) : children}
+  const errorId = generated + '-error';
+  let assigned = false;
+  let targetId = generated;
+  const attach = node => {
+    if (!isValidElement(node) || assigned) return node;
+    if (node.type === Inp || node.type === Sel || ['input','select','textarea'].includes(node.type)) {
+      assigned = true;
+      targetId = node.props.id || generated;
+      return cloneElement(node, { id: targetId, 'aria-invalid': error ? true : node.props['aria-invalid'],
+        'aria-describedby': [node.props['aria-describedby'], error ? errorId : null].filter(Boolean).join(' ') || undefined });
+    }
+    return node.props.children ? cloneElement(node, {}, Children.map(node.props.children, attach)) : node;
+  };
+  const content = Children.map(children, attach);
+  return <div style={{ display:'block', marginBottom:14 }}>
+    <label htmlFor={assigned ? targetId : undefined} style={{ ...font, display:'block', fontSize:12, fontWeight:600, color:T.inkMuted, marginBottom:6 }}>{label}</label>
+    {content}
     {error && <span id={errorId} style={{ ...font, display:'block', color:T.absent, fontSize:12, marginTop:4 }}>{error}</span>}
-  </label>;
+  </div>;
 }
+
 export function Modal({ children, onClose, width = 520, overlayClassName = '', title, labelledBy, dismissible = true }) {
   const titleId = useId();
   return <DialogFrame label={title ? undefined : 'Dialog'} labelledBy={labelledBy || (title ? titleId : undefined)}
@@ -114,3 +125,9 @@ export const StatusPill = ({ mark, onClick }) => {
     </Tag>
   );
 };
+
+export function ActionFeedback({ action }) {
+  const message = Object.values(action.errors)[0];
+  return <>{message && <p role="alert" className="sims-feedback">{message}</p>}
+    {action.busy && <p role="status" style={{fontSize:13,color:T.inkMuted}}>Saving changes…</p>}</>;
+}

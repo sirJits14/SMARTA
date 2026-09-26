@@ -1,5 +1,6 @@
+import { ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollection, useDoc } from '../hooks/useCollection.js';
+import { useCollectionResource, useDocResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
 import { markFor, summarizeMonth, formatScanTime } from '../lib/attendance.js';
@@ -20,11 +21,16 @@ function firstFridayOfJune(schoolYear) {
 const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
 export default function AttendanceSummaryPage({ schoolYear }) {
-  const sections = useCollection('sections');
-  const enrollments = useCollection('enrollments');
-  const students = useCollection('students');
-  const attendance = useCollection('student_attendance');
-  const settings = useDoc('settings/app');
+  const sectionsResource = useCollectionResource('sections');
+  const sections = sectionsResource.data;
+  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollments = enrollmentsResource.data;
+  const studentsResource = useCollectionResource('students');
+  const students = studentsResource.data;
+  const attendanceResource = useCollectionResource('student_attendance');
+  const attendance = attendanceResource.data;
+  const settingsResource = useDocResource('settings/app');
+  const settings = settingsResource.data;
 
   const sectionsSY = useMemo(() =>
     sections
@@ -80,15 +86,17 @@ export default function AttendanceSummaryPage({ schoolYear }) {
     }
   };
 
+  if ([sectionsResource,enrollmentsResource,studentsResource,attendanceResource,settingsResource].some(r => r.loading || r.error)) return <ResourceState resources={[sectionsResource,enrollmentsResource,studentsResource,attendanceResource,settingsResource]}/>;
+
   return (
     <div>
-      <div style={S.plate}>
+      <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Attendance summary</h1>
       </div>
 
       <Card style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ minWidth: 260 }}>
+          <div style={{ minWidth: 'min(260px, 100%)' }}>
             <Field label="Section">
               <Sel value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
                 <option value="">Choose a section…</option>
@@ -96,7 +104,7 @@ export default function AttendanceSummaryPage({ schoolYear }) {
               </Sel>
             </Field>
           </div>
-          <div style={{ minWidth: 180 }}>
+          <div style={{ minWidth: 'min(180px, 100%)' }}>
             <Field label="Month"><Inp type="month" value={ym} onChange={(e) => setYm(e.target.value)} /></Field>
           </div>
           {sectionId && roster.length > 0 && (
@@ -114,7 +122,7 @@ export default function AttendanceSummaryPage({ schoolYear }) {
         <Card style={{ padding: 20 }}><EmptyState title="No learners enrolled here yet" hint="Enroll learners into this section on the Enrollment page first." /></Card>
       ) : (
         <Card style={{ padding: 0, overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
+          <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ borderCollapse: 'collapse', fontSize: 12, width: '100%' }}>
             <thead>
               <tr style={S.thead}>
                 <th style={{ ...S.th, ...T.num, textTransform: 'none', position: 'sticky', left: 0, background: 'inherit' }}>#</th>
@@ -154,7 +162,7 @@ export default function AttendanceSummaryPage({ schoolYear }) {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         </Card>
       )}
     </div>

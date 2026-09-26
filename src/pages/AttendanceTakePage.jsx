@@ -108,13 +108,13 @@ export default function AttendanceTakePage({ schoolYear, entry }) {
         .stamp-row:hover { background: rgba(91,79,232,0.05); }
       `}</style>
 
-      <div style={S.plate}>
+      <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Attendance</h1>
       </div>
 
       <Card style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 260 }}>
+          <div style={{ minWidth: 'min(260px, 100%)' }}>
             <Field label="Section">
               <Sel value={sectionId} disabled={saving} onChange={(e) => { setSectionId(e.target.value); setEntryMessage(''); }}>
                 <option value="">Choose a section…</option>
@@ -122,7 +122,7 @@ export default function AttendanceTakePage({ schoolYear, entry }) {
               </Sel>
             </Field>
           </div>
-          <div style={{ minWidth: 180 }}>
+          <div style={{ minWidth: 'min(180px, 100%)' }}>
             <Field label="Date">
               <Inp type="date" disabled={saving} value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
@@ -191,7 +191,7 @@ export default function AttendanceTakePage({ schoolYear, entry }) {
 
           </div></div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 16 }}>
-            {saved && <span style={{ fontFamily: T.body, fontSize: 13, color: T.present, fontWeight: 600 }}>Saved ✓</span>}
+            {saved && <span style={{ fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.present, fontWeight: 600 }}>Saved ✓</span>}
             <Btn onClick={doSave} disabled={saving || !ready || !selectedSectionAvailable}>{saving ? 'Saving…' : 'Save attendance'}</Btn>
           </div>
         </>

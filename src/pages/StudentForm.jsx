@@ -1,3 +1,5 @@
+import { useAsyncAction } from '../hooks/useAsyncAction.js';
+import { ActionFeedback } from '../components/ui.jsx';
 import { useState } from 'react';
 import { validateStudent, lrnTaken } from '../lib/validation.js';
 import { createStudent, updateStudent } from '../data/students.js';
@@ -8,6 +10,7 @@ import { Modal, Field, Inp, Sel, Btn } from '../components/ui.jsx';
 const DOC_FIELDS = [['form137', 'Form 137'], ['birthCert', 'Birth Certificate'], ['goodMoral', 'Good Moral'], ['form138', 'Form 138']];
 
 export default function StudentForm({ students, editing, onClose }) {
+  const action = useAsyncAction();
   const [f, setF] = useState(editing || { sex: '', documents: {} });
   const [errors, setErrors] = useState({});
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
@@ -16,14 +19,17 @@ export default function StudentForm({ students, editing, onClose }) {
     const r = validateStudent(f);
     if (r.ok && lrnTaken(f.lrn, students, editing?.id)) { r.ok = false; r.errors.lrn = 'That LRN already belongs to another learner.'; }
     if (!r.ok) { setErrors(r.errors); return; }
-    editing ? await updateStudent(editing.id, f) : await createStudent(f);
-    onClose();
+    await action.run('save', async () => {
+      editing ? await updateStudent(editing.id, f) : await createStudent(f);
+      onClose();
+    });
   };
   return (
-    <Modal onClose={onClose}>
-      <h2 style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit learner' : 'New learner'}</h2>
+    <Modal labelledBy="learner-form-title" onClose={onClose} dismissible={!action.busy}>
+      <ActionFeedback action={action}/>
+      <h2 id="learner-form-title" style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit learner' : 'New learner'}</h2>
       <Field label="LRN" error={errors.lrn}><Inp style={T.num} value={f.lrn || ''} onChange={(e) => set('lrn', e.target.value)} maxLength={12} /></Field>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
         <Field label="Last name" error={errors.lastName}><Inp value={f.lastName || ''} onChange={(e) => set('lastName', e.target.value)} /></Field>
         <Field label="First name" error={errors.firstName}><Inp value={f.firstName || ''} onChange={(e) => set('firstName', e.target.value)} /></Field>
         <Field label="Middle name"><Inp value={f.middleName || ''} onChange={(e) => set('middleName', e.target.value)} /></Field>
@@ -32,7 +38,7 @@ export default function StudentForm({ students, editing, onClose }) {
         <Field label="Birthdate" error={errors.birthdate}><Inp type="date" value={f.birthdate || ''} onChange={(e) => set('birthdate', e.target.value)} /></Field>
       </div>
       <Field label="Address"><Inp value={f.address || ''} onChange={(e) => set('address', e.target.value)} /></Field>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr 1fr)', gap: 10 }}>
         <Field label="Guardian name"><Inp value={f.guardianName || ''} onChange={(e) => set('guardianName', e.target.value)} /></Field>
         <Field label="Guardian relationship"><Inp value={f.guardianRelationship || ''} onChange={(e) => set('guardianRelationship', e.target.value)} /></Field>
         <Field label="Guardian contact"><Inp style={T.num} value={f.guardianContact || ''} onChange={(e) => set('guardianContact', e.target.value)} /></Field>
@@ -48,8 +54,8 @@ export default function StudentForm({ students, editing, onClose }) {
         ))}
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
-        <Btn onClick={save}>{editing ? 'Save changes' : 'Add learner'}</Btn>
+        <Btn variant="ghost" disabled={action.busy} onClick={onClose}>Cancel</Btn>
+        <Btn disabled={action.busy} onClick={save}>{editing ? 'Save changes' : 'Add learner'}</Btn>
       </div>
     </Modal>
   );

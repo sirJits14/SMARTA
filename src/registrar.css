@@ -140,3 +140,5 @@
   .sims-ui .sims-grade-column span { font-size:10px; }
   .sims-ui .sims-row-action { font-size:11px; }
 }
+
+@media screen and (max-width:767px) { .sims-ui { --sims-form-columns:minmax(0,1fr); } .sims-ui .sims-table-scroll { border-radius:12px; } }

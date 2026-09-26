@@ -30,12 +30,23 @@ export default function GuardiansPage({ schoolYear, me }) {
   return (
     <div>
       <div className="guardians-heading" style={S.plate}><h1 style={S.h1}>Guardians</h1></div>
-      <div className="guardians-tabs" role="tablist" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
+      <div className="guardians-tabs sims-tabs" role="tablist" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
         {TABS.map(([k, label]) => {
           const active = tab === k;
-          return <button key={k} role="tab" aria-selected={active} onClick={() => setTab(k)} style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', cursor: 'pointer', padding: '9px 16px', borderRadius: T.pill, border: 'none', background: active ? T.primary : 'transparent', color: active ? '#fff' : T.inkMuted }}>{label}</button>;
+          return <button key={k} role="tab" className="sims-tab" id={`guardian-tab-${k}`}
+            aria-selected={active} aria-controls={`guardian-panel-${k}`} tabIndex={active ? 0 : -1}
+            onClick={() => setTab(k)} onKeyDown={event => {
+              const index = TABS.findIndex(([key]) => key === k);
+              const next = event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 :
+                event.key === 'ArrowRight' ? (index + 1) % TABS.length :
+                event.key === 'ArrowLeft' ? (index - 1 + TABS.length) % TABS.length : null;
+              if (next === null) return;
+              event.preventDefault(); setTab(TABS[next][0]);
+              document.getElementById(`guardian-tab-${TABS[next][0]}`)?.focus();
+            }}>{label}</button>;
         })}
       </div>
+      <div role="tabpanel" id={`guardian-panel-${tab}`} aria-labelledby={`guardian-tab-${tab}`}>
       <Suspense fallback={<TabFallback />}>
         {tab === 'codes' && <CodesTab schoolYear={schoolYear} />}
         {tab === 'requests' && <RequestsTab schoolYear={schoolYear} />}
@@ -45,7 +56,7 @@ export default function GuardiansPage({ schoolYear, me }) {
         {tab === 'scanlog' && <ScanLogTab />}
         {tab === 'audit' && <AuditTab />}
         {tab === 'settings' && <PortalSettingsTab me={me} />}
-      </Suspense>
+      </Suspense></div>
     </div>
   );
 }

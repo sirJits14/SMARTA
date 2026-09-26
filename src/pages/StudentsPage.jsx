@@ -1,17 +1,21 @@
+import { ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollection } from '../hooks/useCollection.js';
+import { useCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { deleteStudent } from '../data/students.js';
 import { STUDENT_STATUS, GRADES, UNASSIGNED } from '../lib/constants.js';
 import { T, S } from '../styles.js';
-import { Btn, Inp, Sel, Card, Confirm, EmptyState } from '../components/ui.jsx';
+import { Btn, Inp, Sel, Field, Card, Confirm, EmptyState } from '../components/ui.jsx';
 import StudentForm from './StudentForm.jsx';
 import ImportStudentsWizard from './ImportStudentsWizard.jsx';
 
 export default function StudentsPage({ schoolYear, initialGradeFilter, initialStatus }) {
-  const students = useCollection('students');
-  const sections = useCollection('sections');
-  const enrollments = useCollection('enrollments');
+  const studentsResource = useCollectionResource('students');
+  const students = studentsResource.data;
+  const sectionsResource = useCollectionResource('sections');
+  const sections = sectionsResource.data;
+  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollments = enrollmentsResource.data;
   const [q, setQ] = useState(''); const [status, setStatus] = useState(initialStatus || '');
   const [gradeFilter, setGradeFilter] = useState(initialGradeFilter || ''); const [sectionFilter, setSectionFilter] = useState('');
   const [form, setForm] = useState(null); const [confirm, setConfirm] = useState(null);
@@ -44,9 +48,11 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
     return true;
   })), [students, q, status, gradeFilter, sectionFilter, enrollmentByStudent]);
 
+  if ([studentsResource,sectionsResource,enrollmentsResource].some(r => r.loading || r.error)) return <ResourceState resources={[studentsResource,sectionsResource,enrollmentsResource]}/>;
+
   return (
     <div>
-      <div style={S.plate}>
+      <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Students</h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <Btn variant="ghost" onClick={() => setImportOpen(true)}>Import from Excel</Btn>
@@ -55,31 +61,31 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
       </div>
       <Card style={{ padding: 20 }}>
         <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 240, flex: 1 }}><Inp placeholder="Search name or LRN" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+          <div style={{ minWidth: 'min(240px, 100%)', flex: 1 }}><Field label="Search learners"><Inp placeholder="Search name or LRN" value={q} onChange={(e) => setQ(e.target.value)} /></Field></div>
           <div style={{ minWidth: 160 }}>
-            <Sel value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Field label="Status"><Sel value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All statuses</option>{STUDENT_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
               <option value={UNASSIGNED}>No Section Assigned</option>
-            </Sel>
+            </Sel></Field>
           </div>
           <div style={{ minWidth: 140 }}>
-            <Sel value={gradeFilter} onChange={(e) => setGradeFilterAndReset(e.target.value)}>
+            <Field label="Grade"><Sel value={gradeFilter} onChange={(e) => setGradeFilterAndReset(e.target.value)}>
               <option value="">All grades</option>
               {GRADES.map((g) => <option key={g} value={g}>Grade {g}</option>)}
               <option value={UNASSIGNED}>Unassigned</option>
-            </Sel>
+            </Sel></Field>
           </div>
           <div style={{ minWidth: 160 }}>
-            <Sel value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} disabled={gradeFilter === UNASSIGNED}>
+            <Field label="Section"><Sel value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} disabled={gradeFilter === UNASSIGNED}>
               <option value="">All sections</option>
               {sectionsForGradeFilter.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               <option value={UNASSIGNED}>No Section Assigned</option>
-            </Sel>
+            </Sel></Field>
           </div>
         </div>
         {rows.length === 0 ? <EmptyState title="No learners yet" hint="Add your first learner with the button above." /> : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr style={S.thead}>
                 {['LRN', 'Name', 'Sex', 'Status', 'Grade', 'Section', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
               </tr></thead>
@@ -101,7 +107,7 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
                   </tr>
                 );
               })}</tbody>
-            </table>
+            </table></div>
           </div>
         )}
       </Card>
