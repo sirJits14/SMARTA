@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+import './registrar.css';
 
 // A lazy-loaded chunk (App.jsx's/GuardiansPage.jsx's React.lazy() page and
 // tab imports) can go missing after a redeploy if this tab was left open --

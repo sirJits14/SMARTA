@@ -143,3 +143,7 @@ Top bar: white ground, right-aligned SY badge (light indigo tint, indigo text).
 - **Don't** reintroduce Courier Prime, walnut/manila/brass tokens, or the trapezoid `GuideTab` shape from the retired Card File system.
 - **Don't** use a near-square/no-radius shape anywhere — that belonged to the retired system's rules, not this one.
 - **Don't** repurpose Present, Late, or Excused for anything other than attendance/enrollment status.
+
+## Registrar glass migration (2026-09-26)
+
+Authenticated registrar screens use a floating 232px / 72px sidebar, screen-scoped lavender/blush/blue background, navigation glass (78% white, 18px blur), summary glass (82% white, 12px blur), and nearly opaque working surfaces. Surface tokens live in src/registrar.css; legacy tokens remain as login/print fallbacks. Small screens below 768px use an accessible navigation drawer. Body controls are 14px with 44px hit areas. Dashboard and page migrations are in progress.
