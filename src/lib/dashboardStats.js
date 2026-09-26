@@ -1,3 +1,4 @@
+import { depedSort } from './roster.js';
 export function activeStudentCount(students) {
   return students.filter((s) => s.status === 'active').length;
 }
@@ -38,9 +39,21 @@ export function todayAttendance(attendanceDocs, sectionsCount, date) {
   return { sectionsMarked: todays.length, presentRate };
 }
 
-export function recentEnrollments(enrollments, limit = 5) {
+export function recentEnrollments(enrollments, schoolYear, limit = 5) {
   return [...enrollments]
-    .filter((e) => e.status === 'enrolled')
+    .filter((e) => e.status === 'enrolled' && e.schoolYear === schoolYear)
     .sort((a, b) => (b.dateEnrolled || '').localeCompare(a.dateEnrolled || ''))
     .slice(0, limit);
+}
+
+export function attendanceCoverage({ students, sections, enrollments, attendance, schoolYear, date }) {
+  const studentIds = new Set(depedSort(students).map(s => s.id));
+  const enrolledSections = new Set(enrollments.filter(e => e.schoolYear === schoolYear && e.status === 'enrolled' && studentIds.has(e.studentId)).map(e => e.sectionId));
+  const byId = new Map(sections.filter(s => s.schoolYear === schoolYear && enrolledSections.has(s.id)).map(s => [s.id, s]));
+  const eligibleSections = [...byId.values()].sort((a,b) => a.gradeLevel-b.gradeLevel || a.name.localeCompare(b.name));
+  const recorded = new Set(attendance.filter(d => d.date === date && d.schoolYear === schoolYear && byId.has(d.sectionId)).map(d => d.sectionId));
+  const pendingSections = eligibleSections.filter(s => !recorded.has(s.id));
+  const totalSections = eligibleSections.length;
+  return { eligibleSections, pendingSections, recordedCount: recorded.size, totalSections,
+    percent: totalSections ? Math.round(recorded.size / totalSections * 100) : null };
 }
