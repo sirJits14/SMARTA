@@ -44,12 +44,37 @@ describe('activateCode', () => {
   it('links the guardian, creates the profile with consent, counts the redemption, audits', async () => {
     const code = await issue();
     const r = await activateCode(guardian(), { code: code.toLowerCase(), relationship: 'Mother', consentVersion: 1 });
-    expect(r).toEqual({ studentId: 'S1', displayName: 'Ana Cruz', sectionLabel: 'Grade 7 – Rizal' });
+    expect(r).toEqual({ studentId: 'S1', displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal' });
     expect((await db().doc('guardian_links/gNew_S1').get()).data()).toMatchObject({ guardianUid: 'gNew', studentId: 'S1', status: 'active', relationship: 'Mother', activatedVia: 'code', schoolYear: '2026-2027' });
     expect((await db().doc('guardians/gNew').get()).data()).toMatchObject({ email: 'gNew@gmail.com', consentVersion: 1, notificationsEnabled: true });
     expect((await db().doc(`activation_codes/${hashCode(code)}`).get()).data().redemptions).toBe(1);
     const audit = await db().collection('audit_log').where('action', '==', 'link.activated').get();
     expect(audit.size).toBe(1);
+  });
+  it('seeds the learner projection with the full name before any gate scan', async () => {
+    const code = await issue();
+    await activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1 });
+    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+  });
+  it('keeps an existing scan summary when seeding the learner projection', async () => {
+    await db().doc('learners/S1').set({ displayName: 'Ana Cruz', today: { date: '2026-09-21', status: 'in' } });
+    const code = await issue();
+    await activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1 });
+    expect((await db().doc('learners/S1').get()).data()).toMatchObject({ displayName: 'Ana B. Cruz', today: { date: '2026-09-21', status: 'in' } });
+  });
+  it('records the guardian name typed on Activate, falling back to the sign-in name', async () => {
+    const code = await issue();
+    await activateCode(guardian('g1'), { code, relationship: 'Mother', consentVersion: 1, guardianName: '  Maria Santos Cruz ' });
+    expect((await db().doc('guardians/g1').get()).data().displayName).toBe('Maria Santos Cruz');
+    expect((await db().doc('guardian_links/g1_S1').get()).data()).toMatchObject({ guardianName: 'Maria Santos Cruz', guardianEmail: 'g1@gmail.com', learnerName: 'Ana B. Cruz' });
+    await activateCode(guardian('g2'), { code, relationship: 'Father', consentVersion: 1 });
+    expect((await db().doc('guardian_links/g2_S1').get()).data().guardianName).toBe('Maria');
+  });
+  it('fills in the name of an existing guardian profile that had none', async () => {
+    await db().doc('guardians/gNew').set({ email: 'gNew@gmail.com', displayName: '', consentVersion: 1 });
+    const code = await issue();
+    await activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1, guardianName: 'Maria Cruz' });
+    expect((await db().doc('guardians/gNew').get()).data().displayName).toBe('Maria Cruz');
   });
   it('second guardian redeems; third is exhausted', async () => {
     const code = await issue();

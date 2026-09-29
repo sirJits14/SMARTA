@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { signOut } from 'firebase/auth';
+import { signOut, updateProfile } from 'firebase/auth';
 import { doc, updateDoc, collection, query, where, limit } from 'firebase/firestore';
 import { auth, db, callable } from '../firebase.js';
 import S from '../strings.js';
 import { T } from '../styles.js';
-import { Btn, Card, Banner } from '../components/ui.jsx';
+import { Btn, Card, Banner, Field, Inp } from '../components/ui.jsx';
 import { useLinks } from '../hooks/useLinks.js';
 import { useQuery, useDoc } from '../hooks/useDoc.js';
 import { notificationState } from '../lib/notificationState.js';
@@ -20,7 +20,15 @@ export default function Settings({ user, profile, navigate }) {
   const accountEnabled = profile?.notificationsEnabled !== false;
   const state = notificationState({ ...device, accountEnabled });
   const [busy, setBusy] = useState(false); const [confirmDelete, setConfirmDelete] = useState(false); const [err, setErr] = useState(null);
+  const savedName = profile?.displayName || user.displayName || '';
+  const [name, setName] = useState(savedName); const [nameSaved, setNameSaved] = useState(false);
 
+  const saveName = async () => {
+    setBusy(true); setErr(null); setNameSaved(false);
+    try { await updateDoc(doc(db, 'guardians', user.uid), { displayName: name.trim() }); updateProfile(user, { displayName: name.trim() }).catch(() => {}); setNameSaved(true); }
+    catch { setErr(S.reportFailed); }
+    setBusy(false);
+  };
   const toggleAccount = () => updateDoc(doc(db, 'guardians', user.uid), { notificationsEnabled: !accountEnabled }).catch(() => setErr(S.reportFailed));
   const enable = async () => { setBusy(true); setErr(null); try { await enableOnThisDevice(user.uid); } catch { setErr(S.notifBlockedHelp); } device.refresh(); setBusy(false); };
   const disable = async () => { setBusy(true); await disableOnThisDevice(user.uid); device.refresh(); setBusy(false); };
@@ -30,6 +38,15 @@ export default function Settings({ user, profile, navigate }) {
     <>
       <h1 style={{ fontSize: 20 }}>{S.settingsTitle}</h1>
       {err && <Banner tone="danger">{err}</Banner>}
+      <Card>
+        <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsAccount}</h2>
+        <div style={{ fontSize: 14, marginBottom: 12 }}>{S.signedInAs} <strong>{savedName || user.email}</strong>{savedName && <span style={{ color: T.inkMuted }}> · {user.email}</span>}</div>
+        {profile && <>
+          <Field label={S.yourName} hint={S.yourNameHint}><Inp autoComplete="name" autoCapitalize="words" maxLength={120} value={name} onChange={(e) => { setName(e.target.value); setNameSaved(false); }} /></Field>
+          {nameSaved && <Banner>{S.settingsNameSaved}</Banner>}
+          <Btn variant="ghost" onClick={saveName} disabled={busy || name.trim().length < 2 || name.trim() === savedName}>{S.settingsNameSave}</Btn>
+        </>}
+      </Card>
       <Card>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsNotifications}</h2>
         <label style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 44 }}>
@@ -43,7 +60,7 @@ export default function Settings({ user, profile, navigate }) {
       </Card>
       <Card>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsLearners}</h2>
-        {(links || []).map((l) => <div key={l.id} style={{ padding: '6px 0', fontSize: 14 }}>{l.relationship} · <button onClick={() => navigate(`/learner/${l.studentId}`)} style={{ background: 'none', border: 'none', color: T.primary, fontFamily: T.font, fontSize: 14, cursor: 'pointer', padding: 0 }}>{S.homeViewHistory}</button></div>)}
+        {(links || []).map((l) => <div key={l.id} style={{ padding: '6px 0', fontSize: 14 }}>{l.learnerName ? <><strong>{l.learnerName}</strong> ({l.relationship})</> : l.relationship} · <button onClick={() => navigate(`/learner/${l.studentId}`)} style={{ background: 'none', border: 'none', color: T.primary, fontFamily: T.font, fontSize: 14, cursor: 'pointer', padding: 0 }}>{S.homeViewHistory}</button></div>)}
         <Btn variant="ghost" onClick={() => navigate('/activate')} style={{ marginTop: 6 }}>{S.activateAnother}</Btn>
         <p style={{ fontSize: 12, color: T.inkMuted }}>{S.settingsRemoveHint}</p>
       </Card>

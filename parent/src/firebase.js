@@ -29,6 +29,10 @@ export const appCheckReady = import.meta.env.VITE_RECAPTCHA_SITE_KEY
 export const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }) });
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+// Always show Google's account chooser (each account listed by name), so a
+// parent on a shared phone picks their own account instead of whichever one
+// the browser is already signed in to.
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // firebase/functions is only needed when a callable is actually invoked
 // (Activate/Report/RequestAccess/Settings actions), so it's loaded on first

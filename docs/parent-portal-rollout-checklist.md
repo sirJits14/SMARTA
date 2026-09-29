@@ -6,6 +6,7 @@ outcome is recorded in this file with the date and who verified it.
 ## Prerequisites (console, one-time)
 - [ ] Project on Blaze; budget PHP 1,500 with 50/100/200 % alerts (owner + registrar emails).
 - [ ] Authentication → Sign-in method: Email/Password on, Google on, Anonymous still ON (turned off in step K4).
+- [ ] Authentication → Settings → Authorized domains: add `bnhs-parent.web.app` (and `bnhs-parent.firebaseapp.com`). Without it every "Sign in with Google" on the parent portal fails with `auth/unauthorized-domain` (as of 2026-09-29 the list held only `localhost`, `bnhs-sims.firebaseapp.com`, `bnhs-sims.web.app`).
 - [ ] Cloud Messaging → Web Push certificates → generate key pair → `VITE_FIREBASE_VAPID_KEY` in `parent/.env`.
 - [ ] App Check → register the three web apps with reCAPTCHA Enterprise (one site key covering the three hostnames); enforcement OFF for now; debug tokens registered for dev machines.
 - [ ] Hosting → add site `bnhs-parent`; `firebase target:apply hosting sims bnhs-sims`; `firebase target:apply hosting parent bnhs-parent`.

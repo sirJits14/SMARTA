@@ -52,7 +52,7 @@ export default function RequestsTab({ schoolYear }) {
         return (
           <tr key={r.id}>
             <td style={S.td}>{when(r.createdAt)}</td>
-            <td style={S.td}>{r.guardianEmail}<br /><span style={{ color: T.inkMuted }}>{r.relationship}</span></td>
+            <td style={S.td}>{r.guardianName && <strong>{r.guardianName}<br /></strong>}{r.guardianEmail}<br /><span style={{ color: T.inkMuted }}>{r.relationship}</span></td>
             <td style={S.td}>{r.learnerNameTyped}<br /><span style={{ ...T.num, color: T.inkMuted }}>{r.studentLrn}</span></td>
             <td style={S.td}>{s ? <>{fullName(s)}<br /><span style={{ color: T.inkMuted }}>Guardian on file: {s.guardianName || '—'} ({s.guardianRelationship || '—'}) {s.guardianContact || ''}</span>{!enrolled && <div style={{ color: T.absent }}>Not enrolled this SY</div>}{s.activationRestricted && <div style={{ color: T.absent }}>RESTRICTED</div>}</> : <span style={{ color: T.absent }}>No learner with this LRN</span>}</td>
             <td style={{ ...S.td, ...T.num }}>{r.contactNumber}</td>

@@ -4,13 +4,28 @@ import { ResourceState } from '../../components/ui.jsx';
 import { useMemo, useState } from 'react';
 import { collection, query, where, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
-import { useCollectionResource, useQueryResource } from '../../hooks/useCollection.js';
+import { useCollectionResource, useQueryResource, useDoc } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
 import { fullName } from '../../lib/roster.js';
 import { localDate } from '../../lib/dates.js';
 import { T, S } from '../../styles.js';
 import { Btn, Inp, Sel, Field, Card, EmptyState } from '../../components/ui.jsx';
 import { Table, when } from './RequestsTab.jsx';
+
+// The guardian's own profile wins (they can rename themselves in the portal);
+// the name/email copied onto the link at activation covers deleted profiles.
+function GuardianCell({ link }) {
+  const profile = useDoc(`guardians/${link.guardianUid}`);
+  const name = profile?.displayName || link.guardianName;
+  const email = profile?.email || link.guardianEmail;
+  return (
+    <td style={S.td}>
+      {name ? <strong>{name}</strong> : <span style={{ color: T.inkMuted }}>Name not given</span>}
+      {email && <><br /><span style={{ color: T.inkMuted }}>{email}</span></>}
+      <br /><span style={{ ...T.num, fontSize: 11, color: T.inkMuted }}>{link.guardianUid}</span>
+    </td>
+  );
+}
 
 export default function LinksTab({ schoolYear }) {
   const action = useAsyncAction();
@@ -48,7 +63,7 @@ export default function LinksTab({ schoolYear }) {
             {links.length === 0 ? <EmptyState title="No guardians linked" /> : (
               <Table head={['Guardian', 'Relationship', 'Status', 'Activated', 'Via', 'Revoked', '']} rows={links.map((l) => (
                 <tr key={l.id}>
-                  <td style={{ ...S.td, ...T.num, fontSize: 11 }}>{l.guardianUid}</td><td style={S.td}>{l.relationship}</td><td style={S.td}>{l.status}</td>
+                  <GuardianCell link={l} /><td style={S.td}>{l.relationship}</td><td style={S.td}>{l.status}</td>
                   <td style={S.td}>{when(l.activatedAt)}</td><td style={S.td}>{l.activatedVia}</td>
                   <td style={S.td}>{l.status === 'revoked' ? `${when(l.revokedAt)} — ${l.revokedReason || ''}` : '—'}</td>
                   <td style={S.td}>{l.status === 'active' && <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', () => call.revokeLink({ linkId: l.id, reason }))}>Revoke</Btn>}</td>

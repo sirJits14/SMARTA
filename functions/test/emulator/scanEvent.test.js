@@ -33,13 +33,13 @@ describe('handleScanEvent', () => {
     expect(ev).toMatchObject({ kind: 'in', scannedDate: '2026-09-21', scannedTime: '07:12', deviceLabel: 'Main Gate', status: 'recorded', delayedSync: false, clockSkew: false, source: 'kiosk', fanOutDone: true });
 
     const learner = (await db().doc('learners/S1').get()).data();
-    expect(learner.displayName).toBe('Ana Cruz');
+    expect(learner.displayName).toBe('Ana B. Cruz');
     expect(learner.sectionLabel).toBe('Grade 7 – Rizal');
     expect(learner.today).toMatchObject({ date: '2026-09-21', status: 'in', firstIn: { time: '07:12', eventId: 'k1_S1_202609210712' } });
     expect(learner.lastPush.kind).toBe('in');
 
     const inboxA = (await db().doc('guardians/gA/inbox/k1_S1_202609210712').get()).data();
-    expect(inboxA).toMatchObject({ type: 'attendance', studentId: 'S1', learnerName: 'Ana Cruz', kind: 'in', scannedTime: '07:12', pushStatus: 'sent', deviceLabel: 'Main Gate' });
+    expect(inboxA).toMatchObject({ type: 'attendance', studentId: 'S1', learnerName: 'Ana B. Cruz', kind: 'in', scannedTime: '07:12', pushStatus: 'sent', deviceLabel: 'Main Gate' });
     const inboxB = (await db().doc('guardians/gB/inbox/k1_S1_202609210712').get()).data();
     expect(inboxB.pushStatus).toBe('skipped_disabled');
     expect((await db().doc('guardians/gC/inbox/k1_S1_202609210712').get()).exists).toBe(false);

@@ -18,6 +18,12 @@ describe('expireLinks', () => {
     expect((await db().doc('guardian_links/gA_S1').get()).data().status).toBe('expired');
     expect((await db().collection('guardians/gA/inbox').where('type', '==', 'system').get()).size).toBe(1);
   });
+  it('fills in the learner name for linked learners who have no gate scan yet, once per learner', async () => {
+    const r = await expireLinks(deps());
+    expect(r.seeded).toBe(1);
+    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+    expect((await expireLinks(deps())).seeded).toBe(0);
+  });
   it('deletes old revoked links, old codes, old audit rows, dormant guardians', async () => {
     await db().doc('guardian_links/gC_S1').set({ revokedAt: ts(NOW.getTime() - 400 * DAY) }, { merge: true });
     await db().doc('activation_codes/h1').set({ studentId: 'S1', schoolYear: '2024-2025', status: 'revoked', expiresAt: ts(NOW.getTime() - 400 * DAY) });
@@ -34,7 +40,7 @@ describe('expireLinks', () => {
   it('returns a zeroed result and does not throw when settings/app.currentSchoolYear is unset', async () => {
     await db().doc('settings/app').set({ currentSchoolYear: null }, { merge: true });
     const r = await expireLinks(deps());
-    expect(r).toEqual({ expired: 0, oldRevoked: 0, oldExpired: 0, oldCodes: 0, oldAudit: 0, dormant: 0 });
+    expect(r).toEqual({ expired: 0, seeded: 0, oldRevoked: 0, oldExpired: 0, oldCodes: 0, oldAudit: 0, dormant: 0 });
   });
 });
 

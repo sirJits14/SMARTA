@@ -14,7 +14,7 @@ function LearnerCard({ link, navigate }) {
   if (data === undefined) return <Card><Spinner label={S.loading} /></Card>;
   return (
     <Card>
-      <div style={{ fontWeight: 800, fontSize: 18 }}>{data?.displayName || '—'}</div>
+      <div style={{ fontWeight: 800, fontSize: 18 }}>{data?.displayName || link.learnerName || '—'}</div>
       <div style={{ color: T.inkMuted, fontSize: 13, marginBottom: 10 }}>{data?.sectionLabel}</div>
       <div style={{ fontSize: 16, marginBottom: 10 }}>{latestScanToday(data?.today, localDate())}</div>
       <Btn variant="ghost" onClick={() => navigate(`/learner/${link.studentId}`)}>{S.homeViewHistory}</Btn>
