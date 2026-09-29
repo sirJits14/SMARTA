@@ -9,6 +9,14 @@ import { T } from '../styles.js';
 import { Modal, Field, Inp, Sel, Btn } from '../components/ui.jsx';
 
 const DOC_FIELDS = [['form137', 'Form 137'], ['birthCert', 'Birth Certificate'], ['goodMoral', 'Good Moral'], ['form138', 'Form 138']];
+const CHOOSE_SECTION = '__choose_section__';
+
+export function enrollmentSectionError({ grade, sectionId, sectionsForGrade }) {
+  if (!grade) return '';
+  return sectionsForGrade.some((section) => section.id === sectionId)
+    ? ''
+    : 'Choose a section for this grade.';
+}
 
 export default function StudentForm({ students, editing, sections, enrollments, schoolYear, onClose }) {
   const action = useAsyncAction();
@@ -39,9 +47,10 @@ export default function StudentForm({ students, editing, sections, enrollments, 
   const save = async () => {
     const r = validateStudent(f);
     if (r.ok && lrnTaken(f.lrn, students, editing?.id)) { r.ok = false; r.errors.lrn = 'That LRN already belongs to another learner.'; }
-    if (grade && !sectionId) { r.ok = false; r.errors.section = 'Choose a section for this grade.'; }
+    const sectionError = enrollmentSectionError({ grade, sectionId, sectionsForGrade });
+    if (sectionError) { r.ok = false; r.errors.section = sectionError; }
     if (!r.ok) { setErrors(r.errors); return; }
-    const section = sectionsSY.find((candidate) => candidate.id === sectionId) || null;
+    const section = sectionsForGrade.find((candidate) => candidate.id === sectionId) || null;
     const enrollmentPlan = planEnrollmentChange({ current: currentEnrollment, section, schoolYear, type: enrollmentType });
     await action.run('save', async () => {
       await saveStudentWithEnrollment({ id: editing?.id, form: f, isNew: !editing, enrollmentPlan, schoolYear });
@@ -70,7 +79,8 @@ export default function StudentForm({ students, editing, sections, enrollments, 
           </Sel>
         </Field>
         <Field label="Section" error={gradeHasNoSections ? undefined : errors.section}>
-          <Sel value={sectionId} onChange={(e) => changeSection(e.target.value)} disabled={!grade || gradeHasNoSections}>
+          <Sel value={currentEnrollment && !sectionId ? CHOOSE_SECTION : sectionId} onChange={(e) => changeSection(e.target.value)} disabled={!grade || gradeHasNoSections}>
+            {currentEnrollment && <option value={CHOOSE_SECTION} disabled>Choose a section…</option>}
             {!currentEnrollment && <option value="">— Not assigned —</option>}
             {sectionsForGrade.map((section) => <option key={section.id} value={section.id}>{section.name}{section.strand ? ` · ${section.strand}` : ''}</option>)}
           </Sel>
