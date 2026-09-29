@@ -8,6 +8,7 @@ import { T, S } from '../styles.js';
 import { Btn, Inp, Sel, Field, Card, Confirm, EmptyState } from '../components/ui.jsx';
 import StudentForm from './StudentForm.jsx';
 import ImportStudentsWizard from './ImportStudentsWizard.jsx';
+import { currentEnrollmentByStudent } from '../lib/enrollmentChange.js';
 
 export default function StudentsPage({ schoolYear, initialGradeFilter, initialStatus }) {
   const studentsResource = useCollectionResource('students');
@@ -25,11 +26,7 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
     sections.filter((s) => s.schoolYear === schoolYear).sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
     [sections, schoolYear]);
   const sectionById = useMemo(() => new Map(sectionsSY.map((s) => [s.id, s])), [sectionsSY]);
-  const enrollmentByStudent = useMemo(() => {
-    const m = new Map();
-    enrollments.forEach((e) => { if (e.schoolYear === schoolYear && e.status === 'enrolled') m.set(e.studentId, e); });
-    return m;
-  }, [enrollments, schoolYear]);
+  const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
   const sectionsForGradeFilter = useMemo(() =>
     gradeFilter && gradeFilter !== UNASSIGNED ? sectionsSY.filter((s) => String(s.gradeLevel) === gradeFilter) : [],
     [sectionsSY, gradeFilter]);
@@ -113,7 +110,7 @@ export default function StudentsPage({ schoolYear, initialGradeFilter, initialSt
         )}
       </Card>
       </ResourceState>
-      {form && <StudentForm students={students} editing={form.id ? form : null} onClose={() => setForm(null)} />}
+      {form && <StudentForm students={students} editing={form.id ? form : null} sections={sections} enrollments={enrollments} schoolYear={schoolYear} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${fullName(confirm)}? This cannot be undone.`} onYes={async () => { await deleteStudent(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {importOpen && <ImportStudentsWizard students={students} sections={sections} schoolYear={schoolYear} onClose={() => setImportOpen(false)} />}
     </div></EditorResources>
