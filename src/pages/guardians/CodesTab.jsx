@@ -6,8 +6,9 @@ import { useMemo, useRef, useState } from 'react';
 import { useCollectionResource } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
 import { T, S } from '../../styles.js';
-import { Btn, Sel, Field, Card, EmptyState } from '../../components/ui.jsx';
+import { Btn, Card, EmptyState } from '../../components/ui.jsx';
 import ActivationSlipsPrintable from '../../components/ActivationSlipsPrintable.jsx';
+import SectionPicker from '../../components/SectionPicker.jsx';
 
 const PORTAL_URL = import.meta.env.VITE_PARENT_PORTAL_URL || 'https://bnhs-parent.web.app';
 
@@ -40,10 +41,10 @@ export default function CodesTab({ schoolYear }) {
         <h2 style={S.h2}>Issue activation slips</h2>
         <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>One slip per enrolled learner. Print them right away — codes are shown only once. Hand them to parents in person (adviser/homeroom). Learners flagged "restricted" are skipped.</p>
         {err && <div style={{ color: T.absent, fontSize: 12, marginBottom: 8 }}>{err}</div>}
-        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr auto auto)', gap: 12, alignItems: 'end' }}>
-          <Field label="Section"><Sel disabled={busy || action.busy} value={sectionId} onChange={(e) => { setSectionId(e.target.value); setResult(null); }}><option value="">Choose a section…</option>{sectionsSY.map((s) => <option key={s.id} value={s.id}>{`${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}`}</option>)}</Sel></Field>
-          <Btn onClick={() => action.run('issue', issue)} disabled={action.busy || busy || !sectionId} style={{ marginBottom: 14 }}>{busy ? 'Issuing…' : 'Issue slips'}</Btn>
-          <Btn variant="ghost" onClick={() => window.print()} disabled={!printReady} style={{ marginBottom: 14 }}>Print</Btn>
+        <SectionPicker sections={sectionsSY} value={sectionId} disabled={busy || action.busy} label="Section" onChange={(id) => { setSectionId(id); setResult(null); }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', margin: '16px 0 14px' }}>
+          <Btn onClick={() => action.run('issue', issue)} disabled={action.busy || busy || !sectionId}>{busy ? 'Issuing…' : 'Issue slips'}</Btn>
+          <Btn variant="ghost" onClick={() => window.print()} disabled={!printReady}>Print</Btn>
         </div>
         {result && <div style={{ fontFamily: T.body, fontSize: 13 }}>{result.slips.length} slips issued{result.skipped.length ? `, ${result.skipped.length} skipped (${result.skipped.map((s) => s.reason).join(', ')})` : ''}.</div>}
       </Card>

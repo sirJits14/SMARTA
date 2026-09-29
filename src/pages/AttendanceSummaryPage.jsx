@@ -7,7 +7,8 @@ import { markFor, summarizeMonth, formatScanTime } from '../lib/attendance.js';
 import { buildSF2Workbook } from '../lib/sf2.js';
 import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S, MARK_COLOR } from '../styles.js';
-import { Sel, Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
+import { Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
+import SectionPicker from '../components/SectionPicker.jsx';
 
 // DepEd's "Enrolment as of 1st Friday of June" cutoff for a given school
 // year (e.g. "2026-2027" -> the 1st Friday of June 2026).
@@ -17,8 +18,6 @@ function firstFridayOfJune(schoolYear) {
   for (let i = 0; i < 7 && d.getDay() !== 5; i++) d.setDate(d.getDate() + 1); // 5 = Friday, at most 6 steps
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-
-const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
 export default function AttendanceSummaryPage({ schoolYear }) {
   const sectionsResource = useCollectionResource('sections');
@@ -95,15 +94,8 @@ export default function AttendanceSummaryPage({ schoolYear }) {
       </div>
 
       <Card style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ minWidth: 'min(260px, 100%)' }}>
-            <Field label="Section">
-              <Sel value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
-                <option value="">Choose a section…</option>
-                {sectionsSY.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}
-              </Sel>
-            </Field>
-          </div>
+        <SectionPicker sections={sectionsSY} value={sectionId} onChange={setSectionId} label="Section" />
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end', marginTop: 16 }}>
           <div style={{ minWidth: 'min(180px, 100%)' }}>
             <Field label="Month"><Inp type="month" value={ym} onChange={(e) => setYm(e.target.value)} /></Field>
           </div>

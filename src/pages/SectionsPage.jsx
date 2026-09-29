@@ -6,12 +6,15 @@ import { useMemo, useRef, useState } from 'react';
 import { useCollectionResource } from '../hooks/useCollection.js';
 import { createSection, updateSection, deleteSection } from '../data/sections.js';
 import { GRADES, isSHS, TRACKS, STRANDS } from '../lib/constants.js';
-import { alphabeticalSort, depedSort } from '../lib/roster.js';
+import { alphabeticalSort, depedSort, fullName } from '../lib/roster.js';
+import { learnerMatches } from '../lib/search.js';
+import { currentEnrollmentByStudent } from '../lib/enrollmentChange.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
 import StudentForm from './StudentForm.jsx';
 import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
+import GradePills from '../components/GradePills.jsx';
 
 function SectionForm({ editing, schoolYear, schedules, onClose }) {
   const action = useAsyncAction();
@@ -101,6 +104,7 @@ export default function SectionsPage({ schoolYear }) {
   const [confirm, setConfirm] = useState(null);
   const [detailSection, setDetailSection] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [learnerQuery, setLearnerQuery] = useState('');
   const rows = useMemo(() =>
     sections
       .filter((s) => s.schoolYear === schoolYear)
@@ -119,6 +123,16 @@ export default function SectionsPage({ schoolYear }) {
   const [selectedGrade, setSelectedGrade] = useState(null);
   const activeGrade = groups.some(([g]) => g === selectedGrade) ? selectedGrade : (groups[0]?.[0] ?? null);
   const activeList = groups.find(([g]) => g === activeGrade)?.[1] || [];
+  const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
+  const sectionById = useMemo(() => new Map(rows.map((section) => [section.id, section])), [rows]);
+  const learnerSearchActive = learnerQuery.trim().length > 0;
+  const matchingLearners = useMemo(() => {
+    if (!learnerSearchActive) return [];
+    return depedSort(students.filter((student) => {
+      const enrollment = enrollmentByStudent.get(student.id);
+      return Number(enrollment?.gradeLevel) === Number(activeGrade) && learnerMatches(learnerQuery, student);
+    }));
+  }, [activeGrade, enrollmentByStudent, learnerQuery, learnerSearchActive, students]);
   const detailRoster = useMemo(() => {
     if (!detailSection) return [];
     const ids = enrolledStudentIdsBySection.get(detailSection.id) || new Set();
@@ -146,26 +160,53 @@ export default function SectionsPage({ schoolYear }) {
           </Card>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
-              {groups.map(([grade, list]) => {
-                const active = grade === activeGrade;
-                return (
-                  <button
-                    key={grade}
-                    onClick={() => setSelectedGrade(grade)}
-                    style={{
-                      fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
-                      cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-                      background: active ? T.primary : 'transparent',
-                      color: active ? '#fff' : T.inkMuted,
-                      transition: 'background 0.15s ease-out, color 0.15s ease-out',
-                    }}
-                  >Grade {grade} ({list.length})</button>
-                );
-              })}
+            <div style={{ marginBottom: 18 }}>
+              <GradePills
+                options={groups.map(([grade, list]) => ({ value: grade, label: `Grade ${grade}`, count: list.length }))}
+                value={activeGrade}
+                onChange={setSelectedGrade}
+                label="Grade level"
+              />
             </div>
+            <div style={{ marginBottom: 10 }}>
+              <Inp
+                type="search"
+                value={learnerQuery}
+                onChange={(event) => setLearnerQuery(event.target.value)}
+                aria-label={`Search learners in Grade ${activeGrade}`}
+                placeholder={`Search Grade ${activeGrade} learners by first or last name`}
+              />
+            </div>
+            {learnerSearchActive && (
+              <div aria-live="polite" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, marginBottom: 10 }}>
+                {matchingLearners.length} learner{matchingLearners.length === 1 ? '' : 's'} in Grade {activeGrade} match &quot;{learnerQuery}&quot;.
+              </div>
+            )}
             <Card style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              {learnerSearchActive ? matchingLearners.length === 0 ? (
+                <EmptyState title="No matching learners" hint={`No Grade ${activeGrade} learners match "${learnerQuery}".`} />
+              ) : (
+                <div className="sims-table-scroll" role="region" aria-label="Matching learners" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead><tr style={S.thead}>
+                    {['Name', 'LRN', 'Section', ''].map((heading) => <th key={heading} style={S.th}>{heading}</th>)}
+                  </tr></thead>
+                  <tbody>{matchingLearners.map((student) => {
+                    const enrollment = enrollmentByStudent.get(student.id);
+                    const section = sectionById.get(enrollment?.sectionId);
+                    return (
+                      <tr key={student.id}>
+                        <td style={{ ...S.td, fontWeight: 600 }}>{fullName(student)}</td>
+                        <td style={{ ...S.td, ...T.num }}>{student.lrn}</td>
+                        <td style={S.td}>{section?.name || 'Unassigned'}</td>
+                        <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <Btn variant="ghost" disabled={!section} onClick={() => setDetailSection(section)} style={{ marginRight: 6 }}>View section</Btn>
+                          <Btn variant="ghost" onClick={() => setEditingStudent(student)}>Edit</Btn>
+                        </td>
+                      </tr>
+                    );
+                  })}</tbody>
+                </table></div>
+              ) : <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead><tr style={S.thead}>
                   {['Section', 'Strand', 'Adviser', 'Schedule', 'Enrolled', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
                 </tr></thead>
@@ -182,7 +223,7 @@ export default function SectionsPage({ schoolYear }) {
                     </td>
                   </tr>))}
                 </tbody>
-              </table></div>
+              </table></div>}
             </Card>
           </>
         )}
@@ -199,7 +240,7 @@ export default function SectionsPage({ schoolYear }) {
         />
       )}
       {detailSection && <div ref={printRoot}><IdCardsPrintSheets section={detailSection} roster={detailRosterDeped} printOnly /></div>}
-      {editingStudent && <StudentForm students={students} editing={editingStudent} onClose={() => setEditingStudent(null)} />}
+      {editingStudent && <StudentForm students={students} editing={editingStudent} sections={sections} enrollments={enrollments} schoolYear={schoolYear} onClose={() => setEditingStudent(null)} />}
     </div></EditorResources>
   );
 }

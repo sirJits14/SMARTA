@@ -7,9 +7,8 @@ import { markFor, formatScanTime } from '../lib/attendance.js';
 import { attendanceId, saveMarks } from '../data/attendance.js';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, S } from '../styles.js';
-import { Sel, Inp, Btn, Field, Card, StatusPill, EmptyState, ResourceState } from '../components/ui.jsx';
-
-const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
+import { Inp, Btn, Field, Card, StatusPill, EmptyState, ResourceState } from '../components/ui.jsx';
+import SectionPicker from '../components/SectionPicker.jsx';
 
 // Cycling one tap at a time: Present -> Late -> Absent -> Excused -> Present.
 const NEXT = { P: 'L', L: 'A', A: 'E', E: 'P' };
@@ -113,20 +112,11 @@ export default function AttendanceTakePage({ schoolYear, entry }) {
       </div>
 
       <Card style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 'min(260px, 100%)' }}>
-            <Field label="Section">
-              <Sel value={sectionId} disabled={saving} onChange={(e) => { setSectionId(e.target.value); setEntryMessage(''); }}>
-                <option value="">Choose a section…</option>
-                {sectionsSY.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}
-              </Sel>
-            </Field>
-          </div>
-          <div style={{ minWidth: 'min(180px, 100%)' }}>
-            <Field label="Date">
-              <Inp type="date" disabled={saving} value={date} onChange={(e) => setDate(e.target.value)} />
-            </Field>
-          </div>
+        <SectionPicker sections={sectionsSY} value={sectionId} disabled={saving} label="Section" onChange={(id) => { setSectionId(id); setEntryMessage(''); }} />
+        <div style={{ width: 'min(180px, 100%)', marginTop: 16 }}>
+          <Field label="Date">
+            <Inp type="date" disabled={saving} value={date} onChange={(e) => setDate(e.target.value)} />
+          </Field>
         </div>
       </Card>
 

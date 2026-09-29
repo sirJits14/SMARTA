@@ -7,8 +7,12 @@ import { db } from '../../firebase.js';
 import { useCollectionResource, useQueryResource } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
 import { fullName } from '../../lib/roster.js';
+import { learnerMatches, matchesWords } from '../../lib/search.js';
+import { currentEnrollmentByStudent } from '../../lib/enrollmentChange.js';
+import { GRADES, UNASSIGNED } from '../../lib/constants.js';
 import { T, S } from '../../styles.js';
-import { Btn, Inp, Card, EmptyState } from '../../components/ui.jsx';
+import { Btn, Inp, Field, Card, EmptyState } from '../../components/ui.jsx';
+import GradePills from '../../components/GradePills.jsx';
 
 // Shared table helper and timestamp formatter — reused by ReportsTab,
 // LinksTab, ScanLogTab and AuditTab.
@@ -31,8 +35,24 @@ export default function RequestsTab({ schoolYear }) {
   const enrollmentsResource = useCollectionResource('enrollments');
   const enrollments = enrollmentsResource.data;
   const byLrn = useMemo(() => new Map(students.map((s) => [s.lrn, s])), [students]);
+  const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
+  const [filterQuery, setFilterQuery] = useState('');
+  const [gradeFilter, setGradeFilter] = useState('');
   const [notes, setNotes] = useState({});
   const note = (id) => notes[id] || '';
+  const gradeOptions = useMemo(() => [
+    { value: '', label: 'All' },
+    ...GRADES.map((grade) => ({ value: grade, label: `Grade ${grade}` })),
+    { value: UNASSIGNED, label: 'Unassigned' },
+  ], []);
+  const filtered = useMemo(() => open.filter((request) => {
+    const learner = byLrn.get(request.studentLrn);
+    const enrollment = learner ? enrollmentByStudent.get(learner.id) : null;
+    const nameHit = learnerMatches(filterQuery, learner) || matchesWords(filterQuery, request.learnerNameTyped);
+    const gradeHit = gradeFilter === '' ||
+      (gradeFilter === UNASSIGNED ? !learner || !enrollment : Number(enrollment?.gradeLevel) === Number(gradeFilter));
+    return nameHit && gradeHit;
+  }), [byLrn, enrollmentByStudent, filterQuery, gradeFilter, open]);
 
   const resolve = async (r, approve) => {
     const student = byLrn.get(r.studentLrn);
@@ -44,11 +64,17 @@ export default function RequestsTab({ schoolYear }) {
 
   if (open.length === 0) return <EmptyState title="No open access requests" hint="Parents who lost their slip or have a custody change appear here." />;
   return (
-    <Card>
-      <ActionFeedback action={action}/>
-      <Table head={['Requested', 'Guardian', 'Learner (typed)', 'On record', 'Contact', 'Message', 'Note / action']} rows={open.map((r) => {
+    <>
+      <Card style={{ padding: 20, marginBottom: 16 }}>
+        <Field label="Filter by learner"><Inp type="search" value={filterQuery} onChange={(event) => setFilterQuery(event.target.value)} placeholder="Filter by learner first or last name" /></Field>
+        <GradePills options={gradeOptions} value={gradeFilter} onChange={setGradeFilter} label="Learner grade" />
+        <div style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, marginTop: 10 }}>Filters apply to the 50 most recent open items.</div>
+      </Card>
+      <Card>
+        <ActionFeedback action={action}/>
+        {filtered.length === 0 ? <EmptyState title="No rows match these filters." /> : <Table head={['Requested', 'Guardian', 'Learner (typed)', 'On record', 'Contact', 'Message', 'Note / action']} rows={filtered.map((r) => {
         const s = byLrn.get(r.studentLrn);
-        const enrolled = s && enrollments.some((e) => e.studentId === s.id && e.schoolYear === schoolYear && e.status === 'enrolled');
+        const enrolled = s && enrollmentByStudent.has(s.id);
         return (
           <tr key={r.id}>
             <td style={S.td}>{when(r.createdAt)}</td>
@@ -66,7 +92,8 @@ export default function RequestsTab({ schoolYear }) {
             </td>
           </tr>
         );
-      })} />
-    </Card>
+        })} />}
+      </Card>
+    </>
   );
 }
