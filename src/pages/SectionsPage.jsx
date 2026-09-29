@@ -12,6 +12,7 @@ import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState } from '../compo
 import StudentForm from './StudentForm.jsx';
 import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
+import GradePills from '../components/GradePills.jsx';
 
 function SectionForm({ editing, schoolYear, schedules, onClose }) {
   const action = useAsyncAction();
@@ -146,23 +147,13 @@ export default function SectionsPage({ schoolYear }) {
           </Card>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
-              {groups.map(([grade, list]) => {
-                const active = grade === activeGrade;
-                return (
-                  <button
-                    key={grade}
-                    onClick={() => setSelectedGrade(grade)}
-                    style={{
-                      fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
-                      cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-                      background: active ? T.primary : 'transparent',
-                      color: active ? '#fff' : T.inkMuted,
-                      transition: 'background 0.15s ease-out, color 0.15s ease-out',
-                    }}
-                  >Grade {grade} ({list.length})</button>
-                );
-              })}
+            <div style={{ marginBottom: 18 }}>
+              <GradePills
+                options={groups.map(([grade, list]) => ({ value: grade, label: `Grade ${grade}`, count: list.length }))}
+                value={activeGrade}
+                onChange={setSelectedGrade}
+                label="Grade level"
+              />
             </div>
             <Card style={{ padding: 0, overflow: 'hidden' }}>
               <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
