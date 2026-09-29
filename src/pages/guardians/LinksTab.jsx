@@ -6,32 +6,63 @@ import { collection, query, where, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useCollectionResource, useQueryResource } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
-import { fullName } from '../../lib/roster.js';
+import { depedSort, fullName } from '../../lib/roster.js';
 import { localDate } from '../../lib/dates.js';
+import { learnerMatches } from '../../lib/search.js';
+import { currentEnrollmentByStudent } from '../../lib/enrollmentChange.js';
+import { GRADES, UNASSIGNED } from '../../lib/constants.js';
 import { T, S } from '../../styles.js';
 import { Btn, Inp, Sel, Field, Card, EmptyState } from '../../components/ui.jsx';
+import GradePills from '../../components/GradePills.jsx';
 import { Table, when } from './RequestsTab.jsx';
 
 export default function LinksTab({ schoolYear }) {
   const action = useAsyncAction();
   const studentsResource = useCollectionResource('students');
   const students = studentsResource.data;
+  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollments = enrollmentsResource.data;
+  const sectionsResource = useCollectionResource('sections');
+  const sections = sectionsResource.data;
   const [q, setQ] = useState(''); const [studentId, setStudentId] = useState('');
-  const matches = useMemo(() => q.length < 2 ? [] : students.filter((s) => `${s.lastName} ${s.firstName} ${s.lrn}`.toLowerCase().includes(q.toLowerCase())).slice(0, 8), [students, q]);
+  const [gradeFilter, setGradeFilter] = useState('');
+  const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
+  const sectionById = useMemo(() => new Map(sections.map((section) => [section.id, section])), [sections]);
+  const enrolledGrades = useMemo(() => new Set([...enrollmentByStudent.values()].map((enrollment) => Number(enrollment.gradeLevel))), [enrollmentByStudent]);
+  const gradeOptions = useMemo(() => [
+    { value: '', label: 'All' },
+    ...GRADES.filter((grade) => enrolledGrades.has(grade)).map((grade) => ({ value: grade, label: `Grade ${grade}` })),
+    { value: UNASSIGNED, label: 'Unassigned' },
+  ], [enrolledGrades]);
+  const allMatches = useMemo(() => q.trim() ? depedSort(students.filter((candidate) => {
+    const enrollment = enrollmentByStudent.get(candidate.id);
+    const gradeHit = gradeFilter === '' ||
+      (gradeFilter === UNASSIGNED ? !enrollment : Number(enrollment?.gradeLevel) === Number(gradeFilter));
+    return gradeHit && learnerMatches(q, candidate, { includeLrn: true });
+  })) : [], [enrollmentByStudent, gradeFilter, q, students]);
+  const matches = allMatches.slice(0, 20);
   const student = students.find((s) => s.id === studentId);
   const linksResource = useQueryResource(() => studentId && query(collection(db, 'guardian_links'), where('studentId', '==', studentId), limit(20)), [studentId]);
   const links = linksResource.data;
   const [reason, setReason] = useState('');
   const [manual, setManual] = useState({ kind: 'in', date: localDate(), time: '', reason: '' });
 
-  if ([studentsResource].some(r => r.loading || r.error)) return <ResourceState resources={[studentsResource]}/>;
+  const resources = [studentsResource, enrollmentsResource, sectionsResource];
+  if (resources.some(r => r.loading || r.error)) return <ResourceState resources={resources}/>;
 
   return (
     <>
       <ActionFeedback action={action}/>
       <Card style={{ padding: 20, marginBottom: 16 }}>
-        <Field label="Find a learner (name or LRN)"><Inp value={q} onChange={(e) => setQ(e.target.value)} /></Field>
-        {matches.map((s) => <Btn key={s.id} variant="ghost" onClick={() => { setStudentId(s.id); setQ(''); }} style={{ marginRight: 6, marginBottom: 6 }}>{fullName(s)} · {s.lrn}</Btn>)}
+        <div style={{ marginBottom: 14 }}><GradePills options={gradeOptions} value={gradeFilter} onChange={setGradeFilter} label="Learner grade" /></div>
+        <Field label="Find a learner (name or LRN)"><Inp type="search" value={q} onChange={(e) => setQ(e.target.value)} /></Field>
+        {matches.map((s) => {
+          const enrollment = enrollmentByStudent.get(s.id);
+          const section = enrollment ? sectionById.get(enrollment.sectionId) : null;
+          const placement = enrollment ? `Grade ${enrollment.gradeLevel} ${section?.name || 'Section unavailable'}` : 'Unassigned';
+          return <Btn key={s.id} variant="ghost" onClick={() => { setStudentId(s.id); setQ(''); }} style={{ marginRight: 6, marginBottom: 6, maxWidth: '100%', whiteSpace: 'normal', textAlign: 'left' }}>{fullName(s)} · {s.lrn} · {placement}</Btn>;
+        })}
+        {allMatches.length > 20 && <div aria-live="polite" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted }}>Showing 20 of {allMatches.length} — keep typing to narrow down.</div>}
       </Card>
       {!student && <EmptyState title="Choose a learner" hint="See who can view their gate scans, revoke access, restrict self-service activation, or add a manual scan." />}
       {student && (

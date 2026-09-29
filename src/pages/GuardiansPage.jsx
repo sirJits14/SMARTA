@@ -50,10 +50,10 @@ export default function GuardiansPage({ schoolYear, me }) {
       <Suspense fallback={<TabFallback />}>
         {tab === 'codes' && <CodesTab schoolYear={schoolYear} />}
         {tab === 'requests' && <RequestsTab schoolYear={schoolYear} />}
-        {tab === 'reports' && <ReportsTab />}
+        {tab === 'reports' && <ReportsTab schoolYear={schoolYear} />}
         {tab === 'links' && <LinksTab schoolYear={schoolYear} />}
         {tab === 'devices' && <DevicesTab />}
-        {tab === 'scanlog' && <ScanLogTab />}
+        {tab === 'scanlog' && <ScanLogTab schoolYear={schoolYear} />}
         {tab === 'audit' && <AuditTab />}
         {tab === 'settings' && <PortalSettingsTab me={me} />}
       </Suspense></div>
