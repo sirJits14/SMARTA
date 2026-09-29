@@ -14,13 +14,17 @@ describe('access requests', () => {
   it('creates an open request; max 3 open per guardian', async () => {
     const { id } = await requestAccess(guardian(), req);
     expect((await db().doc(`access_requests/${id}`).get()).data()).toMatchObject({ guardianUid: 'gNew', guardianEmail: 'gNew@gmail.com', studentLrn: '100000000001', status: 'open' });
-    await requestAccess(guardian(), req); await requestAccess(guardian(), req);
+    const { id: named } = await requestAccess(guardian(), { ...req, guardianName: 'Maria Santos' });
+    expect((await db().doc(`access_requests/${named}`).get()).data().guardianName).toBe('Maria Santos');
+    await requestAccess(guardian(), req);
     await expect(requestAccess(guardian(), req)).rejects.toMatchObject({ code: 'resource-exhausted' });
   });
   it('approval creates the link via staff and a system inbox item; denial records a note', async () => {
     const { id } = await requestAccess(guardian(), req);
     await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' });
-    expect((await db().doc('guardian_links/gNew_S1').get()).data()).toMatchObject({ status: 'active', activatedVia: 'staff', relationship: 'Guardian' });
+    expect((await db().doc('guardian_links/gNew_S1').get()).data()).toMatchObject({ status: 'active', activatedVia: 'staff', relationship: 'Guardian', guardianName: 'Maria', guardianEmail: 'gNew@gmail.com', learnerName: 'Ana B. Cruz' });
+    expect((await db().doc('learners/S1').get()).data()).toMatchObject({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal' });
+    expect((await db().doc('guardians/gNew').get()).data().displayName).toBe('Maria');
     expect((await db().doc(`access_requests/${id}`).get()).data()).toMatchObject({ status: 'approved', resolvedBy: 'registrar@bnhs.edu' });
     const inbox = await db().collection('guardians/gNew/inbox').get();
     expect(inbox.docs[0].data()).toMatchObject({ type: 'system', pushStatus: 'skipped_suppressed' });

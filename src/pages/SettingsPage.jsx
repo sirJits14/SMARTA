@@ -1,11 +1,16 @@
+import { useAsyncAction } from '../hooks/useAsyncAction.js';
+import { ActionFeedback } from '../components/ui.jsx';
+import { ResourceState } from '../components/ui.jsx';
 import { useEffect, useRef, useState } from 'react';
-import { useDoc } from '../hooks/useCollection.js';
+import { useDocResource } from '../hooks/useCollection.js';
 import { updateSettings } from '../data/settings.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field, Card } from '../components/ui.jsx';
 
 export default function SettingsPage() {
-  const settings = useDoc('settings/app');
+  const action = useAsyncAction();
+  const settingsResource = useDocResource('settings/app');
+  const settings = settingsResource.data;
   const [f, setF] = useState({ schoolId: '', schoolName: '' });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -19,15 +24,15 @@ export default function SettingsPage() {
   // real values (if they arrive after mount) or, if re-run on every
   // snapshot, silently discard whatever the registrar is mid-typing.
   useEffect(() => {
-    if (settings && !initedRef.current) {
-      setF({ schoolId: settings.schoolId || '', schoolName: settings.schoolName || '' });
+    if (!settingsResource.loading && !settingsResource.error && !initedRef.current) {
+      setF({ schoolId: settings?.schoolId || '', schoolName: settings?.schoolName || '' });
       initedRef.current = true;
     }
-  }, [settings]);
+  }, [settings, settingsResource.loading, settingsResource.error]);
 
   const set = (k, v) => { setF((p) => ({ ...p, [k]: v })); setSaved(false); };
 
-  const save = async () => {
+  const save = () => action.run('save', async () => {
     setSaving(true);
     try {
       await updateSettings(f);
@@ -35,18 +40,21 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
-  };
+  });
+
+  if ([settingsResource].some(r => r.loading || r.error)) return <ResourceState resources={[settingsResource]}/>;
 
   return (
     <div>
-      <div style={S.plate}>
+      <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Settings</h1>
       </div>
-      <Card style={{ padding: 20, maxWidth: 480 }}>
+      <Card style={{ padding: 24, maxWidth: 560 }}>
+        <ActionFeedback action={action}/>
         <Field label="School ID"><Inp value={f.schoolId} onChange={(e) => set('schoolId', e.target.value)} /></Field>
         <Field label="Name of School"><Inp value={f.schoolName} onChange={(e) => set('schoolName', e.target.value)} /></Field>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
-          {saved && <span style={{ fontFamily: T.body, fontSize: 13, color: T.present, fontWeight: 600 }}>Saved ✓</span>}
+          {saved && <span style={{ fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.present, fontWeight: 600 }}>Saved ✓</span>}
           <Btn onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Btn>
         </div>
       </Card>

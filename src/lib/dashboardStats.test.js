@@ -74,12 +74,12 @@ describe('todayAttendance', () => {
 describe('recentEnrollments', () => {
   it('returns the N most recently enrolled, newest first, enrolled-only', () => {
     const enrollments = [
-      { studentId: 'a', status: 'enrolled', dateEnrolled: '2026-07-01' },
-      { studentId: 'b', status: 'enrolled', dateEnrolled: '2026-07-10' },
-      { studentId: 'c', status: 'dropped', dateEnrolled: '2026-07-15' },
-      { studentId: 'd', status: 'enrolled', dateEnrolled: '2026-07-05' },
+      { studentId: 'a', schoolYear: '2026-2027', status: 'enrolled', dateEnrolled: '2026-07-01' },
+      { studentId: 'b', schoolYear: '2026-2027', status: 'enrolled', dateEnrolled: '2026-07-10' },
+      { studentId: 'c', schoolYear: '2026-2027', status: 'dropped', dateEnrolled: '2026-07-15' },
+      { studentId: 'd', schoolYear: '2026-2027', status: 'enrolled', dateEnrolled: '2026-07-05' },
     ];
-    const result = recentEnrollments(enrollments, 2);
+    const result = recentEnrollments(enrollments, '2026-2027', 2);
     expect(result.map((e) => e.studentId)).toEqual(['b', 'd']);
   });
 });

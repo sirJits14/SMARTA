@@ -1,5 +1,8 @@
+import { useAsyncAction } from '../hooks/useAsyncAction.js';
+import { ActionFeedback } from '../components/ui.jsx';
+import { ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollection } from '../hooks/useCollection.js';
+import { useCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { enrollStudent, withdrawEnrollment } from '../data/enrollments.js';
 import { ENROLL_TYPE } from '../lib/constants.js';
@@ -9,9 +12,13 @@ import { Btn, Sel, Field, Card, Confirm, EmptyState } from '../components/ui.jsx
 const sectionLabel = (s) => s ? `${s.name} · Grade ${s.gradeLevel}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
 export default function EnrollPage({ schoolYear }) {
-  const students = useCollection('students');
-  const sections = useCollection('sections');
-  const enrollments = useCollection('enrollments');
+  const action = useAsyncAction();
+  const studentsResource = useCollectionResource('students');
+  const students = studentsResource.data;
+  const sectionsResource = useCollectionResource('sections');
+  const sections = sectionsResource.data;
+  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollments = enrollmentsResource.data;
 
   const sectionsSY = useMemo(() =>
     sections
@@ -51,8 +58,7 @@ export default function EnrollPage({ schoolYear }) {
       setConfirmMove({ student, section, existingSection: sections.find((s) => s.id === existing.sectionId) });
       return;
     }
-    await enrollStudent({ student, section, schoolYear, type });
-    resetForm();
+    await action.run('enroll', async () => { await enrollStudent({ student, section, schoolYear, type }); resetForm(); });
   };
 
   const confirmMoveNow = async () => {
@@ -62,12 +68,15 @@ export default function EnrollPage({ schoolYear }) {
     resetForm();
   };
 
+  if ([studentsResource,sectionsResource,enrollmentsResource].some(r => r.loading || r.error)) return <ResourceState resources={[studentsResource,sectionsResource,enrollmentsResource]}/>;
+
   return (
     <div>
-      <div style={S.plate}>
+      <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Enrollment</h1>
+        <ActionFeedback action={action}/>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 20, alignItems: 'start' }}>
         <Card style={{ padding: 20 }}>
           <h2 style={S.h2}>Class lists</h2>
           {sectionsSY.length === 0 ? (
@@ -86,7 +95,7 @@ export default function EnrollPage({ schoolYear }) {
                 <EmptyState title="No learners enrolled here yet" hint="Enroll a learner into this section using the form on the right." />
               ) : (
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead><tr style={S.thead}>
                       <th style={S.th}>Name</th>
                       <th style={S.th}></th>
@@ -99,7 +108,7 @@ export default function EnrollPage({ schoolYear }) {
                         </td>
                       </tr>))}
                     </tbody>
-                  </table>
+                  </table></div>
                 </div>
               )}
             </>
@@ -136,7 +145,7 @@ export default function EnrollPage({ schoolYear }) {
                 </Sel>
               </Field>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Btn onClick={doEnroll} disabled={!studentId || !targetSectionId}>Enroll</Btn>
+                <Btn onClick={doEnroll} disabled={action.busy || !studentId || !targetSectionId}>Enroll</Btn>
               </div>
             </>
           )}

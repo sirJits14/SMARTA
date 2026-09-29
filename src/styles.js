@@ -27,7 +27,7 @@ export const MARK_COLOR = { P: T.present, L: T.late, A: T.absent, E: T.excused }
 export const S = {
   page: { fontFamily: T.body, color: T.ink, background: T.bg, minHeight: '100vh' },
   card: { background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 20, boxShadow: T.cardShadow },
-  plate: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  plate: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 24 },
   h1: { fontFamily: T.display, color: T.ink, margin: 0, fontSize: 22, fontWeight: 700 },
   h2: { fontFamily: T.display, color: T.ink, margin: '0 0 12px', fontSize: 16, fontWeight: 600 },
   thead: { background: 'rgba(91,79,232,0.05)', textAlign: 'left' },

@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
+import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
@@ -37,7 +38,7 @@ const BootLoader = () => (
   </div>
 );
 
-function AttendanceArea({ schoolYear }) {
+function AttendanceArea({ schoolYear, entry }) {
   const [tab, setTab] = useState('take');
   return (
     <div>
@@ -61,7 +62,7 @@ function AttendanceArea({ schoolYear }) {
       </div>
       <Suspense fallback={<PageFallback />}>
         {tab === 'take'
-          ? <AttendanceTakePage schoolYear={schoolYear} />
+          ? <AttendanceTakePage schoolYear={schoolYear} entry={entry} />
           : <AttendanceSummaryPage schoolYear={schoolYear} />}
       </Suspense>
     </div>
@@ -73,7 +74,8 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [page, setPageRaw] = useState('dashboard');
   const [pageParams, setPageParams] = useState(null);
-  const setPage = (next, params = null) => { setPageRaw(next); setPageParams(params); };
+  const [navigationSequence, setNavigationSequence] = useState(0);
+  const setPage = (next, params = null) => { if (!shouldStartNavigation(page, next, params)) return; setPageRaw(next); setPageParams(params); setNavigationSequence(n => n + 1); };
   const settings = useDoc('settings/app');
   const schoolYear = settings?.currentSchoolYear || currentSchoolYear();
 
@@ -101,7 +103,7 @@ export default function App() {
           {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
           {page==='schedules' && <SchedulesPage />}
           {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
-          {page==='attendance' && <AttendanceArea schoolYear={schoolYear} />}
+          {page==='attendance' && <AttendanceArea key={navigationSequence} schoolYear={schoolYear} entry={pageParams?.attendanceEntry} />}
           {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
           {page==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
           {page==='settings' && <SettingsPage />}

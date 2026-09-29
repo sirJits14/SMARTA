@@ -6,7 +6,7 @@ import { audit } from '../audit.js';
 import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, int } from '../lib/validators.js';
 import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activationCode.js';
-import { sectionLabel, displayName } from '../lib/format.js';
+import { sectionLabel, learnerIdentity } from '../lib/format.js';
 
 export const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
 export const CODE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -74,6 +74,10 @@ export async function activateCode(ctx, data) {
   const relationship = oneOf(data.relationship, RELATIONSHIPS, 'relationship');
   const consentVersion = int(data.consentVersion, { name: 'consentVersion', min: 0, max: 1000 });
   const code = normalizeCode(data.code);
+  // The guardian's own name, typed (or prefilled from their Google account)
+  // on the Activate screen. Optional for older clients, which fall back to
+  // the name on the sign-in token.
+  const guardianName = str(data.guardianName ?? '', { name: 'Your name', max: 120 }) || ctx.displayName || '';
 
   const fail = (reason) => { logWarn('activation_failed', { uid, reason, codeHash: isValidCode(code) ? hashCode(code) : null }); return new CallableError('failed-precondition', GENERIC); };
   if (!isValidCode(code)) throw fail('format');
@@ -98,6 +102,8 @@ export async function activateCode(ctx, data) {
 
   const linkRef = db.doc(`guardian_links/${uid}_${studentId}`);
   const profileRef = db.doc(`guardians/${uid}`);
+  const learnerRef = db.doc(`learners/${studentId}`);
+  const learner = learnerIdentity(student, section, schoolYear);
   await db.runTransaction(async (tx) => {
     const [c, link, profile] = await Promise.all([tx.get(codeRef), tx.get(linkRef), tx.get(profileRef)]);
     const cd = c.data();
@@ -106,18 +112,28 @@ export async function activateCode(ctx, data) {
     const redemptions = alreadyActive ? cd.redemptions : cd.redemptions + 1;
     tx.update(codeRef, { redemptions, status: redemptions >= cd.maxRedemptions ? 'exhausted' : 'issued', lastRedeemedAt: FieldValue.serverTimestamp() });
     tx.set(linkRef, {
-      guardianUid: uid, studentId, schoolYear, relationship, status: 'active', activatedAt: FieldValue.serverTimestamp(), activatedVia: 'code',
+      guardianUid: uid, guardianName, guardianEmail: email || '', learnerName: learner.displayName,
+      studentId, schoolYear, relationship, status: 'active', activatedAt: FieldValue.serverTimestamp(), activatedVia: 'code',
       revokedAt: FieldValue.delete(), revokedBy: FieldValue.delete(), revokedReason: FieldValue.delete(),
     }, { merge: true });
     if (!profile.exists) {
-      tx.set(profileRef, { email, displayName: ctx.displayName || '', consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });
-    } else if (profile.data().consentVersion !== consentVersion) {
-      tx.update(profileRef, { consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion });
+      tx.set(profileRef, { email, displayName: guardianName, consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });
+    } else {
+      const p = profile.data();
+      const patch = {
+        ...(p.consentVersion !== consentVersion ? { consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion } : {}),
+        ...(guardianName && p.displayName !== guardianName ? { displayName: guardianName } : {}),
+      };
+      if (Object.keys(patch).length) tx.update(profileRef, patch);
     }
+    // Seed the learner's projection so the guardian's Home card shows the
+    // learner's name straight away instead of waiting for a first gate scan.
+    // Merge keeps any today/recent summary a scan already wrote.
+    tx.set(learnerRef, learner, { merge: true });
   });
   await audit(db, { action: 'link.activated', actorType: 'guardian', actorUid: uid, targetType: 'student', targetId: studentId, details: { via: 'code', relationship, codeHash: hashCode(code) } });
   logEvent('activation_succeeded', { uid, studentId });
-  return { studentId, displayName: displayName(student), sectionLabel: sectionLabel(section) };
+  return { studentId, displayName: learner.displayName, sectionLabel: learner.sectionLabel };
 }
 
 // Guardian. activateCode only reconciles consentVersion when a NEW learner
