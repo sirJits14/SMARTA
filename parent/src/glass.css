@@ -100,7 +100,6 @@ body::before {
 @keyframes gnav-label-in { from { opacity: 0; transform: translateX(-4px); } }
 
 /* ---- Learner history collapsing title ---- */
-.learner-header { position: relative; }
 .learner-header-bar {
   --learner-bar-height: 56px;
   position: sticky;
@@ -118,7 +117,7 @@ body::before {
   box-shadow: none;
   transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
-.learner-header--collapsed .learner-header-bar {
+.learner-header-bar--collapsed {
   background: rgba(255, 255, 255, 0.78);
   border-bottom-color: rgba(231, 229, 245, 0.9); /* T.border */
   box-shadow: 0 6px 18px rgba(30, 27, 51, 0.07);
@@ -151,7 +150,7 @@ body::before {
   transform: translateY(5px);
   transition: opacity 180ms ease, transform 180ms ease, visibility 180ms;
 }
-.learner-header--collapsed .learner-header-compact {
+.learner-header-bar--collapsed .learner-header-compact {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -194,10 +193,10 @@ body::before {
 
 /* Use a plain white sheet when blur is unavailable or transparency is reduced. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .learner-header--collapsed .learner-header-bar { background: #FFFFFF; border-bottom-color: #E7E5F5; }
+  .learner-header-bar--collapsed { background: #FFFFFF; border-bottom-color: #E7E5F5; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .learner-header--collapsed .learner-header-bar { background: #FFFFFF; border-bottom-color: #E7E5F5; }
+  .learner-header-bar--collapsed { background: #FFFFFF; border-bottom-color: #E7E5F5; }
 }
 @media (prefers-reduced-motion: reduce) {
   .learner-header-bar, .learner-header-compact { transition: none; }

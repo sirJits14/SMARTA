@@ -31,9 +31,12 @@ export default function LearnerHeader({ learner, navigate, todayStatus }) {
     return () => { resize.disconnect(); observer?.disconnect(); };
   }, [learner?.displayName]);
 
+  // A fragment, not a wrapper: a sticky element only sticks inside its parent,
+  // so the bar must be a direct child of <main> to stay pinned over the whole
+  // history rather than scrolling away with the expanded header.
   return (
-    <div className={`learner-header${collapsed ? ' learner-header--collapsed' : ''}`}>
-      <div ref={barRef} className="learner-header-bar">
+    <>
+      <div ref={barRef} className={`learner-header-bar${collapsed ? ' learner-header-bar--collapsed' : ''}`}>
         <button type="button" className="learner-header-back" aria-label={S.back} onClick={() => navigate('/')}>
           <Icon name="back" size={22} />
         </button>
@@ -52,6 +55,6 @@ export default function LearnerHeader({ learner, navigate, todayStatus }) {
           <div className="learner-header-status">{todayStatus}</div>
         </div>
       )}
-    </div>
+    </>
   );
 }
