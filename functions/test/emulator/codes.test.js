@@ -124,6 +124,19 @@ describe('activateCode', () => {
     expect(c).toMatchObject({ guardianRedemptions: 2, adviserRedemptions: 1, status: 'exhausted' });
     expect(c.redemptions).toBeUndefined();
   });
+  const legacyCode = async () => { const code = await issue(); await db().doc(`activation_codes/${hashCode(code)}`).set({ studentId: 'S1', schoolYear: '2026-2027', status: 'exhausted', redemptions: 2, maxRedemptions: 2 }); return code; };
+  it('reissuing revokes a legacy exhausted code so it can no longer link an adviser', async () => {
+    const old = await legacyCode();
+    await issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: '2026-2027' });
+    expect((await db().doc(`activation_codes/${hashCode(old)}`).get()).data().status).toBe('revoked');
+    await expect(activateCode(adviser(), { code: old, relationship: 'Adviser', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('revokeCode revokes a legacy exhausted code', async () => {
+    const old = await legacyCode();
+    await revokeCode(staff(), { studentId: 'S1', schoolYear: '2026-2027', reason: 'lost' });
+    expect((await db().doc(`activation_codes/${hashCode(old)}`).get()).data()).toMatchObject({ status: 'revoked', revokedReason: 'lost' });
+    await expect(activateCode(adviser(), { code: old, relationship: 'Adviser', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
   it('a slip still works 120 days after issue', async () => {
     const code = await issue();
     const later = { ...guardian(), now: () => new Date(NOW.getTime() + 120 * DAY) };

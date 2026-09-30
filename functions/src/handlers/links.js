@@ -6,6 +6,7 @@ import { logEvent } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
+import { isOpenStatus } from '../lib/codeSlots.js';
 
 // A non-attendance inbox item. Never pushed (system messages are read when
 // the guardian next opens the portal).
@@ -99,7 +100,7 @@ export async function setActivationRestricted(ctx, data) {
     const active = await db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active').get();
     for (const d of active.docs) { await revokeOne(db, d.ref, email, `restricted: ${reason}`); revokedLinks++; }
     const codes = await db.collection('activation_codes').where('studentId', '==', studentId).get();
-    for (const c of codes.docs) if (c.data().status === 'issued') await c.ref.update({ status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'restricted' });
+    for (const c of codes.docs) if (isOpenStatus(c.data().status)) await c.ref.update({ status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'restricted' });
   }
   await audit(db, { action: restricted ? 'student.restricted' : 'student.unrestricted', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId, details: { reason, revokedLinks } });
   return { revokedLinks };

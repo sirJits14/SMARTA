@@ -48,6 +48,13 @@ describe('revokeLink / restricted', () => {
     expect((await db().doc('students/S1').get()).data().activationRestricted).toBe(true);
     expect((await db().doc('guardian_links/gB_S1').get()).data().status).toBe('revoked');
   });
+  it('restricting a learner also revokes issued and exhausted slips', async () => {
+    await db().doc('activation_codes/CA').set({ studentId: 'S1', schoolYear: '2026-2027', status: 'issued' });
+    await db().doc('activation_codes/CB').set({ studentId: 'S1', schoolYear: '2026-2027', status: 'exhausted' });
+    await setActivationRestricted(staff(), { studentId: 'S1', restricted: true, reason: 'Court order' });
+    expect((await db().doc('activation_codes/CA').get()).data()).toMatchObject({ status: 'revoked', revokedReason: 'restricted' });
+    expect((await db().doc('activation_codes/CB').get()).data()).toMatchObject({ status: 'revoked', revokedReason: 'restricted' });
+  });
 });
 
 describe('kiosks', () => {

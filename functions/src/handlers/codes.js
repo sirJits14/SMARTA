@@ -7,7 +7,7 @@ import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, int } from '../lib/validators.js';
 import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activationCode.js';
 import { sectionLabel, learnerIdentity } from '../lib/format.js';
-import { ADVISER, isDepedEmail, slotFor, claimSlot, newCodeSlots } from '../lib/codeSlots.js';
+import { ADVISER, isDepedEmail, slotFor, claimSlot, newCodeSlots, isOpenStatus } from '../lib/codeSlots.js';
 
 // Guardian relationships. The class adviser (ADVISER) can only link through a
 // slip, never through requestAccess, so it is not in this list.
@@ -20,7 +20,7 @@ const formalName = (s) => { const mi = s.middleName?.trim() ? ` ${s.middleName.t
 async function revokeIssuedCodes(db, studentId, schoolYear, by, reason) {
   const snap = await db.collection('activation_codes').where('studentId', '==', studentId).where('schoolYear', '==', schoolYear).get();
   const batch = db.batch(); let n = 0;
-  snap.docs.forEach((d) => { if (d.data().status === 'issued') { batch.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: by, revokedReason: reason }); n++; } });
+  snap.docs.forEach((d) => { if (isOpenStatus(d.data().status)) { batch.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: by, revokedReason: reason }); n++; } });
   await batch.commit();
   return n;
 }
@@ -95,7 +95,7 @@ export async function activateCode(ctx, data) {
   if (!codeDoc) throw fail('unknown');
   // 'exhausted' can still have a free slot of the other kind (and legacy
   // codes were marked exhausted after two guardians); claimSlot decides.
-  if (codeDoc.status !== 'issued' && codeDoc.status !== 'exhausted') throw fail(codeDoc.status);
+  if (!isOpenStatus(codeDoc.status)) throw fail(codeDoc.status);
 
   // Slips are valid for their own school year until staff revoke them
   // (endSchoolYear / reissue); changing currentSchoolYear does not end them.
@@ -113,7 +113,7 @@ export async function activateCode(ctx, data) {
   await db.runTransaction(async (tx) => {
     const [c, link, profile] = await Promise.all([tx.get(codeRef), tx.get(linkRef), tx.get(profileRef)]);
     const cd = c.data();
-    if (cd.status !== 'issued' && cd.status !== 'exhausted') throw fail(cd.status);
+    if (!isOpenStatus(cd.status)) throw fail(cd.status);
     const alreadyActive = link.exists && link.data().status === 'active';
     if (alreadyActive) {
       if ((link.data().slot ?? 'guardian') !== slot) throw fail('slot-mismatch');

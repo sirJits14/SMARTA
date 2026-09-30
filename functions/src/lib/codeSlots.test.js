@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isDepedEmail, slotFor, readSlots, claimSlot, newCodeSlots, ADVISER } from './codeSlots.js';
+import { isDepedEmail, isOpenStatus, slotFor, readSlots, claimSlot, newCodeSlots, ADVISER } from './codeSlots.js';
 
 describe('isDepedEmail', () => {
   it('accepts @deped.gov.ph in any case, rejects others', () => {
@@ -9,6 +9,15 @@ describe('isDepedEmail', () => {
     expect(isDepedEmail('juan@deped.gov.ph.evil.com')).toBe(false);
     expect(isDepedEmail('juan@notdeped.gov.ph')).toBe(false);
     expect(isDepedEmail(undefined)).toBe(false);
+  });
+});
+
+describe('isOpenStatus', () => {
+  it('is true for issued and exhausted (a slot may still be free), false otherwise', () => {
+    expect(isOpenStatus('issued')).toBe(true);
+    expect(isOpenStatus('exhausted')).toBe(true);
+    expect(isOpenStatus('revoked')).toBe(false);
+    expect(isOpenStatus(undefined)).toBe(false);
   });
 });
 

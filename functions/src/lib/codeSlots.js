@@ -8,6 +8,9 @@ export const ADVISER = 'Adviser';
 const DEPED_DOMAIN = '@deped.gov.ph';
 
 export const isDepedEmail = (email) => typeof email === 'string' && email.trim().toLowerCase().endsWith(DEPED_DOMAIN);
+// A slip that staff have not revoked. 'exhausted' still counts: it may have a
+// free slot of the other kind (legacy codes were exhausted by two guardians).
+export const isOpenStatus = (status) => status === 'issued' || status === 'exhausted';
 export const slotFor = (relationship) => (relationship === ADVISER ? 'adviser' : 'guardian');
 export const newCodeSlots = () => ({ guardianRedemptions: 0, maxGuardians: MAX_GUARDIANS, adviserRedemptions: 0, maxAdvisers: MAX_ADVISERS });
 
