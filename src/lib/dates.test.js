@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pad2, localDate, localMonth, schoolDaysInMonth, monthLabel } from './dates.js';
+import { pad2, localDate, localMonth, schoolDaysInMonth, monthLabel, previousSchoolYear } from './dates.js';
 
 describe('dates', () => {
   it('pads single digits', () => { expect(pad2(7)).toBe('07'); expect(pad2(12)).toBe('12'); });
@@ -22,4 +22,11 @@ describe('dates', () => {
   });
 
   it('labels a month', () => { expect(monthLabel('2026-07')).toBe('July 2026'); });
+});
+
+describe('previousSchoolYear', () => {
+  it('steps back one school year', () => {
+    expect(previousSchoolYear('2026-2027')).toBe('2025-2026');
+    expect(previousSchoolYear('2000-2001')).toBe('1999-2000');
+  });
 });

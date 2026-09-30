@@ -13,7 +13,7 @@ function Slip({ slip, portalUrl }) {
         <div style={{ fontWeight: 700, fontSize: 12 }}>{slip.name}</div>
         <div className="slip-small">{slip.sectionLabel} · LRN {slip.lrn}</div>
         <div className="slip-code">{formatCodeForPrint(slip.code)}</div>
-        <div className="slip-small">Parent/guardian: scan the QR or go to {portalUrl.replace(/^https?:\/\//, '')} and enter this code. Valid 90 days, for up to 2 guardians. Keep it private. By activating you agree to the school's privacy notice for gate-scan updates.</div>
+        <div className="slip-small">Parent/guardian: scan the QR in the BNHS Parent app or with your phone camera, or go to {portalUrl.replace(/^https?:\/\//, '')} and enter this code. Valid for SY {slip.schoolYear} until the school revokes it. Up to 2 parents/guardians + the class adviser. Keep it private. By activating you agree to the school's privacy notice for gate-scan updates.</div>
       </div>
     </div>
   );
