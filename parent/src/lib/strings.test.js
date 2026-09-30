@@ -14,7 +14,7 @@ describe('strings', () => {
     expect(S.pushDisclaimer).toContain('Inbox');
   });
   it('has the scan and adviser strings', () => {
-    for (const k of ['scanButton', 'scanTitle', 'scanHelp', 'scanCancel', 'scanDenied', 'scanPhoto', 'scanNotSlip', 'scanPhotoFailed', 'activateAdviserOption', 'activateAdviserHint', 'activateAdviserDeped'])
+    for (const k of ['scanButton', 'scanTitle', 'scanHelp', 'scanCancel', 'scanDenied', 'scanPhoto', 'scanNotSlip', 'scanPhotoFailed', 'scanLoadFailed', 'activateAdviserOption', 'activateAdviserHint', 'activateAdviserDeped'])
       expect(typeof S[k], k).toBe('string');
     expect(S.activateAdviserDeped).toContain('@deped.gov.ph');
   });

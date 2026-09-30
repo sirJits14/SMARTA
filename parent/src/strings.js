@@ -67,6 +67,7 @@ const S = {
   scanDenied: 'The camera could not be opened. Allow camera access for this site, take a photo of the slip, or type the code.',
   scanPhoto: 'Take a photo of the slip instead',
   scanNotSlip: 'This QR is not an activation slip. Scan the QR on the slip from the school.',
+  scanLoadFailed: 'Could not load the scanner. Check your connection, then try again or type the code.',
   scanPhotoFailed: 'Could not read a QR in that photo. Try again closer, or type the code.',
   homeNoLinks: 'No learners linked yet.',
   homeTodayNone: 'No entry recorded today',

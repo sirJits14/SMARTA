@@ -41,6 +41,7 @@ export default function ScanSheet({ onCode, onClose }) {
     (async () => {
       try {
         detector.current = await createDetector();
+        if (stopped) return;
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('no camera');
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
         if (stopped) { stream.getTracks().forEach((t) => t.stop()); return; }
