@@ -13,4 +13,9 @@ describe('strings', () => {
     expect(S.eventOut).toBe('Left school');
     expect(S.pushDisclaimer).toContain('Inbox');
   });
+  it('has the scan and adviser strings', () => {
+    for (const k of ['scanButton', 'scanTitle', 'scanHelp', 'scanCancel', 'scanDenied', 'scanPhoto', 'scanNotSlip', 'scanPhotoFailed', 'activateAdviserOption', 'activateAdviserHint', 'activateAdviserDeped'])
+      expect(typeof S[k], k).toBe('string');
+    expect(S.activateAdviserDeped).toContain('@deped.gov.ph');
+  });
 });
