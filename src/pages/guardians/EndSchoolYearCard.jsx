@@ -6,6 +6,8 @@ import { previousSchoolYear } from '../../lib/dates.js';
 import { T, S } from '../../styles.js';
 import { Btn, Card, Field, Inp, Sel, Modal } from '../../components/ui.jsx';
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
 async function countOpen(sy) {
   const [slips, links] = await Promise.all([
     getCountFromServer(query(collection(db, 'activation_codes'), where('schoolYear', '==', sy), where('status', 'in', ['issued', 'exhausted']))),
@@ -49,7 +51,7 @@ export default function EndSchoolYearCard({ schoolYear }) {
     <Card className="codes-tab-controls" style={{ padding: 20, marginBottom: 16 }}>
       {prevOpen && prevOpen.slips + prevOpen.links > 0 && (
         <div role="status" style={{ fontFamily: T.body, fontSize: 13, color: T.late, background: 'rgba(180,83,9,0.08)', borderRadius: 10, padding: '10px 12px', marginBottom: 12 }}>
-          SY {previous} is still open in the parent portal ({prevOpen.slips} slips, {prevOpen.links} linked accounts) — end it when you are ready.
+          SY {previous} is still open in the parent portal ({plural(prevOpen.slips, 'slip')}, {plural(prevOpen.links, 'linked account')}) — end it when you are ready.
         </div>
       )}
       <h2 style={S.h2}>End school year</h2>
@@ -62,18 +64,18 @@ export default function EndSchoolYearCard({ schoolYear }) {
         </Sel>
       </Field>
       <p style={{ fontFamily: T.body, fontSize: 13, color: T.ink, margin: '12px 0' }}>
-        {loadErr ? 'Could not load the counts.' : open ? `${open.slips} active slips · ${open.links} active links` : 'Counting…'}
+        {loadErr ? 'Could not load the counts.' : open ? `${plural(open.slips, 'active slip')} · ${plural(open.links, 'active link')}` : 'Counting…'}
       </p>
-      {done && <p role="status" style={{ fontFamily: T.body, fontSize: 13, color: T.present }}>Done: {done.codesRevoked} slips revoked, {done.linksExpired} links ended, {done.accountsNotified} accounts notified.</p>}
+      {done && <p role="status" style={{ fontFamily: T.body, fontSize: 13, color: T.present }}>Done: {plural(done.codesRevoked, 'slip')} revoked, {plural(done.linksExpired, 'link')} ended, {plural(done.accountsNotified, 'account')} notified.</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Btn onClick={() => { setTyped(''); setErr(''); setDone(null); setConfirming(true); }} style={{ background: T.absent }}>End SY {sy}</Btn>
       </div>
       {confirming && (
         <Modal title={`End SY ${sy}?`} onClose={() => { if (!busy) setConfirming(false); }} dismissible={!busy}>
           <p style={{ fontFamily: T.body, fontSize: 14, color: T.ink, lineHeight: 1.6 }}>
-            {open ? `${open.slips} slips will stop working and ${open.links} links will end. ` : ''}Type <strong>{sy}</strong> to confirm.
+            {open ? `${plural(open.slips, 'slip')} will stop working and ${plural(open.links, 'link')} will end. ` : ''}Type <strong>{sy}</strong> to confirm.
           </p>
-          <Field label="School year"><Inp value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus placeholder={sy} /></Field>
+          <Field label={`Type ${sy} to confirm`}><Inp value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus placeholder={sy} /></Field>
           {err && <p role="alert" className="sims-feedback">{err}</p>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
             <Btn variant="ghost" disabled={busy} onClick={() => setConfirming(false)}>Cancel</Btn>
