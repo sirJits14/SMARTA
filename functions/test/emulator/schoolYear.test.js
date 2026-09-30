@@ -45,6 +45,7 @@ describe('endSchoolYear', () => {
   it('rejects a confirmation that does not match and a malformed school year', async () => {
     await expect(endSchoolYear(staff(), { schoolYear: SY, confirmText: '2026-2028' })).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(endSchoolYear(staff(), { schoolYear: '2026/2027', confirmText: '2026/2027' })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(endSchoolYear(staff(), { schoolYear: '2026-2028', confirmText: '2026-2028' })).rejects.toMatchObject({ code: 'invalid-argument' });
     expect((await db().doc('activation_codes/c1').get()).data().status).toBe('issued');
   });
 });

@@ -31,6 +31,7 @@ export async function endSchoolYear(ctx, data) {
   const { db, email } = ctx;
   const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
   if (!/^\d{4}-\d{4}$/.test(schoolYear)) throw new CallableError('invalid-argument', 'schoolYear must look like 2026-2027');
+  if (Number(schoolYear.slice(5)) !== Number(schoolYear.slice(0, 4)) + 1) throw new CallableError('invalid-argument', 'The second year must follow the first, like 2026-2027');
   const confirmText = str(data.confirmText, { name: 'confirmText', max: 20 });
   if (confirmText !== schoolYear) throw new CallableError('invalid-argument', 'Type the school year exactly to confirm.');
 

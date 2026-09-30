@@ -17,7 +17,8 @@ const ADVISER_DEPED = 'Sign in with your @deped.gov.ph account to link as advise
 
 const formalName = (s) => { const mi = s.middleName?.trim() ? ` ${s.middleName.trim()[0]}.` : ''; const ext = s.extName?.trim() ? ` ${s.extName.trim()}` : ''; return `${s.lastName}, ${s.firstName}${mi}${ext}`; };
 
-async function revokeIssuedCodes(db, studentId, schoolYear, by, reason) {
+// Revokes a learner's issued and exhausted (fully used) codes for one school year.
+async function revokeOpenCodes(db, studentId, schoolYear, by, reason) {
   const snap = await db.collection('activation_codes').where('studentId', '==', studentId).where('schoolYear', '==', schoolYear).get();
   const batch = db.batch(); let n = 0;
   snap.docs.forEach((d) => { if (isOpenStatus(d.data().status)) { batch.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: by, revokedReason: reason }); n++; } });
@@ -44,7 +45,7 @@ export async function issueActivationCodes(ctx, data) {
     const student = (await db.doc(`students/${studentId}`).get()).data();
     if (!student) { skipped.push({ studentId, reason: 'missing' }); continue; }
     if (student.activationRestricted === true) { skipped.push({ studentId, reason: 'restricted' }); continue; }
-    await revokeIssuedCodes(db, studentId, schoolYear, email, 'reissued');
+    await revokeOpenCodes(db, studentId, schoolYear, email, 'reissued');
     const code = generateCode(randomBytes(8));
     await db.doc(`activation_codes/${hashCode(code)}`).set({
       studentId, schoolYear, issuedAt: FieldValue.serverTimestamp(), issuedBy: email, ...newCodeSlots(), status: 'issued',
@@ -61,7 +62,7 @@ export async function revokeCode(ctx, data) {
   const studentId = str(data.studentId, { name: 'studentId', min: 1, max: 64 });
   const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
   const reason = str(data.reason ?? '', { name: 'reason', max: 200 });
-  const revoked = await revokeIssuedCodes(db, studentId, schoolYear, email, reason);
+  const revoked = await revokeOpenCodes(db, studentId, schoolYear, email, reason);
   await audit(db, { action: 'code.revoked', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId, details: { schoolYear, reason, revoked } });
   return { revoked };
 }

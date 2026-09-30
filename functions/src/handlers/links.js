@@ -55,9 +55,10 @@ export async function resolveAccessRequest(ctx, data) {
     await db.doc(`learners/${studentId}`).set(learner, { merge: true });
     await db.doc(`guardian_links/${request.guardianUid}_${studentId}`).set({
       guardianUid: request.guardianUid, guardianName: request.guardianName || '', guardianEmail: request.guardianEmail || '', learnerName: learner.displayName,
-      studentId, schoolYear, relationship: request.relationship, status: 'active',
+      studentId, schoolYear, relationship: request.relationship, slot: 'guardian', status: 'active',
       activatedAt: FieldValue.serverTimestamp(), activatedVia: 'staff',
       revokedAt: FieldValue.delete(), revokedBy: FieldValue.delete(), revokedReason: FieldValue.delete(),
+      expiredAt: FieldValue.delete(), expiredReason: FieldValue.delete(),
     }, { merge: true });
     const profileRef = db.doc(`guardians/${request.guardianUid}`);
     if (!(await profileRef.get()).exists) {

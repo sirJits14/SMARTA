@@ -36,6 +36,21 @@ describe('access requests', () => {
   });
 });
 
+describe('resolveAccessRequest over an expired adviser link', () => {
+  it('reactivates the link as a guardian link and clears the expiry fields', async () => {
+    await db().doc('guardian_links/gNew_S1').set({
+      guardianUid: 'gNew', studentId: 'S1', status: 'expired', slot: 'adviser', relationship: 'Adviser',
+      schoolYear: '2025-2026', expiredReason: 'school-year-ended', expiredAt: NOW,
+    });
+    const { id } = await requestAccess(guardian(), req);
+    await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' });
+    const link = (await db().doc('guardian_links/gNew_S1').get()).data();
+    expect(link).toMatchObject({ status: 'active', slot: 'guardian', relationship: 'Guardian' });
+    expect(link.expiredReason).toBeUndefined();
+    expect(link.expiredAt).toBeUndefined();
+  });
+});
+
 describe('revokeLink / restricted', () => {
   it('revokes with reason and audits', async () => {
     await revokeLink(staff(), { linkId: 'gA_S1', reason: 'Custody order' });
