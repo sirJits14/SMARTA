@@ -19,9 +19,11 @@ async function deleteMatching(db, query, batchSize = 300) {
 }
 const ms = (x) => Timestamp.fromMillis(x);
 
-// Nightly. (1) expire links for learners no longer enrolled this SY;
-// (2) delete old revoked/expired links, old codes, old audit rows;
-// (3) delete dormant guardian accounts.
+// Nightly. (1) expire links whose learner is no longer enrolled in the
+// link's own school year (drop/transfer) — a school-year change alone never
+// ends links; staff do that with endSchoolYear; (2) delete old
+// revoked/expired links, old codes, old audit rows; (3) delete dormant
+// guardian accounts.
 export async function expireLinks({ db, auth, now }) {
   const nowMs = now().getTime();
   const sy = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
@@ -36,8 +38,8 @@ export async function expireLinks({ db, auth, now }) {
   const active = await db.collection('guardian_links').where('status', '==', 'active').get();
   for (const l of active.docs) {
     const { studentId, guardianUid, schoolYear } = l.data();
-    const e = (await db.doc(`enrollments/${studentId}_${sy}`).get()).data();
-    if (e && e.status === 'enrolled' && schoolYear === sy) {
+    const e = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
+    if (e && e.status === 'enrolled') {
       await db.doc(`guardians/${guardianUid}`).set({ lastActiveLinkAt: ms(nowMs) }, { merge: true });
       // Links made before activation seeded learners/{id} show "—" on the
       // guardian's Home card until the learner's first gate scan; fill the
@@ -47,19 +49,22 @@ export async function expireLinks({ db, auth, now }) {
         const learnerRef = db.doc(`learners/${studentId}`);
         if (!(await learnerRef.get()).data()?.displayName) {
           const [student, section] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`sections/${e.sectionId}`).get()]);
-          if (student.exists) { await learnerRef.set(learnerIdentity(student.data(), section.data(), sy), { merge: true }); seeded++; }
+          if (student.exists) { await learnerRef.set(learnerIdentity(student.data(), section.data(), schoolYear), { merge: true }); seeded++; }
         }
       }
       continue;
     }
-    await l.ref.set({ status: 'expired', expiredAt: FieldValue.serverTimestamp() }, { merge: true });
-    await systemInbox(db, guardianUid, { title: 'Re-activation needed', body: `Your link to a learner for SY ${schoolYear} has ended. Use the new activation slip from the school to link again for SY ${sy}.`, studentId });
+    await l.ref.set({ status: 'expired', expiredAt: FieldValue.serverTimestamp(), expiredReason: 'not-enrolled' }, { merge: true });
+    await systemInbox(db, guardianUid, { title: 'Access ended', body: 'Your link to a learner has ended because the learner is no longer enrolled. Contact the registrar if this is a mistake.', studentId });
     expired++;
   }
 
   const oldRevoked = await deleteMatching(db, db.collection('guardian_links').where('status', '==', 'revoked').where('revokedAt', '<', ms(cut.linksBeforeMs)));
   const oldExpired = await deleteMatching(db, db.collection('guardian_links').where('status', '==', 'expired').where('expiredAt', '<', ms(cut.linksBeforeMs)));
-  const oldCodes = await deleteMatching(db, db.collection('activation_codes').where('expiresAt', '<', ms(cut.codesBeforeMs)));
+  // Codes never expire by time any more; delete them a year after they were
+  // revoked or last used. Codes still 'issued' are never deleted here.
+  const oldCodes = (await deleteMatching(db, db.collection('activation_codes').where('status', '==', 'revoked').where('revokedAt', '<', ms(cut.codesBeforeMs))))
+    + (await deleteMatching(db, db.collection('activation_codes').where('status', '==', 'exhausted').where('lastRedeemedAt', '<', ms(cut.codesBeforeMs))));
   const oldAudit = await deleteMatching(db, db.collection('audit_log').where('at', '<', ms(cut.auditBeforeMs)));
 
   let dormant = 0;

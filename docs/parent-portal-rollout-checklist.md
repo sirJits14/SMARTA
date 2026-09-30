@@ -60,7 +60,7 @@ Removal steps:
 - [ ] Exit: 0 rejected events, `reconcile_missing` = 0 each night, pushes received on Android and iOS-PWA, kiosk offline test (unplug network, scan, reconnect) passed, Firestore reads/writes per day recorded: ____ / ____.
 
 ## Stage 2 — Consenting-parent pilot (~30 guardians, 5 school days)
-- [ ] Advisers recruit ~30 parents; slips issued for those learners only (issue the section, hand out only the pilot slips, revoke the rest via Learner access → Revoke unused slip).
+- [ ] Advisers recruit ~30 parents; slips issued for those learners only (issue the section, hand out only the pilot slips, revoke the rest via Learner access → Revoke slip).
 - [ ] Exit: ≥ 80 % activated, ≥ 60 % enabled push, every report resolved same day, no privacy incident, billing for the period ≤ PHP 50.
 
 ## Stage 3 — One section (2 weeks)

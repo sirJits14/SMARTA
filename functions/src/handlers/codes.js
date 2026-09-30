@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { enforceRateLimit, LIMITS } from '../callable.js';
 import { audit } from '../audit.js';
@@ -7,18 +7,21 @@ import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, int } from '../lib/validators.js';
 import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activationCode.js';
 import { sectionLabel, learnerIdentity } from '../lib/format.js';
+import { ADVISER, isDepedEmail, slotFor, claimSlot, newCodeSlots, isOpenStatus } from '../lib/codeSlots.js';
 
+// Guardian relationships. The class adviser (ADVISER) can only link through a
+// slip, never through requestAccess, so it is not in this list.
 export const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
-export const CODE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
-export const MAX_REDEMPTIONS = 2;
 const GENERIC = 'That code could not be used. Ask the registrar to reissue your slip.';
+const ADVISER_DEPED = 'Sign in with your @deped.gov.ph account to link as adviser.';
 
 const formalName = (s) => { const mi = s.middleName?.trim() ? ` ${s.middleName.trim()[0]}.` : ''; const ext = s.extName?.trim() ? ` ${s.extName.trim()}` : ''; return `${s.lastName}, ${s.firstName}${mi}${ext}`; };
 
-async function revokeIssuedCodes(db, studentId, schoolYear, by, reason) {
+// Revokes a learner's issued and exhausted (fully used) codes for one school year.
+async function revokeOpenCodes(db, studentId, schoolYear, by, reason) {
   const snap = await db.collection('activation_codes').where('studentId', '==', studentId).where('schoolYear', '==', schoolYear).get();
   const batch = db.batch(); let n = 0;
-  snap.docs.forEach((d) => { if (d.data().status === 'issued') { batch.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: by, revokedReason: reason }); n++; } });
+  snap.docs.forEach((d) => { if (isOpenStatus(d.data().status)) { batch.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: by, revokedReason: reason }); n++; } });
   await batch.commit();
   return n;
 }
@@ -42,13 +45,12 @@ export async function issueActivationCodes(ctx, data) {
     const student = (await db.doc(`students/${studentId}`).get()).data();
     if (!student) { skipped.push({ studentId, reason: 'missing' }); continue; }
     if (student.activationRestricted === true) { skipped.push({ studentId, reason: 'restricted' }); continue; }
-    await revokeIssuedCodes(db, studentId, schoolYear, email, 'reissued');
+    await revokeOpenCodes(db, studentId, schoolYear, email, 'reissued');
     const code = generateCode(randomBytes(8));
     await db.doc(`activation_codes/${hashCode(code)}`).set({
-      studentId, schoolYear, issuedAt: FieldValue.serverTimestamp(), issuedBy: email,
-      expiresAt: Timestamp.fromMillis(now().getTime() + CODE_TTL_MS), maxRedemptions: MAX_REDEMPTIONS, redemptions: 0, status: 'issued',
+      studentId, schoolYear, issuedAt: FieldValue.serverTimestamp(), issuedBy: email, ...newCodeSlots(), status: 'issued',
     });
-    slips.push({ studentId, name: formalName(student), lrn: student.lrn, sectionLabel: sectionLabel(section), code });
+    slips.push({ studentId, name: formalName(student), lrn: student.lrn, sectionLabel: sectionLabel(section), schoolYear, code });
   }
   await audit(db, { action: 'code.issued', actorType: 'staff', actorUid: email, targetType: 'section', targetId: sectionId, details: { schoolYear, count: slips.length, skipped: skipped.length } });
   logEvent('codes_issued', { sectionId, count: slips.length });
@@ -60,7 +62,7 @@ export async function revokeCode(ctx, data) {
   const studentId = str(data.studentId, { name: 'studentId', min: 1, max: 64 });
   const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
   const reason = str(data.reason ?? '', { name: 'reason', max: 200 });
-  const revoked = await revokeIssuedCodes(db, studentId, schoolYear, email, reason);
+  const revoked = await revokeOpenCodes(db, studentId, schoolYear, email, reason);
   await audit(db, { action: 'code.revoked', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId, details: { schoolYear, reason, revoked } });
   return { revoked };
 }
@@ -70,8 +72,14 @@ export async function revokeCode(ctx, data) {
 export async function activateCode(ctx, data) {
   const { db, now, uid, email } = ctx;
   const nowMs = now().getTime();
-  await enforceRateLimit(db, uid, 'activate', LIMITS.activate, nowMs);
-  const relationship = oneOf(data.relationship, RELATIONSHIPS, 'relationship');
+  const relationship = oneOf(data.relationship, [...RELATIONSHIPS, ADVISER], 'relationship');
+  const slot = slotFor(relationship);
+  // Checked before the code is read, so this specific message reveals
+  // nothing about whether the code is valid.
+  if (slot === 'adviser' && !isDepedEmail(email)) throw new CallableError('permission-denied', ADVISER_DEPED);
+  // An adviser links a whole section's learners in one sitting, so they get
+  // their own, higher limit than a guardian.
+  await enforceRateLimit(db, uid, slot === 'adviser' ? 'activateAdviser' : 'activate', slot === 'adviser' ? LIMITS.activateAdviser : LIMITS.activate, nowMs);
   const consentVersion = int(data.consentVersion, { name: 'consentVersion', min: 0, max: 1000 });
   const code = normalizeCode(data.code);
   // The guardian's own name, typed (or prefilled from their Google account)
@@ -84,16 +92,17 @@ export async function activateCode(ctx, data) {
 
   const portal = (await db.doc('settings/parent_portal').get()).data() || {};
   if ((portal.consentVersion ?? 1) !== consentVersion) throw fail('consent');
-  const schoolYear = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
 
   const codeRef = db.doc(`activation_codes/${hashCode(code)}`);
   const codeDoc = (await codeRef.get()).data();
   if (!codeDoc) throw fail('unknown');
-  if (codeDoc.status !== 'issued') throw fail(codeDoc.status);
-  if (codeDoc.expiresAt.toMillis() < nowMs) throw fail('expired');
-  if (codeDoc.schoolYear !== schoolYear) throw fail('school-year');
+  // 'exhausted' can still have a free slot of the other kind (and legacy
+  // codes were marked exhausted after two guardians); claimSlot decides.
+  if (!isOpenStatus(codeDoc.status)) throw fail(codeDoc.status);
 
-  const { studentId } = codeDoc;
+  // Slips are valid for their own school year until staff revoke them
+  // (endSchoolYear / reissue); changing currentSchoolYear does not end them.
+  const { studentId, schoolYear } = codeDoc;
   const [studentSnap, enrollSnap] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`enrollments/${studentId}_${schoolYear}`).get()]);
   const student = studentSnap.data(); const enrollment = enrollSnap.data();
   if (!student || student.activationRestricted === true) throw fail('restricted');
@@ -107,14 +116,21 @@ export async function activateCode(ctx, data) {
   await db.runTransaction(async (tx) => {
     const [c, link, profile] = await Promise.all([tx.get(codeRef), tx.get(linkRef), tx.get(profileRef)]);
     const cd = c.data();
-    if (cd.status !== 'issued' || cd.redemptions >= cd.maxRedemptions) throw fail('exhausted');
+    if (!isOpenStatus(cd.status)) throw fail(cd.status);
     const alreadyActive = link.exists && link.data().status === 'active';
-    const redemptions = alreadyActive ? cd.redemptions : cd.redemptions + 1;
-    tx.update(codeRef, { redemptions, status: redemptions >= cd.maxRedemptions ? 'exhausted' : 'issued', lastRedeemedAt: FieldValue.serverTimestamp() });
+    if (alreadyActive) {
+      if ((link.data().slot ?? 'guardian') !== slot) throw fail('slot-mismatch');
+      tx.update(codeRef, { lastRedeemedAt: FieldValue.serverTimestamp() });
+    } else {
+      const claim = claimSlot(cd, slot);
+      if (!claim) throw fail('exhausted');
+      tx.update(codeRef, { ...claim, redemptions: FieldValue.delete(), maxRedemptions: FieldValue.delete(), lastRedeemedAt: FieldValue.serverTimestamp() });
+    }
     tx.set(linkRef, {
       guardianUid: uid, guardianName, guardianEmail: email || '', learnerName: learner.displayName,
-      studentId, schoolYear, relationship, status: 'active', activatedAt: FieldValue.serverTimestamp(), activatedVia: 'code',
+      studentId, schoolYear, relationship, slot, status: 'active', activatedAt: FieldValue.serverTimestamp(), activatedVia: 'code',
       revokedAt: FieldValue.delete(), revokedBy: FieldValue.delete(), revokedReason: FieldValue.delete(),
+      expiredAt: FieldValue.delete(), expiredReason: FieldValue.delete(),
     }, { merge: true });
     if (!profile.exists) {
       tx.set(profileRef, { email, displayName: guardianName, consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });
@@ -131,7 +147,7 @@ export async function activateCode(ctx, data) {
     // Merge keeps any today/recent summary a scan already wrote.
     tx.set(learnerRef, learner, { merge: true });
   });
-  await audit(db, { action: 'link.activated', actorType: 'guardian', actorUid: uid, targetType: 'student', targetId: studentId, details: { via: 'code', relationship, codeHash: hashCode(code) } });
+  await audit(db, { action: 'link.activated', actorType: 'guardian', actorUid: uid, targetType: 'student', targetId: studentId, details: { via: 'code', relationship, slot, codeHash: hashCode(code) } });
   logEvent('activation_succeeded', { uid, studentId });
   return { studentId, displayName: learner.displayName, sectionLabel: learner.sectionLabel };
 }

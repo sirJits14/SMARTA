@@ -86,7 +86,7 @@ export default function LinksTab({ schoolYear }) {
             <h2 style={S.h2}>{fullName(student)} · {student.lrn} {student.activationRestricted && <span style={{ color: T.absent }}>· RESTRICTED</span>}</h2>
             <Field label="Reason (recorded in the audit log)"><Inp value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
             <div style={{ display: 'flex', gap: 8 }}>
-              <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', () => call.revokeCode({ studentId: student.id, schoolYear, reason }))}>Revoke unused slip</Btn>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', () => call.revokeCode({ studentId: student.id, schoolYear, reason }))}>Revoke slip</Btn>
               <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', () => call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }))}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
             </div>
           </Card>

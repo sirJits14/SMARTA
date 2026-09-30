@@ -9,6 +9,7 @@ import { T, S } from '../../styles.js';
 import { Btn, Card, EmptyState } from '../../components/ui.jsx';
 import ActivationSlipsPrintable from '../../components/ActivationSlipsPrintable.jsx';
 import SectionPicker from '../../components/SectionPicker.jsx';
+import EndSchoolYearCard from './EndSchoolYearCard.jsx';
 
 const PORTAL_URL = import.meta.env.VITE_PARENT_PORTAL_URL || 'https://bnhs-parent.web.app';
 
@@ -39,7 +40,7 @@ export default function CodesTab({ schoolYear }) {
       <ActionFeedback action={action}/>
       <Card className="codes-tab-controls" style={{ padding: 20, marginBottom: 16 }}>
         <h2 style={S.h2}>Issue activation slips</h2>
-        <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>One slip per enrolled learner. Print them right away — codes are shown only once. Hand them to parents in person (adviser/homeroom). Learners flagged "restricted" are skipped.</p>
+        <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>One slip per enrolled learner. Print them right away — codes are shown only once. Slips work for the whole school year until you end it below. Hand them to parents in person (adviser/homeroom). Learners flagged "restricted" are skipped.</p>
         {err && <div style={{ color: T.absent, fontSize: 12, marginBottom: 8 }}>{err}</div>}
         <SectionPicker sections={sectionsSY} value={sectionId} disabled={busy || action.busy} label="Section" onChange={(id) => { setSectionId(id); setResult(null); }} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', margin: '16px 0 14px' }}>
@@ -48,6 +49,7 @@ export default function CodesTab({ schoolYear }) {
         </div>
         {result && <div style={{ fontFamily: T.body, fontSize: 13 }}>{result.slips.length} slips issued{result.skipped.length ? `, ${result.skipped.length} skipped (${result.skipped.map((s) => s.reason).join(', ')})` : ''}.</div>}
       </Card>
+      <EndSchoolYearCard schoolYear={schoolYear} />
       {result?.slips?.length ? <div ref={printRoot}><ActivationSlipsPrintable slips={result.slips} portalUrl={PORTAL_URL} /></div> : <EmptyState title="No slips issued yet" hint="Choose a section and issue slips to print them." />}
     </>
   );
