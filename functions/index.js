@@ -8,6 +8,7 @@ import { handleScanEvent } from './src/handlers/scanEvent.js';
 import { handleLegacyAttendanceWrite } from './src/handlers/legacyAttendanceSync.js';
 import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
+import { endSchoolYear } from './src/handlers/schoolYear.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
 import { registerKiosk, deactivateKiosk, provisionKiosk, resetKioskPassword } from './src/handlers/kiosks.js';
 import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
@@ -60,6 +61,7 @@ export const issueActivationCodesFn = staffCall(issueActivationCodes);
 export const revokeCodeFn = staffCall(revokeCode);
 export const activateCodeFn = guardianCall(activateCode);
 export const acceptConsentFn = guardianCall(acceptConsent);
+export const endSchoolYearFn = staffCall(endSchoolYear);
 
 export const requestAccessFn = guardianCall(requestAccess);
 export const resolveAccessRequestFn = staffCall(resolveAccessRequest);

@@ -28,6 +28,10 @@
       { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "resolvedAt", "order": "ASCENDING" } ] },
     { "collectionGroup": "access_requests", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "resolvedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "activation_codes", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "enrollments", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] }
   ],
