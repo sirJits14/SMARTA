@@ -23,9 +23,11 @@ grades, address, or other learners.
 with your consent, as part of the school's duty of care. Nothing else is
 derived from or done with this data.
 
-**Who can see it.** You; the school registrar (who manages links and reviews
-reports); and the service providers that host the system (Google Firebase,
-data stored in Singapore).
+**Who can see it.** You; any other parent or guardian linked to the same
+learner; the learner's class adviser, if they link with the school's slip
+using their DepEd account; the school registrar (who manages links and
+reviews reports); and the service providers that host the system (Google
+Firebase, data stored in Singapore).
 
 **How long we keep it.** Gate scan events and your inbox: current and
 previous school year. Notification device records: 60 days after last use.

@@ -41,12 +41,17 @@ Guardians → Reports. Check the Scan log tab for that date/device. Resolve
 with "no change", or "Void this scan" (parent sees it struck through with
 your note), or add a manual scan under Learner access.
 
-## School-year rollover (before the first school day of the new SY)
-1. Settings → set the new current school year (as today).
-2. Enroll learners into the new sections (as today).
-3. Print ID cards **and** activation slips per section; hand out together.
-4. The nightly job expires last year's links automatically and tells parents
-   to re-activate. Old events remain visible for the previous school year only.
+## School-year rollover (end of SY, then before the first school day of the new SY)
+1. At the end of the school year: Guardians → Activation slips → **End school
+   year** → choose the ending SY → type it to confirm. This revokes all of that
+   year's slips and ends every guardian and adviser link; each account gets an
+   inbox message. Nothing ends on its own any more.
+2. Settings → set the new current school year (as today).
+3. Enroll learners into the new sections (as today).
+4. Print ID cards **and** activation slips per section; hand out together.
+   Old events remain visible for the previous school year only.
+If step 1 is forgotten, the Activation slips tab shows a banner while the
+previous SY still has active slips or links.
 
 ## App Check break-glass (parents or kiosks all see "can't reach the server")
 Firebase console → App Check → Firestore → **Unenforced** (and Functions).
