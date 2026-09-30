@@ -63,7 +63,9 @@ Do these in order:
    finish building (Firebase console → Firestore → Indexes).
 2. Deploy rules and functions.
 3. Deploy SIMS and parent hosting.
-4. Raise `settings/parent_portal.consentVersion` by 1 so existing parents
+4. First publish the v2 privacy notice (reviewed by the school head) at the
+   `privacyNoticeUrl` set in Portal settings. Then raise
+   `settings/parent_portal.consentVersion` by 1 so existing parents
    re-accept the updated notice, which now names the class adviser. It is
    editable in SIMS → Guardians → Portal settings ("Consent version" field,
    then **Save**).
@@ -98,6 +100,9 @@ Re-enable with a normal parent deploy.
   functions expect `expiresAt` and `redemptions` on codes, which the new
   slips don't have.
 - Rules: `git checkout <previous tag> -- firestore.rules && npx firebase deploy --only firestore:rules`.
+  **Warning:** rolling rules back past the adviser-slot release blanks the
+  parent Home list (the app asks for up to 60 links; older rules allow 50).
+  Roll the parent site back too, or roll forward.
 
 ## Data-subject requests (DPA)
 - Access: the parent's own portal. Correction: Reports flow. Erasure: the
