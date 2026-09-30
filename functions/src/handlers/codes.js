@@ -71,18 +71,20 @@ export async function revokeCode(ctx, data) {
 export async function activateCode(ctx, data) {
   const { db, now, uid, email } = ctx;
   const nowMs = now().getTime();
-  await enforceRateLimit(db, uid, 'activate', LIMITS.activate, nowMs);
   const relationship = oneOf(data.relationship, [...RELATIONSHIPS, ADVISER], 'relationship');
+  const slot = slotFor(relationship);
+  // Checked before the code is read, so this specific message reveals
+  // nothing about whether the code is valid.
+  if (slot === 'adviser' && !isDepedEmail(email)) throw new CallableError('permission-denied', ADVISER_DEPED);
+  // An adviser links a whole section's learners in one sitting, so they get
+  // their own, higher limit than a guardian.
+  await enforceRateLimit(db, uid, slot === 'adviser' ? 'activateAdviser' : 'activate', slot === 'adviser' ? LIMITS.activateAdviser : LIMITS.activate, nowMs);
   const consentVersion = int(data.consentVersion, { name: 'consentVersion', min: 0, max: 1000 });
   const code = normalizeCode(data.code);
   // The guardian's own name, typed (or prefilled from their Google account)
   // on the Activate screen. Optional for older clients, which fall back to
   // the name on the sign-in token.
   const guardianName = str(data.guardianName ?? '', { name: 'Your name', max: 120 }) || ctx.displayName || '';
-  const slot = slotFor(relationship);
-  // Checked before the code is read, so this specific message reveals
-  // nothing about whether the code is valid.
-  if (slot === 'adviser' && !isDepedEmail(email)) throw new CallableError('permission-denied', ADVISER_DEPED);
 
   const fail = (reason) => { logWarn('activation_failed', { uid, reason, codeHash: isValidCode(code) ? hashCode(code) : null }); return new CallableError('failed-precondition', GENERIC); };
   if (!isValidCode(code)) throw fail('format');

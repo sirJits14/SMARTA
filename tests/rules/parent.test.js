@@ -67,6 +67,9 @@ describe('links, requests, reports, staff-only records', () => {
   it('guardian lists own links only; never writes', async () => {
     await ok(as(env, GUARDIAN_A).collection('guardian_links').where('guardianUid', '==', 'gA').limit(50).get());
     await denied(as(env, GUARDIAN_A).collection('guardian_links').limit(50).get());
+    // An adviser's Home screen lists up to 60 linked learners.
+    await ok(as(env, GUARDIAN_A).collection('guardian_links').where('guardianUid', '==', 'gA').where('status', '==', 'active').limit(60).get());
+    await denied(as(env, GUARDIAN_A).collection('guardian_links').where('guardianUid', '==', 'gA').where('status', '==', 'active').limit(61).get());
     await denied(as(env, GUARDIAN_A).doc('guardian_links/gA_S2').set({ guardianUid: 'gA', studentId: 'S2', status: 'active' }));
     await ok(as(env, STAFF).collection('guardian_links').get());
   });

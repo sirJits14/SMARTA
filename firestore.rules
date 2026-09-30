@@ -130,7 +130,7 @@ service cloud.firestore {
 
     match /guardian_links/{id} {
       allow get: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
-      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(60));
       allow write: if false;
     }
 

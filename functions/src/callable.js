@@ -4,6 +4,7 @@ import { takeToken } from './lib/rateLimit.js';
 
 export const LIMITS = {
   activate: { windowMs: 60 * 60 * 1000, max: 5 },
+  activateAdviser: { windowMs: 60 * 60 * 1000, max: 60 },
   report: { windowMs: 24 * 60 * 60 * 1000, max: 5 },
   issueCodes: { windowMs: 24 * 60 * 60 * 1000, max: 20 },
 };

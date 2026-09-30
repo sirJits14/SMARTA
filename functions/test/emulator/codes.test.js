@@ -162,6 +162,13 @@ describe('activateCode', () => {
     for (let i = 0; i < 5; i++) await expect(activateCode(guardian(), { code: 'AAAAAAAA', relationship: 'Mother', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
     await expect(activateCode(guardian(), { code: 'AAAAAAAA', relationship: 'Mother', consentVersion: 1 })).rejects.toMatchObject({ code: 'resource-exhausted' });
   });
+  it('gives advisers their own, higher limit: 6 attempts are not rate-limited', async () => {
+    for (let i = 0; i < 6; i++) await expect(activateCode(adviser(), { code: 'AAAAAAAA', relationship: 'Adviser', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('still rate-limits an adviser once the adviser window is full', async () => {
+    await db().doc('rate_limits/tAdv').set({ activateAdviser: { count: 60, windowStartMs: NOW.getTime() - 1000 } });
+    await expect(activateCode(adviser(), { code: 'AAAAAAAA', relationship: 'Adviser', consentVersion: 1 })).rejects.toMatchObject({ code: 'resource-exhausted' });
+  });
   it('re-activation after revocation flips the same link back to active', async () => {
     const code = await issue();
     await activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1 });
