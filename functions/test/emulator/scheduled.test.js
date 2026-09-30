@@ -18,6 +18,31 @@ describe('expireLinks', () => {
     expect((await db().doc('guardian_links/gA_S1').get()).data().status).toBe('expired');
     expect((await db().collection('guardians/gA/inbox').where('type', '==', 'system').get()).size).toBe(1);
   });
+  it('leaves links alone when the current school year moves on', async () => {
+    await db().doc('settings/app').set({ currentSchoolYear: '2027-2028' });
+    const r = await expireLinks(deps());
+    expect(r.expired).toBe(0);
+    expect((await db().doc('guardian_links/gA_S1').get()).data().status).toBe('active');
+    expect((await db().collection('guardians/gA/inbox').get()).size).toBe(0);
+  });
+  it('tells the account why a dropped learner\'s link ended', async () => {
+    await db().doc('enrollments/S1_2026-2027').set({ status: 'withdrawn' }, { merge: true });
+    await expireLinks(deps());
+    const inbox = await db().collection('guardians/gA/inbox').get();
+    expect(inbox.docs[0].data().body).toBe('Your link to a learner has ended because the learner is no longer enrolled. Contact the registrar if this is a mistake.');
+  });
+  it('deletes codes revoked or last used over a year ago, never issued ones', async () => {
+    await db().doc('activation_codes/rOld').set({ studentId: 'S1', schoolYear: '2024-2025', status: 'revoked', revokedAt: ts(NOW.getTime() - 400 * DAY) });
+    await db().doc('activation_codes/rNew').set({ studentId: 'S1', schoolYear: '2026-2027', status: 'revoked', revokedAt: ts(NOW.getTime() - 10 * DAY) });
+    await db().doc('activation_codes/xOld').set({ studentId: 'S1', schoolYear: '2024-2025', status: 'exhausted', lastRedeemedAt: ts(NOW.getTime() - 400 * DAY) });
+    await db().doc('activation_codes/iOld').set({ studentId: 'S1', schoolYear: '2024-2025', status: 'issued', issuedAt: ts(NOW.getTime() - 400 * DAY) });
+    const r = await expireLinks(deps());
+    expect(r.oldCodes).toBe(2);
+    expect((await db().doc('activation_codes/rOld').get()).exists).toBe(false);
+    expect((await db().doc('activation_codes/xOld').get()).exists).toBe(false);
+    expect((await db().doc('activation_codes/rNew').get()).exists).toBe(true);
+    expect((await db().doc('activation_codes/iOld').get()).exists).toBe(true);
+  });
   it('fills in the learner name for linked learners who have no gate scan yet, once per learner', async () => {
     const r = await expireLinks(deps());
     expect(r.seeded).toBe(1);
@@ -26,7 +51,7 @@ describe('expireLinks', () => {
   });
   it('deletes old revoked links, old codes, old audit rows, dormant guardians', async () => {
     await db().doc('guardian_links/gC_S1').set({ revokedAt: ts(NOW.getTime() - 400 * DAY) }, { merge: true });
-    await db().doc('activation_codes/h1').set({ studentId: 'S1', schoolYear: '2024-2025', status: 'revoked', expiresAt: ts(NOW.getTime() - 400 * DAY) });
+    await db().doc('activation_codes/h1').set({ studentId: 'S1', schoolYear: '2024-2025', status: 'revoked', revokedAt: ts(NOW.getTime() - 400 * DAY) });
     await db().doc('audit_log/old').set({ action: 'x', at: ts(NOW.getTime() - 800 * DAY) });
     await db().doc('guardians/gOld').set({ email: 'old@x', lastActiveLinkAt: ts(NOW.getTime() - 400 * DAY) });
     const d = deps();

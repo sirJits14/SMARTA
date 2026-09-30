@@ -16,6 +16,10 @@
       { "fieldPath": "guardianUid", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "activation_codes", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" } ] },
+    { "collectionGroup": "activation_codes", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "revokedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "activation_codes", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "lastRedeemedAt", "order": "ASCENDING" } ] },
     { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "revokedAt", "order": "ASCENDING" } ] },
     { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
