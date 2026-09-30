@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { eventTitle, latestScanToday } from './format.js';
+import { eventTitle, initials, latestScanToday } from './format.js';
 describe('format', () => {
+  it('builds initials from the first and last name, skipping suffixes', () => {
+    expect(initials('Juan P. Dela Cruz Jr.')).toBe('JC');
+    expect(initials('Maria Santos')).toBe('MS');
+    expect(initials('Cher')).toBe('C');
+    expect(initials('')).toBe('?');
+    expect(initials('  maria   santos  ')).toBe('MS');
+    expect(initials('juan dela cruz iii')).toBe('JC');
+    expect(initials()).toBe('?');
+  });
   it('titles events by kind/status', () => {
     expect(eventTitle({ kind: 'in', status: 'recorded' })).toBe('Entered school');
     expect(eventTitle({ kind: 'out', status: 'recorded' })).toBe('Left school');

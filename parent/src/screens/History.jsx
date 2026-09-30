@@ -6,9 +6,10 @@ import { T } from '../styles.js';
 import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
 import { Bubble, DayDivider } from '../components/Bubble.jsx';
 import { useDoc } from '../hooks/useDoc.js';
-import { eventTitle } from '../lib/format.js';
+import { eventTitle, latestScanToday } from '../lib/format.js';
 import { historyThread } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
+import LearnerHeader from '../components/LearnerHeader.jsx';
 
 const PAGE = 30;
 
@@ -45,43 +46,44 @@ export default function History({ studentId, navigate, route }) {
     else window.scrollTo(0, page.scrollHeight);
   }, [rows, route.query.event, learner === undefined]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (error === 'permission-denied') return <Banner tone="warn">{S.accessEnded}</Banner>;
-  if (learner === undefined) return <Spinner label={S.loading} />;
   const today = localDate();
   return (
     <>
-      <h1 style={{ fontSize: 20, margin: '4px 0 0' }}>{learner?.displayName}</h1>
-      <div style={{ color: T.inkMuted, fontSize: 13, marginBottom: 12 }}>{learner?.sectionLabel} · {S.historyTitle}</div>
-      {more && rows.length > 0 && <Btn variant="ghost" disabled={busy} onClick={loadOlder} style={{ width: '100%' }}>{S.historyLoadOlder}</Btn>}
-      {rows.length === 0 && !busy && <EmptyState title={S.historyEmpty} />}
-      {historyThread(rows, today).map((day) => (
-        <div key={day.date}>
-          <DayDivider label={day.label} />
-          {day.items.map((ev, i) => {
-            const voided = ev.status === 'voided';
-            return (
-              <Bubble
-                key={ev.id}
-                id={`ev-${ev.id}`}
-                first={i === 0}
-                last={i === day.items.length - 1}
-                highlight={route.query.event === ev.id}
-                struck={voided}
-                title={eventTitle(ev)}
-                time={formatScanTime(ev.scannedTime)}
-                meta={eventMeta(ev)}
-              >
-                {!voided && (
-                  <button type="button" onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)}
-                    style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: T.tap, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
-                    {S.reportThis}
-                  </button>
-                )}
-              </Bubble>
-            );
-          })}
-        </div>
-      ))}
+      <LearnerHeader learner={learner} navigate={navigate} todayStatus={latestScanToday(learner?.today, today)} />
+      {error === 'permission-denied' ? <Banner tone="warn">{S.accessEnded}</Banner>
+        : learner === undefined ? <Spinner label={S.loading} />
+          : <div className="learner-history">
+            {more && rows.length > 0 && <Btn variant="ghost" disabled={busy} onClick={loadOlder} style={{ width: '100%' }}>{S.historyLoadOlder}</Btn>}
+            {rows.length === 0 && !busy && <EmptyState title={S.historyEmpty} />}
+            {historyThread(rows, today).map((day) => (
+              <div key={day.date}>
+                <DayDivider label={day.label} />
+                {day.items.map((ev, i) => {
+                  const voided = ev.status === 'voided';
+                  return (
+                    <Bubble
+                      key={ev.id}
+                      id={`ev-${ev.id}`}
+                      first={i === 0}
+                      last={i === day.items.length - 1}
+                      highlight={route.query.event === ev.id}
+                      struck={voided}
+                      title={eventTitle(ev)}
+                      time={formatScanTime(ev.scannedTime)}
+                      meta={eventMeta(ev)}
+                    >
+                      {!voided && (
+                        <button type="button" onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)}
+                          style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: T.tap, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
+                          {S.reportThis}
+                        </button>
+                      )}
+                    </Bubble>
+                  );
+                })}
+              </div>
+            ))}
+          </div>}
     </>
   );
 }
