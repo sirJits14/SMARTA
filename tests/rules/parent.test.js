@@ -16,6 +16,11 @@ describe('learners', () => {
     await denied(as(env, ANON).doc('learners/S1').get());
     await ok(as(env, STAFF).doc('learners/S1').get());
   });
+  it('an adviser-slot link reads the learner like a guardian link', async () => {
+    const ADVISER = { uid: 'tAdv', token: { email: 't@deped.gov.ph', email_verified: true, firebase: { sign_in_provider: 'google.com' } } };
+    await seed(env, (db) => db.doc('guardian_links/tAdv_S1').set({ guardianUid: 'tAdv', studentId: 'S1', status: 'active', schoolYear: '2026-2027', relationship: 'Adviser', slot: 'adviser' }));
+    await ok(as(env, ADVISER).doc('learners/S1').get());
+  });
   it('guardian cannot list learners or write', async () => {
     await denied(as(env, GUARDIAN_A).collection('learners').get());
     await denied(as(env, GUARDIAN_A).doc('learners/S1').set({ displayName: 'x' }, { merge: true }));
