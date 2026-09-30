@@ -1,4 +1,4 @@
-# BNHS Learner Records — Privacy Notice for Parents and Guardians (v1)
+# BNHS Learner Records — Privacy Notice for Parents and Guardians (v2)
 
 **Who we are.** Bukidnon National High School (BNHS), through its registrar's
 office. Privacy focal person: the school inserts the designated person's
