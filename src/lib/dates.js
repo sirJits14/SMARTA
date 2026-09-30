@@ -20,3 +20,8 @@ export function monthLabel(ym) {
   const [y, m] = ym.split('-').map(Number);
   return new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
 }
+
+export function previousSchoolYear(sy) {
+  const [start] = sy.split('-').map(Number);
+  return `${start - 1}-${start}`;
+}

@@ -9,6 +9,7 @@ const fn = (name) => async (data) => (await httpsCallable(functions, name)(data)
 export const call = {
   issueActivationCodes: fn('issueActivationCodesFn'),
   revokeCode: fn('revokeCodeFn'),
+  endSchoolYear: fn('endSchoolYearFn'),
   resolveAccessRequest: fn('resolveAccessRequestFn'),
   revokeLink: fn('revokeLinkFn'),
   setActivationRestricted: fn('setActivationRestrictedFn'),
