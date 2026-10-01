@@ -104,7 +104,7 @@ export default function AttendanceTakePage({ schoolYear, entry }) {
         .stamp-row { transition: background 120ms ease; }
         @media (prefers-reduced-motion: reduce) { .stamp-row { transition: none; } }
         .stamp-row:focus-visible { outline: 2px solid ${T.primary}; outline-offset: -2px; }
-        .stamp-row:hover { background: rgba(91,79,232,0.05); }
+        .stamp-row:hover { background: rgba(0,122,114,0.05); }
       `}</style>
 
       <div className="sims-heading" style={S.plate}>
@@ -169,8 +169,8 @@ export default function AttendanceTakePage({ schoolYear, entry }) {
                 >
                   <span style={{ ...T.num, fontSize: 12, color: T.ink,  width: 110, flexShrink: 0 }}>{s.lrn}</span>
                   <span style={{ flex: '0 1 280px', minWidth: 140, fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>{fullName(s)}</span>
-                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeIn ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeIn ? 'rgba(91,79,232,0.06)' : 'transparent' }}>{formatScanTime(timeIn)}</span>
-                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeOut ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeOut ? 'rgba(91,79,232,0.06)' : 'transparent' }}>{formatScanTime(timeOut)}</span>
+                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeIn ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeIn ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(timeIn)}</span>
+                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeOut ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeOut ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(timeOut)}</span>
                   <span style={{ width: 90, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                     <StatusPill mark={mark} />
                   </span>

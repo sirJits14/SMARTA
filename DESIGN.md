@@ -1,6 +1,6 @@
 # BNHS SIMS registrar design system
 
-The authenticated registrar interface uses frosted navigation and summary panels over a static lavender, blush and blue background. Tables, forms and dialogs have calm, nearly opaque surfaces. The dashboard puts unassigned learners and sections without attendance records ahead of supporting totals and charts.
+The authenticated registrar interface uses frosted navigation and summary panels over a static mint, sea-glass and blue background (teal palette from the SMARTA logo). Tables, forms and dialogs have calm, nearly opaque surfaces. The dashboard puts unassigned learners and sections without attendance records ahead of supporting totals and charts.
 
 ## Scope and source
 Nine destinations: Dashboard, Students, Sections, Schedules, Enrollment, Attendance, ID Cards, Guardians and Settings. Guardians retains all eight lazy panels. The school seal and Inter remain the brand anchors. Login, parent portal, kiosk, backend permissions, print sheet dimensions and SF2 calculations are outside this redesign.
@@ -17,9 +17,9 @@ Screen tokens: `src/registrar.css`. Legacy `src/styles.js` tokens provide login 
 | Dialog | White | None | 20px |
 | Input/select | White | None | 12px |
 
-Background: #f1eff5 with static #f0d9de, #dcebf1 and #e6dff4 radial gradients.
-Primary #5b4fe8; focus #4638c2; screen ink #25213b; muted #656078.
-Control border #8c869a. Decorative borders can remain lighter.
+Background: #eef5f4 with static #d2ece8, #dcebf1 and #dcefec radial gradients.
+Primary #007a72 (5.22:1 with white; the brighter logo teal #00a79d is reserved for decorative fills such as charts); focus #154854; screen ink #12313a; muted #55706f.
+Control border #7a9294 (3.30:1 on white). Decorative borders can remain lighter.
 Attendance colors retain Present #15803d, Late #b45309, Absent/error #dc2626, Excused #64748b, with text labels rather than color alone.
 
 Glass panels use a thin white edge and a restrained cool shadow. Blur is confined to navigation and summary panels; never apply it to individual table rows or form fields.

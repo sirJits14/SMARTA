@@ -27,7 +27,7 @@ export default function AttentionPanel({ unassigned, pendingSections, date, tota
       </Card>
     </div>
     {open && <Modal title="Sections without attendance records" onClose={() => setOpen(false)} width={640}>
-      <p style={{color:'#656078'}}>Records for {date}</p>
+      <p style={{color:'#55706F'}}>Records for {date}</p>
       {pendingSections.length ? pendingSections.map(sectionButton) : <p>Every enrolled section now has a record.</p>}
       <Btn variant="ghost" onClick={() => setOpen(false)} style={{ marginTop:16 }}>Close</Btn>
     </Modal>}
