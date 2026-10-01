@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NAV_TABS, activeTab } from './nav.js';
+import { NAV_TABS, activeTab, showsAppTitle } from './nav.js';
 import { matchRoute } from './router.js';
 
 describe('NAV_TABS', () => {
@@ -36,5 +36,14 @@ describe('route drift guard', () => {
     for (const tab of NAV_TABS) {
       expect(activeTab(matchRoute(tab.path).name)).toBe(tab.key);
     }
+  });
+});
+
+describe('showsAppTitle', () => {
+  it('hides the app title on screens with their own page header', () => {
+    for (const name of ['learner', 'inbox', 'settings']) expect(showsAppTitle(name)).toBe(false);
+  });
+  it('keeps it on Home, reports and onboarding', () => {
+    for (const name of ['home', 'report', 'verify', 'consent', 'activate', 'requestAccess', 'notFound', undefined]) expect(showsAppTitle(name)).toBe(true);
   });
 });

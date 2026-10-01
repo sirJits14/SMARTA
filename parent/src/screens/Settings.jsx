@@ -5,6 +5,7 @@ import { auth, db, callable } from '../firebase.js';
 import S from '../strings.js';
 import { T } from '../styles.js';
 import { Btn, Card, Banner, Field, Inp } from '../components/ui.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { useLinks } from '../hooks/useLinks.js';
 import { useQuery, useDoc } from '../hooks/useDoc.js';
 import { notificationState } from '../lib/notificationState.js';
@@ -36,7 +37,7 @@ export default function Settings({ user, profile, navigate }) {
 
   return (
     <>
-      <h1 style={{ fontSize: 20 }}>{S.settingsTitle}</h1>
+      <PageHeader title={S.settingsTitle} />
       {err && <Banner tone="danger">{err}</Banner>}
       <Card>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsAccount}</h2>

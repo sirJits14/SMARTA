@@ -9,7 +9,7 @@ import { useDoc } from '../hooks/useDoc.js';
 import { eventTitle, latestScanToday } from '../lib/format.js';
 import { historyThread } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
-import LearnerHeader from '../components/LearnerHeader.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 
 const PAGE = 30;
 
@@ -49,7 +49,8 @@ export default function History({ studentId, navigate, route }) {
   const today = localDate();
   return (
     <>
-      <LearnerHeader learner={learner} navigate={navigate} todayStatus={latestScanToday(learner?.today, today)} />
+      <PageHeader title={learner?.displayName} avatarName={learner?.displayName} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
+        status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')} />
       {error === 'permission-denied' ? <Banner tone="warn">{S.accessEnded}</Banner>
         : learner === undefined ? <Spinner label={S.loading} />
           : <div className="learner-history">
