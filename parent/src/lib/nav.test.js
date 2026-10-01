@@ -41,9 +41,9 @@ describe('route drift guard', () => {
 
 describe('showsAppTitle', () => {
   it('hides the app title on screens with their own page header', () => {
-    for (const name of ['learner', 'inbox', 'settings']) expect(showsAppTitle(name)).toBe(false);
+    for (const name of ['home', 'learner', 'inbox', 'settings']) expect(showsAppTitle(name)).toBe(false);
   });
-  it('keeps it on Home, reports and onboarding', () => {
-    for (const name of ['home', 'report', 'verify', 'consent', 'activate', 'requestAccess', 'notFound', undefined]) expect(showsAppTitle(name)).toBe(true);
+  it('keeps it on reports and onboarding', () => {
+    for (const name of ['report', 'verify', 'consent', 'activate', 'requestAccess', 'notFound', undefined]) expect(showsAppTitle(name)).toBe(true);
   });
 });

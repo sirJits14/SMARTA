@@ -69,6 +69,7 @@ const S = {
   scanNotSlip: 'This QR is not an activation slip. Scan the QR on the slip from the school.',
   scanLoadFailed: 'Could not load the scanner. Check your connection and reload the page, or type the code.',
   scanPhotoFailed: 'Could not read a QR in that photo. Try again closer, or type the code.',
+  homeTitle: "BNHS Parent's Portal",
   homeNoLinks: 'No learners linked yet.',
   homeTodayNone: 'No entry recorded today',
   homeEntered: 'Entered',

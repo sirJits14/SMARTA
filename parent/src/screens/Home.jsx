@@ -1,6 +1,7 @@
 import S from '../strings.js';
 import { T } from '../styles.js';
 import { Btn, Card, Banner, Spinner, EmptyState } from '../components/ui.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { useLinks } from '../hooks/useLinks.js';
 import { useDoc } from '../hooks/useDoc.js';
 import { latestScanToday } from '../lib/format.js';
@@ -26,9 +27,11 @@ export default function Home({ user, profile, navigate }) {
   const { links } = useLinks(user.uid);
   const device = useDeviceStatus(user.uid);
   const notif = notificationState({ ...device, accountEnabled: profile?.notificationsEnabled !== false });
-  if (links === undefined) return <Spinner label={S.loading} />;
+  const header = <PageHeader title={S.homeTitle} logo="/icons/icon-192.png" />;
+  if (links === undefined) return <>{header}<Spinner label={S.loading} /></>;
   return (
     <>
+      {header}
       {notif === 'off' && <Banner action={<Btn onClick={() => navigate('/settings')} style={{ padding: '6px 12px', minHeight: 36 }}>{S.notifBannerButton}</Btn>}>{S.notifBannerTitle}</Banner>}
       {links.length === 0 && <EmptyState title={S.homeNoLinks} hint={S.activateBody} />}
       {links.length === 0 && <Btn onClick={() => navigate('/activate')} style={{ width: '100%' }}>{S.activateTitle}</Btn>}
