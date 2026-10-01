@@ -10,7 +10,7 @@ export function Bubble({ id, title, time, body, meta, first = true, last = true,
   const shell = {
     display: 'block', width: 'fit-content', maxWidth: '85%', boxSizing: 'border-box', textAlign: 'left',
     margin: `0 0 ${last ? 0 : 3}px`, padding: '9px 14px', fontFamily: T.font, color: T.ink,
-    background: unread ? 'rgba(91,79,232,0.10)' : T.surface,
+    background: unread ? 'rgba(0,122,114,0.10)' : T.surface,
     border: `1px solid ${highlight ? T.primary : T.border}`,
     boxShadow: highlight ? `0 0 0 2px ${T.primary}` : 'none',
     borderRadius: `${first ? R : TIGHT}px ${R}px ${R}px ${last ? R : TIGHT}px`,
