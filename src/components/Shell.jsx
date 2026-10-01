@@ -3,7 +3,7 @@ import { Card } from './ui.jsx';
 import DialogFrame from './DialogFrame.jsx';
 import NavIcon from './NavIcon.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
-import bnhsLogo from '../assets/bnhs_logo.png';
+import simsLogo from '../assets/sims-logo.png';
 
 const STORAGE = 'sims.sidebar.collapsed';
 const readPreference = () => { try { const v = localStorage.getItem(STORAGE); return v === 'true' ? true : v === 'false' ? false : null; } catch { return null; } };
@@ -25,7 +25,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const navigate = key => { setPage(key); setDrawer(false); setTooltip(null); };
   const showLabel = (event, label) => { if (collapsed) setTooltip({ label, top: event.currentTarget.getBoundingClientRect().top }); };
   const sidebar = <Card as="aside" surface="navigation" className="app-sidebar">
-    <div className="sims-brand"><img src={bnhsLogo} alt="Bukidnon National High School seal" width="32" height="32" />
+    <div className="sims-brand"><img src={simsLogo} alt="BNHS SIMS logo" width="32" height="32" />
       {!collapsed && <div><strong>BNHS SIMS</strong><small>Learner records</small></div>}</div>
     <nav className="sims-nav" aria-label="Main navigation">
       {NAV_ITEMS.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
