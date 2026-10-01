@@ -7,10 +7,18 @@ function Avatar({ name, compact = false }) {
   return <span className={`page-header-avatar${compact ? ' page-header-avatar--small' : ''}`} aria-hidden="true">{initials(name)}</span>;
 }
 
+// Logo image or initials avatar shown beside the title, if either is given.
+function Mark({ logo, avatarName, compact = false }) {
+  if (logo) return <img className={`page-header-logo${compact ? ' page-header-logo--small' : ''}`} src={logo} alt="" />;
+  if (avatarName !== undefined) return <Avatar name={avatarName} compact={compact} />;
+  return null;
+}
+
 // Large title that scrolls away with the page, plus a sticky bar that picks
 // the title up once it has scrolled under it (iOS "large title" pattern).
-// `avatarName` adds an initials avatar; `onBack` adds a back button.
-export default function PageHeader({ title, subtitle, status, avatarName, onBack }) {
+// `logo` (an image src) or `avatarName` (initials) adds a mark beside the
+// title; `onBack` adds a back button.
+export default function PageHeader({ title, subtitle, status, logo, avatarName, onBack }) {
   const barRef = useRef(null);
   const titleRef = useRef(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -47,14 +55,14 @@ export default function PageHeader({ title, subtitle, status, avatarName, onBack
         )}
         {title && (
           <div className="page-header-compact" aria-hidden="true">
-            {avatarName !== undefined && <Avatar name={avatarName} compact />}
+            <Mark logo={logo} avatarName={avatarName} compact />
             <span className="page-header-compact-title">{title}</span>
           </div>
         )}
       </div>
       {title && (
         <div className="page-header-expanded">
-          {avatarName !== undefined && <Avatar name={avatarName} />}
+          <Mark logo={logo} avatarName={avatarName} />
           <h1 ref={titleRef} className="page-header-title">{title}</h1>
           {subtitle && <div className="page-header-subtitle">{subtitle}</div>}
           {status && <div className="page-header-status">{status}</div>}

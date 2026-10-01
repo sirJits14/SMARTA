@@ -15,5 +15,5 @@ const ROUTE_TAB = {
 export const activeTab = (routeName) => ROUTE_TAB[routeName] ?? null;
 
 // Screens that draw their own PageHeader drop the app-name line above it.
-const OWN_HEADER = new Set(['learner', 'inbox', 'settings']);
+const OWN_HEADER = new Set(['home', 'learner', 'inbox', 'settings']);
 export const showsAppTitle = (routeName) => !OWN_HEADER.has(routeName);

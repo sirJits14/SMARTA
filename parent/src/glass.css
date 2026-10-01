@@ -187,7 +187,9 @@ body::before {
   line-height: 1.12;
   overflow-wrap: anywhere;
 }
-.page-header-avatar + .page-header-title { margin-top: 12px; }
+.page-header-logo { display: block; width: 56px; height: 56px; flex: 0 0 auto; object-fit: contain; border-radius: 14px; box-shadow: 0 2px 10px rgba(18, 49, 58, 0.08); }
+.page-header-logo--small { width: 28px; height: 28px; border-radius: 8px; box-shadow: none; }
+.page-header-avatar + .page-header-title, .page-header-logo + .page-header-title { margin-top: 12px; }
 .page-header-subtitle { color: #55706F; /* T.inkMuted */ font-size: 14px; }
 .page-header-status { margin-top: 8px; color: #55706F; /* T.inkMuted */ font-size: 13px; }
 .learner-history [id^="ev-"] { scroll-margin-top: calc(56px + env(safe-area-inset-top, 0px)); }
