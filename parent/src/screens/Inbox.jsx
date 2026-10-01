@@ -5,6 +5,7 @@ import S from '../strings.js';
 import { T } from '../styles.js';
 import { Spinner, EmptyState } from '../components/ui.jsx';
 import { Bubble, DayDivider } from '../components/Bubble.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { useQuery } from '../hooks/useDoc.js';
 import { toFeed } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
@@ -46,13 +47,14 @@ export default function Inbox({ user, navigate, route }) {
   // Land on the newest message, at the bottom, like a text thread.
   useEffect(() => { if (rows?.length) endRef.current?.scrollIntoView({ block: 'end' }); }, [rows === undefined]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (rows === undefined) return <Spinner label={S.loading} />;
-  if (error) return <EmptyState title={S.inboxTitle} hint={S.inboxError} />;
-  if (rows.length === 0) return <EmptyState title={S.inboxTitle} hint={S.inboxEmpty} />;
+  const header = <PageHeader title={S.inboxTitle} />;
+  if (rows === undefined) return <>{header}<Spinner label={S.loading} /></>;
+  if (error) return <>{header}<EmptyState hint={S.inboxError} /></>;
+  if (rows.length === 0) return <>{header}<EmptyState hint={S.inboxEmpty} /></>;
 
   return (
     <>
-      <h1 style={{ fontSize: 20 }}>{S.inboxTitle}</h1>
+      {header}
       {toFeed(rows, localDate()).map((day) => (
         <div key={day.date}>
           <DayDivider label={day.label} />

@@ -14,6 +14,7 @@ export default function Icon({ name, filled = false, size = 24 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false"
       fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
       {name === 'home' && <path d={HOUSE} fill={fill} />}
+      {name === 'back' && <><path d="M15 18l-6-6 6-6" /><path d="M9 12h11" /></>}
       {name === 'inbox' && <><path d={TRAY} fill={fill} /><path d={TRAY_LIP} stroke={detail} /></>}
       {name === 'settings' && <><path d={GEAR} fill={fill} /><circle cx="12" cy="12" r="3" fill={filled ? '#FFFFFF' : 'none'} stroke={detail} /></>}
     </svg>

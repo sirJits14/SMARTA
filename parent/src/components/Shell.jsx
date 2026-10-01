@@ -4,7 +4,7 @@ import { T } from '../styles.js';
 import { Banner } from './ui.jsx';
 import Icon from './Icon.jsx';
 import { useDoc } from '../hooks/useDoc.js';
-import { NAV_TABS, activeTab } from '../lib/nav.js';
+import { NAV_TABS, activeTab, showsAppTitle } from '../lib/nav.js';
 
 const LABEL = { home: S.navHome, inbox: S.navInbox, settings: S.navSettings };
 
@@ -71,7 +71,7 @@ export default function Shell({ route, navigate, children }) {
   return (
     <div style={{ fontFamily: T.font, color: T.ink, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <header style={{ padding: '14px 16px 0', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
-        <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10 }}>{S.appName}</div>
+        {showsAppTitle(route.name) && <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10 }}>{S.appName}</div>}
         {!online && <Banner tone="warn">{S.offlineBanner}</Banner>}
         {portal?.notificationsPaused && <Banner tone="warn">{S.pausedBanner}{portal.pauseNote ? `: ${portal.pauseNote}` : ''}</Banner>}
         {portal?.announcement && <Banner>{portal.announcement}</Banner>}

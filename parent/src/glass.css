@@ -99,6 +99,110 @@ body::before {
 .gnav-btn[aria-current="page"] .gnav-label { white-space: nowrap; animation: gnav-label-in 250ms ease-out; }
 @keyframes gnav-label-in { from { opacity: 0; transform: translateX(-4px); } }
 
+/* ---- Collapsing page header (learner history, inbox, settings) ---- */
+.page-header-bar {
+  --learner-bar-height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  height: calc(var(--learner-bar-height) + env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: env(safe-area-inset-top, 0px) 16px 0;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  box-shadow: none;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.page-header-bar--collapsed {
+  background: rgba(255, 255, 255, 0.78);
+  border-bottom-color: rgba(231, 229, 245, 0.9); /* T.border */
+  box-shadow: 0 6px 18px rgba(30, 27, 51, 0.07);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+}
+.page-header-back {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #1E1B33; /* T.ink */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.page-header-back:focus-visible { outline: 2px solid #4638C2; /* T.primaryDeep */ outline-offset: 2px; }
+.page-header-compact {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(5px);
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms;
+}
+.page-header-bar--collapsed .page-header-compact {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.page-header-compact-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #1E1B33; /* T.ink */
+  font-size: 16px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.page-header-avatar {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: rgba(91, 79, 232, 0.13); /* T.primary tint */
+  color: #4638C2; /* T.primaryDeep */
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.page-header-avatar--small { width: 32px; height: 32px; font-size: 12px; }
+.page-header-expanded { padding: 12px 0 18px; }
+.page-header-title {
+  margin: 0 0 2px;
+  color: #1E1B33; /* T.ink */
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.page-header-avatar + .page-header-title { margin-top: 12px; }
+.page-header-subtitle { color: #6B6890; /* T.inkMuted */ font-size: 14px; }
+.page-header-status { margin-top: 8px; color: #6B6890; /* T.inkMuted */ font-size: 13px; }
+.learner-history [id^="ev-"] { scroll-margin-top: calc(56px + env(safe-area-inset-top, 0px)); }
+
+/* Use a plain white sheet when blur is unavailable or transparency is reduced. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .page-header-bar--collapsed { background: #FFFFFF; border-bottom-color: #E7E5F5; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .page-header-bar--collapsed { background: #FFFFFF; border-bottom-color: #E7E5F5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-header-bar, .page-header-compact { transition: none; }
+}
+
 /* No blur support: solid surfaces rather than unreadable see-through ones. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .gnav { background: #FFFFFF; border-color: #E7E5F5; }
