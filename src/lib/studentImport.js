@@ -30,12 +30,16 @@ export function buildImportTemplateWorkbook() {
 }
 
 function cellText(row, i) {
-  return String(row.getCell(i).value ?? '').trim();
+  return row.getCell(i).text.trim();
 }
 
 function cellDate(row, i) {
-  const v = row.getCell(i).value;
-  return v instanceof Date ? localDate(v) : String(v ?? '').trim();
+  const cell = row.getCell(i);
+  if (cell.effectiveType === ExcelJS.ValueType.Date) {
+    const v = cell.value;
+    return localDate(v instanceof Date ? v : v.result);
+  }
+  return cell.text.trim();
 }
 
 function rowIsBlank(row) {
