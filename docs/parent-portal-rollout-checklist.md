@@ -26,32 +26,24 @@ outcome is recorded in this file with the date and who verified it.
 - [ ] K4 Disable Anonymous sign-in in the console.
 - [ ] K5 After one clean school day (Scan log tab shows every gate; Functions logs show `scan_processed`, zero `scan_rejected:device`): App Check → enforce for Firestore, then Functions.
 
-### Actual production state (2026-09-23)
-The steps above did not run in order: K3 (rules + functions + indexes) was
-deployed before K1/K2, while the gates still run kiosk v1 (anonymous
-sign-in, writes `student_attendance` only). To keep scanning working:
-- TEMP(kiosk-v1-compat) `|| signedIn()` fallbacks are live in `firestore.rules`
-  (roster reads, `settings/app`, `student_attendance` read/write).
-- The `onLegacyAttendanceScan` function bridges v1 `student_attendance`
-  timeIn/timeOut writes into parent-portal entries. It only accepts writes
-  from a registered, active kiosk whose Auth account is anonymous; any other
-  writer is dropped with a `legacy_scan_unregistered_writer` warning.
+### Kiosk v1 compatibility removed (2026-09-24)
+K3 was deployed before K1/K2, so a temporary `|| signedIn()` rules fallback
+and an `onLegacyAttendanceScan` bridge kept v1 kiosks working. On 2026-09-24
+kiosk v2 was deployed and Main Gate 1 registered, but a stale v1 tab (an
+anonymous, unregistered account) kept writing `student_attendance` that
+never reached the parent portal, silently. Both the fallback and the bridge
+are now removed: a v1 kiosk is denied outright and shows "Could not reach the
+server" at the gate.
 
-Removal steps:
-1. Register each v1 kiosk's anonymous uid via Guardians → Kiosk devices. Find
-   it in the Functions logs: `legacy_scan_unregistered_writer` → `authId`.
-2. Deploy `onLegacyAttendanceScan` (delete the old ungated trigger):
-   - `npx firebase functions:delete onLegacyAttendanceSynced --region asia-southeast1 --project bnhs-sims`
-   - Confirm with `npx firebase functions:list --project bnhs-sims` that only `onLegacyAttendanceScan` triggers on `student_attendance`.
-   - Then check Functions logs for `legacy_scan_unregistered_writer` entries showing a real uid in `authId` after the first gate scans. The old trigger bridges any signed-in writer, so leaving it deployed keeps the forged-entry hole open.
-3. After every v1 kiosk is replaced by v2 at K1/K2, delete the bridge (the
-   `onLegacyAttendanceScan` export in `functions/index.js`,
-   `functions/src/handlers/legacyAttendanceSync.js` and its tests, and the
-   `attendance-sync` branch in `functions/src/handlers/scanEvent.js`) and
-   every `|| signedIn()` fallback in `firestore.rules`, and flip the TEMP
-   assertions in `tests/rules/existing.test.js` back to `denied()`. Also
-   deactivate the step-1 anonymous kiosk registrations, since an active
-   `kiosks/{uid}` doc still passes `isKiosk()` in the rules.
+Deploying this change:
+1. Reload every gate device on v2 (`/setup`, hard refresh, sign in with its
+   `kiosk-<gate>@` account). Confirm each one's tap writes a `scan_events`
+   doc and appears on the parent portal.
+2. `npx firebase deploy --only firestore:rules,functions --project bnhs-sims`
+   and confirm deleting `onLegacyAttendanceScan` when prompted.
+3. Tap once more at every gate to confirm scanning still works. Rollback =
+   redeploy the previous `firestore.rules` and functions.
+4. K4 can now run: disable Anonymous sign-in in the console.
 
 ## Stage 1 — Internal staff test (3 school days)
 - [ ] Deploy parent site: `npm --prefix parent run build && npx firebase deploy --only hosting:parent`.
