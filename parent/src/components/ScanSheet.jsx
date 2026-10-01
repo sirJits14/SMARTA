@@ -78,7 +78,7 @@ export default function ScanSheet({ onCode, onClose }) {
   // the card instead of covering the screen.
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={S.scanTitle}
-      style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#0B0A14', color: '#fff', display: 'grid', gridTemplateRows: 'auto 1fr auto', fontFamily: 'inherit' }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#061518', color: '#fff', display: 'grid', gridTemplateRows: 'auto 1fr auto', fontFamily: 'inherit' }}>
       <div style={{ padding: '16px 16px 8px' }}>
         <h1 style={{ fontSize: 18, margin: 0 }}>{S.scanTitle}</h1>
         <p style={{ margin: '4px 0 0', fontSize: 14, opacity: 0.85 }}>{status === 'denied' ? S.scanDenied : S.scanHelp}</p>

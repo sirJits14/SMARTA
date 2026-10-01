@@ -21,7 +21,7 @@ const inputStyle = { ...font, width: '100%', boxSizing: 'border-box', minHeight:
 export const Inp = (p) => <input {...p} style={{ ...inputStyle, ...p.style }} />;
 export const Sel = (p) => <select {...p} style={{ ...inputStyle, ...p.style }} />;
 export const Banner = ({ tone = 'info', children, action }) => {
-  const tint = tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(91,79,232,0.08)';
+  const tint = tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(0,122,114,0.08)';
   const textColor = tone === 'danger' ? '#B91C1C' : tone === 'warn' ? '#92400E' : T.primaryDeep;
   return (
     <div role={tone === 'danger' ? 'alert' : 'status'} className="glass" style={{ ...font, fontSize: 14, borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
