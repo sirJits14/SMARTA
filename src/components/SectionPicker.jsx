@@ -84,7 +84,7 @@ export default function SectionPicker({ sections, value, onChange, disabled = fa
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 12px',
                   padding: '10px 12px', borderRadius: 10, textAlign: 'left', fontFamily: T.body,
                   border: `1.5px solid ${selected ? T.primary : T.border}`,
-                  background: selected ? 'rgba(91,79,232,0.08)' : T.surface,
+                  background: selected ? 'rgba(0,122,114,0.08)' : T.surface,
                   color: T.ink, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
                   overflowWrap: 'anywhere',
                 }}
