@@ -17,7 +17,8 @@ const now = () => FieldValue.serverTimestamp();
 
 export function staffEmail(v) {
   const email = str(v, { name: 'Email', min: 3, max: 254 }).toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new CallableError('invalid-argument', 'Email is not a valid email address');
+  // No '/': the address is the users/{email} document id.
+  if (!/^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(email)) throw new CallableError('invalid-argument', 'Email is not a valid email address');
   return email;
 }
 
@@ -149,10 +150,11 @@ export async function deleteStaffUser(ctx, data) {
     tx.delete(userRef(db, email));
     return current;
   });
+  // Audit before touching Auth so a failed login delete still leaves a trail.
+  await staffAudit(db, 'staff.deleted', actor, email, { role: roleOf(profile) });
   // The profile is already gone, so a leftover login is refused everywhere.
   const uid = await uidFor(auth, email, profile);
   if (uid) await auth.deleteUser(uid).catch((e) => { if (e.code !== 'auth/user-not-found') throw e; });
-  await staffAudit(db, 'staff.deleted', actor, email, { role: roleOf(profile) });
   return { ok: true };
 }
 

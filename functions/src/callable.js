@@ -19,7 +19,9 @@ export function guardianIdentity(req) {
   return { uid: req.auth.uid, email: t.email, displayName: t.name || '' };
 }
 
-export async function staffIdentity(db, req) {
+const SESSION_ENDED = 'Your session has ended. Please sign in again.';
+
+export async function staffIdentity(db, auth, req) {
   if (!req.app) throw new CallableError('failed-precondition', 'App Check required');
   const email = req.auth?.token?.email?.toLowerCase();
   if (!email) throw new CallableError('unauthenticated', 'Sign in required');
@@ -28,11 +30,22 @@ export async function staffIdentity(db, req) {
   const profile = staff.data();
   if (profile.disabled === true) throw new CallableError('permission-denied', 'This account has been disabled');
   if (!roleOf(profile)) throw new CallableError('permission-denied', 'Staff only');
+  // A profile is bound to the Auth account it was made for; legacy profiles
+  // without a uid fall back to the email (backfillUserRoles.mjs adds it).
+  if (profile.uid && profile.uid !== req.auth.uid) throw new CallableError('permission-denied', 'Staff only');
+  // ID tokens outlive revokeRefreshTokens (reset/disable) by up to an hour.
+  const user = await auth.getUser(req.auth.uid).catch((e) => {
+    if (e.code === 'auth/user-not-found') throw new CallableError('unauthenticated', SESSION_ENDED);
+    throw e;
+  });
+  if (user.tokensValidAfterTime && req.auth.token.auth_time * 1000 < Date.parse(user.tokensValidAfterTime)) {
+    throw new CallableError('unauthenticated', SESSION_ENDED);
+  }
   return { uid: req.auth.uid, email, profile };
 }
 
-export async function adminIdentity(db, req) {
-  const identity = await staffIdentity(db, req);
+export async function adminIdentity(db, auth, req) {
+  const identity = await staffIdentity(db, auth, req);
   if (roleOf(identity.profile) !== 'admin') throw new CallableError('permission-denied', 'Administrators only');
   return identity;
 }

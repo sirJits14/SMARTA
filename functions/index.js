@@ -55,12 +55,12 @@ const guardianCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
   try { return await fn({ ...callDeps(), ...guardianIdentity(req) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
-  try { return await fn({ ...callDeps(), ...(await staffIdentity(db, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+  try { return await fn({ ...callDeps(), ...(await staffIdentity(db, auth, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 // Account management and every page behind it (Guardians, Settings) is
 // administrator-only; coordinators reach none of these.
 const adminCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
-  try { return await fn({ ...callDeps(), ...(await adminIdentity(db, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+  try { return await fn({ ...callDeps(), ...(await adminIdentity(db, auth, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 
 export const issueActivationCodesFn = adminCall(issueActivationCodes);
