@@ -86,6 +86,11 @@ If parent traffic is the cause: pause notifications; if needed run
 Re-enable with a normal parent deploy.
 
 ## Rollbacks
+- **Staff roles warning:** do not roll `firestore.rules` or functions back
+  past the staff-roles release (Accounts page, 2026-10-04). Older rules and
+  functions treat ANY `users/{email}` profile -- coordinators and disabled
+  accounts included -- as full staff. If you must, first disable (or delete)
+  every non-Administrator staff account from the Accounts page.
 - Parent site: **there is no `firebase hosting:rollback` CLI command** — use
   Firebase console → Hosting → the `bnhs-parent` site → Release history →
   the "⋮" menu on a prior release → **Rollback**. This is the only reliable

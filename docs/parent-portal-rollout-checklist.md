@@ -22,7 +22,7 @@ outcome is recorded in this file with the date and who verified it.
 ## Kiosk migration (production, in this order — the gate never stops)
 - [ ] K1 Deploy kiosk v2 (`npm run deploy` in the kiosk repo). Old rules still accept it.
 - [ ] K2 Register each device (Guardians → Kiosk devices) and sign in at `/setup`. Verify one scan per device writes `scan_events`.
-- [ ] K3 Deploy indexes + rules + functions: `npx firebase deploy --only firestore,functions`. Verify scanning at every gate immediately. Rollback = redeploy previous `firestore.rules`.
+- [ ] K3 Deploy indexes + rules + functions: `npx firebase deploy --only firestore,functions`. Verify scanning at every gate immediately. Rollback = redeploy previous `firestore.rules`. **Not past the staff-roles release:** older rules/functions treat every `users/{email}` profile (coordinators, disabled accounts) as full staff -- if you must, first disable or delete every non-Administrator staff account from the Accounts page.
 - [ ] K4 Disable Anonymous sign-in in the console.
 - [ ] K5 After one clean school day (Scan log tab shows every gate; Functions logs show `scan_processed`, zero `scan_rejected:device`): App Check → enforce for Firestore, then Functions.
 
