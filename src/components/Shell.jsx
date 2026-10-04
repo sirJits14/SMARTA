@@ -3,6 +3,8 @@ import { Card } from './ui.jsx';
 import DialogFrame from './DialogFrame.jsx';
 import NavIcon from './NavIcon.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
+import { canOpen } from '../lib/access.js';
+import { roleLabel } from '../../shared/staffRoles.js';
 import simsLogo from '../assets/sims-logo.png';
 
 const STORAGE = 'sims.sidebar.collapsed';
@@ -15,6 +17,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const menuRef = useRef(null);
   const mainRef = useRef(null);
   const mobile = width < 768;
+  const items = NAV_ITEMS.filter(item => canOpen(me, item.key));
   const collapsed = !mobile && (preference ?? width < 1024);
   useEffect(() => {
     const resize = () => { setWidth(window.innerWidth); setTooltip(null); if (window.innerWidth >= 768) setDrawer(false); };
@@ -28,7 +31,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
     <div className="sims-brand"><img src={simsLogo} alt="BNHS SIMS logo" width="32" height="32" />
       {!collapsed && <div><strong>BNHS SIMS</strong><small>Learner records</small></div>}</div>
     <nav className="sims-nav" aria-label="Main navigation">
-      {NAV_ITEMS.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
+      {items.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
         aria-label={collapsed ? item.label : undefined} onClick={() => navigate(item.key)}
         onMouseEnter={e => showLabel(e,item.label)} onMouseLeave={() => setTooltip(null)}
         onFocus={e => showLabel(e,item.label)} onBlur={() => setTooltip(null)}>
@@ -36,7 +39,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
       </button>)}
     </nav>
     <div className="sims-account">
-      {!collapsed && <><div className="sims-account-name">{me.name}</div><div className="sims-account-role">Registrar</div></>}
+      {!collapsed && <><div className="sims-account-name">{me.name}</div><div className="sims-account-role">{roleLabel(me)}</div></>}
       <button className="sims-nav-item" aria-label={collapsed ? `Sign out, ${me.name}` : undefined} onClick={onLogout}
         onMouseEnter={e => showLabel(e,'Sign out')} onMouseLeave={() => setTooltip(null)} onFocus={e => showLabel(e,'Sign out')} onBlur={() => setTooltip(null)}>
         <NavIcon name="logout"/><span className={collapsed ? 'sims-nav-tooltip' : ''}>Sign out</span></button>
