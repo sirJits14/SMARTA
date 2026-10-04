@@ -25,6 +25,7 @@ const AttendanceSummaryPage = lazy(() => import('./pages/AttendanceSummaryPage.j
 const IDCardsPage = lazy(() => import('./pages/IDCardsPage.jsx'));
 const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+const AccountsPage = lazy(() => import('./pages/AccountsPage.jsx'));
 
 const PageFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
@@ -134,6 +135,7 @@ export default function App() {
           {shown==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
           {shown==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
           {shown==='settings' && <SettingsPage />}
+          {shown==='accounts' && <AccountsPage me={me} />}
         </Suspense>
       </Shell>
     </>
