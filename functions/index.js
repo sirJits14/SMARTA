@@ -13,6 +13,7 @@ import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricte
 import { registerKiosk, deactivateKiosk, provisionKiosk, resetKioskPassword } from './src/handlers/kiosks.js';
 import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
 import { deleteGuardianAccount } from './src/handlers/account.js';
+import { createStaffUser, updateStaffUser, setStaffUserDisabled, resetStaffPassword, deleteStaffUser, changeOwnPassword } from './src/handlers/users.js';
 import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
 import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 
@@ -82,6 +83,14 @@ export const resolveReportFn = adminCall(resolveReport);
 export const correctEventFn = adminCall(correctEvent);
 export const addManualEventFn = adminCall(addManualEvent);
 export const deleteGuardianAccountFn = guardianCall(deleteGuardianAccount);
+
+export const createStaffUserFn = adminCall(createStaffUser);
+export const updateStaffUserFn = adminCall(updateStaffUser);
+export const setStaffUserDisabledFn = adminCall(setStaffUserDisabled);
+export const resetStaffPasswordFn = adminCall(resetStaffPassword);
+export const deleteStaffUserFn = adminCall(deleteStaffUser);
+// Any active staff member, including one still on a temporary password.
+export const changeOwnPasswordFn = staffCall(changeOwnPassword);
 
 const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };
