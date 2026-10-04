@@ -26,8 +26,10 @@ This project is intentionally separate from the teacher attendance app — it us
 3. Add two documents:
    - Collection: `users`, Document ID: `<registrar-email-lowercase>`, Content:
      ```json
-     { "name": "Registrar Name", "role": "registrar" }
+     { "name": "Registrar Name", "role": "admin" }
      ```
+     This first account is an Administrator. Create every other staff account
+     (Administrators and coordinators) from the **Accounts** page in SIMS.
    - Collection: `settings`, Document ID: `app`, Content:
      ```json
      { "currentSchoolYear": "2026-2027" }
