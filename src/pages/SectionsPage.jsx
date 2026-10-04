@@ -14,6 +14,7 @@ import StudentForm from './StudentForm.jsx';
 import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
 import GradePills from '../components/GradePills.jsx';
+import { isAdmin, grades, singleGrade, scopeRoster } from '../lib/access.js';
 
 function SectionForm({ editing, schoolYear, schedules, onClose }) {
   const action = useAsyncAction();
@@ -72,15 +73,17 @@ function SectionForm({ editing, schoolYear, schedules, onClose }) {
   );
 }
 
-export default function SectionsPage({ schoolYear }) {
+export default function SectionsPage({ me, schoolYear }) {
   const sectionsResource = useCollectionResource('sections');
-  const sections = sectionsResource.data;
   const schedulesResource = useCollectionResource('schedules');
   const schedules = schedulesResource.data;
   const enrollmentsResource = useCollectionResource('enrollments');
-  const enrollments = enrollmentsResource.data;
   const studentsResource = useCollectionResource('students');
-  const students = studentsResource.data;
+  const admin = isAdmin(me);
+  const oneGrade = singleGrade(me);
+  const { sections, enrollments, students } = useMemo(() => scopeRoster(
+    { sections: sectionsResource.data, enrollments: enrollmentsResource.data, students: studentsResource.data }, grades(me), schoolYear),
+    [sectionsResource.data, enrollmentsResource.data, studentsResource.data, me, schoolYear]);
   const scheduleById = useMemo(() => new Map(schedules.map((s) => [s.id, s])), [schedules]);
   const enrolledCountBySection = useMemo(() => {
     const m = new Map();
@@ -142,12 +145,12 @@ export default function SectionsPage({ schoolYear }) {
       <ResourceState resources={resources}>
       <div className="sections-page-chrome">
         <div className="sims-heading" style={S.plate}>
-          <h1 style={S.h1}>Sections</h1>
-          <Btn onClick={() => setForm({ schoolYear })}>Add section</Btn>
+          <h1 style={S.h1}>{oneGrade ? `Grade ${oneGrade} Sections` : 'Sections'}</h1>
+          {admin && <Btn onClick={() => setForm({ schoolYear })}>Add section</Btn>}
         </div>
         {rows.length === 0 ? (
           <Card style={{ padding: 20 }}>
-            <EmptyState title="No sections yet" hint={`Add your first section for SY ${schoolYear} with the button above.`} />
+            <EmptyState title="No sections yet" hint={admin ? `Add your first section for SY ${schoolYear} with the button above.` : `No sections for your grade levels in SY ${schoolYear} yet.`} />
           </Card>
         ) : (
           <>
@@ -188,8 +191,10 @@ export default function SectionsPage({ schoolYear }) {
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
                     <td style={{ ...S.td, ...T.num }}>{enrolledCountBySection.get(s.id) || 0}</td>
                     <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setForm(s); }} style={{ marginRight: 6 }}>Edit</Btn>
-                      <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setConfirm(s); }} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                      {admin && <>
+                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setForm(s); }} style={{ marginRight: 6 }}>Edit</Btn>
+                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setConfirm(s); }} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                      </>}
                     </td>
                   </tr>))}
                 </tbody>
@@ -206,7 +211,7 @@ export default function SectionsPage({ schoolYear }) {
           section={detailSection}
           roster={detailRosterAlpha}
           onClose={() => setDetailSection(null)}
-          onEditStudent={(s) => setEditingStudent(s)}
+          onEditStudent={admin ? (s) => setEditingStudent(s) : null}
         />
       )}
       {detailSection && <div ref={printRoot}><IdCardsPrintSheets section={detailSection} roster={detailRosterDeped} printOnly /></div>}

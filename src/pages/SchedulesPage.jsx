@@ -6,6 +6,7 @@ import { useCollectionResource } from '../hooks/useCollection.js';
 import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedules.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
+import { isAdmin } from '../lib/access.js';
 
 function ScheduleForm({ editing, onClose }) {
   const action = useAsyncAction();
@@ -41,7 +42,8 @@ function ScheduleForm({ editing, onClose }) {
 
 const sectionLabel = (s) => `${s.name} (Grade ${s.gradeLevel}, SY ${s.schoolYear})`;
 
-export default function SchedulesPage() {
+export default function SchedulesPage({ me }) {
+  const admin = isAdmin(me);
   const schedulesResource = useCollectionResource('schedules');
   const schedules = schedulesResource.data;
   const sectionsResource = useCollectionResource('sections');
@@ -65,11 +67,11 @@ export default function SchedulesPage() {
       <ResourceState resources={resources}>
       <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Schedules</h1>
-        <Btn onClick={() => setForm({})}>Add schedule</Btn>
+        {admin && <Btn onClick={() => setForm({})}>Add schedule</Btn>}
       </div>
       {rows.length === 0 ? (
         <Card style={{ padding: 20 }}>
-          <EmptyState title="No schedules yet" hint="Add your first shift schedule with the button above." />
+          <EmptyState title="No schedules yet" hint={admin ? 'Add your first shift schedule with the button above.' : 'No shift schedules have been set up yet.'} />
         </Card>
       ) : (
         <Card style={{ padding: 0, overflow: 'hidden' }}>
@@ -83,8 +85,10 @@ export default function SchedulesPage() {
                 <td style={{ ...S.td, ...T.num }}>{s.timeIn}</td>
                 <td style={{ ...S.td, ...T.num }}>{s.timeOut}</td>
                 <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
-                  <Btn variant="ghost" onClick={() => requestDelete(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                  {admin && <>
+                    <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
+                    <Btn variant="ghost" onClick={() => requestDelete(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                  </>}
                 </td>
               </tr>))}
             </tbody>

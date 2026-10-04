@@ -32,7 +32,7 @@ export default function SectionDetailModal({ section, roster, onClose, onEditStu
                 <td style={{ ...S.td, fontWeight: 600 }}>{fullName(s)}</td>
                 <td style={S.td}>{s.sex}</td>
                 <td style={{ ...S.td, textAlign: 'right' }}>
-                  <Btn variant="ghost" onClick={() => onEditStudent(s)}>Edit</Btn>
+                  {onEditStudent && <Btn variant="ghost" onClick={() => onEditStudent(s)}>Edit</Btn>}
                 </td>
               </tr>
             ))}</tbody>
