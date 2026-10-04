@@ -25,9 +25,11 @@ Today there is exactly one role: anyone with a `users/{email}` profile is
 The three coordinator roles have identical capabilities; they differ only in
 grade scope. "Coordinator" below means any of the three.
 
-**Legacy rule:** a `users/{email}` profile with no `role` field is treated as
-`admin` everywhere (app, rules, functions). This keeps the current registrar
-account working through every deploy step.
+**Legacy rule:** a `users/{email}` profile whose `role` is missing, empty, or
+`'registrar'` (the value the README told admins to hand-write before roles
+existed) is treated as `admin` everywhere (app, rules, functions). This keeps
+the current registrar account working through every deploy step. Any other
+unrecognized `role` value grants no access.
 
 ## Data model
 
@@ -57,9 +59,11 @@ Invariants (enforced by the callables, the only writers):
 `scripts/syncShared.mjs`) exports:
 
 - `ROLES` — the four role values with display labels.
-- `roleOf(profile)` — `profile.role ?? 'admin'`.
+- `roleOf(profile)` — `'admin'` for legacy profiles (see Legacy rule), the
+  role for the four known values, `null` for no profile or an unknown role.
 - `scopedGrades(profile)` — `null` for admin (= all grades), `[7,8,9,10]` for
-  `jhs_coord`, `[11,12]` for `shs_coord`, `[profile.gradeLevel]` for `glc`.
+  `jhs_coord`, `[11,12]` for `shs_coord`, `[profile.gradeLevel]` for `glc`,
+  `[]` (nothing) for an unknown role.
 - `roleLabel(profile)` — "Administrator", "JHS Academic Coordinator",
   "SHS Academic Coordinator", or "Grade N Coordinator".
 
@@ -91,7 +95,7 @@ New file `functions/src/handlers/users.js`. New wrapper `adminCall` beside
 | `updateStaffUserFn` | admin | `{ email, name?, role?, gradeLevel? }` | Validate invariants; update profile; audit `staff.updated` (details: before/after role & grade). |
 | `setStaffUserDisabledFn` | admin | `{ email, disabled }` | `auth.updateUser(uid, { disabled })`; profile `disabled`; on disable also `auth.revokeRefreshTokens(uid)`; audit `staff.disabled` / `staff.enabled`. |
 | `resetStaffPasswordFn` | admin | `{ email }` | New generated password; `mustChangePassword: true`; `revokeRefreshTokens`; audit `staff.password_reset`. Returns `{ email, password }` once. |
-| `deleteStaffUserFn` | admin | `{ email }` | Disable Auth user → delete profile → delete Auth user; audit `staff.deleted`. Audit entries are kept. |
+| `deleteStaffUserFn` | admin | `{ email }` | Delete profile (inside the last-admin transaction) → delete Auth user; audit `staff.deleted`. Audit entries are kept. |
 | `changeOwnPasswordFn` | staff (incl. `mustChangePassword`) | `{ newPassword }` | Min 10 chars; `auth.updateUser(callerUid, { password })`; clear `mustChangePassword`; audit `staff.password_changed`. |
 
 Password generation reuses the existing generator used by `provisionKiosk`
@@ -99,11 +103,13 @@ Password generation reuses the existing generator used by `provisionKiosk`
 
 ### Safeguards (checked inside the callables)
 
-- An admin cannot disable, delete, or change the role of **their own**
-  account (`failed-precondition`).
+- An admin cannot disable, delete, reset the password of, or change the role
+  of **their own** account (`failed-precondition`).
 - Any operation that would leave **zero active admins** (demote, disable,
   delete) is refused (`failed-precondition`). Count = profiles where
-  `roleOf == 'admin'` and `disabled != true`, read inside a transaction.
+  `roleOf == 'admin'` and `disabled != true`, read inside the same Firestore
+  transaction that writes the change, so two admins acting on each other at
+  once cannot both succeed.
 - Duplicate email → `already-exists` "An account with this email already
   exists." (from Auth `auth/email-already-exists` or an existing profile).
 - Invalid role / missing or out-of-range `gradeLevel` for `glc` /
@@ -113,8 +119,12 @@ Password generation reuses the existing generator used by `provisionKiosk`
 
 - **Create:** if the profile write fails after the Auth user is created, delete
   the Auth user before rethrowing (no orphan logins).
-- **Delete:** ordered disable → profile delete → Auth delete, so a partial
-  failure leaves at worst a disabled Auth account that cannot sign in.
+- **Delete:** profile delete (transactional) → Auth delete. If the Auth delete
+  fails, the leftover login has no profile, so rules and callables refuse it
+  and the app signs it out.
+- **Change own password:** a password change revokes the caller's session, so
+  the client signs straight back in with the new password after the callable
+  succeeds.
 - Errors use `CallableError` → `toHttpsError`, matching existing handlers.
 
 ## Client app
@@ -199,7 +209,7 @@ function isStaff() {
     && profile().get('disabled', false) != true;
 }
 function role() { return profile().get('role', 'admin'); }
-function isAdmin() { return isStaff() && role() == 'admin'; }
+function isAdmin() { return isStaff() && (role() == null || role() in ['admin', 'registrar', '']); }
 function coversGrade(g) {           // mirrors shared/staffRoles.js scopedGrades()
   return isAdmin()
     || (isStaff() && role() == 'jhs_coord' && g in [7, 8, 9, 10])
@@ -274,9 +284,11 @@ signedIn()`.
 
 1. Deploy functions, then rules, then hosting. Order-safe: role-less profiles
    are admins, so the current registrar keeps full access throughout.
-2. Run `scripts/backfillUserRoles.mjs` (Admin SDK; idempotent) to set
-   `role: 'admin'`, `disabled: false`, `mustChangePassword: false` on profiles
-   missing `role`.
+2. Run `functions/scripts/backfillUserRoles.mjs` (Admin SDK; dry run by
+   default, idempotent) to set `role: 'admin'` on legacy profiles (missing or
+   `'registrar'` role) and default `disabled: false`,
+   `mustChangePassword: false`, `gradeLevel: null` where absent. Update the
+   README's first-account instructions to write `"role": "admin"`.
 3. Admin creates coordinator accounts from the Accounts page.
 
 ## Out of scope
