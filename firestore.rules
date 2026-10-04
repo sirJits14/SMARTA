@@ -8,12 +8,19 @@ service cloud.firestore {
       return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
     // Staff = has an enabled users/{email} profile. Written only by the
-    // account callables (functions/src/handlers/users.js).
+    // account callables (functions/src/handlers/users.js). A profile with a
+    // uid belongs to that Auth account only, so re-registering the email
+    // elsewhere (e.g. the parent portal) can't claim it; legacy profiles
+    // without one match by email until backfillUserRoles.mjs binds them.
     function profile() { return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data; }
+    // get(): an email-less token (the anonymous v1 kiosk) must short-circuit
+    // here; a missing-key error would make every caller below evaluate all
+    // their branches and hit the 1000-expression limit.
     function isStaff() {
-      return signedIn() && request.auth.token.email != null
+      return signedIn() && request.auth.token.get('email', null) != null
         && exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower()))
-        && profile().get('disabled', false) != true;
+        && profile().get('disabled', false) != true
+        && profile().get('uid', request.auth.uid) == request.auth.uid;
     }
     // Mirrors shared/staffRoles.js -- keep the two in step. Profiles made
     // before roles existed (no role, or 'registrar') are administrators.

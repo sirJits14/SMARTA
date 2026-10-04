@@ -1,5 +1,5 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setup, seed, seedBaseline, as, ok, denied, STAFF, ADMIN_NEW, JHS, SHS, GLC8, DISABLED_ADMIN } from './helpers.js';
+import { setup, seed, seedBaseline, as, ok, denied, STAFF, ADMIN_NEW, JHS, SHS, GLC8, DISABLED_ADMIN, LEGACY } from './helpers.js';
 
 let env;
 beforeAll(async () => { env = await setup(); });
@@ -30,6 +30,33 @@ describe('administrators', () => {
   it('a disabled admin is refused', async () => {
     await denied(as(env, DISABLED_ADMIN).doc('students/S3').set({ lrn: '100000000003' }));
     await denied(as(env, DISABLED_ADMIN).collection('audit_log').get());
+  });
+  for (const [label, fields] of [['missing', {}], ['null', { role: null }], ["''", { role: '' }]]) {
+    it(`a legacy profile with role ${label} is an administrator`, async () => {
+      await seed(env, (db) => db.doc('users/legacy@bnhs.edu').set({ name: 'Legacy', ...fields }));
+      await ok(as(env, LEGACY).doc('students/S3').set({ lrn: '100000000003' }));
+      await ok(as(env, LEGACY).collection('audit_log').get());
+    });
+  }
+});
+
+describe('profile binding and unknown roles', () => {
+  it('a profile bound to another uid grants nothing; the bound uid is staff', async () => {
+    await seed(env, (db) => db.doc('users/legacy@bnhs.edu').set({ name: 'Bound', role: 'admin', uid: 'someone-else' }));
+    await denied(as(env, LEGACY).doc('students/S3').set({ lrn: '100000000003' }));
+    await denied(as(env, LEGACY).collection('audit_log').get());
+    await seed(env, (db) => db.doc('users/legacy@bnhs.edu').set({ name: 'Bound', role: 'admin', uid: LEGACY.uid }));
+    await ok(as(env, LEGACY).doc('students/S3').set({ lrn: '100000000003' }));
+  });
+  it('an unknown role is not an administrator', async () => {
+    await seed(env, (db) => db.doc('users/legacy@bnhs.edu').set({ name: 'Teacher', role: 'teacher' }));
+    await denied(as(env, LEGACY).doc('students/S3').set({ lrn: '100000000003' }));
+    await denied(as(env, LEGACY).collection('audit_log').get());
+  });
+  it('a disabled coordinator is refused', async () => {
+    await seed(env, (db) => db.doc('users/glc8@bnhs.edu').set({ name: 'G8', role: 'glc', gradeLevel: 8, disabled: true }));
+    await denied(as(env, GLC8).doc('users/registrar@bnhs.edu').get());
+    await denied(as(env, GLC8).doc('students/S3').set({ lrn: '100000000003' }));
   });
 });
 

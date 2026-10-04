@@ -20,6 +20,8 @@ export const JHS = { uid: 'jhs1', token: { email: 'jhs@bnhs.edu', email_verified
 export const SHS = { uid: 'shs1', token: { email: 'shs@bnhs.edu', email_verified: false, firebase: password } };
 export const GLC8 = { uid: 'glc8', token: { email: 'glc8@bnhs.edu', email_verified: false, firebase: password } };
 export const DISABLED_ADMIN = { uid: 'off1', token: { email: 'off@bnhs.edu', email_verified: false, firebase: password } };
+// users/legacy@bnhs.edu is seeded per test with the profile shape under test.
+export const LEGACY = { uid: 'leg1', token: { email: 'legacy@bnhs.edu', email_verified: false, firebase: password } };
 
 export async function setup() {
   const env = await initializeTestEnvironment({
