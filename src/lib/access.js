@@ -19,6 +19,11 @@ export function singleGrade(me) {
   return g && g.length === 1 ? g[0] : null;
 }
 
+// A profile bound to another Auth account (uid set and different) is treated
+// as missing, so re-registering a staff email can't claim it. Legacy profiles
+// without a uid match by email, as the rules and functions do.
+export const ownProfile = (data, uid) => (data && (!data.uid || data.uid === uid) ? data : null);
+
 export function profileRefusal(profile) {
   if (!profile) return 'This account has no staff profile yet. Ask an administrator to add one.';
   if (profile.disabled === true) return DISABLED_MESSAGE;

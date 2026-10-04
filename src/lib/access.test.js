@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isAdmin, allowedPages, canOpen, gradeOptions, singleGrade, profileRefusal, scopeRoster } from './access.js';
+import { isAdmin, allowedPages, canOpen, gradeOptions, singleGrade, profileRefusal, ownProfile, scopeRoster } from './access.js';
 
 const admin = { role: 'registrar' }, jhs = { role: 'jhs_coord' }, glc8 = { role: 'glc', gradeLevel: 8 };
 
@@ -32,6 +32,15 @@ describe('profileRefusal', () => {
     expect(profileRefusal({ role: 'admin', disabled: true })).toBe('This account has been disabled. Contact an administrator.');
     expect(profileRefusal({ role: 'teacher' })).toMatch(/no valid role/);
     expect(profileRefusal(glc8)).toBeNull();
+  });
+});
+
+describe('ownProfile', () => {
+  it('ignores a profile bound to a different sign-in', () => {
+    expect(ownProfile({ role: 'admin', uid: 'u1' }, 'u1')).toEqual({ role: 'admin', uid: 'u1' });
+    expect(ownProfile({ role: 'admin' }, 'u1')).toEqual({ role: 'admin' });
+    expect(ownProfile({ role: 'admin', uid: 'u0' }, 'u1')).toBeNull();
+    expect(ownProfile(null, 'u1')).toBeNull();
   });
 });
 

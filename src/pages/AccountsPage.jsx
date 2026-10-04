@@ -56,7 +56,8 @@ function AccountForm({ editing, self, onClose, onCreated }) {
 }
 
 // Shown once after create/reset; the password lives only in this component's
-// props and is gone when the dialog closes.
+// props and is gone when the dialog closes -- so only Done closes it (no
+// overlay click / Escape).
 function PasswordReveal({ result, onClose }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -64,7 +65,7 @@ function PasswordReveal({ result, onClose }) {
     catch { setCopied(false); }
   };
   return (
-    <Modal title="Temporary password" onClose={onClose}>
+    <Modal title="Temporary password" onClose={onClose} dismissible={false}>
       <p style={{ fontFamily: T.body, color: T.ink, fontSize: 14, lineHeight: 1.6, marginTop: 0 }}>
         Give these to the account owner now. <strong>This password can't be shown again.</strong> They'll be asked to choose their own when they sign in.
       </p>

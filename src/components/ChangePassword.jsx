@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../firebase.js';
 import { staffUsers } from '../data/staffUsers.js';
 import { passwordProblem, MIN_PASSWORD } from '../lib/password.js';
@@ -18,12 +18,15 @@ export default function ChangePassword({ me, onLogout }) {
     setBusy(true); setErr('');
     try {
       await staffUsers.changeOwnPassword({ newPassword: pw });
-      // A password change revokes the current session; sign straight back in.
-      await signInWithEmailAndPassword(auth, me.email, pw);
     } catch (e) {
       setErr(e?.message || 'Could not change the password. Please try again.');
       setBusy(false);
+      return;
     }
+    // A password change revokes the current session; sign straight back in,
+    // or out to the login screen (with the new password) if that fails.
+    try { await signInWithEmailAndPassword(auth, me.email, pw); }
+    catch { await signOut(auth); }
   };
   const enter = (e) => e.key === 'Enter' && go();
   return (

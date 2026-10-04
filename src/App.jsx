@@ -4,7 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
-import { canOpen, profileRefusal, DISABLED_MESSAGE } from './lib/access.js';
+import { canOpen, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
@@ -98,7 +98,8 @@ export default function App() {
     setMe(undefined);
     let loaded = false;
     return onSnapshot(doc(db, 'users', email), (snap) => {
-      const profile = snap.exists() ? { email, ...snap.data() } : null;
+      const data = ownProfile(snap.exists() ? snap.data() : null, authUser.uid);
+      const profile = data ? { email, ...data } : null;
       // A profile that vanishes after loading was deleted mid-session: same notice as disabled.
       const refusal = loaded && !profile ? DISABLED_MESSAGE : profileRefusal(profile);
       if (refusal) { refuse(refusal); return; }
