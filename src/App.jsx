@@ -4,7 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
-import { canOpen, profileRefusal } from './lib/access.js';
+import { canOpen, profileRefusal, DISABLED_MESSAGE } from './lib/access.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
@@ -95,11 +95,16 @@ export default function App() {
     const refuse = (message) => { setNotice(message); setMe(null); signOut(auth); };
     if (!email) { refuse('This account has no staff profile yet. Ask an administrator to add one.'); return; }
     setMe(undefined);
+    let loaded = false;
     return onSnapshot(doc(db, 'users', email), (snap) => {
       const profile = snap.exists() ? { email, ...snap.data() } : null;
-      const refusal = profileRefusal(profile);
-      if (refusal) refuse(refusal); else setMe(profile);
-    }, () => refuse('Could not load your staff profile. Please sign in again.'));
+      // A profile that vanishes after loading was deleted mid-session: same notice as disabled.
+      const refusal = loaded && !profile ? DISABLED_MESSAGE : profileRefusal(profile);
+      if (refusal) { refuse(refusal); return; }
+      loaded = true;
+      setMe(profile);
+    // After a normal sign-out the listener can error before cleanup; only refuse while signed in.
+    }, () => { if (auth.currentUser) refuse('Could not load your staff profile. Please sign in again.'); });
   }, [authUser]);
 
   if (authUser === undefined || (authUser && me === undefined)) return <BootLoader />;
