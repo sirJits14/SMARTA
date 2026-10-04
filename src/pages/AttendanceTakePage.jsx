@@ -9,13 +9,17 @@ import { MARK_LABEL } from '../lib/constants.js';
 import { T, S } from '../styles.js';
 import { Inp, Btn, Field, Card, StatusPill, EmptyState, ResourceState } from '../components/ui.jsx';
 import SectionPicker from '../components/SectionPicker.jsx';
+import { grades, scopeRoster } from '../lib/access.js';
 
 // Cycling one tap at a time: Present -> Late -> Absent -> Excused -> Present.
 const NEXT = { P: 'L', L: 'A', A: 'E', E: 'P' };
 
-export default function AttendanceTakePage({ schoolYear, entry }) {
+export default function AttendanceTakePage({ me, schoolYear, entry }) {
   const sectionsResource = useCollectionResource('sections');
-  const sections = sectionsResource.data;
+  // Coordinators pick only their grades' sections; an out-of-scope dashboard
+  // deep link resolves as an unavailable section.
+  const sections = useMemo(() => scopeRoster({ sections: sectionsResource.data }, grades(me), schoolYear).sections,
+    [sectionsResource.data, me, schoolYear]);
   const enrollmentsResource = useCollectionResource('enrollments');
   const enrollments = enrollmentsResource.data;
   const studentsResource = useCollectionResource('students');

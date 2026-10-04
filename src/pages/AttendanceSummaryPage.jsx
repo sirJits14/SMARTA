@@ -9,6 +9,7 @@ import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S, MARK_COLOR } from '../styles.js';
 import { Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
 import SectionPicker from '../components/SectionPicker.jsx';
+import { grades, scopeRoster } from '../lib/access.js';
 
 // DepEd's "Enrolment as of 1st Friday of June" cutoff for a given school
 // year (e.g. "2026-2027" -> the 1st Friday of June 2026).
@@ -19,9 +20,12 @@ function firstFridayOfJune(schoolYear) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function AttendanceSummaryPage({ schoolYear }) {
+export default function AttendanceSummaryPage({ me, schoolYear }) {
   const sectionsResource = useCollectionResource('sections');
-  const sections = sectionsResource.data;
+  // Coordinators pick only their grades' sections; an out-of-scope dashboard
+  // deep link resolves as an unavailable section.
+  const sections = useMemo(() => scopeRoster({ sections: sectionsResource.data }, grades(me), schoolYear).sections,
+    [sectionsResource.data, me, schoolYear]);
   const enrollmentsResource = useCollectionResource('enrollments');
   const enrollments = enrollmentsResource.data;
   const studentsResource = useCollectionResource('students');
