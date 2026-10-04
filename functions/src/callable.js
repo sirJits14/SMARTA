@@ -1,5 +1,6 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { CallableError } from './errors.js';
+import { roleOf } from '../shared/staffRoles.js';
 import { takeToken } from './lib/rateLimit.js';
 
 export const LIMITS = {
@@ -24,7 +25,16 @@ export async function staffIdentity(db, req) {
   if (!email) throw new CallableError('unauthenticated', 'Sign in required');
   const staff = await db.doc(`users/${email}`).get();
   if (!staff.exists) throw new CallableError('permission-denied', 'Staff only');
-  return { uid: req.auth.uid, email };
+  const profile = staff.data();
+  if (profile.disabled === true) throw new CallableError('permission-denied', 'This account has been disabled');
+  if (!roleOf(profile)) throw new CallableError('permission-denied', 'Staff only');
+  return { uid: req.auth.uid, email, profile };
+}
+
+export async function adminIdentity(db, req) {
+  const identity = await staffIdentity(db, req);
+  if (roleOf(identity.profile) !== 'admin') throw new CallableError('permission-denied', 'Administrators only');
+  return identity;
 }
 
 // Transactional fixed-window limiter on rate_limits/{uid}.{action}.

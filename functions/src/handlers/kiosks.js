@@ -1,6 +1,6 @@
-import { randomBytes } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { audit } from '../audit.js';
+import { generatePassword } from '../lib/password.js';
 import { str } from '../lib/validators.js';
 import { CallableError } from '../errors.js';
 
@@ -8,10 +8,6 @@ const EMAIL_DOMAIN = 'bnhs.local';
 const MAX_EMAIL_ATTEMPTS = 5;
 
 const slugify = (label) => label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'device';
-
-// base64url avoids characters that need escaping when copy-pasted into a
-// plain <input> or a terminal; 18 random bytes -> 24 chars, ~144 bits.
-const generatePassword = () => randomBytes(18).toString('base64url');
 
 // Confirms uid is a real kiosk-domain Auth account, independent of whatever
 // a kiosks/{uid} Firestore doc claims -- deactivateKiosk's upsert can create
