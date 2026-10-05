@@ -1,6 +1,6 @@
 import React,{act,useRef} from 'react';import {createRoot} from 'react-dom/client';
 import '/src/registrar.css';
-import StudentsPage from '/src/pages/StudentsPage.jsx';import SectionsPage from '/src/pages/SectionsPage.jsx';import SchedulesPage from '/src/pages/SchedulesPage.jsx';import {usePrintReadiness} from '/src/hooks/usePrintReadiness.js';import IDCardsPage from '/src/pages/IDCardsPage.jsx';
+import StudentsPage from '/src/pages/StudentsPage.jsx';import SectionsPage from '/src/pages/SectionsPage.jsx';import SchedulesPage from '/src/pages/SchedulesPage.jsx';import {usePrintReadiness} from '/src/hooks/usePrintReadiness.js';import IDCardsPage from '/src/pages/IDCardsPage.jsx';import Shell from '/src/components/Shell.jsx';
 window.IS_REACT_ACT_ENVIRONMENT=true;const host=document.getElementById('test-root');const root=createRoot(host);const results=document.getElementById('results');
 const assert=(condition,message)=>{if(!condition)throw Error(message)};const render=async node=>{await act(async()=>root.render(node))};
 const button=name=>[...host.querySelectorAll('button')].find(n=>n.textContent.trim()===name);
@@ -52,6 +52,16 @@ const tests=[['Section details have a keyboard button',async()=>{await scenario(
   assert(css.boxShadow!=='none','Button has no bevel shadow');
   const cell=control.closest('td');const cellCss=getComputedStyle(cell);
   const inner=cell.clientWidth-parseFloat(cellCss.paddingLeft)-parseFloat(cellCss.paddingRight);
-  assert(Math.abs(control.offsetWidth-inner)<=1,'Button does not fill the cell: '+control.offsetWidth+' vs '+inner);}]];
+  assert(Math.abs(control.offsetWidth-inner)<=1,'Button does not fill the cell: '+control.offsetWidth+' vs '+inner);}],
+['Sidebar brand is the SMARTA wordmark, S mark when collapsed',async()=>{try{localStorage.setItem('sims.sidebar.collapsed','false')}catch{}
+  try{await render(<Shell me={{...admin,name:'Admin'}} page="dashboard" setPage={()=>{}} schoolYear="2026-2027" onLogout={()=>{}}><p>Body</p></Shell>);
+  const logo=()=>host.querySelector('.sims-brand img');
+  assert(logo()?.alt==='SMARTA','Brand alt is '+logo()?.alt);
+  assert(logo().classList.contains('sims-wordmark')&&logo().src.includes('smarta-wordmark'),'Expanded brand is not the wordmark: '+logo().src);
+  assert(!host.querySelector('.sims-brand strong'),'Old BNHS SIMS text still shown');
+  assert(logo().getBoundingClientRect().width<=188,'Wordmark wider than its 188px slot: '+logo().getBoundingClientRect().width);
+  await click(host.querySelector('button[aria-label="Collapse sidebar"]'));
+  assert(logo()?.alt==='SMARTA'&&logo().src.includes('smarta-mark'),'Collapsed brand is not the S mark: '+logo()?.src);
+  }finally{try{localStorage.removeItem('sims.sidebar.collapsed')}catch{}}}]];
 for(const[name,test]of tests){try{await test();results.append(Object.assign(document.createElement('p'),{textContent:'PASS '+name}));}catch(e){results.append(Object.assign(document.createElement('p'),{textContent:'FAIL '+name+': '+e.message}));}finally{await render(null);}}
 results.dataset.done='true';

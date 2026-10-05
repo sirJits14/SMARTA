@@ -18,8 +18,7 @@
   .sims-ui .sims-input::placeholder { color:#5f7577; opacity:1; }
   .sims-ui .app-sidebar { padding:24px 14px 16px; display:flex; flex-direction:column; min-height:0; }
   .sims-ui .sims-brand { display:flex; gap:10px; align-items:center; padding:0 8px 26px; white-space:nowrap; }
-  .sims-ui .sims-brand strong { font-size:15px; display:block; }
-  .sims-ui .sims-brand small { color:var(--sims-muted); display:block; font-size:11px; margin-top:4px; }
+  .sims-ui .sims-wordmark { display:block; width:100%; max-width:188px; height:auto; }
   .sims-ui .sims-nav { flex:1; display:flex; flex-direction:column; gap:5px; min-height:0; overflow-y:auto; }
   .sims-ui .sims-nav-item { display:flex; align-items:center; gap:12px; position:relative; border:0; background:transparent; color:#4e6669; border-radius:13px; padding:12px; min-height:44px; width:100%; text-align:left; font:inherit; font-size:13px; font-weight:500; cursor:pointer; flex-shrink:0; }
   .sims-ui .sims-nav-item:hover { background:rgba(255,255,255,.7); color:#12313a; }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 // PNG IHDR: width at byte 16, height at 20 (big-endian), colour type at 25 (2 = RGB, 6 = RGBA).
 const png = path => { const b = readFileSync(path); return { width: b.readUInt32BE(16), height: b.readUInt32BE(20), colorType: b[25] }; };
@@ -20,5 +20,19 @@ describe('SMARTA logo assets', () => {
     ['parent/public/icons/icon-maskable-512.png', 512],
   ])('%s is an opaque %ipx square', (path, size) => {
     expect(png(path)).toEqual({ width: size, height: size, colorType: 2 });
+  });
+});
+
+describe('SMARTA logo references', () => {
+  it('index.html uses the dark-tile favicon', () => {
+    expect(readFileSync('index.html', 'utf8')).toContain('href="/src/assets/sims-favicon.png"');
+  });
+
+  it('nothing references the old sims-logo.png', () => {
+    const files = readdirSync('src', { recursive: true })
+      .filter(f => /\.(jsx?|css)$/.test(f) && !f.endsWith('.test.js'))
+      .map(f => `src/${f}`.replaceAll('\\', '/'));
+    const offenders = ['index.html', ...files].filter(f => readFileSync(f, 'utf8').includes('sims-logo.png'));
+    expect(offenders).toEqual([]);
   });
 });

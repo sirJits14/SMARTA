@@ -5,7 +5,7 @@ import { staffUsers } from '../data/staffUsers.js';
 import { passwordProblem, MIN_PASSWORD } from '../lib/password.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field } from './ui.jsx';
-import simsLogo from '../assets/sims-logo.png';
+import smartaWordmark from '../assets/smarta-wordmark.png';
 
 // Shown instead of the app while users/{email}.mustChangePassword is true
 // (new account or admin reset). The live profile clears it on success.
@@ -32,7 +32,7 @@ export default function ChangePassword({ me, onLogout }) {
   return (
     <div style={{ ...S.page, display: 'grid', placeItems: 'center' }}>
       <div style={{ ...S.card, width: 380 }}>
-        <img src={simsLogo} alt="BNHS SIMS logo" width={40} height={40} style={{ marginBottom: 16 }} />
+        <img src={smartaWordmark} alt="SMARTA" width={200} height={59} style={{ display: 'block', marginBottom: 16 }} />
         <h1 style={{ fontFamily: T.display, color: T.ink, fontSize: 20, margin: '0 0 2px', fontWeight: 700 }}>Set a new password</h1>
         <p style={{ fontFamily: T.body, color: T.inkMuted, fontSize: 12, marginTop: 0, marginBottom: 20 }}>
           {me.email} is using a temporary password. Choose your own ({MIN_PASSWORD}+ characters) to continue.

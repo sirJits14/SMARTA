@@ -5,7 +5,8 @@ import NavIcon from './NavIcon.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
 import { canOpen } from '../lib/access.js';
 import { roleLabel } from '../../shared/staffRoles.js';
-import simsLogo from '../assets/sims-logo.png';
+import smartaWordmark from '../assets/smarta-wordmark.png';
+import smartaMark from '../assets/smarta-mark.png';
 
 const STORAGE = 'sims.sidebar.collapsed';
 const readPreference = () => { try { const v = localStorage.getItem(STORAGE); return v === 'true' ? true : v === 'false' ? false : null; } catch { return null; } };
@@ -28,8 +29,9 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const navigate = key => { setPage(key); setDrawer(false); setTooltip(null); };
   const showLabel = (event, label) => { if (collapsed) setTooltip({ label, top: event.currentTarget.getBoundingClientRect().top }); };
   const sidebar = <Card as="aside" surface="navigation" className="app-sidebar">
-    <div className="sims-brand"><img src={simsLogo} alt="BNHS SIMS logo" width="32" height="32" />
-      {!collapsed && <div><strong>BNHS SIMS</strong><small>Learner records</small></div>}</div>
+    <div className="sims-brand">{collapsed
+      ? <img src={smartaMark} alt="SMARTA" width="32" height="32" />
+      : <img className="sims-wordmark" src={smartaWordmark} alt="SMARTA" width="188" height="56" />}</div>
     <nav className="sims-nav" aria-label="Main navigation">
       {items.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
         aria-label={collapsed ? item.label : undefined} onClick={() => navigate(item.key)}
