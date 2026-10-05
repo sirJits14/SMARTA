@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db, clearAll, seedSchool, fakeMessaging, ts } from './helpers.js';
-import { handleAnnouncementWrite, sendAnnouncementPush } from '../../src/handlers/announcements.js';
+import { handleAnnouncementWrite, sendAnnouncementPush, publishDueAnnouncements, announcementAudienceCount, CLAIM_STALE_MS } from '../../src/handlers/announcements.js';
 
 const NOW = new Date('2026-10-05T08:00:00+08:00');
 const deps = (messaging = fakeMessaging()) => ({ db: db(), messaging, portalUrl: 'https://p.test', now: () => NOW });
@@ -165,5 +165,46 @@ describe('handleAnnouncementWrite', () => {
     await handleAnnouncementWrite(deps(), args);
     const rows = (await auditRows()).filter((r) => r.action === 'announcement.published');
     expect(rows).toHaveLength(1);
+  });
+});
+
+describe('publishDueAnnouncements', () => {
+  it('publishes due scheduled posts and leaves future ones', async () => {
+    await write('due', post({ status: 'scheduled', publishAt: ts(NOW.getTime() - 60_000), publishedAt: null }));
+    await write('future', post({ status: 'scheduled', publishAt: ts(NOW.getTime() + 60_000), publishedAt: null }));
+    const r = await publishDueAnnouncements({ db: db(), now: () => NOW });
+    expect(r).toMatchObject({ published: 1 });
+    expect(await read('due')).toMatchObject({ status: 'published', publishedAt: at });
+    expect((await read('future')).status).toBe('scheduled');
+  });
+  it('expires posts past their expiry and leaves open-ended ones', async () => {
+    await write('old', post({ expiresAt: ts(NOW.getTime() - 1) }));
+    await write('open', post({ expiresAt: null }));
+    const r = await publishDueAnnouncements({ db: db(), now: () => NOW });
+    expect(r).toMatchObject({ expired: 1 });
+    expect((await read('old')).status).toBe('expired');
+    expect((await read('open')).status).toBe('published');
+  });
+  it('marks stale push claims interrupted, never resent, and leaves fresh ones', async () => {
+    await write('stuck', post({ expiresAt: ts(NOW.getTime() - 1), pushResult: { status: 'sending', claimedAt: ts(NOW.getTime() - CLAIM_STALE_MS - 1) } }));
+    await write('busy', post({ pushResult: { status: 'sending', claimedAt: ts(NOW.getTime() - 1_000) } }));
+    const r = await publishDueAnnouncements({ db: db(), now: () => NOW });
+    expect(r).toEqual({ published: 0, expired: 1, interrupted: 1 });
+    expect(await read('stuck')).toMatchObject({ status: 'expired', pushResult: { status: 'interrupted' }, pushedAt: at });
+    expect((await read('busy')).pushResult.status).toBe('sending');
+  });
+});
+
+describe('announcementAudienceCount', () => {
+  const admin = { role: 'admin' }, jhs = { role: 'jhs_coord' }, glc8 = { role: 'glc', gradeLevel: 8 };
+  it('counts guardians whose keys overlap', async () => {
+    expect(await announcementAudienceCount({ db: db(), profile: admin }, { audienceKeys: ['all'] })).toEqual({ count: 4 });
+    expect(await announcementAudienceCount({ db: db(), profile: jhs }, { audienceKeys: ['g7'] })).toEqual({ count: 3 });
+  });
+  it('refuses audiences outside the caller\'s scope and malformed keys', async () => {
+    await expect(announcementAudienceCount({ db: db(), profile: jhs }, { audienceKeys: ['all'] })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(announcementAudienceCount({ db: db(), profile: glc8 }, { audienceKeys: ['g7'] })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(announcementAudienceCount({ db: db(), profile: admin }, { audienceKeys: ['x'] })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(announcementAudienceCount({ db: db(), profile: admin }, {})).rejects.toMatchObject({ code: 'invalid-argument' });
   });
 });

@@ -17,7 +17,7 @@ import { createStaffUser, updateStaffUser, setStaffUserDisabled, resetStaffPassw
 import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
 import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 import { handleGuardianLinkWrite } from './src/handlers/guardianAudience.js';
-import { handleAnnouncementWrite } from './src/handlers/announcements.js';
+import { handleAnnouncementWrite, publishDueAnnouncements, announcementAudienceCount } from './src/handlers/announcements.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -94,12 +94,16 @@ export const deleteStaffUserFn = adminCall(deleteStaffUser);
 // Any active staff member, including one still on a temporary password.
 export const changeOwnPasswordFn = staffCall(changeOwnPassword);
 
+// Any active staff member; the handler checks the audience is in their scope.
+export const announcementAudienceCountFn = staffCall(announcementAudienceCount);
+
 const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };
 
 export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED }, () => expireLinks(jobDeps()));
 export const pruneDevicesJob = onSchedule({ schedule: '40 1 * * *', ...SCHED }, () => pruneDevices(jobDeps()));
 export const reconcileEventsJob = onSchedule({ schedule: '20 2 * * *', ...SCHED }, () => reconcileEvents(jobDeps()));
+export const publishAnnouncementsJob = onSchedule({ schedule: '*/5 * * * *', ...SCHED }, () => publishDueAnnouncements(jobDeps()));
 
 export const onParentPortalSettingsChanged = onDocumentWritten('settings/parent_portal', (event) =>
   auditSettingsChange(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));

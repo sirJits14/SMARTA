@@ -3,6 +3,8 @@ import { audit } from '../audit.js';
 import { logEvent, logWarn } from '../log.js';
 import { applyVerdicts } from './push.js';
 import { announcementPayload } from '../lib/pushPayload.js';
+import { CallableError } from '../errors.js';
+import { coversPostKeys, POST_KEYS } from '../../shared/announcements.js';
 
 // Announcements spec: docs/superpowers/specs/2026-10-05-announcements-design.md
 export const PUSH_CHUNK = 500;                 // FCM sendEachForMulticast limit
@@ -126,4 +128,43 @@ export async function handleAnnouncementWrite(deps, { id, before, after, authId,
   if (after?.status === 'published' && after.push === true && !after.pushedAt && !after.pushResult) {
     await sendAnnouncementPush(deps, id);
   }
+}
+
+// Every 5 minutes: scheduled -> published (the trigger then pushes),
+// published past expiresAt -> expired, stale 'sending' claims -> interrupted.
+// Updates are merged per document so one post can't be written twice in a batch.
+export async function publishDueAnnouncements({ db, now }) {
+  const at = Timestamp.fromDate(now());
+  const staleBefore = Timestamp.fromMillis(now().getTime() - CLAIM_STALE_MS);
+  const col = db.collection('announcements');
+  const [due, ended, stuck] = await Promise.all([
+    col.where('status', '==', 'scheduled').where('publishAt', '<=', at).limit(200).get(),
+    col.where('status', '==', 'published').where('expiresAt', '<=', at).limit(200).get(),
+    col.where('pushResult.status', '==', 'sending').where('pushResult.claimedAt', '<=', staleBefore).limit(200).get(),
+  ]);
+  const updates = new Map();
+  const add = (d, patch) => updates.set(d.ref.path, { ref: d.ref, patch: { ...(updates.get(d.ref.path)?.patch || {}), ...patch } });
+  due.docs.forEach((d) => add(d, { status: 'published', publishedAt: at }));
+  ended.docs.forEach((d) => add(d, { status: 'expired' }));
+  stuck.docs.forEach((d) => add(d, { pushedAt: at, pushResult: { ...d.data().pushResult, status: 'interrupted' } }));
+  if (updates.size) {
+    const b = db.batch();
+    for (const { ref, patch } of updates.values()) b.update(ref, patch);
+    await b.commit();
+  }
+  const counts = { published: due.size, expired: ended.size, interrupted: stuck.size };
+  if (updates.size) logEvent('announcements_job', counts);
+  return counts;
+}
+
+// Staff callable behind the SIMS confirm dialog ("visible to about N
+// guardians"). Coordinators can't read guardians/*, so the count is here.
+export async function announcementAudienceCount({ db, profile }, { audienceKeys } = {}) {
+  const keys = Array.isArray(audienceKeys) ? audienceKeys : [];
+  if (!keys.length || keys.length > POST_KEYS.length || !keys.every((k) => POST_KEYS.includes(k))) {
+    throw new CallableError('invalid-argument', 'Choose who the announcement is for.');
+  }
+  if (!coversPostKeys(profile, keys)) throw new CallableError('permission-denied', 'You can only post to your own grades.');
+  const snap = await db.collection('guardians').where('audienceKeys', 'array-contains-any', keys).count().get();
+  return { count: snap.data().count };
 }
