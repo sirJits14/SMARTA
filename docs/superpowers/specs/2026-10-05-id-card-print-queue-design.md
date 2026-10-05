@@ -116,7 +116,8 @@ The page now receives `me` from `App.jsx`, for `printedBy`.
 
 ### Confirm after printing
 
-The new `PrintConfirmDialog` is shared by all three admin print buttons:
+The `useIdCardPrintConfirm` hook (`src/components/IdCardPrintConfirm.jsx`, built on the
+existing `Confirm` dialog) is shared by all three admin print buttons:
 
 1. The Print button calls `window.print()`.
 2. When it returns (the print dialog has closed), the dialog opens:
@@ -125,8 +126,8 @@ The new `PrintConfirmDialog` is shared by all three admin print buttons:
      batch, then closes. The queue updates live via the existing
      subscription.
    - **No, don't mark** closes with no change.
-3. If the write fails, the dialog stays open with the error message and a
-   **Try again** button. Nothing is marked, so the learners stay in the queue.
+3. If the write fails, the dialog stays open with an error message, and
+   **Yes, mark as printed** retries. Nothing is marked, so the learners stay in the queue.
 
 The section detail modal (`SectionsPage` → `SectionDetailModal`) shows this
 dialog only for admins (`isAdmin(me)`). Coordinators can still print from the
@@ -141,7 +142,7 @@ no dialog appears.
 | `src/lib/idCardQueue.test.js` | **New.** Unit tests (see Testing). |
 | `src/data/idCards.js` | **New.** `markIdCardsPrinted(students, me)` uses chunked `writeBatch` merges. |
 | `src/pages/idCards/PrintQueueTab.jsx` | **New.** The queue tab UI. |
-| `src/components/PrintConfirmDialog.jsx` | **New.** The shared confirm dialog, built on the existing `Modal`. |
+| `src/components/IdCardPrintConfirm.jsx` | **New.** `useIdCardPrintConfirm(me, { onMarked })`: print, then the shared confirm (reuses `Confirm`, which gains a `cancelLabel` prop). |
 | `src/components/IdCardsPrintable.jsx` | Takes `entries` (`{ student, section }[]`) so each card shows its own section. The section path passes its roster mapped to entries. |
 | `src/pages/idCardPrintLayout.js` | Shows the section line in print and adds compact styles for it. |
 | `src/pages/IDCardsPage.jsx` | Adds the tabs, accepts `me`, and runs the confirm step after a section print. |
