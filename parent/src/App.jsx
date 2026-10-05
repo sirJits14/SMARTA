@@ -89,7 +89,7 @@ export default function App() {
     case 'learner': screen = <History {...props} studentId={route.params.id} />; break;
     case 'inbox': screen = <Inbox {...props} />; break;
     case 'announcements': screen = <Announcements {...props} />; break;
-    case 'announcement': screen = <AnnouncementDetail {...props} id={route.params.id} />; break;
+    case 'announcement': screen = <AnnouncementDetail key={route.params.id} {...props} id={route.params.id} />; break;
     case 'report': screen = <Report {...props} eventId={route.params.eventId} studentId={route.query.student} />; break;
     case 'requestAccess': screen = <RequestAccess {...props} />; break;
     case 'settings': screen = <Settings {...props} />; break;

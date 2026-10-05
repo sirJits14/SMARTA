@@ -11,13 +11,13 @@ import { splitForList, isNewSince, audienceText, postDateLabel } from '../lib/an
 function PostCard({ post, isNew, onOpen }) {
   return (
     <Card style={{ padding: 0 }}>
-      <button type="button" onClick={onOpen} style={{ all: 'unset', display: 'block', width: '100%', boxSizing: 'border-box', padding: 16, cursor: 'pointer', fontFamily: T.font }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', justifyContent: 'space-between' }}>
+      <button type="button" className="notice-card" onClick={onOpen} style={{ background: 'none', border: 0, margin: 0, textAlign: 'left', color: 'inherit', font: 'inherit', display: 'block', width: '100%', boxSizing: 'border-box', padding: 16, cursor: 'pointer', borderRadius: T.radius, fontFamily: T.font }}>
+        <span style={{ display: 'flex', gap: 8, alignItems: 'baseline', justifyContent: 'space-between' }}>
           <strong style={{ fontSize: 16, color: T.ink }}>{post.title}</strong>
           {isNew && <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: '#fff', background: T.primary, borderRadius: T.pill, padding: '2px 8px' }}>{S.announcementsNew}</span>}
-        </div>
-        <div style={{ fontSize: 14, color: T.ink, marginTop: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{post.body}</div>
-        <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 8 }}>{postDateLabel(post.publishedAt)} · {audienceText(post.audienceKeys)}</div>
+        </span>
+        <span style={{ display: '-webkit-box', fontSize: 14, color: T.ink, marginTop: 6, WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{post.body}</span>
+        <span style={{ display: 'block', fontSize: 12, color: T.inkMuted, marginTop: 8 }}>{postDateLabel(post.publishedAt)} · {audienceText(post.audienceKeys)}</span>
       </button>
     </Card>
   );
