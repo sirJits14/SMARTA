@@ -28,6 +28,8 @@ Glass panels use a thin white edge and a restrained cool shadow. Blur is confine
 Desktop sidebar: 232px expanded / 72px collapsed, with saved preference and accessible icon labels. Outer spacing/gap: 24px; 16px below 1024px; 12px outer spacing below 768px. Below 768px, navigation becomes a modal drawer and working forms stack. Main content scrolls independently. Dense tables scroll inside named regions.
 Dashboard pairs become one column at 1100px; totals stack below 768px.
 
+Enrollment uses a grade-filtered, searchable section directory beside the selected class list. Section rows show current learner counts and strands; the directory scrolls independently on desktop and stacks above the class list on mobile. The enrollment form opens in a drawer only after “Enroll a learner” is clicked. It starts with the selected section, allows changing the destination grade and section, and follows the saved destination in the class list. Drawer motion is a short slide and fade, disabled with reduced motion.
+
 Inter/system sans; body controls 14px, secondary data/captions 11–13px, dashboard heading 26px (23px mobile), prominent metrics 30–48px. Numeric data uses tabular figures. Shared actions and fields have 44px minimum hit areas. Keep visible labels, deliberate spacing and a strong focus outline.
 
 ## Interaction and information
