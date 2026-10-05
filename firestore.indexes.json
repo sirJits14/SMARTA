@@ -33,7 +33,15 @@
     { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "enrollments", "queryScope": "COLLECTION", "fields": [
-      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] }
+      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "audienceKeys", "arrayConfig": "CONTAINS" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "publishedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "publishAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiresAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "pushResult.status", "order": "ASCENDING" }, { "fieldPath": "pushResult.claimedAt", "order": "ASCENDING" } ] }
   ],
   "fieldOverrides": [
     { "collectionGroup": "devices", "fieldPath": "refreshedAt", "indexes": [
@@ -46,6 +54,9 @@
       { "order": "ASCENDING", "queryScope": "COLLECTION" }, { "order": "DESCENDING", "queryScope": "COLLECTION" },
       { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] },
     { "collectionGroup": "events", "fieldPath": "scannedDate", "indexes": [
+      { "order": "ASCENDING", "queryScope": "COLLECTION" }, { "order": "DESCENDING", "queryScope": "COLLECTION" },
+      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] },
+    { "collectionGroup": "devices", "fieldPath": "enabled", "indexes": [
       { "order": "ASCENDING", "queryScope": "COLLECTION" }, { "order": "DESCENDING", "queryScope": "COLLECTION" },
       { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] }
   ]
