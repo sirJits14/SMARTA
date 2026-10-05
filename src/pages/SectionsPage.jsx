@@ -188,7 +188,7 @@ export default function SectionsPage({ me, schoolYear }) {
                 </tr></thead>
                 <tbody>{matchingSections.map((s) => (
                   <tr key={s.id} onClick={() => setDetailSection(s)} style={{ cursor: 'pointer' }}>
-                    <td style={{ ...S.td, fontWeight: 600 }}><button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}>{s.name}</button></td>
+                    <td style={{ ...S.td, fontWeight: 600 }}><button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}><span>{s.name}</span><span aria-hidden="true">›</span></button></td>
                     <td style={S.td}>{s.strand || '—'}</td>
                     <td style={S.td}>{s.adviserName || '—'}</td>
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>

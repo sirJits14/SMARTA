@@ -1,4 +1,5 @@
 import React,{act,useRef} from 'react';import {createRoot} from 'react-dom/client';
+import '/src/registrar.css';
 import StudentsPage from '/src/pages/StudentsPage.jsx';import SectionsPage from '/src/pages/SectionsPage.jsx';import SchedulesPage from '/src/pages/SchedulesPage.jsx';import {usePrintReadiness} from '/src/hooks/usePrintReadiness.js';import IDCardsPage from '/src/pages/IDCardsPage.jsx';
 window.IS_REACT_ACT_ENVIRONMENT=true;const host=document.getElementById('test-root');const root=createRoot(host);const results=document.getElementById('results');
 const assert=(condition,message)=>{if(!condition)throw Error(message)};const render=async node=>{await act(async()=>root.render(node))};
@@ -38,6 +39,19 @@ const tests=[['Section details have a keyboard button',async()=>{await scenario(
   await click(host.querySelector('button[aria-label="View Acacia section details"]'));
   await waitFor(()=>button('Print QR Codes')&&!button('Print QR Codes').disabled,'Section print never became ready');
   await click(button('Print QR Codes'));assert(print.calls()===1,'window.print not called');
-  assert(!dialogText().includes('print correctly'),'Coordinator was asked to mark cards');}finally{print.restore()}}]];
+  assert(!dialogText().includes('print correctly'),'Coordinator was asked to mark cards');}finally{print.restore()}}]
+,['Section name is a full-width beveled button with an arrow',async()=>{await scenario('normal');
+  await render(<div className="sims-ui"><SectionsPage me={admin} schoolYear="2026-2027"/></div>);
+  const control=host.querySelector('button[aria-label="View Acacia section details"]');assert(control,'Section detail button absent');
+  const [name,arrow]=control.children;
+  assert(name?.textContent==='Acacia','Name span missing');
+  assert(arrow?.textContent==='›'&&arrow.getAttribute('aria-hidden')==='true','Arrow must be an aria-hidden › span');
+  const css=getComputedStyle(control);
+  assert(css.display==='flex','Button is not flex: '+css.display);
+  assert(css.textDecorationLine==='none','Button is still underlined');
+  assert(css.boxShadow!=='none','Button has no bevel shadow');
+  const cell=control.closest('td');const cellCss=getComputedStyle(cell);
+  const inner=cell.clientWidth-parseFloat(cellCss.paddingLeft)-parseFloat(cellCss.paddingRight);
+  assert(Math.abs(control.offsetWidth-inner)<=1,'Button does not fill the cell: '+control.offsetWidth+' vs '+inner);}]];
 for(const[name,test]of tests){try{await test();results.append(Object.assign(document.createElement('p'),{textContent:'PASS '+name}));}catch(e){results.append(Object.assign(document.createElement('p'),{textContent:'FAIL '+name+': '+e.message}));}finally{await render(null);}}
 results.dataset.done='true';
