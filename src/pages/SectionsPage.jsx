@@ -13,6 +13,7 @@ import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState } from '../compo
 import StudentForm from './StudentForm.jsx';
 import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
+import { useIdCardPrintConfirm } from '../components/IdCardPrintConfirm.jsx';
 import GradePills from '../components/GradePills.jsx';
 import { isAdmin, grades, singleGrade, scopeRoster } from '../lib/access.js';
 
@@ -138,6 +139,7 @@ export default function SectionsPage({ me, schoolYear }) {
   const printRoot = useRef(null);
   const printKey = (detailSection?.id || '') + ':' + detailRosterDeped.map(s => s.id + s.lrn).join(',');
   const printReady = usePrintReadiness(printRoot, printKey, detailRosterDeped.length);
+  const { printAndConfirm, confirmDialog } = useIdCardPrintConfirm(me);
 
   const resources = [sectionsResource,schedulesResource,enrollmentsResource,studentsResource];
 
@@ -208,7 +210,7 @@ export default function SectionsPage({ me, schoolYear }) {
       {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {detailSection && (
-        <SectionDetailModal printReady={printReady}
+        <SectionDetailModal printReady={printReady} onPrint={() => printAndConfirm(detailRosterDeped)}
           section={detailSection}
           roster={detailRosterAlpha}
           onClose={() => setDetailSection(null)}
@@ -216,6 +218,7 @@ export default function SectionsPage({ me, schoolYear }) {
         />
       )}
       {detailSection && <div ref={printRoot}><IdCardsPrintSheets entries={detailEntries} printOnly /></div>}
+      {confirmDialog}
       {editingStudent && <StudentForm students={students} editing={editingStudent} sections={sections} enrollments={enrollments} schoolYear={schoolYear} onClose={() => setEditingStudent(null)} />}
     </div></EditorResources>
   );
