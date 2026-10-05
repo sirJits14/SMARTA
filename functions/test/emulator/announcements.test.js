@@ -119,6 +119,21 @@ describe('sendAnnouncementPush', () => {
     expect(m.sent).toHaveLength(0);
     expect((await read('a1')).pushResult).toEqual({ status: 'skipped_paused' });
   });
+  it('sends nothing for a post published over an hour ago and records it too late', async () => {
+    const m = fakeMessaging();
+    await write('late', post({ publishedAt: ts(NOW.getTime() - 2 * 60 * 60 * 1000) }));
+    expect(await sendAnnouncementPush(deps(m), 'late')).toEqual({ status: 'too_late' });
+    expect(m.sent).toHaveLength(0);
+    const saved = await read('late');
+    expect(saved.pushResult).toEqual({ status: 'failed', reason: 'too_late' });
+    expect(saved.pushedAt).toBeTruthy();
+  });
+  it('still sends a post published ten minutes ago', async () => {
+    const m = fakeMessaging();
+    await write('recent', post({ publishedAt: ts(NOW.getTime() - 10 * 60 * 1000) }));
+    expect((await sendAnnouncementPush(deps(m), 'recent')).status).toBe('sent');
+    expect(m.sent).toHaveLength(1);
+  });
   it('sends nothing when another run already claimed the push', async () => {
     const m = fakeMessaging();
     await write('a1', post({ pushResult: { status: 'sending', claimedAt: at } }));

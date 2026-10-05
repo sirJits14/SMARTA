@@ -9,6 +9,7 @@ import { coversPostKeys, POST_KEYS } from '../../shared/announcements.js';
 // Announcements spec: docs/superpowers/specs/2026-10-05-announcements-design.md
 export const PUSH_CHUNK = 500;                 // FCM sendEachForMulticast limit
 export const CLAIM_STALE_MS = 10 * 60 * 1000;  // a 'sending' claim older than this is 'interrupted'
+export const PUSH_MAX_AGE_MS = 60 * 60 * 1000; // no push for a post published longer ago than this
 
 export function chunk(arr, n) {
   const out = [];
@@ -47,6 +48,21 @@ export async function sendAnnouncementPush({ db, messaging, portalUrl, now }, id
   const ref = db.doc(`announcements/${id}`);
   const first = (await ref.get()).data();
   if (!eligible(first)) return { status: 'skipped_claimed' };
+
+  // A push hours after the post went out (e.g. a trigger retried for a
+  // long time) is worse than none: record it once and stop, before the
+  // pause read and the audience queries, so further retries are cheap.
+  const publishedMs = norm(first.publishedAt);
+  if (typeof publishedMs === 'number' && now().getTime() - publishedMs > PUSH_MAX_AGE_MS) {
+    const recorded = await db.runTransaction(async (tx) => {
+      if (!eligible((await tx.get(ref)).data())) return false;
+      tx.update(ref, { pushedAt: FieldValue.serverTimestamp(), pushResult: { status: 'failed', reason: 'too_late' } });
+      return true;
+    });
+    if (!recorded) return { status: 'skipped_claimed' };
+    logWarn('announcement_push_too_late', { id });
+    return { status: 'too_late' };
+  }
 
   const paused = (await db.doc('settings/parent_portal').get()).data()?.notificationsPaused === true;
   if (paused) {
