@@ -5,7 +5,7 @@ import NavIcon from './NavIcon.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
 import { canOpen } from '../lib/access.js';
 import { roleLabel } from '../../shared/staffRoles.js';
-import smartaWordmark from '../assets/smarta-wordmark.png';
+import smartaWordmark from '../assets/smarta-wordmark-sidebar.png';
 import smartaMark from '../assets/smarta-mark.png';
 
 const STORAGE = 'sims.sidebar.collapsed';
@@ -31,7 +31,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const sidebar = <Card as="aside" surface="navigation" className="app-sidebar">
     <div className="sims-brand">{collapsed
       ? <img src={smartaMark} alt="SMARTA" width="32" height="32" />
-      : <img className="sims-wordmark" src={smartaWordmark} alt="SMARTA" width="188" height="56" />}</div>
+      : <img className="sims-wordmark" src={smartaWordmark} alt="SMARTA" width="188" height="54" />}</div>
     <nav className="sims-nav" aria-label="Main navigation">
       {items.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
         aria-label={collapsed ? item.label : undefined} onClick={() => navigate(item.key)}

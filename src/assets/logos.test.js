@@ -9,6 +9,7 @@ describe('SMARTA logo assets', () => {
     ['src/assets/sims-favicon.png', 64, 64],
     ['src/assets/smarta-mark.png', 64, 64],
     ['src/assets/smarta-wordmark.png', 480, 142],
+    ['src/assets/smarta-wordmark-sidebar.png', 480, 137],
   ])('%s is %ix%i with transparency', (path, width, height) => {
     expect(png(path)).toEqual({ width, height, colorType: 6 });
   });

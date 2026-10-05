@@ -57,7 +57,7 @@ const tests=[['Section details have a keyboard button',async()=>{await scenario(
   try{await render(<Shell me={{...admin,name:'Admin'}} page="dashboard" setPage={()=>{}} schoolYear="2026-2027" onLogout={()=>{}}><p>Body</p></Shell>);
   const logo=()=>host.querySelector('.sims-brand img');
   assert(logo()?.alt==='SMARTA','Brand alt is '+logo()?.alt);
-  assert(logo().classList.contains('sims-wordmark')&&logo().src.includes('smarta-wordmark'),'Expanded brand is not the wordmark: '+logo().src);
+  assert(logo().classList.contains('sims-wordmark')&&logo().src.includes('smarta-wordmark-sidebar'),'Expanded brand is not the tagline-free wordmark: '+logo().src);
   assert(!host.querySelector('.sims-brand strong'),'Old BNHS SIMS text still shown');
   assert(logo().getBoundingClientRect().width<=188,'Wordmark wider than its 188px slot: '+logo().getBoundingClientRect().width);
   await click(host.querySelector('button[aria-label="Collapse sidebar"]'));

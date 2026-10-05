@@ -11,12 +11,26 @@ SIMS = Path('src/assets')
 PARENT = Path('parent/public/icons')
 INK = (0x12, 0x31, 0x3a, 255)  # sidebar ink, behind the white S on the favicon
 WHITE = (255, 255, 255, 255)
+TAGLINE_TOP = 1200  # source row between MARTA's outline (ends 1194) and the tagline (starts 1229)
 
 
-def trimmed(name):
-    """Open a source and crop it to the visible artwork (alpha bounding box)."""
+def trimmed(name, clean=None):
+    """Open a source, optionally clean it, and crop it to the visible artwork (alpha bounding box)."""
     im = Image.open(SRC / name).convert('RGBA')
+    if clean:
+        im = clean(im)
     return im.crop(im.getchannel('A').getbbox())
+
+
+def without_tagline(im):
+    """Clear every non-teal pixel below the MARTA letters; the S's teal tail stays."""
+    px = im.load()
+    for y in range(TAGLINE_TOP, im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a and not (g - r > 20 and b - r > 20):
+                px[x, y] = (0, 0, 0, 0)
+    return im
 
 
 def fit(im, box):
@@ -47,8 +61,8 @@ def favicon():
     return tile
 
 
-def wordmark():
-    word = trimmed('project-name.png')
+def wordmark(tagline=True):
+    word = trimmed('project-name.png', None if tagline else without_tagline)
     return word.resize((480, round(word.height * 480 / word.width)), Image.LANCZOS)
 
 
@@ -60,6 +74,7 @@ def parent_icon(size, share):
 if __name__ == '__main__':
     save(favicon(), SIMS / 'sims-favicon.png')
     save(wordmark(), SIMS / 'smarta-wordmark.png')
+    save(wordmark(tagline=False), SIMS / 'smarta-wordmark-sidebar.png')
     save(on_canvas(trimmed('phone-app.png'), 64, 64), SIMS / 'smarta-mark.png')
     save(parent_icon(192, 0.8), PARENT / 'icon-192.png')
     save(parent_icon(512, 0.8), PARENT / 'icon-512.png')
