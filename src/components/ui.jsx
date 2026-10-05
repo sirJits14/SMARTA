@@ -67,7 +67,7 @@ export function Modal({ children, onClose, width = 520, overlayClassName = '', t
     <fieldset disabled={unavailable} style={{border:0,padding:0,margin:0,minWidth:0}}>{children}</fieldset>
   </DialogFrame>;
 }
-export function Confirm({ message, onYes, onNo, label = 'Delete', danger = true, title = 'Confirm action' }) {
+export function Confirm({ message, onYes, onNo, label = 'Delete', cancelLabel = 'Cancel', danger = true, title = 'Confirm action' }) {
   const lock = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -82,7 +82,7 @@ export function Confirm({ message, onYes, onNo, label = 'Delete', danger = true,
     <p style={{ ...font, color:T.ink, fontSize:14, lineHeight:1.6 }}>{message}</p>
     {error && <p role="alert" className="sims-feedback">{error}</p>}
     <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:16 }}>
-      <Btn disabled={pending} variant="ghost" onClick={onNo}>Cancel</Btn>
+      <Btn disabled={pending} variant="ghost" onClick={onNo}>{cancelLabel}</Btn>
       <Btn disabled={pending} onClick={confirm} style={{ background:danger ? T.absent : T.primary }}>{pending ? 'Working…' : label}</Btn>
     </div>
   </Modal>;
