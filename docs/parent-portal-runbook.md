@@ -136,8 +136,18 @@ JHS/SHS coordinators to their grades; grade-level coordinators to their own grad
   send was interrupted or failed; pushes are never re-sent automatically. Post a short
   follow-up with push on if it must reach everyone.
 - A published post's audience and push can't change. Unpublish it and post a new one.
-- Who sees what is `guardians/{uid}.audienceKeys`, kept by `onGuardianLinkWritten` and the
-  nightly `expireLinksJob`. After the first deploy, run
-  `node functions/scripts/backfillGuardianAudience.mjs <projectId> --apply` once.
+- Who sees what is `guardians/{uid}.audienceKeys`. `onGuardianLinkWritten` sets it on every
+  activation, approval, revocation and expiry; the nightly `expireLinksJob` corrects grade
+  changes within the school year (a learner moved to another section). It does not move
+  guardians up a grade at a new school year: those keys arrive when the link is
+  re-activated for the new year.
+- After the first deploy, from the repo root and with Application Default Credentials for
+  the project (`gcloud auth application-default login`), run `node scripts/syncShared.mjs`
+  first, then `node functions/scripts/backfillGuardianAudience.mjs <projectId>` (a dry run)
+  and `node functions/scripts/backfillGuardianAudience.mjs <projectId> --apply` once.
+- Wait until the new Firestore indexes show **Enabled** (Firebase console → Firestore →
+  Indexes, including the `devices.enabled` collection-group exemption) before posting with
+  push on; until then the push's device query, the parents' Notices list and the publish
+  job can fail.
 - Every publish, edit, unpublish, delete, go-out and expiry is in `audit_log`
   (`targetType: 'announcement'`).
