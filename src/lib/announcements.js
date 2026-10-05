@@ -22,7 +22,7 @@ export function pushStatusText(p) {
   if (!p.push) return 'No push';
   const r = p.pushResult;
   if (!r || r.status === 'sending') return 'Push pending';
-  if (r.status === 'sent') return `Push sent to ${r.devices.toLocaleString('en-US')} device${r.devices === 1 ? '' : 's'}`;
+  if (r.status === 'sent') { const n = r.sent ?? 0; return `Push sent to ${n.toLocaleString('en-US')} device${n === 1 ? '' : 's'}`; }
   if (r.status === 'skipped_paused') return 'Push skipped: notifications paused';
   return 'Push may not have reached everyone';
 }

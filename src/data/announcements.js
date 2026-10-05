@@ -6,7 +6,8 @@ import { audienceOf } from '../lib/announcements.js';
 
 // Staff write announcements directly; firestore.rules enforces scope, shape
 // and the allowed status moves. Functions own pushedAt/pushResult.
-const author = (me) => ({ uid: auth.currentUser.uid, name: me.name || me.email });
+// Guardians can read createdBy/updatedBy: a name only, never the staff email.
+const author = (me) => ({ uid: auth.currentUser.uid, name: me.name || 'BNHS staff' });
 const touch = (me) => ({ updatedBy: author(me), updatedAt: serverTimestamp() });
 const expiresAtOf = (f) => (f.expires ? Timestamp.fromDate(endOfManilaDay(f.expires)) : null);
 const ref = (post) => doc(db, 'announcements', post.id);

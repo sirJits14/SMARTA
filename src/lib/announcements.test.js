@@ -42,8 +42,8 @@ describe('labels', () => {
     expect(pushStatusText({ push: false })).toBe('No push');
     expect(pushStatusText({ push: true })).toBe('Push pending');
     expect(pushStatusText({ push: true, pushResult: { status: 'sending' } })).toBe('Push pending');
-    expect(pushStatusText({ push: true, pushResult: { status: 'sent', devices: 6812 } })).toBe('Push sent to 6,812 devices');
-    expect(pushStatusText({ push: true, pushResult: { status: 'sent', devices: 1 } })).toBe('Push sent to 1 device');
+    expect(pushStatusText({ push: true, pushResult: { status: 'sent', devices: 7000, sent: 6812 } })).toBe('Push sent to 6,812 devices');
+    expect(pushStatusText({ push: true, pushResult: { status: 'sent', devices: 3, sent: 1 } })).toBe('Push sent to 1 device');
     expect(pushStatusText({ push: true, pushResult: { status: 'skipped_paused' } })).toBe('Push skipped: notifications paused');
     expect(pushStatusText({ push: true, pushResult: { status: 'interrupted' } })).toBe('Push may not have reached everyone');
     expect(pushStatusText({ push: true, pushResult: { status: 'failed' } })).toBe('Push may not have reached everyone');
