@@ -192,6 +192,18 @@ describe('publishDueAnnouncements', () => {
     expect(await read('due')).toMatchObject({ status: 'published', publishedAt: at });
     expect((await read('future')).status).toBe('scheduled');
   });
+  it('expires a due scheduled post whose expiry has already passed instead of publishing it', async () => {
+    const { publishedAt, ...scheduled } = post({ status: 'scheduled', publishAt: ts(NOW.getTime() - 120_000), expiresAt: ts(NOW.getTime() - 60_000) });
+    const before = await write('stale', scheduled);
+    const r = await publishDueAnnouncements({ db: db(), now: () => NOW });
+    expect(r).toEqual({ published: 0, expired: 1, interrupted: 0 });
+    const saved = await read('stale');
+    expect(saved.status).toBe('expired');
+    expect(saved).not.toHaveProperty('publishedAt');
+    const m = fakeMessaging();
+    await handleAnnouncementWrite(deps(m), { id: 'stale', before, after: saved, authId: 'svc', authType: 'service_account' });
+    expect(m.sent).toHaveLength(0);
+  });
   it('expires posts past their expiry and leaves open-ended ones', async () => {
     await write('old', post({ expiresAt: ts(NOW.getTime() - 1) }));
     await write('open', post({ expiresAt: null }));

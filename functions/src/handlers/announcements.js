@@ -160,7 +160,13 @@ export async function publishDueAnnouncements({ db, now }) {
   ]);
   const updates = new Map();
   const add = (d, patch) => updates.set(d.ref.path, { ref: d.ref, patch: { ...(updates.get(d.ref.path)?.patch || {}), ...patch } });
-  due.docs.forEach((d) => add(d, { status: 'published', publishedAt: at }));
+  // A scheduled post already past its expiry never goes out (never visible,
+  // never pushed): it goes straight to expired, with no publishedAt.
+  const pastExpiry = (d) => { const e = norm(d.data().expiresAt); return typeof e === 'number' && e <= at.toMillis(); };
+  const toPublish = due.docs.filter((d) => !pastExpiry(d));
+  const stillborn = due.docs.filter(pastExpiry);
+  toPublish.forEach((d) => add(d, { status: 'published', publishedAt: at }));
+  stillborn.forEach((d) => add(d, { status: 'expired' }));
   ended.docs.forEach((d) => add(d, { status: 'expired' }));
   stuck.docs.forEach((d) => add(d, { pushedAt: at, pushResult: { ...d.data().pushResult, status: 'interrupted' } }));
   if (updates.size) {
@@ -168,7 +174,7 @@ export async function publishDueAnnouncements({ db, now }) {
     for (const { ref, patch } of updates.values()) b.update(ref, patch);
     await b.commit();
   }
-  const counts = { published: due.size, expired: ended.size, interrupted: stuck.size };
+  const counts = { published: toPublish.length, expired: stillborn.length + ended.size, interrupted: stuck.size };
   if (updates.size) logEvent('announcements_job', counts);
   return counts;
 }
