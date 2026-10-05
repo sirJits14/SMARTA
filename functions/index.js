@@ -17,6 +17,7 @@ import { createStaffUser, updateStaffUser, setStaffUserDisabled, resetStaffPassw
 import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
 import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 import { handleGuardianLinkWrite } from './src/handlers/guardianAudience.js';
+import { handleAnnouncementWrite } from './src/handlers/announcements.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -107,3 +108,12 @@ export const onParentPortalSettingsChanged = onDocumentWritten('settings/parent_
 // read) in step with every activation, approval, revocation and expiry.
 export const onGuardianLinkWritten = onDocumentWritten({ document: 'guardian_links/{linkId}', retry: true }, (event) =>
   handleGuardianLinkWrite(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));
+
+// Audits every announcement change and sends its push at most once. With
+// auth context so the audit names the staff member (authId) who wrote it.
+export const onAnnouncementWritten = onDocumentWrittenWithAuthContext(
+  { document: 'announcements/{id}', retry: true, timeoutSeconds: 300, memory: '512MiB' },
+  (event) => handleAnnouncementWrite(deps(), {
+    id: event.params.id, authId: event.authId, authType: event.authType,
+    before: event.data?.before?.data() || null, after: event.data?.after?.data() || null,
+  }));
