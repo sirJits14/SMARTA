@@ -1,5 +1,6 @@
 import { pushPayload } from '../lib/pushPayload.js';
 import { Timestamp } from 'firebase-admin/firestore';
+import { logWarn } from '../log.js';
 
 const DEAD = new Set(['messaging/registration-token-not-registered', 'messaging/invalid-argument']);
 export const MAX_FAILURES = 5;
@@ -9,6 +10,13 @@ export const MAX_FAILURES = 5;
 // after MAX_FAILURES. devDocs[i] must be the device whose token was
 // tokens[i] in the multicast that produced responses[i].
 export async function applyVerdicts(db, devDocs, responses) {
+  // invalid-argument on every token of a multicast means the payload (or
+  // FCM) was at fault, not the tokens: touch no device rather than wipe the
+  // table. A single token's invalid-argument still marks it dead.
+  if (responses.length > 1 && responses.every((r) => !r.success && r.error?.code === 'messaging/invalid-argument')) {
+    logWarn('push_payload_rejected', { size: responses.length });
+    return { sent: 0, failed: responses.length, pruned: 0 };
+  }
   const batch = db.batch();
   let sent = 0, failed = 0, pruned = 0;
   responses.forEach((r, i) => {
