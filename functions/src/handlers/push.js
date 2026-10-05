@@ -4,9 +4,30 @@ import { Timestamp } from 'firebase-admin/firestore';
 const DEAD = new Set(['messaging/registration-token-not-registered', 'messaging/invalid-argument']);
 export const MAX_FAILURES = 5;
 
+// Applies FCM's per-token verdicts to the device docs (spec §6 step 4):
+// dead tokens are deleted, other failures counted, and a device is disabled
+// after MAX_FAILURES. devDocs[i] must be the device whose token was
+// tokens[i] in the multicast that produced responses[i].
+export async function applyVerdicts(db, devDocs, responses) {
+  const batch = db.batch();
+  let sent = 0, failed = 0, pruned = 0;
+  responses.forEach((r, i) => {
+    const docSnap = devDocs[i];
+    if (r.success) { sent++; return; }
+    failed++;
+    if (DEAD.has(r.error?.code)) { batch.delete(docSnap.ref); pruned++; return; }
+    const failureCount = (docSnap.data().failureCount || 0) + 1;
+    const update = { failureCount };
+    if (failureCount >= MAX_FAILURES) { update.enabled = false; update.disabledAt = Timestamp.now(); }
+    batch.update(docSnap.ref, update);
+  });
+  await batch.commit();
+  return { sent, failed, pruned };
+}
+
 // Sends the fixed push to every enabled device of one guardian and applies
-// FCM's per-token verdicts to the device docs (spec §6 step 4). devDocs is
-// the caller's own already-fetched enabled-devices query snapshot docs
+// FCM's per-token verdicts to the device docs. devDocs is the caller's own
+// already-fetched enabled-devices query snapshot docs
 // (QueryDocumentSnapshot-shaped: .data()/.ref) -- the caller (scanEvent.js)
 // needs that same query for its own device-count gate right before this is
 // called, so this no longer re-queries Firestore for it.
@@ -15,18 +36,6 @@ export async function sendToGuardian({ db, messaging, portalUrl }, { inboxId, st
 
   const tokens = devDocs.map((d) => d.data().token);
   const res = await messaging.sendEachForMulticast(pushPayload({ tokens, inboxId, studentId, portalUrl, deviceLabel }));
-
-  const batch = db.batch();
-  let pruned = 0, anySuccess = false;
-  res.responses.forEach((r, i) => {
-    const docSnap = devDocs[i];
-    if (r.success) { anySuccess = true; return; }
-    if (DEAD.has(r.error?.code)) { batch.delete(docSnap.ref); pruned++; return; }
-    const failureCount = (docSnap.data().failureCount || 0) + 1;
-    const update = { failureCount };
-    if (failureCount >= MAX_FAILURES) { update.enabled = false; update.disabledAt = Timestamp.now(); }
-    batch.update(docSnap.ref, update);
-  });
-  await batch.commit();
-  return { status: anySuccess ? 'sent' : 'failed', pruned };
+  const { sent, pruned } = await applyVerdicts(db, devDocs, res.responses);
+  return { status: sent > 0 ? 'sent' : 'failed', pruned };
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sendToGuardian, MAX_FAILURES } from './push.js';
+import { sendToGuardian, applyVerdicts, MAX_FAILURES } from './push.js';
 
 // sendToGuardian takes its device docs as a parameter now (scanEvent.js's
 // caller already has them from its own device-count gate -- see scanEvent.js
@@ -77,5 +77,27 @@ describe('sendToGuardian', () => {
     const r = await sendToGuardian(deps(messaging, db), { inboxId: 'e1', studentId: 'S1', devDocs });
     expect(r).toEqual({ status: 'sent', pruned: 1 });
     expect(db.ops).toEqual([{ type: 'delete', ref: { id: 'd1' } }]);
+  });
+});
+
+describe('applyVerdicts', () => {
+  it('counts successes, deletes dead tokens and counts other failures', async () => {
+    const db = fakeDb();
+    const devDocs = [devDoc('d1', { token: 't1' }), devDoc('d2', { token: 't2', failureCount: 1 }), devDoc('d3', { token: 't3' })];
+    const responses = [
+      { success: true },
+      { success: false, error: { code: 'messaging/internal-error' } },
+      { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+    ];
+    expect(await applyVerdicts(db, devDocs, responses)).toEqual({ sent: 1, failed: 2, pruned: 1 });
+    expect(db.ops).toEqual([
+      { type: 'update', ref: { id: 'd2' }, data: { failureCount: 2 } },
+      { type: 'delete', ref: { id: 'd3' } },
+    ]);
+  });
+  it('disables a device on its MAX_FAILURES-th failure', async () => {
+    const db = fakeDb();
+    await applyVerdicts(db, [devDoc('d1', { token: 't1', failureCount: MAX_FAILURES - 1 })], [{ success: false, error: { code: 'x' } }]);
+    expect(db.ops[0].data).toMatchObject({ failureCount: MAX_FAILURES, enabled: false });
   });
 });
