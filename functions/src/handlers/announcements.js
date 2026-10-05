@@ -1,6 +1,6 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { audit } from '../audit.js';
-import { logEvent } from '../log.js';
+import { logEvent, logWarn } from '../log.js';
 import { applyVerdicts } from './push.js';
 import { announcementPayload } from '../lib/pushPayload.js';
 
@@ -34,41 +34,75 @@ export function auditActionFor(before, after) {
   return STAFF_FIELDS.some((k) => !same(before[k], after[k])) ? 'announcement.edited' : null;
 }
 
+const eligible = (p) => !!p && p.status === 'published' && p.push === true && !p.pushedAt && !p.pushResult;
+
 // At most once: a transaction claims the push ('sending') before anything
 // is sent. A run that finds a claim sends nothing; the publish job turns a
 // claim older than CLAIM_STALE_MS into 'interrupted' (never resent).
+// Every read that can fail happens BEFORE the claim, so a read error throws
+// with no claim written and the trigger's retry can start over cleanly.
 export async function sendAnnouncementPush({ db, messaging, portalUrl, now }, id) {
   const ref = db.doc(`announcements/${id}`);
+  const first = (await ref.get()).data();
+  if (!eligible(first)) return { status: 'skipped_claimed' };
+
+  const paused = (await db.doc('settings/parent_portal').get()).data()?.notificationsPaused === true;
+  if (paused) {
+    const claimed = await db.runTransaction(async (tx) => {
+      if (!eligible((await tx.get(ref)).data())) return false;
+      tx.update(ref, { pushedAt: FieldValue.serverTimestamp(), pushResult: { status: 'skipped_paused' } });
+      return true;
+    });
+    if (!claimed) return { status: 'skipped_claimed' };
+    logEvent('announcement_push', { id, status: 'skipped_paused' });
+    return { status: 'skipped_paused' };
+  }
+
+  // audienceKeys cannot change once a post is published, so the keys read
+  // above are safe to use for the queries below.
+  const guardians = await db.collection('guardians').where('audienceKeys', 'array-contains-any', first.audienceKeys).get();
+  const wanted = new Set(guardians.docs
+    .filter((g) => g.data().notificationsEnabled !== false && g.data().announcementPushEnabled !== false)
+    .map((g) => g.id));
+  // One collection-group read instead of one devices query per guardian.
+  const seen = new Set();
+  const devices = (await db.collectionGroup('devices').where('enabled', '==', true).get()).docs
+    .filter((d) => d.ref.parent.parent?.parent?.id === 'guardians' && wanted.has(d.ref.parent.parent.id))
+    .filter((d) => {
+      const token = d.data().token;
+      if (seen.has(token)) return false;
+      seen.add(token);
+      return true;
+    });
+
   const post = await db.runTransaction(async (tx) => {
     const p = (await tx.get(ref)).data();
-    if (!p || p.status !== 'published' || p.push !== true || p.pushedAt || p.pushResult) return null;
+    if (!eligible(p)) return null;
     tx.update(ref, { pushResult: { status: 'sending', claimedAt: Timestamp.fromDate(now()) } });
     return p;
   });
   if (!post) return { status: 'skipped_claimed' };
 
-  const paused = (await db.doc('settings/parent_portal').get()).data()?.notificationsPaused === true;
-  if (paused) {
-    await ref.update({ pushedAt: FieldValue.serverTimestamp(), pushResult: { status: 'skipped_paused' } });
-    logEvent('announcement_push', { id, status: 'skipped_paused' });
-    return { status: 'skipped_paused' };
-  }
-
-  const guardians = await db.collection('guardians').where('audienceKeys', 'array-contains-any', post.audienceKeys).get();
-  const wanted = new Set(guardians.docs
-    .filter((g) => g.data().notificationsEnabled !== false && g.data().announcementPushEnabled !== false)
-    .map((g) => g.id));
-  // One collection-group read instead of one devices query per guardian.
-  const devices = (await db.collectionGroup('devices').where('enabled', '==', true).get()).docs
-    .filter((d) => d.ref.parent.parent?.parent?.id === 'guardians' && wanted.has(d.ref.parent.parent.id));
-
   let sent = 0, failed = 0, pruned = 0;
   for (const part of chunk(devices, PUSH_CHUNK)) {
-    const res = await messaging.sendEachForMulticast(announcementPayload({
-      tokens: part.map((d) => d.data().token), announcementId: id, title: post.title, portalUrl,
-    }));
-    const v = await applyVerdicts(db, part, res.responses);
-    sent += v.sent; failed += v.failed; pruned += v.pruned;
+    let res;
+    try {
+      res = await messaging.sendEachForMulticast(announcementPayload({
+        tokens: part.map((d) => d.data().token), announcementId: id, title: post.title, portalUrl,
+      }));
+    } catch (e) {
+      logWarn('announcement_push_chunk_failed', { id, size: part.length, message: e?.message });
+      failed += part.length;
+      continue;
+    }
+    try {
+      const v = await applyVerdicts(db, part, res.responses);
+      sent += v.sent; failed += v.failed; pruned += v.pruned;
+    } catch (e) {
+      logWarn('announcement_push_chunk_failed', { id, size: part.length, stage: 'verdicts', message: e?.message });
+      const ok = res.responses.filter((r) => r.success).length;
+      sent += ok; failed += res.responses.length - ok;
+    }
   }
   const result = { status: sent > 0 || devices.length === 0 ? 'sent' : 'failed', guardians: wanted.size, devices: devices.length, sent, failed, pruned };
   await ref.update({ pushedAt: FieldValue.serverTimestamp(), pushResult: result });
@@ -78,12 +112,13 @@ export async function sendAnnouncementPush({ db, messaging, portalUrl, now }, id
 
 // announcements/{id} trigger: audit the change, then push if it is a
 // published post that asked for one and has not been claimed yet.
-export async function handleAnnouncementWrite(deps, { id, before, after, authId, authType }) {
+export async function handleAnnouncementWrite(deps, { id, before, after, authId, authType, eventId }) {
   const action = auditActionFor(before, after);
   if (action) {
     const system = authType === 'service_account' || !authId;
     const post = after || before;
     await audit(deps.db, {
+      ...(eventId ? { id: `announcement_${eventId}` } : {}),
       action, actorType: system ? 'system' : 'staff', actorUid: system ? null : authId,
       targetType: 'announcement', targetId: id, details: { title: post.title, audienceKeys: post.audienceKeys },
     });

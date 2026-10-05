@@ -63,6 +63,54 @@ describe('sendAnnouncementPush', () => {
     expect(m.sent.map((s) => s.tokens.length)).toEqual([500, 2]);
     expect(r.devices).toBe(502);
   });
+  it('a chunk whose send rejects does not stop the others', async () => {
+    const b = db().batch();
+    for (let i = 0; i < 501; i++) b.set(db().doc(`guardians/gE/devices/x${i}`), { token: `x${i}`, enabled: true, failureCount: 0 });
+    await b.commit();
+    const m = fakeMessaging();
+    const real = m.sendEachForMulticast.bind(m);
+    let calls = 0;
+    m.sendEachForMulticast = async (msg) => {
+      calls += 1;
+      if (calls === 1) throw new Error('unavailable');
+      return real(msg);
+    };
+    await write('a12', post({ audience: { grades: [12] }, audienceKeys: ['g12'] }));
+    const r = await sendAnnouncementPush(deps(m), 'a12');
+    expect(calls).toBe(2);
+    expect(r).toMatchObject({ status: 'sent', devices: 502, failed: 500, sent: 2 });
+    expect((await read('a12')).pushResult).toEqual(r);
+  });
+  it('a read error before the claim leaves no claim and a retry sends', async () => {
+    const m = fakeMessaging();
+    await write('a1', post());
+    const real = db();
+    let thrown = false;
+    const flaky = {
+      doc: (...a) => real.doc(...a),
+      collection: (name) => {
+        if (name === 'guardians' && !thrown) { thrown = true; throw new Error('read failed'); }
+        return real.collection(name);
+      },
+      collectionGroup: (...a) => real.collectionGroup(...a),
+      runTransaction: (...a) => real.runTransaction(...a),
+      batch: (...a) => real.batch(...a),
+    };
+    await expect(sendAnnouncementPush({ ...deps(m), db: flaky }, 'a1')).rejects.toThrow('read failed');
+    expect((await read('a1')).pushResult).toBeUndefined();
+    expect(m.sent).toHaveLength(0);
+    const r = await sendAnnouncementPush(deps(m), 'a1');
+    expect(r.status).toBe('sent');
+    expect(m.sent).toHaveLength(1);
+  });
+  it('pushes a token shared by two device docs only once', async () => {
+    await db().doc('guardians/gE/devices/dup').set({ token: 'tokA1', enabled: true, failureCount: 0 });
+    const m = fakeMessaging();
+    await write('a1', post());
+    const r = await sendAnnouncementPush(deps(m), 'a1');
+    expect([...m.sent[0].tokens].sort()).toEqual(['tokA1', 'tokA2', 'tokE1']);
+    expect(r).toMatchObject({ devices: 3, sent: 3 });
+  });
   it('records skipped_paused while notifications are paused', async () => {
     await db().doc('settings/parent_portal').set({ notificationsPaused: true }, { merge: true });
     const m = fakeMessaging();
@@ -109,5 +157,13 @@ describe('handleAnnouncementWrite', () => {
       expect.objectContaining({ action: 'announcement.went_out', actorType: 'system', actorUid: null, targetId: 'a1' }),
     ]));
     expect(rows[0].details).toEqual(expect.objectContaining({ title: 'Class suspension', audienceKeys: ['all'] }));
+  });
+  it('writes one audit row per trigger event even when delivered twice', async () => {
+    const created = await write('a1', post({ push: false }));
+    const args = { id: 'a1', before: null, after: created, authId: 'staff1', authType: 'unknown', eventId: 'ev-1' };
+    await handleAnnouncementWrite(deps(), args);
+    await handleAnnouncementWrite(deps(), args);
+    const rows = (await auditRows()).filter((r) => r.action === 'announcement.published');
+    expect(rows).toHaveLength(1);
   });
 });

@@ -114,6 +114,6 @@ export const onGuardianLinkWritten = onDocumentWritten({ document: 'guardian_lin
 export const onAnnouncementWritten = onDocumentWrittenWithAuthContext(
   { document: 'announcements/{id}', retry: true, timeoutSeconds: 300, memory: '512MiB' },
   (event) => handleAnnouncementWrite(deps(), {
-    id: event.params.id, authId: event.authId, authType: event.authType,
+    id: event.params.id, eventId: event.id, authId: event.authId, authType: event.authType,
     before: event.data?.before?.data() || null, after: event.data?.after?.data() || null,
   }));
