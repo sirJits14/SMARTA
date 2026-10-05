@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { db, clearAll, seedSchool, fakeMessaging } from './helpers.js';
+import { db, clearAll, seedSchool, fakeMessaging, ts } from './helpers.js';
 import { refreshGuardianAudience, handleGuardianLinkWrite } from '../../src/handlers/guardianAudience.js';
 import { expireLinks } from '../../src/handlers/scheduled.js';
 import { clearCache } from '../../src/cache.js';
@@ -54,5 +54,29 @@ describe('expireLinks', () => {
     const r = await expireLinks(deps);
     expect(await keysOf('gA')).toEqual(['all', 'g7']);
     expect(r.audience).toBe(2);   // gA and gB
+  });
+  it('one guardian whose refresh fails stops neither the others nor retention', async () => {
+    await db().doc('audit_log/old').set({ action: 'x', at: ts(NOW.getTime() - 800 * 86400_000) });
+    const real = db();
+    // Only refreshGuardianAudience reads guardians/gA; make that read fail.
+    const flaky = new Proxy(real, {
+      get(t, k) {
+        if (k === 'doc') {
+          return (path) => {
+            const ref = t.doc(path);
+            if (path !== 'guardians/gA') return ref;
+            return new Proxy(ref, { get: (r, m) => (m === 'get' ? async () => { throw new Error('read failed'); } : (typeof r[m] === 'function' ? r[m].bind(r) : r[m])) });
+          };
+        }
+        const v = t[k];
+        return typeof v === 'function' ? v.bind(t) : v;
+      },
+    });
+    const deps = { db: flaky, auth: { async deleteUser() {} }, messaging: fakeMessaging(), portalUrl: 'https://p.test', now: () => NOW };
+    const r = await expireLinks(deps);
+    expect(await keysOf('gB')).toEqual(['all', 'g7']);
+    expect(r.audience).toBe(1);   // gB only
+    expect(r.oldAudit).toBe(1);
+    expect((await db().doc('audit_log/old').get()).exists).toBe(false);
   });
 });

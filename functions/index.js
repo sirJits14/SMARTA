@@ -100,7 +100,7 @@ export const announcementAudienceCountFn = staffCall(announcementAudienceCount);
 const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };
 
-export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED }, () => expireLinks(jobDeps()));
+export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED, timeoutSeconds: 540 }, () => expireLinks(jobDeps()));
 export const pruneDevicesJob = onSchedule({ schedule: '40 1 * * *', ...SCHED }, () => pruneDevices(jobDeps()));
 export const reconcileEventsJob = onSchedule({ schedule: '20 2 * * *', ...SCHED }, () => reconcileEvents(jobDeps()));
 export const publishAnnouncementsJob = onSchedule({ schedule: '*/5 * * * *', ...SCHED }, () => publishDueAnnouncements(jobDeps()));

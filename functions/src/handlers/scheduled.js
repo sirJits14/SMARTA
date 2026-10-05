@@ -24,7 +24,7 @@ const ms = (x) => Timestamp.fromMillis(x);
 // link's own school year (drop/transfer) — a school-year change alone never
 // ends links; staff do that with endSchoolYear; (2) delete old
 // revoked/expired links, old codes, old audit rows; (3) delete dormant
-// guardian accounts.
+// guardian accounts; (4) rebuild each visited guardian's announcement audience.
 export async function expireLinks({ db, auth, now }) {
   const nowMs = now().getTime();
   const sy = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
@@ -62,11 +62,6 @@ export async function expireLinks({ db, auth, now }) {
     expired++;
   }
 
-  // Learners change grade between school years and sections mid-year;
-  // rebuild every visited guardian's announcement audience nightly.
-  let audience = 0;
-  for (const uid of audienceUids) { if (await refreshGuardianAudience(db, uid)) audience++; }
-
   const oldRevoked = await deleteMatching(db, db.collection('guardian_links').where('status', '==', 'revoked').where('revokedAt', '<', ms(cut.linksBeforeMs)));
   const oldExpired = await deleteMatching(db, db.collection('guardian_links').where('status', '==', 'expired').where('expiredAt', '<', ms(cut.linksBeforeMs)));
   // Codes never expire by time any more; delete them a year after they were
@@ -84,6 +79,15 @@ export async function expireLinks({ db, auth, now }) {
     try { await auth.deleteUser(g.id); } catch (e) { logWarn('dormant_auth_delete_failed', { uid: g.id, message: e.message }); }
     await audit(db, { action: 'guardian.deleted', actorType: 'system', actorUid: null, targetType: 'guardian', targetId: g.id, details: { reason: 'dormant' } });
     dormant++;
+  }
+
+  // Learners change sections (and so grades) within the school year; rebuild
+  // every visited guardian's announcement audience. Last, so a failure or a
+  // timeout here can never skip retention. A guardian deleted as dormant
+  // above is skipped (refreshGuardianAudience never creates a profile).
+  let audience = 0;
+  for (const uid of audienceUids) {
+    try { if (await refreshGuardianAudience(db, uid)) audience++; } catch (e) { logWarn('audience_refresh_failed', { uid, message: e.message }); }
   }
   const counts = { expired, seeded, oldRevoked, oldExpired, oldCodes, oldAudit, dormant, audience };
   logEvent('expire_links_done', counts);
