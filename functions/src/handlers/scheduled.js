@@ -6,6 +6,7 @@ import { systemInbox } from './links.js';
 import { handleScanEvent } from './scanEvent.js';
 import { manilaDate } from '../../shared/dates.js';
 import { learnerIdentity } from '../lib/format.js';
+import { refreshGuardianAudience } from './guardianAudience.js';
 
 async function deleteMatching(db, query, batchSize = 300) {
   let n = 0;
@@ -35,9 +36,11 @@ export async function expireLinks({ db, auth, now }) {
 
   let expired = 0, seeded = 0;
   const checkedLearners = new Set();
+  const audienceUids = new Set();
   const active = await db.collection('guardian_links').where('status', '==', 'active').get();
   for (const l of active.docs) {
     const { studentId, guardianUid, schoolYear } = l.data();
+    audienceUids.add(guardianUid);
     const e = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
     if (e && e.status === 'enrolled') {
       await db.doc(`guardians/${guardianUid}`).set({ lastActiveLinkAt: ms(nowMs) }, { merge: true });
@@ -59,6 +62,11 @@ export async function expireLinks({ db, auth, now }) {
     expired++;
   }
 
+  // Learners change grade between school years and sections mid-year;
+  // rebuild every visited guardian's announcement audience nightly.
+  let audience = 0;
+  for (const uid of audienceUids) { if (await refreshGuardianAudience(db, uid)) audience++; }
+
   const oldRevoked = await deleteMatching(db, db.collection('guardian_links').where('status', '==', 'revoked').where('revokedAt', '<', ms(cut.linksBeforeMs)));
   const oldExpired = await deleteMatching(db, db.collection('guardian_links').where('status', '==', 'expired').where('expiredAt', '<', ms(cut.linksBeforeMs)));
   // Codes never expire by time any more; delete them a year after they were
@@ -77,7 +85,7 @@ export async function expireLinks({ db, auth, now }) {
     await audit(db, { action: 'guardian.deleted', actorType: 'system', actorUid: null, targetType: 'guardian', targetId: g.id, details: { reason: 'dormant' } });
     dormant++;
   }
-  const counts = { expired, seeded, oldRevoked, oldExpired, oldCodes, oldAudit, dormant };
+  const counts = { expired, seeded, oldRevoked, oldExpired, oldCodes, oldAudit, dormant, audience };
   logEvent('expire_links_done', counts);
   return counts;
 }

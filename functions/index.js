@@ -16,6 +16,7 @@ import { deleteGuardianAccount } from './src/handlers/account.js';
 import { createStaffUser, updateStaffUser, setStaffUserDisabled, resetStaffPassword, deleteStaffUser, changeOwnPassword } from './src/handlers/users.js';
 import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
 import { auditSettingsChange } from './src/handlers/settingsAudit.js';
+import { handleGuardianLinkWrite } from './src/handlers/guardianAudience.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -101,3 +102,8 @@ export const reconcileEventsJob = onSchedule({ schedule: '20 2 * * *', ...SCHED 
 
 export const onParentPortalSettingsChanged = onDocumentWritten('settings/parent_portal', (event) =>
   auditSettingsChange(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));
+
+// Keeps guardians/{uid}.audienceKeys (which announcements a guardian may
+// read) in step with every activation, approval, revocation and expiry.
+export const onGuardianLinkWritten = onDocumentWritten({ document: 'guardian_links/{linkId}', retry: true }, (event) =>
+  handleGuardianLinkWrite(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));
