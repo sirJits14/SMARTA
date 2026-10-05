@@ -1,0 +1,212 @@
+/* Glass layer for the parent portal. Lives in CSS (not inline styles)
+   because backdrop-filter fallbacks, pseudo-element glows, aria-current
+   selectors and keyframes can't be expressed inline. Colors mirror
+   src/styles.js tokens. */
+
+body { background: #F2F8F7; /* T.bg */ }
+
+/* Soft color glows behind everything so frosted surfaces read as glass. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 42vmax at 0% 0%, rgba(0, 167, 157, 0.20), transparent 70%),
+    radial-gradient(circle 36vmax at 100% 45%, rgba(94, 234, 212, 0.24), transparent 70%),
+    radial-gradient(circle 40vmax at 8% 100%, rgba(21, 72, 84, 0.14), transparent 70%);
+}
+
+.glass {
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 24px rgba(18, 49, 58, 0.06);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* ---- Floating pill nav ---- */
+.gnav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(calc(100% - 32px), 360px);
+  box-sizing: border-box;
+  display: flex;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px rgba(21, 72, 84, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  z-index: 10;
+}
+
+.gnav-chip {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  border-radius: 999px;
+  background: rgba(0, 122, 114, 0.12);
+  pointer-events: none;
+}
+.gnav-chip--anim { transition: transform 250ms cubic-bezier(.2, .8, .2, 1), width 250ms cubic-bezier(.2, .8, .2, 1); }
+
+.gnav-btn {
+  position: relative; /* above the chip */
+  flex: 1 1 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #55706F; /* T.inkMuted */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.gnav-btn[aria-current="page"] { flex: 0 0 auto; color: #007A72; /* T.primary */ }
+.gnav-btn:focus-visible { outline: 2px solid #007A72; outline-offset: 2px; }
+
+/* Inactive labels stay in the DOM for screen readers but are visually hidden. */
+.gnav-btn:not([aria-current="page"]) .gnav-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+.gnav-btn[aria-current="page"] .gnav-label { white-space: nowrap; animation: gnav-label-in 250ms ease-out; }
+@keyframes gnav-label-in { from { opacity: 0; transform: translateX(-4px); } }
+
+/* ---- Collapsing page header (learner history, inbox, settings) ---- */
+.page-header-bar {
+  --learner-bar-height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  height: calc(var(--learner-bar-height) + env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: env(safe-area-inset-top, 0px) 16px 0;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  box-shadow: none;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.page-header-bar--collapsed {
+  background: rgba(255, 255, 255, 0.78);
+  border-bottom-color: rgba(220, 235, 232, 0.9); /* T.border */
+  box-shadow: 0 6px 18px rgba(18, 49, 58, 0.07);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+}
+.page-header-back {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #12313A; /* T.ink */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.page-header-back:focus-visible { outline: 2px solid #154854; /* T.primaryDeep */ outline-offset: 2px; }
+.page-header-compact {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(5px);
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms;
+}
+.page-header-bar--collapsed .page-header-compact {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.page-header-compact-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #12313A; /* T.ink */
+  font-size: 16px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.page-header-avatar {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: rgba(0, 122, 114, 0.13); /* T.primary tint */
+  color: #154854; /* T.primaryDeep */
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.page-header-avatar--small { width: 32px; height: 32px; font-size: 12px; }
+.page-header-expanded { padding: 12px 0 18px; }
+.page-header-title {
+  margin: 0 0 2px;
+  color: #12313A; /* T.ink */
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.page-header-logo { display: block; width: 56px; height: 56px; flex: 0 0 auto; object-fit: contain; border-radius: 14px; box-shadow: 0 2px 10px rgba(18, 49, 58, 0.08); }
+.page-header-logo--small { width: 28px; height: 28px; border-radius: 8px; box-shadow: none; }
+.page-header-avatar + .page-header-title, .page-header-logo + .page-header-title { margin-top: 12px; }
+.page-header-subtitle { color: #55706F; /* T.inkMuted */ font-size: 14px; }
+.page-header-status { margin-top: 8px; color: #55706F; /* T.inkMuted */ font-size: 13px; }
+.learner-history [id^="ev-"] { scroll-margin-top: calc(56px + env(safe-area-inset-top, 0px)); }
+
+/* Use a plain white sheet when blur is unavailable or transparency is reduced. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .page-header-bar--collapsed { background: #FFFFFF; border-bottom-color: #DCEBE8; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .page-header-bar--collapsed { background: #FFFFFF; border-bottom-color: #DCEBE8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-header-bar, .page-header-compact { transition: none; }
+}
+
+/* No blur support: solid surfaces rather than unreadable see-through ones. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .gnav { background: #FFFFFF; border-color: #DCEBE8; }
+  .glass-card { background: #FFFFFF; border-color: #DCEBE8; }
+}

@@ -5,12 +5,14 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineString } from 'firebase-functions/params';
 import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
-import { guardianIdentity, staffIdentity, toHttpsError } from './src/callable.js';
+import { guardianIdentity, staffIdentity, adminIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
+import { endSchoolYear } from './src/handlers/schoolYear.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
 import { registerKiosk, deactivateKiosk, provisionKiosk, resetKioskPassword } from './src/handlers/kiosks.js';
 import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
 import { deleteGuardianAccount } from './src/handlers/account.js';
+import { createStaffUser, updateStaffUser, setStaffUserDisabled, resetStaffPassword, deleteStaffUser, changeOwnPassword } from './src/handlers/users.js';
 import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
 import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 
@@ -31,28 +33,42 @@ const guardianCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
   try { return await fn({ ...callDeps(), ...guardianIdentity(req) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
-  try { return await fn({ ...callDeps(), ...(await staffIdentity(db, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+  try { return await fn({ ...callDeps(), ...(await staffIdentity(db, auth, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+});
+// Account management and every page behind it (Guardians, Settings) is
+// administrator-only; coordinators reach none of these.
+const adminCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
+  try { return await fn({ ...callDeps(), ...(await adminIdentity(db, auth, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 
-export const issueActivationCodesFn = staffCall(issueActivationCodes);
-export const revokeCodeFn = staffCall(revokeCode);
+export const issueActivationCodesFn = adminCall(issueActivationCodes);
+export const revokeCodeFn = adminCall(revokeCode);
 export const activateCodeFn = guardianCall(activateCode);
 export const acceptConsentFn = guardianCall(acceptConsent);
+export const endSchoolYearFn = adminCall(endSchoolYear);
 
 export const requestAccessFn = guardianCall(requestAccess);
-export const resolveAccessRequestFn = staffCall(resolveAccessRequest);
-export const revokeLinkFn = staffCall(revokeLink);
-export const setActivationRestrictedFn = staffCall(setActivationRestricted);
-export const registerKioskFn = staffCall(registerKiosk);
-export const deactivateKioskFn = staffCall(deactivateKiosk);
-export const provisionKioskFn = staffCall(provisionKiosk);
-export const resetKioskPasswordFn = staffCall(resetKioskPassword);
+export const resolveAccessRequestFn = adminCall(resolveAccessRequest);
+export const revokeLinkFn = adminCall(revokeLink);
+export const setActivationRestrictedFn = adminCall(setActivationRestricted);
+export const registerKioskFn = adminCall(registerKiosk);
+export const deactivateKioskFn = adminCall(deactivateKiosk);
+export const provisionKioskFn = adminCall(provisionKiosk);
+export const resetKioskPasswordFn = adminCall(resetKioskPassword);
 
 export const submitReportFn = guardianCall(submitReport);
-export const resolveReportFn = staffCall(resolveReport);
-export const correctEventFn = staffCall(correctEvent);
-export const addManualEventFn = staffCall(addManualEvent);
+export const resolveReportFn = adminCall(resolveReport);
+export const correctEventFn = adminCall(correctEvent);
+export const addManualEventFn = adminCall(addManualEvent);
 export const deleteGuardianAccountFn = guardianCall(deleteGuardianAccount);
+
+export const createStaffUserFn = adminCall(createStaffUser);
+export const updateStaffUserFn = adminCall(updateStaffUser);
+export const setStaffUserDisabledFn = adminCall(setStaffUserDisabled);
+export const resetStaffPasswordFn = adminCall(resetStaffPassword);
+export const deleteStaffUserFn = adminCall(deleteStaffUser);
+// Any active staff member, including one still on a temporary password.
+export const changeOwnPasswordFn = staffCall(changeOwnPassword);
 
 const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };

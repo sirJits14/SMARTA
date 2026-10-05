@@ -16,7 +16,7 @@ This project is intentionally separate from the teacher attendance app — it us
 1. In the Firebase Console, go to **Authentication** > **Sign-in method**.
 2. Enable **Email/Password**.
 3. Go to **Users** tab and click **Add user**.
-4. Create the first registrar account with an email (e.g., registrar@bnhs.edu) and a secure password.
+4. Create the first administrator account with an email (e.g., registrar@bnhs.edu) and a secure password.
 5. Copy the user's email — you'll need it in the next step.
 
 ### 3. Initialize Firestore & Create System Documents
@@ -26,8 +26,10 @@ This project is intentionally separate from the teacher attendance app — it us
 3. Add two documents:
    - Collection: `users`, Document ID: `<registrar-email-lowercase>`, Content:
      ```json
-     { "name": "Registrar Name", "role": "registrar" }
+     { "name": "Registrar Name", "role": "admin" }
      ```
+     This first account is an Administrator. Create every other staff account
+     (Administrators and coordinators) from the **Accounts** page in SIMS.
    - Collection: `settings`, Document ID: `app`, Content:
      ```json
      { "currentSchoolYear": "2026-2027" }
@@ -92,6 +94,25 @@ After deploying, you can verify that unauthenticated access is denied:
 - Simulate a read request on `/students` with no authentication.
 - Expected: request is denied.
 - Sign in with the registrar account in the app and verify data loads normally.
+
+### Staff roles rollout (existing projects)
+
+Projects set up before staff roles (Administrator and coordinators) need a
+one-off profile backfill. From the repo root, after `npm --prefix functions install`,
+with Application Default Credentials for the project:
+
+1. Dry run **before deploying**, and fix every `WARNING` it prints
+   (unrecognised role, or a profile with no sign-in):
+   `node functions/scripts/backfillUserRoles.mjs <projectId>`
+2. Deploy functions, then Firestore rules, then hosting:
+   `npx firebase deploy --only functions`,
+   `npx firebase deploy --only firestore:rules`, `npm run deploy`.
+3. Apply the backfill: `node functions/scripts/backfillUserRoles.mjs <projectId> --apply`
+4. Create coordinator accounts from the **Accounts** page.
+
+Do not roll rules or functions back past this release (older versions treat
+every staff profile as an administrator); if you must, first disable or
+delete every non-Administrator account from the Accounts page.
 
 ## Parent portal
 

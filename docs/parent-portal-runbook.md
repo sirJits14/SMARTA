@@ -30,23 +30,48 @@ you re-activate it.
 ## Parent lost the slip / new guardian / custody change
 - Reissue: Guardians → Activation slips → section → Issue → print. (Old
   slips for that section stop working.) For one learner only: Learner
-  access → find learner → **Revoke unused slip**, then issue the section again
+  access → find learner → **Revoke slip**, then issue the section again
   after the other slips are handed out — or approve an access request instead.
 - Custody restriction: Learner access → find learner → reason → **Restrict**.
-  This revokes every guardian's access and blocks slips until lifted.
+  This revokes every guardian's and adviser's access and blocks slips until lifted.
 - Remove one guardian: Learner access → row → **Revoke**.
+- A parent who works for DepEd could link with a slip as the adviser. The
+  Learner access tab shows each link's relationship and email. If an
+  "Adviser" link is not the section's adviser, revoke that link and reissue
+  the learner's slip.
 
 ## Parent says a record is wrong
 Guardians → Reports. Check the Scan log tab for that date/device. Resolve
 with "no change", or "Void this scan" (parent sees it struck through with
 your note), or add a manual scan under Learner access.
 
-## School-year rollover (before the first school day of the new SY)
-1. Settings → set the new current school year (as today).
-2. Enroll learners into the new sections (as today).
-3. Print ID cards **and** activation slips per section; hand out together.
-4. The nightly job expires last year's links automatically and tells parents
-   to re-activate. Old events remain visible for the previous school year only.
+## School-year rollover (end of SY, then before the first school day of the new SY)
+1. At the end of the school year: Guardians → Activation slips → **End school
+   year** → choose the ending SY → type it to confirm. This revokes all of that
+   year's slips and ends every guardian and adviser link; each account gets an
+   inbox message. Nothing ends on its own any more.
+2. Settings → set the new current school year (as today).
+3. Enroll learners into the new sections (as today).
+4. Print ID cards **and** activation slips per section; hand out together.
+   Old events remain visible for the previous school year only.
+If step 1 is forgotten, the Activation slips tab shows a banner while the
+previous SY still has active slips or links.
+
+## Deploying the adviser-slot / school-year release
+Do these in order:
+1. `firebase deploy --only firestore:indexes` and wait until the new indexes
+   finish building (Firebase console → Firestore → Indexes).
+2. Deploy rules and functions.
+3. Deploy SIMS and parent hosting.
+4. First publish the v2 privacy notice (reviewed by the school head) at the
+   `privacyNoticeUrl` set in Portal settings. Then raise
+   `settings/parent_portal.consentVersion` by 1 so existing parents
+   re-accept the updated notice, which now names the class adviser. It is
+   editable in SIMS → Guardians → Portal settings ("Consent version" field,
+   then **Save**).
+5. After deploy, check for `activation_codes` still `issued`/`exhausted` from
+   an earlier school year. If any exist, use **End school year** for that
+   year.
 
 ## App Check break-glass (parents or kiosks all see "can't reach the server")
 Firebase console → App Check → Firestore → **Unenforced** (and Functions).
@@ -61,6 +86,11 @@ If parent traffic is the cause: pause notifications; if needed run
 Re-enable with a normal parent deploy.
 
 ## Rollbacks
+- **Staff roles warning:** do not roll `firestore.rules` or functions back
+  past the staff-roles release (Accounts page, 2026-10-04). Older rules and
+  functions treat ANY `users/{email}` profile -- coordinators and disabled
+  accounts included -- as full staff. If you must, first disable (or delete)
+  every non-Administrator staff account from the Accounts page.
 - Parent site: **there is no `firebase hosting:rollback` CLI command** — use
   Firebase console → Hosting → the `bnhs-parent` site → Release history →
   the "⋮" menu on a prior release → **Rollback**. This is the only reliable
@@ -70,7 +100,14 @@ Re-enable with a normal parent deploy.
   hosting:parent`.)
 - Functions: `git checkout <previous tag> -- functions && npx firebase deploy --only functions`.
   Raw scans keep accumulating; the nightly reconcile fills gaps.
+  **Warning:** once slips have been issued by the adviser-slot / school-year
+  release, do not roll functions back past it. Roll forward instead. Older
+  functions expect `expiresAt` and `redemptions` on codes, which the new
+  slips don't have.
 - Rules: `git checkout <previous tag> -- firestore.rules && npx firebase deploy --only firestore:rules`.
+  **Warning:** rolling rules back past the adviser-slot release blanks the
+  parent Home list (the app asks for up to 60 links; older rules allow 50).
+  Roll the parent site back too, or roll forward.
 
 ## Data-subject requests (DPA)
 - Access: the parent's own portal. Correction: Reports flow. Erasure: the

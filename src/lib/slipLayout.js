@@ -14,7 +14,7 @@ export const formatCodeForPrint = (code) => `${code.slice(0, 4)}-${code.slice(4)
 // break the page after every sheet but the last.
 export const SLIP_PRINT_STYLES = `
   .slips-sheet { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
-  .slip { border: 1px dashed #999; border-radius: 6px; padding: 8px 10px; break-inside: avoid; display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; font-family: Inter, system-ui, sans-serif; color: #1E1B33; }
+  .slip { border: 1px dashed #999; border-radius: 6px; padding: 8px 10px; break-inside: avoid; display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; font-family: Inter, system-ui, sans-serif; color: #12313A; }
   .slip-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 20px; letter-spacing: 0.12em; font-weight: 700; }
   .slip-small { font-size: 9px; color: #444; line-height: 1.25; }
   @media print {

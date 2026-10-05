@@ -5,6 +5,8 @@ import { audit } from '../audit.js';
 import { logEvent } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
+import { learnerIdentity } from '../lib/format.js';
+import { isOpenStatus } from '../lib/codeSlots.js';
 
 // A non-attendance inbox item. Never pushed (system messages are read when
 // the guardian next opens the portal).
@@ -18,6 +20,7 @@ export async function requestAccess(ctx, data) {
   if (open.data().count >= MAX_OPEN_REQUESTS) throw new CallableError('resource-exhausted', 'You already have requests waiting for review.');
   const doc = {
     guardianUid: uid, guardianEmail: email,
+    guardianName: str(data.guardianName ?? '', { name: 'Your name', max: 120 }) || ctx.displayName || '',
     studentLrn: lrn(data.studentLrn),
     learnerNameTyped: str(data.learnerNameTyped, { name: 'Learner name', min: 2, max: 120 }),
     relationship: oneOf(data.relationship, RELATIONSHIPS, 'relationship'),
@@ -44,14 +47,22 @@ export async function resolveAccessRequest(ctx, data) {
     const schoolYear = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
     const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
     if (!enrollment || enrollment.status !== 'enrolled') throw new CallableError('failed-precondition', 'Learner is not enrolled this school year');
+    const [studentSnap, sectionSnap] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`sections/${enrollment.sectionId}`).get()]);
+    if (!studentSnap.exists) throw new CallableError('not-found', 'Learner not found');
+    const learner = learnerIdentity(studentSnap.data(), sectionSnap.data(), schoolYear);
+    // Seeded before the link goes active so the guardian's Home card already
+    // has the learner's name (see activateCode).
+    await db.doc(`learners/${studentId}`).set(learner, { merge: true });
     await db.doc(`guardian_links/${request.guardianUid}_${studentId}`).set({
-      guardianUid: request.guardianUid, studentId, schoolYear, relationship: request.relationship, status: 'active',
+      guardianUid: request.guardianUid, guardianName: request.guardianName || '', guardianEmail: request.guardianEmail || '', learnerName: learner.displayName,
+      studentId, schoolYear, relationship: request.relationship, slot: 'guardian', status: 'active',
       activatedAt: FieldValue.serverTimestamp(), activatedVia: 'staff',
       revokedAt: FieldValue.delete(), revokedBy: FieldValue.delete(), revokedReason: FieldValue.delete(),
+      expiredAt: FieldValue.delete(), expiredReason: FieldValue.delete(),
     }, { merge: true });
     const profileRef = db.doc(`guardians/${request.guardianUid}`);
     if (!(await profileRef.get()).exists) {
-      await profileRef.set({ email: request.guardianEmail, displayName: '', consentAcceptedAt: null, consentVersion: 0, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });
+      await profileRef.set({ email: request.guardianEmail, displayName: request.guardianName || '', consentAcceptedAt: null, consentVersion: 0, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });
     }
     await systemInbox(db, request.guardianUid, { title: 'Access approved', body: 'The registrar approved your request. Your learner now appears on your home screen.', studentId });
   } else {
@@ -90,7 +101,7 @@ export async function setActivationRestricted(ctx, data) {
     const active = await db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active').get();
     for (const d of active.docs) { await revokeOne(db, d.ref, email, `restricted: ${reason}`); revokedLinks++; }
     const codes = await db.collection('activation_codes').where('studentId', '==', studentId).get();
-    for (const c of codes.docs) if (c.data().status === 'issued') await c.ref.update({ status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'restricted' });
+    for (const c of codes.docs) if (isOpenStatus(c.data().status)) await c.ref.update({ status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'restricted' });
   }
   await audit(db, { action: restricted ? 'student.restricted' : 'student.unrestricted', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId, details: { reason, revokedLinks } });
   return { revokedLinks };

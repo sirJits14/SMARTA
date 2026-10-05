@@ -7,10 +7,40 @@ service cloud.firestore {
     function notAnonymous() {
       return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
-    // Staff = has a users/{email} profile. Provisioned by hand; never client-written.
+    // Staff = has an enabled users/{email} profile. Written only by the
+    // account callables (functions/src/handlers/users.js). A profile with a
+    // uid belongs to that Auth account only, so re-registering the email
+    // elsewhere (e.g. the parent portal) can't claim it; legacy profiles
+    // without one match by email until backfillUserRoles.mjs binds them.
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data; }
+    // get(): an email-less token (the anonymous v1 kiosk) must short-circuit
+    // here; a missing-key error would make every caller below evaluate all
+    // their branches and hit the 1000-expression limit.
     function isStaff() {
-      return signedIn() && request.auth.token.email != null
-        && exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower()));
+      return signedIn() && request.auth.token.get('email', null) != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower()))
+        && profile().get('disabled', false) != true
+        && profile().get('uid', request.auth.uid) == request.auth.uid;
+    }
+    // Mirrors shared/staffRoles.js -- keep the two in step. Profiles made
+    // before roles existed (no role, or 'registrar') are administrators.
+    function role() { return profile().get('role', 'admin'); }
+    function isAdmin() { return isStaff() && (role() == null || role() in ['admin', 'registrar', '']); }
+    function coversGrade(g) {
+      return isAdmin()
+        || (isStaff() && role() == 'jhs_coord' && g in [7, 8, 9, 10])
+        || (isStaff() && role() == 'shs_coord' && g in [11, 12])
+        || (isStaff() && role() == 'glc' && g == profile().gradeLevel);
+    }
+    function coversSection(sectionId) {
+      return coversGrade(get(/databases/$(database)/documents/sections/$(sectionId)).data.gradeLevel);
+    }
+    // On update both the old and new section must be in scope, so a
+    // coordinator can't move a record into or out of their grades.
+    function coordinatorMayWriteAttendance() {
+      return isStaff() && request.resource != null
+        && coversSection(request.resource.data.sectionId)
+        && (resource == null || coversSection(resource.data.sectionId));
     }
     // Kiosk = a per-device account allow-listed (and active) in kiosks/{uid}.
     function kioskDoc() { return get(/databases/$(database)/documents/kiosks/$(request.auth.uid)); }
@@ -34,33 +64,37 @@ service cloud.firestore {
     // No anonymous/any-signed-in fallback: a stale kiosk v1 tab (anonymous
     // sign-in) must fail loudly at the gate rather than keep writing
     // student_attendance that never reaches the parent portal.
-    match /students/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /enrollments/{id} { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /sections/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isStaff(); }
-    match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isStaff(); }
-    match /users/{id}       { allow read: if isStaff(); allow write: if false; }
+    // Staff roles (2026-10-04): coordinators' read scoping of these
+    // collections is UI-only for now. Closing it server-side also needs
+    // gradeLevel denormalized onto learner docs and the pages switched to
+    // where('gradeLevel','in',...) queries -- see the staff-roles spec.
+    match /students/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /enrollments/{id} { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /sections/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isAdmin(); }
+    match /users/{id}       { allow read: if isAdmin() || (signedIn() && request.auth.token.email != null && id == request.auth.token.email.lower()); allow write: if false; }
 
     // Confirmed attendance. Staff edit freely; the registered kiosk merges
     // only its known fields.
     match /student_attendance/{id} {
       allow read: if isStaff() || isKiosk();
-      allow write: if isStaff()
+      allow write: if isAdmin() || coordinatorMayWriteAttendance()
         || (isKiosk() && request.resource.data.keys().hasOnly(
              ['sectionId', 'date', 'schoolYear', 'marks', 'timeIn', 'timeOut', 'rosterInitialized', 'updatedAt']));
     }
 
     // ---------- kiosks ----------
     match /kiosks/{uid} {
-      allow read: if isStaff() || (own(uid) && resource.data.active == true);
+      allow read: if isAdmin() || (own(uid) && resource.data.active == true);
       allow create, delete: if false;                       // registerKiosk / deactivateKiosk callables
       allow update: if own(uid) && affectedOnly(['lastSeenAt']);
     }
 
     // ---------- raw scan log (append-only) ----------
     match /scan_events/{id} {
-      allow read: if isStaff();
+      allow read: if isAdmin();
       // Prefix-checks the whole id rather than splitting on '_' and
       // comparing only the first segment -- Firebase Auth UIDs can
       // themselves contain '_', which would otherwise truncate the
@@ -86,19 +120,19 @@ service cloud.firestore {
 
     // ---------- parent-facing projections (Functions write; guardians read via link) ----------
     match /learners/{studentId} {
-      allow get: if hasLink(studentId) || isStaff();
-      allow list: if isStaff();
+      allow get: if hasLink(studentId) || isAdmin();
+      allow list: if isAdmin();
       allow write: if false;
       match /events/{eventId} {
-        allow get: if hasLink(studentId) || isStaff();
-        allow list: if (hasLink(studentId) && bounded(50)) || isStaff();
+        allow get: if hasLink(studentId) || isAdmin();
+        allow list: if (hasLink(studentId) && bounded(50)) || isAdmin();
         allow write: if false;
       }
     }
 
     // ---------- guardians ----------
     match /guardians/{uid} {
-      allow read: if own(uid) || isStaff();
+      allow read: if own(uid) || isAdmin();
       allow create, delete: if false;
       allow update: if own(uid) && affectedOnly(['notificationsEnabled', 'displayName', 'lastOpenedAt']);
 
@@ -119,24 +153,24 @@ service cloud.firestore {
     }
 
     match /guardian_links/{id} {
-      allow get: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
-      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(60));
       allow write: if false;
     }
 
     // ---------- staff-only records written by Functions ----------
-    match /activation_codes/{id} { allow read: if isStaff(); allow write: if false; }
-    match /audit_log/{id}        { allow read: if isStaff(); allow write: if false; }
+    match /activation_codes/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /audit_log/{id}        { allow read: if isAdmin(); allow write: if false; }
     match /rate_limits/{id}      { allow read, write: if false; }
 
     match /access_requests/{id} {
-      allow get: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
-      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
       allow write: if false;                                // requestAccess / resolveAccessRequest callables
     }
     match /reports/{id} {
-      allow get: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
-      allow list: if isStaff() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
       allow write: if false;                                // submitReport / resolveReport callables
     }
   }

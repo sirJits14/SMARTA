@@ -62,3 +62,11 @@ export function stackDay(events) {
     return effectiveMs(a) - effectiveMs(b);
   });
 }
+
+// A learner's History as one text-message thread: days oldest -> newest (the
+// latest scan at the bottom), each day's scans stacked oldest -> newest.
+export function historyThread(events, todayDate) {
+  const byDate = new Map();
+  for (const e of events) { if (!byDate.has(e.scannedDate)) byDate.set(e.scannedDate, []); byDate.get(e.scannedDate).push(e); }
+  return [...byDate.keys()].sort().map((date) => ({ date, label: dayLabel(date, todayDate), items: stackDay(byDate.get(date)) }));
+}

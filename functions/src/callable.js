@@ -1,9 +1,11 @@
 import { HttpsError } from 'firebase-functions/v2/https';
 import { CallableError } from './errors.js';
+import { roleOf } from '../shared/staffRoles.js';
 import { takeToken } from './lib/rateLimit.js';
 
 export const LIMITS = {
   activate: { windowMs: 60 * 60 * 1000, max: 5 },
+  activateAdviser: { windowMs: 60 * 60 * 1000, max: 60 },
   report: { windowMs: 24 * 60 * 60 * 1000, max: 5 },
   issueCodes: { windowMs: 24 * 60 * 60 * 1000, max: 20 },
 };
@@ -17,13 +19,35 @@ export function guardianIdentity(req) {
   return { uid: req.auth.uid, email: t.email, displayName: t.name || '' };
 }
 
-export async function staffIdentity(db, req) {
+const SESSION_ENDED = 'Your session has ended. Please sign in again.';
+
+export async function staffIdentity(db, auth, req) {
   if (!req.app) throw new CallableError('failed-precondition', 'App Check required');
   const email = req.auth?.token?.email?.toLowerCase();
   if (!email) throw new CallableError('unauthenticated', 'Sign in required');
   const staff = await db.doc(`users/${email}`).get();
   if (!staff.exists) throw new CallableError('permission-denied', 'Staff only');
-  return { uid: req.auth.uid, email };
+  const profile = staff.data();
+  if (profile.disabled === true) throw new CallableError('permission-denied', 'This account has been disabled');
+  if (!roleOf(profile)) throw new CallableError('permission-denied', 'Staff only');
+  // A profile is bound to the Auth account it was made for; legacy profiles
+  // without a uid fall back to the email (backfillUserRoles.mjs adds it).
+  if (profile.uid && profile.uid !== req.auth.uid) throw new CallableError('permission-denied', 'Staff only');
+  // ID tokens outlive revokeRefreshTokens (reset/disable) by up to an hour.
+  const user = await auth.getUser(req.auth.uid).catch((e) => {
+    if (e.code === 'auth/user-not-found') throw new CallableError('unauthenticated', SESSION_ENDED);
+    throw e;
+  });
+  if (user.tokensValidAfterTime && req.auth.token.auth_time * 1000 < Date.parse(user.tokensValidAfterTime)) {
+    throw new CallableError('unauthenticated', SESSION_ENDED);
+  }
+  return { uid: req.auth.uid, email, profile };
+}
+
+export async function adminIdentity(db, auth, req) {
+  const identity = await staffIdentity(db, auth, req);
+  if (roleOf(identity.profile) !== 'admin') throw new CallableError('permission-denied', 'Administrators only');
+  return identity;
 }
 
 // Transactional fixed-window limiter on rate_limits/{uid}.{action}.

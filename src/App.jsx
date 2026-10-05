@@ -1,24 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
+import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
+import { canOpen, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
 import Shell from './components/Shell.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
-import StudentsPage from './pages/StudentsPage.jsx';
-import SectionsPage from './pages/SectionsPage.jsx';
-import SchedulesPage from './pages/SchedulesPage.jsx';
-import EnrollPage from './pages/EnrollPage.jsx';
-import AttendanceTakePage from './pages/AttendanceTakePage.jsx';
-import AttendanceSummaryPage from './pages/AttendanceSummaryPage.jsx';
-import IDCardsPage from './pages/IDCardsPage.jsx';
-import GuardiansPage from './pages/GuardiansPage.jsx';
-import SettingsPage from './pages/SettingsPage.jsx';
+import ChangePassword from './components/ChangePassword.jsx';
+import loadingGif from './assets/loading.gif';
+// Route-split: each page (and everything only it imports, like exceljs for
+// Students/Attendance-summary or qrcode for ID Cards/Guardians->Codes) loads
+// only once actually navigated to, instead of all ten loading up front in
+// the single initial bundle.
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
+const StudentsPage = lazy(() => import('./pages/StudentsPage.jsx'));
+const SectionsPage = lazy(() => import('./pages/SectionsPage.jsx'));
+const SchedulesPage = lazy(() => import('./pages/SchedulesPage.jsx'));
+const EnrollPage = lazy(() => import('./pages/EnrollPage.jsx'));
+const AttendanceTakePage = lazy(() => import('./pages/AttendanceTakePage.jsx'));
+const AttendanceSummaryPage = lazy(() => import('./pages/AttendanceSummaryPage.jsx'));
+const IDCardsPage = lazy(() => import('./pages/IDCardsPage.jsx'));
+const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+const AccountsPage = lazy(() => import('./pages/AccountsPage.jsx'));
 
-function AttendanceArea({ schoolYear }) {
+const PageFallback = () => (
+  <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
+    <img src={loadingGif} alt="Loading" width={56} height={56} />
+  </div>
+);
+
+// Full-viewport boot screen, shown once while auth is resolving -- there is
+// no Shell/nav to sit inside yet, unlike PageFallback.
+const BootLoader = () => (
+  <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: T.bg }}>
+    <img src={loadingGif} alt="Loading" width={96} height={96} />
+  </div>
+);
+
+function AttendanceArea({ me, schoolYear, entry }) {
   const [tab, setTab] = useState('take');
   return (
     <div>
@@ -40,49 +63,81 @@ function AttendanceArea({ schoolYear }) {
           );
         })}
       </div>
-      {tab === 'take'
-        ? <AttendanceTakePage schoolYear={schoolYear} />
-        : <AttendanceSummaryPage schoolYear={schoolYear} />}
+      <Suspense fallback={<PageFallback />}>
+        {tab === 'take'
+          ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
+          : <AttendanceSummaryPage me={me} schoolYear={schoolYear} />}
+      </Suspense>
     </div>
   );
 }
 
 export default function App() {
-  const [me, setMe] = useState(null);
-  const [ready, setReady] = useState(false);
+  // authUser: undefined while Firebase Auth resolves, then a user or null.
+  // me: undefined while that user's profile loads, then the profile or null.
+  const [authUser, setAuthUser] = useState(undefined);
+  const [me, setMe] = useState(undefined);
+  const [notice, setNotice] = useState('');
   const [page, setPageRaw] = useState('dashboard');
   const [pageParams, setPageParams] = useState(null);
-  const setPage = (next, params = null) => { setPageRaw(next); setPageParams(params); };
+  const [navigationSequence, setNavigationSequence] = useState(0);
+  const setPage = (next, params = null) => { if (!shouldStartNavigation(page, next, params)) return; setPageRaw(next); setPageParams(params); setNavigationSequence(n => n + 1); };
   const settings = useDoc('settings/app');
   const schoolYear = settings?.currentSchoolYear || currentSchoolYear();
 
-  useEffect(() => onAuthStateChanged(auth, async (u) => {
-    if (u) { const s = await getDoc(doc(db, 'users', u.email.toLowerCase())); if (s.exists()) setMe({ email:u.email.toLowerCase(), ...s.data() }); }
-    else setMe(null);
-    setReady(true);
-  }), []);
+  useEffect(() => onAuthStateChanged(auth, setAuthUser), []);
 
-  if (!ready) return null;
+  // Live profile: role/grade changes apply at once, and a disabled or deleted
+  // profile signs the user out with an explanation on the login screen.
+  useEffect(() => {
+    if (authUser === undefined) return;
+    if (!authUser) { setMe(null); return; }
+    const email = authUser.email?.toLowerCase();
+    const refuse = (message) => { setNotice(message); setMe(null); signOut(auth); };
+    if (!email) { refuse('This account has no staff profile yet. Ask an administrator to add one.'); return; }
+    setMe(undefined);
+    let loaded = false;
+    return onSnapshot(doc(db, 'users', email), (snap) => {
+      const data = ownProfile(snap.exists() ? snap.data() : null, authUser.uid);
+      const profile = data ? { email, ...data } : null;
+      // A profile that vanishes after loading was deleted mid-session: same notice as disabled.
+      const refusal = loaded && !profile ? DISABLED_MESSAGE : profileRefusal(profile);
+      if (refusal) { refuse(refusal); return; }
+      loaded = true;
+      setMe(profile);
+    // After a normal sign-out the listener can error before cleanup; only refuse while signed in.
+    }, () => { if (auth.currentUser) refuse('Could not load your staff profile. Please sign in again.'); });
+  }, [authUser]);
+
+  if (authUser === undefined || (authUser && me === undefined)) return <BootLoader />;
 
   const reducedMotionGuard = (
     <style>{'@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }'}</style>
   );
+  const logout = () => { setNotice(''); signOut(auth); };
 
-  if (!me) return <>{reducedMotionGuard}<Login onSignedIn={setMe} /></>;
+  if (!me) return <>{reducedMotionGuard}<Login notice={notice} onAttempt={() => setNotice('')} /></>;
+  if (me.mustChangePassword) return <>{reducedMotionGuard}<ChangePassword me={me} onLogout={logout} /></>;
+
+  // A page this role can't open (stale state, or a role change) falls back to the dashboard.
+  const shown = canOpen(me, page) ? page : 'dashboard';
 
   return (
     <>
       {reducedMotionGuard}
-      <Shell me={me} page={page} setPage={setPage} schoolYear={schoolYear} onLogout={()=>{ signOut(auth); setMe(null); }}>
-        {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
-        {page==='students' && <StudentsPage schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
-        {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
-        {page==='schedules' && <SchedulesPage />}
-        {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
-        {page==='attendance' && <AttendanceArea schoolYear={schoolYear} />}
-        {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
-        {page==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
-        {page==='settings' && <SettingsPage />}
+      <Shell me={me} page={shown} setPage={setPage} schoolYear={schoolYear} onLogout={logout}>
+        <Suspense fallback={<PageFallback />}>
+          {shown==='dashboard' && <DashboardPage me={me} schoolYear={schoolYear} setPage={setPage} />}
+          {shown==='students' && <StudentsPage me={me} schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
+          {shown==='sections' && <SectionsPage me={me} schoolYear={schoolYear} />}
+          {shown==='schedules' && <SchedulesPage me={me} />}
+          {shown==='enroll' && <EnrollPage schoolYear={schoolYear} />}
+          {shown==='attendance' && <AttendanceArea me={me} key={navigationSequence} schoolYear={schoolYear} entry={pageParams?.attendanceEntry} />}
+          {shown==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
+          {shown==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
+          {shown==='settings' && <SettingsPage />}
+          {shown==='accounts' && <AccountsPage me={me} />}
+        </Suspense>
       </Shell>
     </>
   );

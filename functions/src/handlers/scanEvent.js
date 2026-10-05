@@ -6,7 +6,7 @@ import { cached } from '../cache.js';
 import { logEvent, logWarn } from '../log.js';
 import { sendToGuardian } from './push.js';
 import { manilaDate } from '../../shared/dates.js';
-import { sectionLabel, displayName } from '../lib/format.js';
+import { fullName, learnerIdentity } from '../lib/format.js';
 
 const CACHE_MS = 30_000;
 const RECENT_QUERY = 40;
@@ -60,7 +60,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
   const eventRef = learnerRef.collection('events').doc(eventId);
   const [studentSnap, sectionSnap] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`sections/${enrollment.sectionId}`).get()]);
   const student = studentSnap.data();
-  const learnerName = displayName(student);
+  const learnerName = fullName(student);
 
   await db.runTransaction(async (tx) => {
     const recentSnap = await tx.get(learnerRef.collection('events').orderBy('effectiveAt', 'desc').limit(RECENT_QUERY));
@@ -86,7 +86,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
 
     const summary = recomputeSummary({ events: existing, todayDate });
     tx.set(learnerRef, {
-      displayName: learnerName, sectionLabel: sectionLabel(sectionSnap.data()), schoolYear,
+      ...learnerIdentity(student, sectionSnap.data(), schoolYear),
       today: summary.today, recent: summary.recent, updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });

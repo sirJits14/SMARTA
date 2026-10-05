@@ -4,7 +4,18 @@
       "target": "sims",
       "public": "dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+      "rewrites": [{ "source": "**", "destination": "/index.html" }],
+      "headers": [
+        { "source": "**", "headers": [
+          { "key": "Cache-Control", "value": "no-cache" },
+          { "key": "X-Frame-Options", "value": "DENY" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+          { "key": "Permissions-Policy", "value": "geolocation=(), camera=(), microphone=()" }
+        ] },
+        { "source": "/assets/**", "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        ] }
+      ]
     },
     {
       "target": "parent",
@@ -12,12 +23,13 @@
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [{ "source": "**", "destination": "/index.html" }],
       "headers": [
-        { "source": "/index.html", "headers": [
-          { "key": "Cache-Control", "value": "no-store" },
+        { "source": "**", "headers": [
+          { "key": "Cache-Control", "value": "no-cache" },
           { "key": "X-Frame-Options", "value": "DENY" },
-          { "key": "Referrer-Policy", "value": "no-referrer" },
-          { "key": "Permissions-Policy", "value": "geolocation=(), camera=(), microphone=()" }
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+          { "key": "Permissions-Policy", "value": "geolocation=(), camera=(self), microphone=()" }
         ] },
+        { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
         { "source": "/firebase-messaging-sw.js", "headers": [
           { "key": "Cache-Control", "value": "no-store" },
           { "key": "Service-Worker-Allowed", "value": "/" }
@@ -29,7 +41,7 @@
     }
   ],
   "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
-  "functions": [{ "source": "functions", "codebase": "default", "runtime": "nodejs20", "predeploy": ["node scripts/syncShared.mjs"] }],
+  "functions": [{ "source": "functions", "codebase": "default", "runtime": "nodejs22", "predeploy": ["node scripts/syncShared.mjs"] }],
   "emulators": {
     "auth": { "port": 9099 },
     "firestore": { "port": 8080 },

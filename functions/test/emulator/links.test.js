@@ -14,13 +14,17 @@ describe('access requests', () => {
   it('creates an open request; max 3 open per guardian', async () => {
     const { id } = await requestAccess(guardian(), req);
     expect((await db().doc(`access_requests/${id}`).get()).data()).toMatchObject({ guardianUid: 'gNew', guardianEmail: 'gNew@gmail.com', studentLrn: '100000000001', status: 'open' });
-    await requestAccess(guardian(), req); await requestAccess(guardian(), req);
+    const { id: named } = await requestAccess(guardian(), { ...req, guardianName: 'Maria Santos' });
+    expect((await db().doc(`access_requests/${named}`).get()).data().guardianName).toBe('Maria Santos');
+    await requestAccess(guardian(), req);
     await expect(requestAccess(guardian(), req)).rejects.toMatchObject({ code: 'resource-exhausted' });
   });
   it('approval creates the link via staff and a system inbox item; denial records a note', async () => {
     const { id } = await requestAccess(guardian(), req);
     await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' });
-    expect((await db().doc('guardian_links/gNew_S1').get()).data()).toMatchObject({ status: 'active', activatedVia: 'staff', relationship: 'Guardian' });
+    expect((await db().doc('guardian_links/gNew_S1').get()).data()).toMatchObject({ status: 'active', activatedVia: 'staff', relationship: 'Guardian', guardianName: 'Maria', guardianEmail: 'gNew@gmail.com', learnerName: 'Ana B. Cruz' });
+    expect((await db().doc('learners/S1').get()).data()).toMatchObject({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal' });
+    expect((await db().doc('guardians/gNew').get()).data().displayName).toBe('Maria');
     expect((await db().doc(`access_requests/${id}`).get()).data()).toMatchObject({ status: 'approved', resolvedBy: 'registrar@bnhs.edu' });
     const inbox = await db().collection('guardians/gNew/inbox').get();
     expect(inbox.docs[0].data()).toMatchObject({ type: 'system', pushStatus: 'skipped_suppressed' });
@@ -29,6 +33,21 @@ describe('access requests', () => {
     await resolveAccessRequest(staff(), { id: id2, approve: false, note: 'Not on record' });
     expect((await db().doc(`access_requests/${id2}`).get()).data().status).toBe('denied');
     expect((await db().doc('guardian_links/g2_S1').get()).exists).toBe(false);
+  });
+});
+
+describe('resolveAccessRequest over an expired adviser link', () => {
+  it('reactivates the link as a guardian link and clears the expiry fields', async () => {
+    await db().doc('guardian_links/gNew_S1').set({
+      guardianUid: 'gNew', studentId: 'S1', status: 'expired', slot: 'adviser', relationship: 'Adviser',
+      schoolYear: '2025-2026', expiredReason: 'school-year-ended', expiredAt: NOW,
+    });
+    const { id } = await requestAccess(guardian(), req);
+    await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' });
+    const link = (await db().doc('guardian_links/gNew_S1').get()).data();
+    expect(link).toMatchObject({ status: 'active', slot: 'guardian', relationship: 'Guardian' });
+    expect(link.expiredReason).toBeUndefined();
+    expect(link.expiredAt).toBeUndefined();
   });
 });
 
@@ -43,6 +62,13 @@ describe('revokeLink / restricted', () => {
     expect(r.revokedLinks).toBe(2);
     expect((await db().doc('students/S1').get()).data().activationRestricted).toBe(true);
     expect((await db().doc('guardian_links/gB_S1').get()).data().status).toBe('revoked');
+  });
+  it('restricting a learner also revokes issued and exhausted slips', async () => {
+    await db().doc('activation_codes/CA').set({ studentId: 'S1', schoolYear: '2026-2027', status: 'issued' });
+    await db().doc('activation_codes/CB').set({ studentId: 'S1', schoolYear: '2026-2027', status: 'exhausted' });
+    await setActivationRestricted(staff(), { studentId: 'S1', restricted: true, reason: 'Court order' });
+    expect((await db().doc('activation_codes/CA').get()).data()).toMatchObject({ status: 'revoked', revokedReason: 'restricted' });
+    expect((await db().doc('activation_codes/CB').get()).data()).toMatchObject({ status: 'revoked', revokedReason: 'restricted' });
   });
 });
 

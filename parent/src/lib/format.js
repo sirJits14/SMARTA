@@ -1,22 +1,28 @@
 import S from '../strings.js';
-import { formatDateLabel, formatScanTime } from '../../../shared/dates.js';
+import { formatScanTime } from '../../../shared/dates.js';
 
-export function groupByDate(events) {
-  const by = new Map();
-  for (const e of events) { if (!by.has(e.scannedDate)) by.set(e.scannedDate, []); by.get(e.scannedDate).push(e); }
-  return [...by.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([date, items]) => ({ date, label: formatDateLabel(date), items }));
-}
 export const eventTitle = (e) => (e.kind === 'in' ? S.eventIn : S.eventOut);
 
-export function describeToday(today, todayDate) {
-  if (!today || today.date !== todayDate) return { lines: [], empty: S.homeTodayNone };
-  const events = today.events || [
-    ...(today.firstIn ? [{ kind: 'in', time: today.firstIn.time }] : []),
-    ...(today.lastOut ? [{ kind: 'out', time: today.lastOut.time }] : []),
-  ];
-  if (!events.length) return { lines: [], empty: S.homeTodayNone };
-  const lines = events.map((e) => `${e.kind === 'in' ? S.homeEntered : S.homeLeft} ${formatScanTime(e.time)}`);
-  if (!events.some((e) => e.kind === 'in')) lines.unshift(S.homeTodayNone);
-  if (events[events.length - 1].kind === 'in') lines.push(S.homeNoExit);
-  return { lines, empty: null };
+const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv']);
+
+export function initials(name) {
+  const words = typeof name === 'string' ? name.trim().split(/\s+/).filter(Boolean) : [];
+  while (words.length > 1 && NAME_SUFFIXES.has(words[words.length - 1].replace(/\.$/, '').toLowerCase())) words.pop();
+  if (!words.length) return '?';
+  return `${words[0][0]}${words.length > 1 ? words[words.length - 1][0] : ''}`.toUpperCase();
+}
+
+// Home card shows only the latest scan of today; the full list lives on History.
+export function latestScanToday(today, todayDate) {
+  if (!today || today.date !== todayDate) return S.homeTodayNone;
+  const legacy = [
+    today.firstIn && { kind: 'in', time: today.firstIn.time },
+    today.lastOut && { kind: 'out', time: today.lastOut.time },
+  ].filter(Boolean);
+  // Older summaries have no events list; their status tells which of firstIn/lastOut came last.
+  if (today.status === 'in') legacy.reverse();
+  const events = today.events || legacy;
+  const latest = events[events.length - 1];
+  if (!latest) return S.homeTodayNone;
+  return `${latest.kind === 'in' ? S.homeEntered : S.homeLeft} ${formatScanTime(latest.time)}`;
 }

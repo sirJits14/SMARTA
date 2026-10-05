@@ -1,5 +1,8 @@
+import { useAsyncAction } from '../../hooks/useAsyncAction.js';
+import { ActionFeedback } from '../../components/ui.jsx';
+import { ResourceState } from '../../components/ui.jsx';
 import { useState } from 'react';
-import { useCollection } from '../../hooks/useCollection.js';
+import { useCollectionResource } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
 import { T, S } from '../../styles.js';
 import { Btn, Inp, Field, Card, Confirm, Modal } from '../../components/ui.jsx';
@@ -13,7 +16,9 @@ const copyToClipboard = async (text) => {
 // (functions/src/handlers/kiosks.js) creates the Auth user AND the kiosks/{uid}
 // allow-list doc in one call, so staff never needs a Firebase Auth UID.
 export default function DevicesTab() {
-  const kiosks = useCollection('kiosks');
+  const action = useAsyncAction();
+  const kiosksResource = useCollectionResource('kiosks');
+  const kiosks = kiosksResource.data;
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -35,23 +40,26 @@ export default function DevicesTab() {
     try {
       const { email, password } = await call.resetKioskPassword({ uid: k.id });
       setCredentials({ label: k.label, email, password });
-    } catch (e) { setErr(e.message || 'Could not reset the password.'); }
+    } catch (e) { setErr(e.message || 'Could not reset the password.'); throw e; }
   };
   const deactivate = async (k) => { await call.deactivateKiosk({ uid: k.id, reason: 'Deactivated from SIMS' }); setConfirm(null); };
 
+  if ([kiosksResource].some(r => r.loading || r.error)) return <ResourceState resources={[kiosksResource]}/>;
+
   return (
     <>
+      <ActionFeedback action={action}/>
       <Card style={{ padding: 20, marginBottom: 16 }}>
         <h2 style={S.h2}>Add a new kiosk device</h2>
         <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>Name the gate. SIMS creates the device's sign-in and shows it to you once — copy it into that computer's <code>/setup</code> page.</p>
         {err && <div style={{ color: T.absent, fontSize: 12, marginBottom: 8 }}>{err}</div>}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr auto)', gap: 12, alignItems: 'end' }}>
           <Field label="Gate label (shown to parents)"><Inp value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Main Gate" /></Field>
-          <Btn onClick={create} disabled={busy || !label.trim()} style={{ marginBottom: 14 }}>{busy ? 'Creating…' : 'Create device'}</Btn>
+          <Btn onClick={() => action.run('create', create)} disabled={action.busy || busy || !label.trim()} style={{ marginBottom: 14 }}>{busy ? 'Creating…' : 'Create device'}</Btn>
         </div>
       </Card>
       <Card>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 13 }}>
+        <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 13 }}>
           <thead style={S.thead}><tr><th style={S.th}>Label</th><th style={S.th}>Status</th><th style={S.th}>Last seen</th><th style={S.th}></th></tr></thead>
           <tbody>
             {kiosks.map((k) => (
@@ -65,12 +73,12 @@ export default function DevicesTab() {
                         <Btn variant="ghost" onClick={() => setConfirmReset(k)}>Reset password</Btn>
                         <Btn variant="ghost" onClick={() => setConfirm(k)}>Deactivate</Btn>
                       </>
-                    : <Btn variant="ghost" onClick={() => call.registerKiosk({ uid: k.id, label: k.label })}>Re-activate</Btn>}
+                    : <Btn variant="ghost" onClick={() => action.run('action', () => call.registerKiosk({ uid: k.id, label: k.label }))}>Re-activate</Btn>}
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
       {confirm && <Confirm message={`Deactivate "${confirm.label}"? The kiosk stops scanning within seconds.`} label="Deactivate" onYes={() => deactivate(confirm)} onNo={() => setConfirm(null)} />}
       {confirmReset && (
@@ -78,13 +86,13 @@ export default function DevicesTab() {
           message={`Reset the password for "${confirmReset.label}"? The device will be signed out within the hour and must be signed in again at /setup with the new password.`}
           label="Reset password"
           danger={false}
-          onYes={() => { const k = confirmReset; setConfirmReset(null); resetPassword(k); }}
+          onYes={async () => { await resetPassword(confirmReset); setConfirmReset(null); }}
           onNo={() => setConfirmReset(null)}
         />
       )}
       {credentials && (
-        <Modal onClose={() => {}}>
-          <h2 style={S.h2}>{credentials.label} is ready</h2>
+        <Modal labelledBy="device-credentials-title" dismissible={false} onClose={() => {}}>
+          <h2 id="device-credentials-title" style={S.h2}>{credentials.label} is ready</h2>
           <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>Copy these into that computer's <code>/setup</code> page now — the password won't be shown again.</p>
           <Field label="Device email">
             <div style={{ display: 'flex', gap: 8 }}>

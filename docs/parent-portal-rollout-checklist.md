@@ -6,6 +6,7 @@ outcome is recorded in this file with the date and who verified it.
 ## Prerequisites (console, one-time)
 - [ ] Project on Blaze; budget PHP 1,500 with 50/100/200 % alerts (owner + registrar emails).
 - [ ] Authentication → Sign-in method: Email/Password on, Google on, Anonymous still ON (turned off in step K4).
+- [ ] Authentication → Settings → Authorized domains: add `bnhs-parent.web.app` (and `bnhs-parent.firebaseapp.com`). Without it every "Sign in with Google" on the parent portal fails with `auth/unauthorized-domain` (as of 2026-09-29 the list held only `localhost`, `bnhs-sims.firebaseapp.com`, `bnhs-sims.web.app`).
 - [ ] Cloud Messaging → Web Push certificates → generate key pair → `VITE_FIREBASE_VAPID_KEY` in `parent/.env`.
 - [ ] App Check → register the three web apps with reCAPTCHA Enterprise (one site key covering the three hostnames); enforcement OFF for now; debug tokens registered for dev machines.
 - [ ] Hosting → add site `bnhs-parent`; `firebase target:apply hosting sims bnhs-sims`; `firebase target:apply hosting parent bnhs-parent`.
@@ -21,7 +22,7 @@ outcome is recorded in this file with the date and who verified it.
 ## Kiosk migration (production, in this order — the gate never stops)
 - [ ] K1 Deploy kiosk v2 (`npm run deploy` in the kiosk repo). Old rules still accept it.
 - [ ] K2 Register each device (Guardians → Kiosk devices) and sign in at `/setup`. Verify one scan per device writes `scan_events`.
-- [ ] K3 Deploy indexes + rules + functions: `npx firebase deploy --only firestore,functions`. Verify scanning at every gate immediately. Rollback = redeploy previous `firestore.rules`.
+- [ ] K3 Deploy indexes + rules + functions: `npx firebase deploy --only firestore,functions`. Verify scanning at every gate immediately. Rollback = redeploy previous `firestore.rules`. **Not past the staff-roles release:** older rules/functions treat every `users/{email}` profile (coordinators, disabled accounts) as full staff -- if you must, first disable or delete every non-Administrator staff account from the Accounts page.
 - [ ] K4 Disable Anonymous sign-in in the console.
 - [ ] K5 After one clean school day (Scan log tab shows every gate; Functions logs show `scan_processed`, zero `scan_rejected:device`): App Check → enforce for Firestore, then Functions.
 
@@ -41,7 +42,8 @@ Deploying this change:
 2. `npx firebase deploy --only firestore:rules,functions --project bnhs-sims`
    and confirm deleting `onLegacyAttendanceScan` when prompted.
 3. Tap once more at every gate to confirm scanning still works. Rollback =
-   redeploy the previous `firestore.rules` and functions.
+   redeploy the previous `firestore.rules` and functions, but never past the
+   staff-roles release (see K3).
 4. K4 can now run: disable Anonymous sign-in in the console.
 
 ## Stage 1 — Internal staff test (3 school days)
@@ -51,7 +53,7 @@ Deploying this change:
 - [ ] Exit: 0 rejected events, `reconcile_missing` = 0 each night, pushes received on Android and iOS-PWA, kiosk offline test (unplug network, scan, reconnect) passed, Firestore reads/writes per day recorded: ____ / ____.
 
 ## Stage 2 — Consenting-parent pilot (~30 guardians, 5 school days)
-- [ ] Advisers recruit ~30 parents; slips issued for those learners only (issue the section, hand out only the pilot slips, revoke the rest via Learner access → Revoke unused slip).
+- [ ] Advisers recruit ~30 parents; slips issued for those learners only (issue the section, hand out only the pilot slips, revoke the rest via Learner access → Revoke slip).
 - [ ] Exit: ≥ 80 % activated, ≥ 60 % enabled push, every report resolved same day, no privacy incident, billing for the period ≤ PHP 50.
 
 ## Stage 3 — One section (2 weeks)
