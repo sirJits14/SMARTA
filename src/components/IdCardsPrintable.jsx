@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { fullName } from '../lib/roster.js';
+import { sectionShortLabel } from '../lib/idCardQueue.js';
 import { T } from '../styles.js';
 import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets } from '../pages/idCardPrintLayout.js';
-
-const sectionLabel = (s) => s ? `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}` : '—';
 
 function IdCard({ student, section }) {
   const [qrSrc, setQrSrc] = useState(null);
@@ -31,13 +30,14 @@ function IdCard({ student, section }) {
       )}
       <div className="id-card-name" style={{ fontFamily: T.body, fontWeight: 700, fontSize: 13, color: T.ink }}>{fullName(student)}</div>
       <div className="id-card-lrn" style={{ ...T.num, fontSize: 12, color: T.inkMuted, marginTop: 2 }}>{student.lrn}</div>
-      <div className="id-card-section" style={{ fontFamily: T.body, fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{sectionLabel(section)}</div>
+      <div className="id-card-section" style={{ fontFamily: T.body, fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{sectionShortLabel(section)}</div>
     </div>
   );
 }
 
-export default function IdCardsPrintSheets({ roster, section, printOnly = false }) {
-  const sheets = useMemo(() => chunkIdCardsIntoSheets(roster), [roster]);
+// entries: [{ student, section }] in print order. A batch may mix sections.
+export default function IdCardsPrintSheets({ entries, printOnly = false }) {
+  const sheets = useMemo(() => chunkIdCardsIntoSheets(entries), [entries]);
   const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only' : 'id-cards-grid';
 
   return (
@@ -46,7 +46,7 @@ export default function IdCardsPrintSheets({ roster, section, printOnly = false 
       <div className={gridClassName} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
         {sheets.map((sheet, i) => (
           <div className="id-cards-sheet" key={i}>
-            {sheet.map((s) => <IdCard key={s.id} student={s} section={section} />)}
+            {sheet.map(({ student, section }) => <IdCard key={student.id} student={student} section={section} />)}
           </div>
         ))}
       </div>

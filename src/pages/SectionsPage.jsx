@@ -134,6 +134,7 @@ export default function SectionsPage({ me, schoolYear }) {
   }, [detailSection, enrolledStudentIdsBySection, students]);
   const detailRosterAlpha = useMemo(() => alphabeticalSort(detailRoster), [detailRoster]);
   const detailRosterDeped = useMemo(() => depedSort(detailRoster), [detailRoster]);
+  const detailEntries = useMemo(() => detailRosterDeped.map((student) => ({ student, section: detailSection })), [detailRosterDeped, detailSection]);
   const printRoot = useRef(null);
   const printKey = (detailSection?.id || '') + ':' + detailRosterDeped.map(s => s.id + s.lrn).join(',');
   const printReady = usePrintReadiness(printRoot, printKey, detailRosterDeped.length);
@@ -214,7 +215,7 @@ export default function SectionsPage({ me, schoolYear }) {
           onEditStudent={admin ? (s) => setEditingStudent(s) : null}
         />
       )}
-      {detailSection && <div ref={printRoot}><IdCardsPrintSheets section={detailSection} roster={detailRosterDeped} printOnly /></div>}
+      {detailSection && <div ref={printRoot}><IdCardsPrintSheets entries={detailEntries} printOnly /></div>}
       {editingStudent && <StudentForm students={students} editing={editingStudent} sections={sections} enrollments={enrollments} schoolYear={schoolYear} onClose={() => setEditingStudent(null)} />}
     </div></EditorResources>
   );

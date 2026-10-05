@@ -32,6 +32,8 @@ export default function IDCardsPage({ schoolYear }) {
     return depedSort(students.filter((s) => ids.has(s.id)));
   }, [enrollments, students, section]);
 
+  const entries = useMemo(() => roster.map((student) => ({ student, section })), [roster, section]);
+
   const printRoot = useRef(null);
   const printKey = (section?.id || '') + ':' + roster.map(s => s.id + s.lrn).join(',');
   const printReady = usePrintReadiness(printRoot, printKey, roster.length);
@@ -65,7 +67,7 @@ export default function IDCardsPage({ schoolYear }) {
       ) : roster.length === 0 ? (
         <Card style={{ padding: 20 }}><EmptyState title="No learners enrolled here yet" hint="Enroll learners into this section on the Enrollment page first." /></Card>
       ) : (
-        <div ref={printRoot}><IdCardsPrintSheets roster={roster} section={section} /></div>
+        <div ref={printRoot}><IdCardsPrintSheets entries={entries} /></div>
       )}
     </div>
   );
