@@ -133,7 +133,7 @@ export default function App() {
           {shown==='schedules' && <SchedulesPage me={me} />}
           {shown==='enroll' && <EnrollPage schoolYear={schoolYear} />}
           {shown==='attendance' && <AttendanceArea me={me} key={navigationSequence} schoolYear={schoolYear} entry={pageParams?.attendanceEntry} />}
-          {shown==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
+          {shown==='idcards' && <IDCardsPage me={me} schoolYear={schoolYear} />}
           {shown==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
           {shown==='settings' && <SettingsPage />}
           {shown==='accounts' && <AccountsPage me={me} />}
