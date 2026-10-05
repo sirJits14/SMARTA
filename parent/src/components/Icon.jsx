@@ -5,6 +5,8 @@ const GEAR = 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 
 const HOUSE = 'M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-5.5H9V20H5a1 1 0 0 1-1-1z';
 const TRAY = 'M3 13.5 5.4 5.7a2 2 0 0 1 1.9-1.4h9.4a2 2 0 0 1 1.9 1.4L21 13.5V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z';
 const TRAY_LIP = 'M3 13.5h5l1.5 2.5h5l1.5-2.5h5';
+const MEGAPHONE = 'M3 10v4a1 1 0 0 0 1 1h3l6 4.5V4.5L7 9H4a1 1 0 0 0-1 1z';
+const WAVES = 'M16.5 9a4 4 0 0 1 0 6 M19.5 6.5a8 8 0 0 1 0 11';
 
 export default function Icon({ name, filled = false, size = 24 }) {
   const fill = filled ? 'currentColor' : 'none';
@@ -16,6 +18,7 @@ export default function Icon({ name, filled = false, size = 24 }) {
       {name === 'home' && <path d={HOUSE} fill={fill} />}
       {name === 'back' && <><path d="M15 18l-6-6 6-6" /><path d="M9 12h11" /></>}
       {name === 'inbox' && <><path d={TRAY} fill={fill} /><path d={TRAY_LIP} stroke={detail} /></>}
+      {name === 'notices' && <><path d={MEGAPHONE} fill={fill} /><path d={WAVES} /></>}
       {name === 'settings' && <><path d={GEAR} fill={fill} /><circle cx="12" cy="12" r="3" fill={filled ? '#FFFFFF' : 'none'} stroke={detail} /></>}
     </svg>
   );

@@ -5,13 +5,15 @@ import { Banner } from './ui.jsx';
 import Icon from './Icon.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 import { NAV_TABS, activeTab, showsAppTitle } from '../lib/nav.js';
+import { useAnnouncements } from '../hooks/useAnnouncements.js';
+import { hasUnread } from '../lib/announcements.js';
 
-const LABEL = { home: S.navHome, inbox: S.navInbox, settings: S.navSettings };
+const LABEL = { home: S.navHome, notices: S.navNotices, inbox: S.navInbox, settings: S.navSettings };
 
 // Frosted floating pill. One chip slides behind the active tab; its target is
 // measured from the active button after layout (the layout itself switches
 // instantly, only the chip and label animate).
-function GlassNav({ route, navigate }) {
+function GlassNav({ route, navigate, unread }) {
   const active = activeTab(route.name);
   const navRef = useRef(null);
   const btnRefs = useRef({});
@@ -51,8 +53,8 @@ function GlassNav({ route, navigate }) {
         return (
           <button key={key} ref={(el) => { btnRefs.current[key] = el; }} type="button" className="gnav-btn"
             onClick={() => navigate(path)} aria-current={on ? 'page' : undefined}>
-            <Icon name={key} filled={on} size={22} />
-            <span className="gnav-label">{LABEL[key]}</span>
+            <span className="gnav-icon"><Icon name={key} filled={on} size={22} />{key === 'notices' && unread && <span className="gnav-dot" />}</span>
+            <span className="gnav-label">{LABEL[key]}{key === 'notices' && unread && <span className="sr-only">, {S.announcementsUnread}</span>}</span>
           </button>
         );
       })}
@@ -60,8 +62,11 @@ function GlassNav({ route, navigate }) {
   );
 }
 
-export default function Shell({ route, navigate, children }) {
+export default function Shell({ route, navigate, profile, children }) {
   const portal = useDoc('settings/parent_portal').data;
+  // One read per app open: just the newest post this guardian can see.
+  const { rows: newest } = useAnnouncements(profile, 1);
+  const unread = hasUnread(newest?.[0], profile?.announcementsSeenAt, Date.now());
   const [online, setOnline] = useState(navigator.onLine);
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false);
@@ -77,7 +82,7 @@ export default function Shell({ route, navigate, children }) {
         {portal?.announcement && <Banner>{portal.announcement}</Banner>}
       </header>
       <main style={{ flex: 1, padding: '0 16px calc(96px + env(safe-area-inset-bottom))', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>{children}</main>
-      <GlassNav route={route} navigate={navigate} />
+      <GlassNav route={route} navigate={navigate} unread={unread} />
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { matchRoute } from './router.js';
 describe('matchRoute', () => {
+  it('matches the announcement routes', () => {
+    expect(matchRoute('/announcements', '')).toEqual({ name: 'announcements', params: {}, query: {} });
+    expect(matchRoute('/announcements/a1', '')).toEqual({ name: 'announcement', params: { id: 'a1' }, query: {} });
+  });
   it('matches static and param routes with query', () => {
     expect(matchRoute('/', '')).toEqual({ name: 'home', params: {}, query: {} });
     expect(matchRoute('/activate', '?c=K7M4P2XQ')).toEqual({ name: 'activate', params: {}, query: { c: 'K7M4P2XQ' } });

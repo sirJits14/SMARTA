@@ -210,3 +210,16 @@ body::before {
   .gnav { background: #FFFFFF; border-color: #DCEBE8; }
   .glass-card { background: #FFFFFF; border-color: #DCEBE8; }
 }
+
+/* ---- Notices unread dot ---- */
+.gnav-icon { position: relative; display: inline-flex; }
+.gnav-dot {
+  position: absolute; top: -1px; right: -2px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #DC2626; /* T.danger */
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95);
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); margin: -1px; padding: 0; white-space: nowrap;
+}
