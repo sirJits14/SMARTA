@@ -45,6 +45,7 @@ beforeEach(async () => {
     await db.doc('announcements/p7').set(stored(grades(7)));
     await db.doc('announcements/p12').set(stored(grades(12)));
     await db.doc('announcements/pSched').set(storedScheduled());
+    await db.doc('announcements/pSched7').set(storedScheduled(grades(7)));
     await db.doc('announcements/pGone').set(stored({ status: 'unpublished' }));
   });
 });
@@ -58,6 +59,7 @@ describe('guardians read', () => {
   });
   it('cannot list another grade, unpublished posts, or anything without keys', async () => {
     await denied(guardianQuery(GUARDIAN_A, ['g12']).get());
+    await denied(guardianQuery(GUARDIAN_A, ['all', 'g7', 'g12']).get());
     await denied(as(env, GUARDIAN_A).collection('announcements').where('audienceKeys', 'array-contains-any', ['all', 'g7']).limit(50).get());
     await denied(guardianQuery(GUARDIAN_B, ['all']).get());
   });
@@ -130,6 +132,7 @@ describe('staff update', () => {
     await ok(ref.update({ title: 'Brigada Eskwela 2026', editedAt: now(), ...touch(STAFF) }));
     await ok(ref.update({ pinned: true, expiresAt: tomorrow(), ...touch(STAFF) }));
     await denied(ref.update({ editedAt: yesterday(), ...touch(STAFF) }));
+    await denied(ref.update({ title: 'Silent change', ...touch(STAFF) }));
   });
   it('locks a live post\'s audience, push and server fields', async () => {
     const ref = as(env, STAFF).doc('announcements/p7');
@@ -155,6 +158,9 @@ describe('staff update', () => {
     await ok(as(env, JHS).doc('announcements/p7').update({ title: 'Grade 7 assembly', editedAt: now(), ...touch(JHS) }));
     await denied(as(env, JHS).doc('announcements/pAll').update({ status: 'unpublished', ...touch(JHS) }));
     await denied(as(env, GLC8).doc('announcements/p7').update({ title: 'x', editedAt: now(), ...touch(GLC8) }));
+    await ok(as(env, JHS).doc('announcements/pSched7').update({ title: 'Moved', ...touch(JHS) }));
+    await denied(as(env, JHS).doc('announcements/pSched7').update({ ...grades(11), ...touch(JHS) }));
+    await denied(as(env, JHS).doc('announcements/pSched7').update({ audience: { all: true }, audienceKeys: ['all'], ...touch(JHS) }));
   });
 });
 
@@ -162,6 +168,7 @@ describe('staff delete', () => {
   it('deletes only scheduled posts in scope', async () => {
     await denied(as(env, JHS).doc('announcements/pSched').delete());       // school-wide
     await ok(as(env, STAFF).doc('announcements/pSched').delete());
+    await ok(as(env, JHS).doc('announcements/pSched7').delete());
     await denied(as(env, STAFF).doc('announcements/pAll').delete());
     await denied(as(env, GUARDIAN_A).doc('announcements/p7').delete());
   });

@@ -224,7 +224,8 @@ service cloud.firestore {
           // Live: wording, pin and expiry only; editedAt only ever set to now.
           || (resource.data.status == 'published' && request.resource.data.status == 'published'
             && postChanged().hasOnly(['title', 'body', 'pinned', 'expiresAt', 'editedAt', 'updatedAt', 'updatedBy'])
-            && (!postChanged().hasAny(['editedAt']) || request.resource.data.editedAt == request.time))
+            && (!postChanged().hasAny(['editedAt']) || request.resource.data.editedAt == request.time)
+            && (!postChanged().hasAny(['title', 'body']) || request.resource.data.editedAt == request.time))
           // Unpublish: the status flip and the touch, nothing else.
           || (resource.data.status == 'published' && request.resource.data.status == 'unpublished'
             && postChanged().hasOnly(['status', 'updatedAt', 'updatedBy']))
