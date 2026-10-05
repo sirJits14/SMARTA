@@ -23,7 +23,7 @@ setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10,
 
 export const PORTAL_URL = defineString('PORTAL_URL', { default: 'https://bnhs-parent.web.app' });
 
-const deps = () => ({ db, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
+const deps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 
 export const onScanEventCreated = onDocumentCreated({ document: 'scan_events/{eventId}', retry: true }, async (event) => {
   const snap = event.data;

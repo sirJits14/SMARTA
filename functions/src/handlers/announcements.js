@@ -133,11 +133,16 @@ export async function sendAnnouncementPush({ db, messaging, portalUrl, now }, id
 export async function handleAnnouncementWrite(deps, { id, before, after, authId, authType, eventId }) {
   const action = auditActionFor(before, after);
   if (action) {
-    const system = authType === 'service_account' || !authId;
+    const system = authType === 'service_account' || !authId || authId.endsWith('gserviceaccount.com');
+    // Other staff audit rows (and the Audit tab) name the actor by email.
+    let actor = null;
+    if (!system) {
+      try { actor = (await deps.auth.getUser(authId)).email || authId; } catch { actor = authId; }
+    }
     const post = after || before;
     await audit(deps.db, {
       ...(eventId ? { id: `announcement_${eventId}` } : {}),
-      action, actorType: system ? 'system' : 'staff', actorUid: system ? null : authId,
+      action, actorType: system ? 'system' : 'staff', actorUid: actor,
       targetType: 'announcement', targetId: id, details: { title: post.title, audienceKeys: post.audienceKeys },
     });
   }

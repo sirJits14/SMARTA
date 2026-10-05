@@ -3,7 +3,10 @@ import { db, clearAll, seedSchool, fakeMessaging, ts } from './helpers.js';
 import { handleAnnouncementWrite, sendAnnouncementPush, publishDueAnnouncements, announcementAudienceCount, CLAIM_STALE_MS } from '../../src/handlers/announcements.js';
 
 const NOW = new Date('2026-10-05T08:00:00+08:00');
-const deps = (messaging = fakeMessaging()) => ({ db: db(), messaging, portalUrl: 'https://p.test', now: () => NOW });
+// Staff Auth accounts by uid; getUser rejects for anything else, like the real one.
+const EMAILS = { jhs1: 'jhs1@bnhs.edu', staff1: 'staff1@bnhs.edu' };
+const fakeAuth = { async getUser(uid) { if (!EMAILS[uid]) throw new Error('auth/user-not-found'); return { uid, email: EMAILS[uid] }; } };
+const deps = (messaging = fakeMessaging()) => ({ db: db(), auth: fakeAuth, messaging, portalUrl: 'https://p.test', now: () => NOW });
 const at = ts(NOW.getTime());
 const post = (over = {}) => ({
   title: 'Class suspension', body: 'No classes.', audience: { all: true }, audienceKeys: ['all'],
@@ -161,17 +164,26 @@ describe('handleAnnouncementWrite', () => {
     await handleAnnouncementWrite(deps(m), { id: 'e', before: sentBefore, after: edited, authId: 'staff1', authType: 'unknown' });
     expect(m.sent).toHaveLength(0);
   });
-  it('audits staff actions with the writer uid and job moves as system', async () => {
+  it('audits staff actions with the writer email and job moves as system', async () => {
     const created = await write('a1', post({ push: false, status: 'scheduled' }));
     await handleAnnouncementWrite(deps(), { id: 'a1', before: null, after: created, authId: 'jhs1', authType: 'unknown' });
     const live = { ...created, status: 'published', publishedAt: at };
     await handleAnnouncementWrite(deps(), { id: 'a1', before: created, after: live, authId: 'svc', authType: 'service_account' });
     const rows = await auditRows();
     expect(rows).toEqual(expect.arrayContaining([
-      expect.objectContaining({ action: 'announcement.scheduled', actorType: 'staff', actorUid: 'jhs1', targetType: 'announcement', targetId: 'a1' }),
+      expect.objectContaining({ action: 'announcement.scheduled', actorType: 'staff', actorUid: 'jhs1@bnhs.edu', targetType: 'announcement', targetId: 'a1' }),
       expect.objectContaining({ action: 'announcement.went_out', actorType: 'system', actorUid: null, targetId: 'a1' }),
     ]));
     expect(rows[0].details).toEqual(expect.objectContaining({ title: 'Class suspension', audienceKeys: ['all'] }));
+  });
+  it('falls back to the uid when the email cannot be looked up, and treats a service account as system', async () => {
+    const created = await write('a1', post({ push: false, status: 'scheduled' }));
+    await handleAnnouncementWrite(deps(), { id: 'a1', before: null, after: created, authId: 'gone1', authType: 'unknown', eventId: 'e1' });
+    const live = { ...created, status: 'published', publishedAt: at };
+    await handleAnnouncementWrite(deps(), { id: 'a1', before: created, after: live, authId: 'bnhs-sims@appspot.gserviceaccount.com', authType: 'unknown', eventId: 'e2' });
+    const row = async (id) => (await db().doc(`audit_log/${id}`).get()).data();
+    expect(await row('announcement_e1')).toMatchObject({ actorType: 'staff', actorUid: 'gone1' });
+    expect(await row('announcement_e2')).toMatchObject({ actorType: 'system', actorUid: null });
   });
   it('writes one audit row per trigger event even when delivered twice', async () => {
     const created = await write('a1', post({ push: false }));
