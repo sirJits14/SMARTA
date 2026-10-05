@@ -120,3 +120,24 @@ Re-enable with a normal parent deploy.
 - Breach or suspected misuse: pause notifications, deactivate the affected
   kiosk or revoke the affected link, export the Audit log tab for the date
   range, and notify the school's privacy focal person.
+
+## Announcements
+
+Staff post from **SIMS → Announcements**. Admins can post to all parents or any grade;
+JHS/SHS coordinators to their grades; grade-level coordinators to their own grade.
+
+- **Publish now** shows the post at once. **Schedule** sends it within 5 minutes of the set
+  Philippine time (`publishAnnouncementsJob`, every 5 minutes).
+- **Push** is off by default. Use it only for urgent notices. It goes to guardians who keep
+  both "notifications for new gate scans" and "notifications for school announcements" on.
+  The **Pause notifications** switch in Portal Settings also stops announcement pushes
+  (the post shows "Push skipped: notifications paused").
+- **Push results** appear in the Push column. "Push may not have reached everyone" means the
+  send was interrupted or failed; pushes are never re-sent automatically. Post a short
+  follow-up with push on if it must reach everyone.
+- A published post's audience and push can't change. Unpublish it and post a new one.
+- Who sees what is `guardians/{uid}.audienceKeys`, kept by `onGuardianLinkWritten` and the
+  nightly `expireLinksJob`. After the first deploy, run
+  `node functions/scripts/backfillGuardianAudience.mjs <projectId> --apply` once.
+- Every publish, edit, unpublish, delete, go-out and expiry is in `audit_log`
+  (`targetType: 'announcement'`).
