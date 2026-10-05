@@ -34,6 +34,11 @@ describe('access requests', () => {
     expect((await db().doc(`access_requests/${id2}`).get()).data().status).toBe('denied');
     expect((await db().doc('guardian_links/g2_S1').get()).exists).toBe(false);
   });
+  it('approval gives a guardian with no prior profile their audience keys at once', async () => {
+    const { id } = await requestAccess(guardian(), req);
+    await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' });
+    expect((await db().doc('guardians/gNew').get()).data().audienceKeys).toEqual(['all', 'g7']);
+  });
 });
 
 describe('resolveAccessRequest over an expired adviser link', () => {

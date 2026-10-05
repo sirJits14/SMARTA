@@ -7,6 +7,7 @@ import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
 import { isOpenStatus } from '../lib/codeSlots.js';
+import { refreshGuardianAudience } from './guardianAudience.js';
 
 // A non-attendance inbox item. Never pushed (system messages are read when
 // the guardian next opens the portal).
@@ -64,6 +65,9 @@ export async function resolveAccessRequest(ctx, data) {
     if (!(await profileRef.get()).exists) {
       await profileRef.set({ email: request.guardianEmail, displayName: request.guardianName || '', consentAcceptedAt: null, consentVersion: 0, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });
     }
+    // onGuardianLinkWritten may have run before the profile existed (and
+    // refreshGuardianAudience never creates one), so set the keys here too.
+    await refreshGuardianAudience(db, request.guardianUid);
     await systemInbox(db, request.guardianUid, { title: 'Access approved', body: 'The registrar approved your request. Your learner now appears on your home screen.', studentId });
   } else {
     await systemInbox(db, request.guardianUid, { title: 'Access request not approved', body: note ? `The registrar could not approve your request: ${note}` : 'The registrar could not approve your request. Please visit the school.' });
