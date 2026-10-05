@@ -21,7 +21,7 @@ portal's school-seal icons with the new SMARTA artwork:
 | SIMS "tab bar" | The browser-tab favicon |
 | White S on light tabs | Put it on a dark rounded tile so it shows on light and dark tabs |
 | Sidebar, expanded | Cropped wordmark replaces both the S icon and the "BNHS SIMS / Learner records" text |
-| Sidebar, collapsed | Only the teal S, cropped from the left of the wordmark |
+| Sidebar, collapsed | Only the teal S (the standalone S from `PHONE APP.png`) |
 | Login | Wordmark replaces the old icon and the "BNHS SIMS" heading; "Staff sign-in" stays |
 | Change Password | Wordmark replaces the old icon; "Set a new password" heading stays |
 | Parents home-screen icon | Teal S on white |
@@ -54,11 +54,11 @@ resized with LANCZOS and saved as optimized PNG. It's not part of `npm run build
 |---|---|---|
 | `sims-favicon.png` | 64×64 | Rounded square, fill `#12313a` (sidebar ink), radius 14px; trimmed white S fit inside a 48×48 centered box |
 | `smarta-wordmark.png` | 480px wide, height from aspect (~142px) | `project-name.png` trimmed to its alpha bbox (≈1844×545) |
-| `smarta-mark.png` | 64×64 | The S portion of the trimmed wordmark (the columns left of where the "M" starts, ≈ first 24% of the width, re-trimmed), fit into a transparent 64×64 square, centered |
+| `smarta-mark.png` | 64×64 | Trimmed teal S from `phone-app.png`, fit into a transparent 64×64 square, centered |
 
-The script finds the S/M split as the first fully transparent column after the
-S. If the shapes touch and there's no such column, it falls back to cutting at
-24% of the width. The implementer checks the result by eye.
+The collapsed mark uses the standalone teal S, not a crop of the wordmark. In
+the wordmark the "M" overlaps the S, so a crop leaves a flat notch on the S's
+right edge (found while prototyping). It's the same ribbon S artwork, just not clipped.
 
 ### Parents outputs (`parent/public/icons/`, same names, overwritten)
 
@@ -103,10 +103,11 @@ Import `smartaWordmark` instead of `simsLogo`. Replace the `<img>` (line 24) and
 page keeps its `h1`:
 
 ```jsx
-<h1 style={{ margin: '0 0 6px' }}><img src={smartaWordmark} alt="SMARTA" width={240} height={71} style={{ display: 'block', margin: '0 auto' }} /></h1>
+<h1 style={{ margin: '0 0 6px', lineHeight: 0 }}><img src={smartaWordmark} alt="SMARTA" width={240} height={71} style={{ display: 'block' }} /></h1>
 ```
 
-Keep the "Staff sign-in" paragraph as it is. Center the image the same way the old icon was aligned.
+Keep the "Staff sign-in" paragraph as it is. The image stays left-aligned,
+like the old icon and the card's text.
 
 ### `src/components/ChangePassword.jsx`
 
