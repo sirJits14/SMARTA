@@ -19,6 +19,8 @@ const Inbox = lazy(() => import('./screens/Inbox.jsx'));
 const Report = lazy(() => import('./screens/Report.jsx'));
 const RequestAccess = lazy(() => import('./screens/RequestAccess.jsx'));
 const Settings = lazy(() => import('./screens/Settings.jsx'));
+const Announcements = lazy(() => import('./screens/Announcements.jsx'));
+const AnnouncementDetail = lazy(() => import('./screens/AnnouncementDetail.jsx'));
 
 const CONSENT_KEY = 'bnhs-parent-consent';
 
@@ -46,7 +48,10 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     let off = () => {};
-    onForegroundMessage(() => navigate('/inbox')).then((unsub) => { off = unsub; });
+    onForegroundMessage((payload) => {
+      const id = payload?.data?.announcementId;
+      navigate(id ? `/announcements/${encodeURIComponent(id)}` : '/inbox');
+    }).then((unsub) => { off = unsub; });
     return () => off();
   }, [user, navigate]);
 
@@ -76,17 +81,19 @@ export default function App() {
   const props = { user, profile, route, navigate };
   let screen;
   if (!profile && !consented && route.name !== 'requestAccess') screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate(route.name === 'activate' ? `/activate${window.location.search}` : '/activate', { replace: true }); }} />;
-  else if (!profile && ['home', 'learner', 'inbox', 'settings', 'report'].includes(route.name)) screen = <Activate {...props} />;
+  else if (!profile && ['home', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'].includes(route.name)) screen = <Activate {...props} />;
   else switch (route.name) {
     case 'home': screen = <Home {...props} />; break;
     case 'consent': screen = <Consent {...props} onAccepted={() => navigate('/activate')} />; break;
     case 'activate': screen = <Activate {...props} />; break;
     case 'learner': screen = <History {...props} studentId={route.params.id} />; break;
     case 'inbox': screen = <Inbox {...props} />; break;
+    case 'announcements': screen = <Announcements {...props} />; break;
+    case 'announcement': screen = <AnnouncementDetail {...props} id={route.params.id} />; break;
     case 'report': screen = <Report {...props} eventId={route.params.eventId} studentId={route.query.student} />; break;
     case 'requestAccess': screen = <RequestAccess {...props} />; break;
     case 'settings': screen = <Settings {...props} />; break;
     default: screen = <EmptyState title={S.notFound} />;
   }
-  return <Shell route={route} navigate={navigate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
+  return <Shell route={route} navigate={navigate} profile={profile}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
 }

@@ -19,6 +19,7 @@ export default function Settings({ user, profile, navigate }) {
   const portal = useDoc('settings/parent_portal').data;
   const { rows: reports } = useQuery(() => query(collection(db, 'reports'), where('guardianUid', '==', user.uid), limit(10)), [user.uid]);
   const accountEnabled = profile?.notificationsEnabled !== false;
+  const announcementPush = profile?.announcementPushEnabled !== false;
   const state = notificationState({ ...device, accountEnabled });
   const [busy, setBusy] = useState(false); const [confirmDelete, setConfirmDelete] = useState(false); const [err, setErr] = useState(null);
   const savedName = profile?.displayName || user.displayName || '';
@@ -31,6 +32,7 @@ export default function Settings({ user, profile, navigate }) {
     setBusy(false);
   };
   const toggleAccount = () => updateDoc(doc(db, 'guardians', user.uid), { notificationsEnabled: !accountEnabled }).catch(() => setErr(S.reportFailed));
+  const toggleAnnouncements = () => updateDoc(doc(db, 'guardians', user.uid), { announcementPushEnabled: !announcementPush }).catch(() => setErr(S.reportFailed));
   const enable = async () => { setBusy(true); setErr(null); try { await enableOnThisDevice(user.uid); } catch { setErr(S.notifBlockedHelp); } device.refresh(); setBusy(false); };
   const disable = async () => { setBusy(true); await disableOnThisDevice(user.uid); device.refresh(); setBusy(false); };
   const remove = async () => { setBusy(true); try { await callable('deleteGuardianAccountFn')({}); await signOut(auth); } catch { setErr(S.reportFailed); setBusy(false); } };
@@ -52,6 +54,9 @@ export default function Settings({ user, profile, navigate }) {
         <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsNotifications}</h2>
         <label style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 44 }}>
           <input type="checkbox" checked={accountEnabled} onChange={toggleAccount} style={{ width: 22, height: 22 }} />{S.settingsAccountToggle}
+        </label>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 44, opacity: accountEnabled ? 1 : 0.55 }}>
+          <input type="checkbox" checked={accountEnabled && announcementPush} disabled={!accountEnabled} onChange={toggleAnnouncements} style={{ width: 22, height: 22 }} />{S.settingsAnnouncementToggle}
         </label>
         <div style={{ fontSize: 13, color: T.inkMuted, marginTop: 8 }}>{S.settingsThisDevice}: {STATE_TEXT[state]}</div>
         {state === 'blocked' && <p style={{ fontSize: 13 }}>{S.notifBlockedHelp}</p>}
