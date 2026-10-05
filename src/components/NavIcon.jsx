@@ -7,6 +7,7 @@ const paths = {
   attendance: 'M9 3h6v4H9z M9 5H5v16h14V5h-4 M8 14l3 3 5-6',
   idcards: 'M3 5h18v14H3z M8 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4 M5 16c0-3 6-3 6 0 M14 9h4 M14 13h4',
   guardians: 'M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6',
+  announcements: 'M3 10v4h4l6 5V5l-6 5H3z M16 9a4 4 0 0 1 0 6 M19 6a8 8 0 0 1 0 12',
   settings: 'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6',
   accounts: 'M10 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M3 21v-1a7 7 0 0 1 10.5-6 M18 14v6 M15 17h6',
   menu: 'M4 6h16 M4 12h16 M4 18h16',
