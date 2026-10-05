@@ -153,7 +153,10 @@ export async function handleAnnouncementWrite(deps, { id, before, after, authId,
 
 // Every 5 minutes: scheduled -> published (the trigger then pushes),
 // published past expiresAt -> expired, stale 'sending' claims -> interrupted.
-// Updates are merged per document so one post can't be written twice in a batch.
+// Updates are merged per document so one post is written once. Each is
+// committed on its own with a lastUpdateTime precondition, so a staff
+// unpublish/edit/delete between the read and the commit is never
+// overwritten, and one such document can't block the rest.
 export async function publishDueAnnouncements({ db, now }) {
   const at = Timestamp.fromDate(now());
   const staleBefore = Timestamp.fromMillis(now().getTime() - CLAIM_STALE_MS);
@@ -164,22 +167,29 @@ export async function publishDueAnnouncements({ db, now }) {
     col.where('pushResult.status', '==', 'sending').where('pushResult.claimedAt', '<=', staleBefore).limit(200).get(),
   ]);
   const updates = new Map();
-  const add = (d, patch) => updates.set(d.ref.path, { ref: d.ref, patch: { ...(updates.get(d.ref.path)?.patch || {}), ...patch } });
+  const newer = (a, b) => (!a || b.updateTime.seconds > a.updateTime.seconds
+    || (b.updateTime.seconds === a.updateTime.seconds && b.updateTime.nanoseconds > a.updateTime.nanoseconds) ? b : a);
+  const add = (d, patch, kind) => {
+    const prev = updates.get(d.ref.path);
+    updates.set(d.ref.path, { snap: newer(prev?.snap, d), patch: { ...(prev?.patch || {}), ...patch }, kinds: [...(prev?.kinds || []), kind] });
+  };
   // A scheduled post already past its expiry never goes out (never visible,
   // never pushed): it goes straight to expired, with no publishedAt.
   const pastExpiry = (d) => { const e = norm(d.data().expiresAt); return typeof e === 'number' && e <= at.toMillis(); };
-  const toPublish = due.docs.filter((d) => !pastExpiry(d));
-  const stillborn = due.docs.filter(pastExpiry);
-  toPublish.forEach((d) => add(d, { status: 'published', publishedAt: at }));
-  stillborn.forEach((d) => add(d, { status: 'expired' }));
-  ended.docs.forEach((d) => add(d, { status: 'expired' }));
-  stuck.docs.forEach((d) => add(d, { pushedAt: at, pushResult: { ...d.data().pushResult, status: 'interrupted' } }));
-  if (updates.size) {
-    const b = db.batch();
-    for (const { ref, patch } of updates.values()) b.update(ref, patch);
-    await b.commit();
+  due.docs.forEach((d) => add(d, pastExpiry(d) ? { status: 'expired' } : { status: 'published', publishedAt: at }, pastExpiry(d) ? 'expired' : 'published'));
+  ended.docs.forEach((d) => add(d, { status: 'expired' }, 'expired'));
+  stuck.docs.forEach((d) => add(d, { pushedAt: at, pushResult: { ...d.data().pushResult, status: 'interrupted' } }, 'interrupted'));
+  const counts = { published: 0, expired: 0, interrupted: 0 };
+  for (const [path, { snap, patch, kinds }] of updates) {
+    try {
+      const b = db.batch();
+      b.update(snap.ref, patch, { lastUpdateTime: snap.updateTime });
+      await b.commit();
+      for (const k of kinds) counts[k]++;
+    } catch (e) {
+      logWarn('announcements_job_skip', { path, message: e?.message });
+    }
   }
-  const counts = { published: toPublish.length, expired: stillborn.length + ended.size, interrupted: stuck.size };
   if (updates.size) logEvent('announcements_job', counts);
   return counts;
 }

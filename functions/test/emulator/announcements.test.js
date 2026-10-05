@@ -216,6 +216,35 @@ describe('publishDueAnnouncements', () => {
     await handleAnnouncementWrite(deps(m), { id: 'stale', before, after: saved, authId: 'svc', authType: 'service_account' });
     expect(m.sent).toHaveLength(0);
   });
+  it('never overwrites a staff change made after its read, and still updates the rest', async () => {
+    await write('a', post({ status: 'scheduled', publishAt: ts(NOW.getTime() - 60_000), publishedAt: null }));
+    await write('b', post({ status: 'scheduled', publishAt: ts(NOW.getTime() - 60_000), publishedAt: null }));
+    const real = db();
+    let raced = false;
+    // Staff unpublish 'a' after the job's queries, before its first commit.
+    const racing = new Proxy(real, {
+      get(t, k) {
+        if (k === 'batch') {
+          return () => {
+            const b = t.batch();
+            const commit = b.commit.bind(b);
+            b.commit = async () => {
+              if (!raced) { raced = true; await t.doc('announcements/a').update({ status: 'unpublished', updatedAt: ts(NOW.getTime() + 1) }); }
+              return commit();
+            };
+            return b;
+          };
+        }
+        const v = t[k];
+        return typeof v === 'function' ? v.bind(t) : v;
+      },
+    });
+    const r = await publishDueAnnouncements({ db: racing, now: () => NOW });
+    expect(raced).toBe(true);
+    expect((await read('a')).status).toBe('unpublished');
+    expect(await read('b')).toMatchObject({ status: 'published', publishedAt: at });
+    expect(r).toEqual({ published: 1, expired: 0, interrupted: 0 });
+  });
   it('expires posts past their expiry and leaves open-ended ones', async () => {
     await write('old', post({ expiresAt: ts(NOW.getTime() - 1) }));
     await write('open', post({ expiresAt: null }));
