@@ -46,26 +46,34 @@ and status meaning).
 
 ### Units
 
-1. **`shared/theme.js`**: the single source of preference logic, used by both
-   apps.
+1. **`shared/theme/theme.js`**: the single source of preference logic, used by
+   both apps. `shared/theme/` is browser-only, so `scripts/syncShared.mjs` skips
+   it when copying `shared/` into `functions/`.
    - `PREFS = ['auto', 'light', 'dark']`, storage key `bnhs-theme`.
    - `readPref()`: returns the stored pref, or `'auto'` when missing, invalid,
      or storage throws.
    - `writePref(pref)`: stores the value; a storage failure is swallowed, and
      the choice still applies for the session.
    - `resolveTheme(pref, systemDark)` returns `'light' | 'dark'` (pure).
-   - `applyTheme(theme)`: sets `document.documentElement.dataset.theme`,
-     `style.colorScheme`, and the `<meta name="theme-color">` content.
-   - `subscribe(callback)`: listens to
+   - `applyTheme(theme)`: sets `data-theme` on `<html>` and the
+     `<meta name="theme-color">` content (from the meta's `data-light` /
+     `data-dark` attributes). `color-scheme` follows `data-theme` in CSS.
+   - `stepPref(pref, key)`: the arrow/Home/End order shared by both apps'
+     controls.
+   - `createThemeStore()`: one per tab. It listens to
      `matchMedia('(prefers-color-scheme: dark)')` changes (for Auto) and to
-     `storage` events (cross-tab sync). Returns an unsubscribe function.
+     `storage` events (cross-tab sync) for the life of the tab, and exposes
+     `getPref`, `getTheme`, `setPref`, and `subscribe` for React's
+     `useSyncExternalStore`.
 2. **Pre-paint snippet**: a small inline `<script>` in `index.html` and
    `parent/index.html` that runs the same read → resolve → apply logic before
    first paint, so there is no flash. A unit test asserts the snippet and
    `theme.js` agree on key name, valid values, and fallback.
-3. **`useTheme()` hook** in each app (thin wrapper over `shared/theme.js`):
+3. **`useTheme()` hook** in each app (thin wrapper over the store):
    `{ pref, theme, setPref }`.
-4. **`ThemeControl`**: a shared presentational component, a three-option
+4. **`ThemeControl`**: one per app, styled with that app's CSS. (Each Vite app
+   bundles its own React, so shared React components would load two copies;
+   only the framework-free logic is shared.) It is a three-option
    segmented control (radio-group semantics, arrow-key navigation, visible
    labels "Auto", "Light", "Dark") plus a status line, for example "Auto:
    following your device (currently dark)".
@@ -91,15 +99,14 @@ the background figure in parentheses.
 | bg | `#F2F8F7` / `#eef5f4` | `#0e1c1f` | — |
 | surface (working, 97%) | `#FFFFFF` | `#14262a` | — |
 | dialog | `#FFFFFF` | `#172b2f` | — |
-| nav glass | white 76% | `rgba(22,42,46,.76)` | — |
-| summary glass | white 82% | `rgba(22,42,46,.82)` | — |
+| nav glass | white 76% | `rgba(20,38,42,.76)` | — |
+| summary glass | white 82% | `rgba(20,38,42,.82)` | — |
 | border (decorative) | `#DCEBE8` | `#24403f` | — |
 | control border | `#7a9294` | `#5d7a7b` | 3.38:1 (≥3) |
 | ink | `#12313A` | `#e2eeec` | 13.19:1 |
 | muted | `#55706F` | `#93aeab` | 6.63:1 |
-| primary fill | `#007A72` | `#2bb5aa` | — |
+| primary (fill and text/links) | `#007A72` | `#2bb5aa` | 6.19:1 as text |
 | on-primary text | `#FFFFFF` | `#04211e` | 6.68:1 on fill |
-| accent text / links | `#007A72` | `#5fd3c7` | 8.68:1 |
 | focus outline | `#154854` | `#7fe3d8` | 10.36:1 |
 | present | `#15803D` | `#4cc38a` | 7.07:1 |
 | late | `#B45309` | `#f0a35a` | 7.53:1 |
@@ -129,7 +136,7 @@ alone (unchanged rule).
 
 ### Browser chrome
 
-- `color-scheme: light | dark` is set on `<html>`, so native inputs, selects,
+- `color-scheme: light | dark` follows `data-theme` in CSS, so native inputs, selects,
   date pickers, and scrollbars match.
 - The Parents App `<meta name="theme-color">` is `#00A79D` in light and
   `#0e1c1f` in dark. SIMS gains the same meta tag.
@@ -197,7 +204,7 @@ generated with the existing `scripts/build-logos.py` and swapped in under
 
 ## Testing
 
-- **Unit (Vitest)** for `shared/theme.js`: `resolveTheme` truth table,
+- **Unit (Vitest)** for `shared/theme/theme.js`: `resolveTheme` truth table,
   `readPref` with missing, invalid, and throwing storage, `writePref` swallowing
   errors, the `subscribe` media and storage paths (with fake `matchMedia` and
   `storage` events), and snippet/module agreement.
@@ -208,8 +215,9 @@ generated with the existing `scripts/build-logos.py` and swapped in under
 - **Leftover-color guard**: a test that fails on new hex or `rgba` color
   literals in `src/**/*.jsx` and `parent/src/**/*.jsx` outside `styles.js`,
   printable components, and an explicit allowlist.
-- **Component**: `ThemeControl` and `ThemeMenuButton` keyboard behavior (arrow
-  keys, Escape, focus return) and ARIA state.
+- **Keyboard behavior**: the shared arrow/Home/End order (`stepPref`) is unit
+  tested. The test runner has no DOM, so `ThemeControl` and `ThemeMenuButton`
+  focus, Escape, and ARIA state are checked in the browser pass below.
 - **Browser verification**: every SIMS page and every Parents screen in Light,
   Dark, and Auto (with the system theme emulated), at 375px and desktop widths.
   Also print preview of ID cards and activation slips (must be light), and
