@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  isIdCardPrinted, sectionShortLabel, sortIdCardBatch, buildIdCardQueue,
-  listQueueEntries, groupBySection, cardsLabel,
+  isIdCardPrinted, sectionShortLabel, sortIdCardBatch, groupBySection, cardsLabel,
   enrolledEntries, buildBatchView, sheetFillLabel,
 } from './idCardQueue.js';
 
@@ -61,47 +60,6 @@ describe('sortIdCardBatch', () => {
     ];
     sortIdCardBatch(entries);
     expect(ids(entries)).toEqual(['b', 'a']);
-  });
-});
-
-describe('buildIdCardQueue', () => {
-  const ana = learner('ana', 'Abad', 'F');
-  const ben = printed(learner('ben', 'Bautista', 'M'));
-  const cruz = printed(learner('cruz', 'Cruz', 'M'), 'OLD-LRN');
-  const dela = learner('dela', 'Dela', 'F');
-  const eli = learner('eli', 'Eli', 'M');
-  const fe = learner('fe', 'Fe', 'F');
-  const gil = learner('gil', 'Gil', 'M', { lrn: '  ' });
-  const hal = learner('hal', 'Hal', 'M');
-  const result = buildIdCardQueue({
-    students: [ana, ben, cruz, dela, eli, fe, gil, hal],
-    sections: [rizal, bonifacio, acacia],
-    schoolYear: SY,
-    enrollments: [
-      enroll(ana, rizal), enroll(ben, rizal), enroll(cruz, bonifacio), enroll(dela, acacia),
-      enroll(eli, rizal, { status: 'dropped' }),
-      enroll(fe, rizal, { schoolYear: '2025-2026' }),
-      enroll(gil, rizal),
-      enroll(hal, { id: 'deleted-section' }),
-    ],
-  });
-
-  it('lists every enrolled learner with an LRN, in print order', () => {
-    expect(ids(result.eligible)).toEqual(['cruz', 'ben', 'ana', 'dela']);
-  });
-  it('queues only learners not printed for their current LRN', () => {
-    expect(ids(result.queue)).toEqual(['cruz', 'ana', 'dela']);
-  });
-  it('counts enrolled learners without an LRN', () => {
-    expect(result.missingLrnCount).toBe(1);
-  });
-  it('pairs each learner with their own section', () => {
-    expect(result.queue.map((e) => e.section.id)).toEqual(['bonifacio', 'rizal', 'acacia']);
-  });
-
-  it('adds hand-picked printed learners to the listed entries, in print order', () => {
-    expect(ids(listQueueEntries(result.eligible, new Set(['ben'])))).toEqual(['cruz', 'ben', 'ana', 'dela']);
-    expect(ids(listQueueEntries(result.eligible, new Set()))).toEqual(['cruz', 'ana', 'dela']);
   });
 });
 

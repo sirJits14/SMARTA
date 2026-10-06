@@ -3,9 +3,10 @@ import { useCollectionResource } from '../hooks/useCollection.js';
 import { ResourceState } from '../components/ui.jsx';
 import { S } from '../styles.js';
 import BySectionTab from './idCards/BySectionTab.jsx';
-import PrintQueueTab from './idCards/PrintQueueTab.jsx';
+import SavedBatchTab from './idCards/SavedBatchTab.jsx';
 
-const TABS = [['section', 'By section'], ['queue', 'Print queue']];
+// 'queue' is kept as the key so a remembered tab still opens the batch.
+const TABS = [['section', 'By section'], ['queue', 'Saved batch']];
 const STORAGE = 'sims.idCards.tab';
 const readTab = () => {
   try { const v = localStorage.getItem(STORAGE); return TABS.some(([k]) => k === v) ? v : 'section'; }
@@ -16,13 +17,14 @@ export default function IDCardsPage({ me, schoolYear }) {
   const sectionsResource = useCollectionResource('sections');
   const enrollmentsResource = useCollectionResource('enrollments');
   const studentsResource = useCollectionResource('students');
+  const batchResource = useCollectionResource('id_card_batch');
   const [tab, setTabState] = useState(readTab);
   const setTab = (next) => {
     setTabState(next);
     try { localStorage.setItem(STORAGE, next); } catch { /* the tab still switches without storage */ }
   };
 
-  const resources = [sectionsResource, enrollmentsResource, studentsResource];
+  const resources = [sectionsResource, enrollmentsResource, studentsResource, batchResource];
   if (resources.some(r => r.loading || r.error)) return <ResourceState resources={resources}/>;
   const data = { me, schoolYear, sections: sectionsResource.data, enrollments: enrollmentsResource.data, students: studentsResource.data };
 
@@ -50,7 +52,7 @@ export default function IDCardsPage({ me, schoolYear }) {
       </div>
 
       <div role="tabpanel" id={`id-cards-panel-${tab}`} aria-labelledby={`id-cards-tab-${tab}`}>
-        {tab === 'section' ? <BySectionTab {...data} /> : <PrintQueueTab {...data} />}
+        {tab === 'section' ? <BySectionTab {...data} /> : <SavedBatchTab {...data} batchDocs={batchResource.data} />}
       </div>
     </div>
   );
