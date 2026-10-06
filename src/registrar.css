@@ -160,6 +160,7 @@
 }
 @media screen { :root[data-theme="dark"] .sims-dialog::backdrop { background:rgba(0,0,0,.55); } }
 @media screen {
+  .sims-ui .app-topbar { position:relative; z-index:20; } /* lifts the theme menu above page content */
   .sims-ui .sims-topbar-actions { display:flex; align-items:center; gap:12px; }
   .sims-ui .sims-theme-menu { position:relative; }
   .sims-ui .sims-theme-menu .sims-icon-button { position:relative; }
