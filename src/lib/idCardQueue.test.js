@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isIdCardPrinted, sectionShortLabel, sortIdCardBatch, buildIdCardQueue,
   listQueueEntries, groupBySection, cardsLabel,
+  enrolledEntries, buildBatchView, sheetFillLabel,
 } from './idCardQueue.js';
 
 const SY = '2026-2027';
@@ -121,5 +122,69 @@ describe('cardsLabel', () => {
     expect(cardsLabel(1)).toBe('1 card');
     expect(cardsLabel(0)).toBe('0 cards');
     expect(cardsLabel(81)).toBe('81 cards');
+  });
+});
+
+describe('enrolledEntries and buildBatchView', () => {
+  const ana = learner('ana', 'Abad', 'F');
+  const ben = printed(learner('ben', 'Bautista', 'M'));
+  const cruz = printed(learner('cruz', 'Cruz', 'M'), 'OLD-LRN');
+  const dela = learner('dela', 'Dela', 'F');
+  const eli = learner('eli', 'Eli', 'M');
+  const fe = learner('fe', 'Fe', 'F');
+  const gil = learner('gil', 'Gil', 'M', { lrn: '  ' });
+  const hal = learner('hal', 'Hal', 'M');
+  const students = [ana, ben, cruz, dela, eli, fe, gil, hal];
+  const enrolled = enrolledEntries({
+    students,
+    sections: [rizal, bonifacio, acacia],
+    schoolYear: SY,
+    enrollments: [
+      enroll(ana, rizal), enroll(ben, rizal), enroll(cruz, bonifacio), enroll(dela, acacia),
+      enroll(eli, rizal, { status: 'dropped' }),
+      enroll(fe, rizal, { schoolYear: '2025-2026' }),
+      enroll(gil, rizal),
+      enroll(hal, { id: 'deleted-section' }),
+    ],
+  });
+
+  it('lists enrolled learners with a section and an LRN, in print order', () => {
+    expect(ids(enrolled)).toEqual(['cruz', 'ben', 'ana', 'dela']);
+    expect(enrolled.map((e) => e.section.id)).toEqual(['bonifacio', 'rizal', 'rizal', 'acacia']);
+  });
+
+  const view = buildBatchView({
+    batchDocs: [{ id: 'dela' }, { id: 'gone' }, { id: 'ana' }, { id: 'gil' }, { id: 'eli' }, { id: 'cruz' }, { id: 'fe' }, { id: 'hal' }],
+    enrolled,
+    students,
+  });
+
+  it('prints enrolled batch learners, in print order', () => {
+    expect(ids(view.printable)).toEqual(['cruz', 'ana', 'dela']);
+  });
+  it('prints the learner\'s current LRN, even if it changed after a print', () => {
+    expect(view.printable[0].student.lrn).toBe('LRN-cruz');
+  });
+  it('sets aside dropped, other-year, no-LRN, no-section and missing learners, by name then id', () => {
+    expect(view.notPrintable.map((n) => n.id)).toEqual(['eli', 'fe', 'gil', 'hal', 'gone']);
+    expect(view.notPrintable[4].student).toBeNull();
+    expect(view.notPrintable[0].student).toBe(eli);
+  });
+  it('is empty for an empty batch', () => {
+    expect(buildBatchView({ batchDocs: [], enrolled, students })).toEqual({ printable: [], notPrintable: [] });
+  });
+});
+
+describe('sheetFillLabel', () => {
+  it.each([
+    [0, ''],
+    [1, '1 of 80 — 79 more fills a sheet'],
+    [79, '79 of 80 — 1 more fills a sheet'],
+    [80, '1 full sheet'],
+    [81, '1 full sheet + 1 — 79 more fills the next sheet'],
+    [160, '2 full sheets'],
+    [172, '2 full sheets + 12 — 68 more fills the next sheet'],
+  ])('%i cards → %s', (n, label) => {
+    expect(sheetFillLabel(n)).toBe(label);
   });
 });
