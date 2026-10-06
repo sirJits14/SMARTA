@@ -59,7 +59,7 @@ function AttendanceArea({ me, schoolYear, entry }) {
                 fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
                 cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
                 background: active ? T.primary : 'transparent',
-                color: active ? '#fff' : T.inkMuted,
+                color: active ? T.onPrimary : T.inkMuted,
                 transition: 'background 0.16s ease-out, color 0.16s ease-out, box-shadow 0.16s ease-out, transform 0.16s ease-out',
               }}
             >{label}</button>

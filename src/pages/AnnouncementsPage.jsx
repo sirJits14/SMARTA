@@ -42,7 +42,7 @@ export default function AnnouncementsPage({ me }) {
               <button key={key} role="tab" aria-selected={active} onClick={() => setTab(key)} style={{
                 fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
                 cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-                background: active ? T.primary : 'transparent', color: active ? '#fff' : T.inkMuted,
+                background: active ? T.primary : 'transparent', color: active ? T.onPrimary : T.inkMuted,
               }}>{label} ({counts[key]})</button>
             );
           })}
