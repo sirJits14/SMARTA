@@ -53,6 +53,7 @@
   --t-row-hover: #ffffff55;
   --t-glass-edge: rgba(255,255,255,.8);
   --t-glass-highlight: rgba(255,255,255,.65);
+  --t-nav-highlight: rgba(255,255,255,.9);
   --t-glow-1: #d2ece8;
   --t-glow-2: #dcebf1;
   --t-glow-3: #dcefec;
@@ -113,6 +114,7 @@
     --t-row-hover: rgba(255,255,255,.05);
     --t-glass-edge: rgba(255,255,255,.08);
     --t-glass-highlight: rgba(255,255,255,.04);
+    --t-nav-highlight: rgba(255,255,255,.04);
     --t-glow-1: rgba(0,167,157,.10);
     --t-glow-2: rgba(21,72,84,.35);
     --t-glow-3: rgba(94,234,212,.06);
