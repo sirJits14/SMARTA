@@ -11,8 +11,8 @@ import { describe, it, expect } from 'vitest';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const JSX_LITERAL = /(?<![&\w])#[0-9a-fA-F]{3,8}\b|rgba?\(\s*255\s*,\s*255\s*,\s*255|['"]white['"]/;
 const CSS_LITERAL = /(?<![&\w-])#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/;
-const JSX_ROOTS = ['src'];
-const THEMED_CSS = ['src/registrar.css', 'src/enrollment.css'];
+const JSX_ROOTS = ['src', 'parent/src'];
+const THEMED_CSS = ['src/registrar.css', 'src/enrollment.css', 'parent/src/glass.css'];
 // The QR camera overlay is deliberately dark in both themes.
 const JSX_ALLOWED = new Set(['parent/src/components/ScanSheet.jsx']);
 
