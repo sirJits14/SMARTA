@@ -23,7 +23,7 @@ export default function ThemeMenuButton() {
   const close = () => { setOpen(false); buttonRef.current?.focus(); };
   const onMenuKeyDown = (event) => {
     if (event.key === 'Escape') { event.preventDefault(); close(); return; }
-    if (event.key === 'Tab') { setOpen(false); return; }
+    if (event.key === 'Tab') { buttonRef.current?.focus(); setOpen(false); return; }
     const focused = PREFS.find((p) => itemRefs.current[p] === document.activeElement) ?? pref;
     const next = stepPref(focused, event.key);
     if (next) { event.preventDefault(); itemRefs.current[next]?.focus(); }

@@ -74,11 +74,13 @@ export default function Shell({ route, navigate, profile, children }) {
     window.addEventListener('online', on); window.addEventListener('offline', off);
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
+  const hasBanner = !online || portal?.notificationsPaused || portal?.announcement;
   return (
     <div style={{ fontFamily: T.font, color: T.ink, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <header style={{ position: 'relative', padding: '14px 16px 0', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 11 }}><ThemeMenuButton /></div>
         {showsAppTitle(route.name) && <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10, minHeight: 44, display: 'flex', alignItems: 'center', paddingRight: 56 }}>{S.appName}</div>}
+        {!showsAppTitle(route.name) && hasBanner && <div aria-hidden="true" style={{ minHeight: 44, marginBottom: 10 }} />}
         {!online && <Banner tone="warn">{S.offlineBanner}</Banner>}
         {portal?.notificationsPaused && <Banner tone="warn">{S.pausedBanner}{portal.pauseNote ? `: ${portal.pauseNote}` : ''}</Banner>}
         {portal?.announcement && <Banner>{portal.announcement}</Banner>}
