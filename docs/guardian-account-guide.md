@@ -57,6 +57,12 @@ The **Notices** tab shows school announcements for your learner's grade. A red d
 there is something new. In **Settings** you can turn announcement notifications off and
 still get gate-scan notifications.
 
+## Appearance (dark mode)
+
+Tap the sun or moon at the top of any screen, or open **Settings → Appearance**, and choose
+**Auto** (follows your phone's light or dark setting), **Light**, or **Dark**. The choice is
+saved on this phone only.
+
 ## Troubleshooting
 
 | Problem | Fix |

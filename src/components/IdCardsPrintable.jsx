@@ -38,7 +38,7 @@ function IdCard({ student, section }) {
 // entries: [{ student, section }] in print order. A batch may mix sections.
 export default function IdCardsPrintSheets({ entries, printOnly = false }) {
   const sheets = useMemo(() => chunkIdCardsIntoSheets(entries), [entries]);
-  const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only' : 'id-cards-grid';
+  const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only paper' : 'id-cards-grid paper';
 
   return (
     <>

@@ -11,6 +11,7 @@ SIMS = Path('src/assets')
 PARENT = Path('parent/public/icons')
 INK = (0x12, 0x31, 0x3a, 255)  # sidebar ink, behind the white S on the favicon
 WHITE = (255, 255, 255, 255)
+LIGHT_INK = (0xe2, 0xee, 0xec)  # --t-ink in the dark theme (shared/theme/theme.css)
 TAGLINE_TOP = 1200  # source row between MARTA's outline (ends 1194) and the tagline (starts 1229)
 
 
@@ -30,6 +31,18 @@ def without_tagline(im):
             r, g, b, a = px[x, y]
             if a and not (g - r > 20 and b - r > 20):
                 px[x, y] = (0, 0, 0, 0)
+    return im
+
+
+def light_ink(im):
+    """Recolor the near-black MARTA lettering for dark backgrounds; teal and white pixels keep their color."""
+    im = im.copy()
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a and max(r, g, b) < 96 and not (g - r > 20 and b - r > 20):
+                px[x, y] = (*LIGHT_INK, a)
     return im
 
 
@@ -75,6 +88,8 @@ if __name__ == '__main__':
     save(favicon(), SIMS / 'sims-favicon.png')
     save(wordmark(), SIMS / 'smarta-wordmark.png')
     save(wordmark(tagline=False), SIMS / 'smarta-wordmark-sidebar.png')
+    save(light_ink(wordmark()), SIMS / 'smarta-wordmark-dark.png')
+    save(light_ink(wordmark(tagline=False)), SIMS / 'smarta-wordmark-sidebar-dark.png')
     save(on_canvas(trimmed('phone-app.png'), 64, 64), SIMS / 'smarta-mark.png')
     save(parent_icon(192, 0.8), PARENT / 'icon-192.png')
     save(parent_icon(512, 0.8), PARENT / 'icon-512.png')

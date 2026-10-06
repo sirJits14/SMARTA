@@ -5,7 +5,7 @@ const font = { fontFamily: T.font };
 export const Btn = ({ variant = 'solid', style, ...p }) => (
   <button {...p} style={{ ...font, minHeight: T.tap, borderRadius: T.pill, padding: '10px 18px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
     background: variant === 'solid' ? T.primary : variant === 'danger' ? T.danger : 'transparent',
-    color: variant === 'ghost' ? T.primary : '#fff',
+    color: variant === 'ghost' ? T.primary : variant === 'danger' ? T.onStatus : T.onPrimary,
     border: variant === 'ghost' ? `1.5px solid ${T.primary}` : 'none', opacity: p.disabled ? 0.6 : 1, ...style }} />
 );
 // Surface (translucent white, hairline, blur, no-blur fallback) comes from .glass-card in glass.css.
@@ -21,12 +21,12 @@ const inputStyle = { ...font, width: '100%', boxSizing: 'border-box', minHeight:
 export const Inp = (p) => <input {...p} style={{ ...inputStyle, ...p.style }} />;
 export const Sel = (p) => <select {...p} style={{ ...inputStyle, ...p.style }} />;
 export const Banner = ({ tone = 'info', children, action }) => {
-  const tint = tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(0,122,114,0.08)';
-  const textColor = tone === 'danger' ? '#B91C1C' : tone === 'warn' ? '#92400E' : T.primaryDeep;
+  const tint = tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(var(--t-primary-rgb),0.08)';
+  const textColor = tone === 'danger' ? T.dangerText : tone === 'warn' ? T.warnText : T.primaryDeep;
   return (
     <div role={tone === 'danger' ? 'alert' : 'status'} className="glass" style={{ ...font, fontSize: 14, borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
-      border: '1px solid rgba(255,255,255,0.7)',
-      background: `linear-gradient(${tint}, ${tint}), rgba(255,255,255,0.85)`,
+      border: '1px solid var(--t-glass-edge)',
+      background: `linear-gradient(${tint}, ${tint}), rgba(var(--t-glass-rgb),0.85)`,
       color: textColor }}>
       <span>{children}</span>{action}
     </div>

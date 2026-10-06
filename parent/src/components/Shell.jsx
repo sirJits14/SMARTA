@@ -3,6 +3,7 @@ import S from '../strings.js';
 import { T } from '../styles.js';
 import { Banner } from './ui.jsx';
 import Icon from './Icon.jsx';
+import ThemeMenuButton from './ThemeMenuButton.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 import { NAV_TABS, activeTab, showsAppTitle } from '../lib/nav.js';
 import { useAnnouncements } from '../hooks/useAnnouncements.js';
@@ -62,7 +63,7 @@ function GlassNav({ route, navigate, unread }) {
   );
 }
 
-export default function Shell({ route, navigate, profile, children }) {
+export default function Shell({ route, navigate, profile, gate = false, children }) {
   const portal = useDoc('settings/parent_portal').data;
   // One read per app open: just the newest post this guardian can see.
   const { rows: newest } = useAnnouncements(profile, 1);
@@ -73,10 +74,15 @@ export default function Shell({ route, navigate, profile, children }) {
     window.addEventListener('online', on); window.addEventListener('offline', off);
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
+  // Gate screens (Verify, Consent, Activate) have no PageHeader of their own, so they get the title row too.
+  const titleRow = gate || showsAppTitle(route.name);
+  const hasBanner = !online || portal?.notificationsPaused || portal?.announcement;
   return (
     <div style={{ fontFamily: T.font, color: T.ink, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ padding: '14px 16px 0', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
-        {showsAppTitle(route.name) && <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10 }}>{S.appName}</div>}
+      <header style={{ position: 'relative', padding: '14px 16px 0', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+        <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 11 }}><ThemeMenuButton /></div>
+        {titleRow && <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10, minHeight: 44, display: 'flex', alignItems: 'center', paddingRight: 56 }}>{S.appName}</div>}
+        {!titleRow && hasBanner && <div aria-hidden="true" style={{ minHeight: 44, marginBottom: 10 }} />}
         {!online && <Banner tone="warn">{S.offlineBanner}</Banner>}
         {portal?.notificationsPaused && <Banner tone="warn">{S.pausedBanner}{portal.pauseNote ? `: ${portal.pauseNote}` : ''}</Banner>}
         {portal?.announcement && <Banner>{portal.announcement}</Banner>}
