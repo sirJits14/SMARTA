@@ -8,9 +8,9 @@ export const Btn = ({ style, className = '', variant = 'solid', ...p }) => (
   <button {...p} className={`sims-btn ${className}`} style={{ ...font, cursor: 'pointer', borderRadius: T.pill, padding: '10px 20px',
     fontWeight: 600, fontSize: 'var(--sims-field-font, 13px)',
     background: variant === 'solid' ? T.primary : 'transparent',
-    color: variant === 'solid' ? '#fff' : T.primary,
+    color: variant === 'solid' ? T.onPrimary : T.primary,
     border: variant === 'solid' ? 'none' : `1.5px solid ${T.primary}`,
-    transition: 'background 0.15s ease-out, opacity 0.15s ease-out',
+    transition: 'background 0.16s ease-out, color 0.16s ease-out, opacity 0.16s ease-out, box-shadow 0.16s ease-out, transform 0.16s ease-out',
     ...style }} />
 );
 export const Inp = ({ style, className = '', ...p }) => (
@@ -103,7 +103,7 @@ export const EmptyState = ({ title, hint }) => (
 // --- Signature components -------------------------------------------------
 
 export const Card = ({ as: Tag = 'div', surface = 'working', className = '', style, children, ...p }) => (
-  <Tag {...p} className={`sims-surface sims-surface--${surface} ${className}`} style={{ background: 'var(--sims-surface-fill, #fff)', border: `1px solid var(--sims-surface-border, ${T.border})`, borderRadius: 'var(--sims-radius, 14px)',
+  <Tag {...p} className={`sims-surface sims-surface--${surface} ${className}`} style={{ background: `var(--sims-surface-fill, ${T.surface})`, border: `1px solid var(--sims-surface-border, ${T.border})`, borderRadius: 'var(--sims-radius, 14px)',
     boxShadow: `var(--sims-surface-shadow, ${T.cardShadow})`, ...style }}>{children}</Tag>
 );
 
@@ -122,7 +122,7 @@ export const StatusPill = ({ mark, onClick }) => {
       style={{
         fontFamily: T.body, cursor: onClick ? 'pointer' : 'default', border: 'none',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        borderRadius: T.pill, background: MARK_COLOR[mark], color: '#fff',
+        borderRadius: T.pill, background: MARK_COLOR[mark], color: T.onStatus,
         fontWeight: 600, fontSize: 12, padding: '5px 14px',
         transition: 'background 0.15s ease-out',
       }}

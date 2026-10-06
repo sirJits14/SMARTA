@@ -19,6 +19,8 @@ const Inbox = lazy(() => import('./screens/Inbox.jsx'));
 const Report = lazy(() => import('./screens/Report.jsx'));
 const RequestAccess = lazy(() => import('./screens/RequestAccess.jsx'));
 const Settings = lazy(() => import('./screens/Settings.jsx'));
+const Announcements = lazy(() => import('./screens/Announcements.jsx'));
+const AnnouncementDetail = lazy(() => import('./screens/AnnouncementDetail.jsx'));
 
 const CONSENT_KEY = 'bnhs-parent-consent';
 
@@ -46,13 +48,16 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     let off = () => {};
-    onForegroundMessage(() => navigate('/inbox')).then((unsub) => { off = unsub; });
+    onForegroundMessage((payload) => {
+      const id = payload?.data?.announcementId;
+      navigate(id ? `/announcements/${encodeURIComponent(id)}` : '/inbox');
+    }).then((unsub) => { off = unsub; });
     return () => off();
   }, [user, navigate]);
 
   if (user === undefined) return <Spinner label={S.loading} />;
   if (!user) return <SignIn />;
-  if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate}><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Shell>;
+  if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate} gate><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Shell>;
   if (profile === undefined) return <Spinner label={S.loading} />;
 
   // Re-consent gate: an already-linked guardian (profile exists) whose
@@ -66,7 +71,7 @@ export default function App() {
   if (profile) {
     if (portal === undefined) return <Spinner label={S.loading} />;
     const liveConsentVersion = portal?.consentVersion ?? 1;
-    if (profile.consentVersion !== liveConsentVersion) return <Shell route={route} navigate={navigate}><Suspense fallback={<Spinner label={S.loading} />}><Consent user={user} profile={profile} route={route} navigate={navigate} onAccepted={() => { callable('acceptConsentFn')({}).catch(() => {}); }} /></Suspense></Shell>;
+    if (profile.consentVersion !== liveConsentVersion) return <Shell route={route} navigate={navigate} gate><Suspense fallback={<Spinner label={S.loading} />}><Consent user={user} profile={profile} route={route} navigate={navigate} onAccepted={() => { callable('acceptConsentFn')({}).catch(() => {}); }} /></Suspense></Shell>;
   }
 
   // First-time flow: consent (stored locally until the first activation
@@ -75,18 +80,21 @@ export default function App() {
   try { consented = Boolean(profile) || localStorage.getItem(CONSENT_KEY) !== null; } catch { consented = Boolean(profile); }
   const props = { user, profile, route, navigate };
   let screen;
-  if (!profile && !consented && route.name !== 'requestAccess') screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate(route.name === 'activate' ? `/activate${window.location.search}` : '/activate', { replace: true }); }} />;
-  else if (!profile && ['home', 'learner', 'inbox', 'settings', 'report'].includes(route.name)) screen = <Activate {...props} />;
+  let gate = false; // first-run Consent / Activate have no PageHeader, so Shell adds the title row
+  if (!profile && !consented && route.name !== 'requestAccess') { gate = true; screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate(route.name === 'activate' ? `/activate${window.location.search}` : '/activate', { replace: true }); }} />; }
+  else if (!profile && ['home', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'].includes(route.name)) { gate = true; screen = <Activate {...props} />; }
   else switch (route.name) {
     case 'home': screen = <Home {...props} />; break;
     case 'consent': screen = <Consent {...props} onAccepted={() => navigate('/activate')} />; break;
     case 'activate': screen = <Activate {...props} />; break;
     case 'learner': screen = <History {...props} studentId={route.params.id} />; break;
     case 'inbox': screen = <Inbox {...props} />; break;
+    case 'announcements': screen = <Announcements {...props} />; break;
+    case 'announcement': screen = <AnnouncementDetail key={route.params.id} {...props} id={route.params.id} />; break;
     case 'report': screen = <Report {...props} eventId={route.params.eventId} studentId={route.query.student} />; break;
     case 'requestAccess': screen = <RequestAccess {...props} />; break;
     case 'settings': screen = <Settings {...props} />; break;
     default: screen = <EmptyState title={S.notFound} />;
   }
-  return <Shell route={route} navigate={navigate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
+  return <Shell route={route} navigate={navigate} profile={profile} gate={gate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
 }

@@ -1,0 +1,144 @@
+/* Color tokens for the SIMS and the Parents App.
+   Spec: docs/superpowers/specs/2026-10-06-dark-mode-design.md
+   Light values are exactly the colors the apps used before dark mode.
+   <html data-theme="dark"> (set by the pre-paint script in index.html and by
+   shared/theme/theme.js) switches the screen to Night teal. The dark set exists
+   only for screen media, so printing is always light. .paper re-applies the
+   light set to on-screen previews of printed documents.
+   shared/theme/contrast.test.js checks the text and control pairs. */
+:root, .paper {
+  color-scheme: light;
+  --t-bg: #F2F8F7;
+  --t-canvas: #eef5f4;
+  --t-surface: #FFFFFF;
+  --t-dialog: #FFFFFF;
+  --t-border: #DCEBE8;
+  --t-control-border: #7a9294;
+  --t-ink: #12313A;
+  --t-muted: #55706F;
+  --t-subtle: #3e5a5e;
+  --t-nav-ink: #4e6669;
+  --t-placeholder: #5f7577;
+  --t-primary: #007A72;
+  --t-primary-deep: #154854;
+  --t-on-primary: #FFFFFF;
+  --t-focus: #154854;
+  --t-present: #15803D;
+  --t-late: #B45309;
+  --t-absent: #DC2626;
+  --t-excused: #64748B;
+  --t-on-status: #FFFFFF;
+  --t-danger-text: #B91C1C;
+  --t-warn-text: #92400E;
+  --t-tint: #e3f3f1;
+  --t-tint-strong: #dff1ee;
+  --t-tint-hover: #f0f7f6;
+  --t-feedback-bg: #fff4f3;
+  --t-feedback-ink: #982525;
+  --t-tooltip-bg: #12313a;
+  --t-tooltip-ink: #FFFFFF;
+  --t-stat-icon: #3f8a84;
+  --t-decor: #00a79d;
+  --t-decor-mid: #4fc4ba;
+  --t-decor-soft: #7fd3cb;
+  --t-chart-track: #dcefec;
+  --t-bevel-top: #f3fbfa;
+  --t-bevel-bottom: #dff1ee;
+  --t-bevel-hover-top: #f7fdfc;
+  --t-bevel-hover-bottom: #e6f5f2;
+  --t-bevel-edge: #b9dcd7;
+  --t-bevel-hi: #FFFFFF;
+  --t-hover: rgba(255,255,255,.7);
+  --t-hover-strong: #FFFFFF;
+  --t-row-hover: #ffffff55;
+  --t-glass-edge: rgba(255,255,255,.8);
+  --t-glass-highlight: rgba(255,255,255,.65);
+  --t-nav-highlight: rgba(255,255,255,.9);
+  --t-glow-1: #d2ece8;
+  --t-glow-2: #dcebf1;
+  --t-glow-3: #dcefec;
+  --t-pglow-1: rgba(0,167,157,.20);
+  --t-pglow-2: rgba(94,234,212,.24);
+  --t-pglow-3: rgba(21,72,84,.14);
+  --t-glass-rgb: 255,255,255;
+  --t-primary-rgb: 0,122,114;
+  --t-shadow-rgb: 21,72,84;
+  --t-ink-rgb: 18,49,58;
+  --t-line-rgb: 21,72,84;
+}
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --t-bg: #0e1c1f;
+    --t-canvas: #0e1c1f;
+    --t-surface: #14262a;
+    --t-dialog: #172b2f;
+    --t-border: #24403f;
+    --t-control-border: #5d7a7b;
+    --t-ink: #e2eeec;
+    --t-muted: #93aeab;
+    --t-subtle: #b4c9c6;
+    --t-nav-ink: #a3bab7;
+    --t-placeholder: #8aa4a1;
+    --t-primary: #2bb5aa;
+    --t-primary-deep: #8fded5;
+    --t-on-primary: #04211e;
+    --t-focus: #7fe3d8;
+    --t-present: #4cc38a;
+    --t-late: #f0a35a;
+    --t-absent: #f27b7b;
+    --t-excused: #a3b1c2;
+    --t-on-status: #0b1a1c;
+    --t-danger-text: #f5a3a3;
+    --t-warn-text: #f5c27a;
+    --t-tint: #1d3b3c;
+    --t-tint-strong: #234a4a;
+    --t-tint-hover: #1a3236;
+    --t-feedback-bg: #3a1d1f;
+    --t-feedback-ink: #f5a3a3;
+    --t-tooltip-bg: #e2eeec;
+    --t-tooltip-ink: #0e1c1f;
+    --t-stat-icon: #5fc2b8;
+    --t-decor: #2bb5aa;
+    --t-decor-mid: #1f8f86;
+    --t-decor-soft: #1f6f69;
+    --t-chart-track: #1d3b3c;
+    --t-bevel-top: #1f3d3f;
+    --t-bevel-bottom: #183234;
+    --t-bevel-hover-top: #23464a;
+    --t-bevel-hover-bottom: #1b3a3c;
+    --t-bevel-edge: #2e5552;
+    --t-bevel-hi: rgba(255,255,255,.06);
+    --t-hover: rgba(255,255,255,.07);
+    --t-hover-strong: rgba(255,255,255,.12);
+    --t-row-hover: rgba(255,255,255,.05);
+    --t-glass-edge: rgba(255,255,255,.08);
+    --t-glass-highlight: rgba(255,255,255,.04);
+    --t-nav-highlight: rgba(255,255,255,.04);
+    --t-glow-1: rgba(0,167,157,.10);
+    --t-glow-2: rgba(21,72,84,.35);
+    --t-glow-3: rgba(94,234,212,.06);
+    --t-pglow-1: rgba(0,167,157,.10);
+    --t-pglow-2: rgba(94,234,212,.06);
+    --t-pglow-3: rgba(21,72,84,.35);
+    --t-glass-rgb: 20,38,42;
+    --t-primary-rgb: 43,181,170;
+    --t-shadow-rgb: 0,0,0;
+    --t-ink-rgb: 0,0,0;
+    --t-line-rgb: 147,174,171;
+  }
+  :root[data-theme="dark"] .theme-light-only { display: none !important; }
+  /* A printed document previewed on a dark page reads as a sheet of paper on a dark desk. */
+  :root[data-theme="dark"] .paper { background: var(--t-surface); color: var(--t-ink); border-radius: 16px; padding: 16px; }
+}
+:root:not([data-theme="dark"]) .theme-dark-only, .paper .theme-dark-only { display: none !important; }
+@media print { .theme-dark-only { display: none !important; } }
+
+body { background: var(--t-bg); color: var(--t-ink); }
+
+/* Cross-fade while the store switches themes (shared/theme/theme.js adds the class for 250ms). */
+@media screen and (prefers-reduced-motion: no-preference) {
+  :root.theme-switching, :root.theme-switching *, :root.theme-switching *::before, :root.theme-switching *::after {
+    transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, fill 200ms ease, stroke 200ms ease !important;
+  }
+}

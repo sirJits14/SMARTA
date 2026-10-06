@@ -6,10 +6,10 @@ const admin = { role: 'registrar' }, jhs = { role: 'jhs_coord' }, glc8 = { role:
 describe('pages', () => {
   it('admins open everything including Accounts', () => {
     expect(isAdmin(admin)).toBe(true);
-    expect(allowedPages(admin)).toEqual(expect.arrayContaining(['dashboard', 'enroll', 'guardians', 'settings', 'accounts']));
+    expect(allowedPages(admin)).toEqual(expect.arrayContaining(['dashboard', 'enroll', 'guardians', 'announcements', 'settings', 'accounts']));
   });
-  it('coordinators open only the five shared pages', () => {
-    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'sections', 'schedules', 'attendance']);
+  it('coordinators open the shared pages, including Announcements', () => {
+    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'sections', 'schedules', 'attendance', 'announcements']);
     expect(canOpen(glc8, 'attendance')).toBe(true);
     expect(canOpen(glc8, 'enroll')).toBe(false);
     expect(canOpen({ role: 'teacher' }, 'dashboard')).toBe(false);

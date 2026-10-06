@@ -26,6 +26,7 @@ const IDCardsPage = lazy(() => import('./pages/IDCardsPage.jsx'));
 const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const AccountsPage = lazy(() => import('./pages/AccountsPage.jsx'));
+const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage.jsx'));
 
 const PageFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
@@ -51,22 +52,26 @@ function AttendanceArea({ me, schoolYear, entry }) {
           return (
             <button
               key={key}
+              className="sims-tab"
+              aria-pressed={active}
               onClick={() => setTab(key)}
               style={{
                 fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
                 cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
                 background: active ? T.primary : 'transparent',
-                color: active ? '#fff' : T.inkMuted,
-                transition: 'background 0.15s ease-out, color 0.15s ease-out',
+                color: active ? T.onPrimary : T.inkMuted,
+                transition: 'background 0.16s ease-out, color 0.16s ease-out, box-shadow 0.16s ease-out, transform 0.16s ease-out',
               }}
             >{label}</button>
           );
         })}
       </div>
       <Suspense fallback={<PageFallback />}>
-        {tab === 'take'
-          ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
-          : <AttendanceSummaryPage me={me} schoolYear={schoolYear} />}
+        <div key={tab} className="sims-page-transition">
+          {tab === 'take'
+            ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
+            : <AttendanceSummaryPage me={me} schoolYear={schoolYear} />}
+        </div>
       </Suspense>
     </div>
   );
@@ -135,6 +140,7 @@ export default function App() {
           {shown==='attendance' && <AttendanceArea me={me} key={navigationSequence} schoolYear={schoolYear} entry={pageParams?.attendanceEntry} />}
           {shown==='idcards' && <IDCardsPage me={me} schoolYear={schoolYear} />}
           {shown==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
+          {shown==='announcements' && <AnnouncementsPage me={me} />}
           {shown==='settings' && <SettingsPage />}
           {shown==='accounts' && <AccountsPage me={me} />}
         </Suspense>

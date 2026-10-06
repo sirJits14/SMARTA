@@ -46,7 +46,7 @@ export default function GuardiansPage({ schoolYear, me }) {
             }}>{label}</button>;
         })}
       </div>
-      <div role="tabpanel" id={`guardian-panel-${tab}`} aria-labelledby={`guardian-tab-${tab}`}>
+      <div key={tab} role="tabpanel" id={`guardian-panel-${tab}`} aria-labelledby={`guardian-tab-${tab}`} className="sims-page-transition">
       <Suspense fallback={<TabFallback />}>
         {tab === 'codes' && <CodesTab schoolYear={schoolYear} />}
         {tab === 'requests' && <RequestsTab schoolYear={schoolYear} />}

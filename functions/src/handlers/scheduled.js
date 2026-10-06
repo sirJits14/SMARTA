@@ -6,6 +6,7 @@ import { systemInbox } from './links.js';
 import { handleScanEvent } from './scanEvent.js';
 import { manilaDate } from '../../shared/dates.js';
 import { learnerIdentity } from '../lib/format.js';
+import { refreshGuardianAudience } from './guardianAudience.js';
 
 async function deleteMatching(db, query, batchSize = 300) {
   let n = 0;
@@ -23,7 +24,7 @@ const ms = (x) => Timestamp.fromMillis(x);
 // link's own school year (drop/transfer) — a school-year change alone never
 // ends links; staff do that with endSchoolYear; (2) delete old
 // revoked/expired links, old codes, old audit rows; (3) delete dormant
-// guardian accounts.
+// guardian accounts; (4) rebuild each visited guardian's announcement audience.
 export async function expireLinks({ db, auth, now }) {
   const nowMs = now().getTime();
   const sy = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
@@ -35,9 +36,11 @@ export async function expireLinks({ db, auth, now }) {
 
   let expired = 0, seeded = 0;
   const checkedLearners = new Set();
+  const audienceUids = new Set();
   const active = await db.collection('guardian_links').where('status', '==', 'active').get();
   for (const l of active.docs) {
     const { studentId, guardianUid, schoolYear } = l.data();
+    audienceUids.add(guardianUid);
     const e = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
     if (e && e.status === 'enrolled') {
       await db.doc(`guardians/${guardianUid}`).set({ lastActiveLinkAt: ms(nowMs) }, { merge: true });
@@ -77,7 +80,16 @@ export async function expireLinks({ db, auth, now }) {
     await audit(db, { action: 'guardian.deleted', actorType: 'system', actorUid: null, targetType: 'guardian', targetId: g.id, details: { reason: 'dormant' } });
     dormant++;
   }
-  const counts = { expired, seeded, oldRevoked, oldExpired, oldCodes, oldAudit, dormant };
+
+  // Learners change sections (and so grades) within the school year; rebuild
+  // every visited guardian's announcement audience. Last, so a failure or a
+  // timeout here can never skip retention. A guardian deleted as dormant
+  // above is skipped (refreshGuardianAudience never creates a profile).
+  let audience = 0;
+  for (const uid of audienceUids) {
+    try { if (await refreshGuardianAudience(db, uid)) audience++; } catch (e) { logWarn('audience_refresh_failed', { uid, message: e.message }); }
+  }
+  const counts = { expired, seeded, oldRevoked, oldExpired, oldCodes, oldAudit, dormant, audience };
   logEvent('expire_links_done', counts);
   return counts;
 }

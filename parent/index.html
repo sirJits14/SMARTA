@@ -3,7 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#00A79D" />
+    <meta name="theme-color" content="#00A79D" data-light="#00A79D" data-dark="#0e1c1f" />
+    <script id="theme-boot">
+      // Applies the saved theme before first paint so the page never flashes the wrong
+      // colors. Same rules as shared/theme/theme.js; shared/theme/boot.test.js keeps them in step.
+      (function () {
+        var pref = 'auto', dark = false;
+        try { var v = localStorage.getItem('bnhs-theme'); if (v === 'auto' || v === 'light' || v === 'dark') pref = v; } catch (e) {}
+        try { dark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) {}
+        var theme = pref === 'dark' || (pref === 'auto' && dark) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        var color = meta && meta.getAttribute('data-' + theme);
+        if (color) meta.setAttribute('content', color);
+      })();
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />

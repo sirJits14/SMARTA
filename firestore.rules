@@ -146,7 +146,7 @@ service cloud.firestore {
     match /guardians/{uid} {
       allow read: if own(uid) || isAdmin();
       allow create, delete: if false;
-      allow update: if own(uid) && affectedOnly(['notificationsEnabled', 'displayName', 'lastOpenedAt']);
+      allow update: if own(uid) && affectedOnly(['notificationsEnabled', 'displayName', 'lastOpenedAt', 'announcementsSeenAt', 'announcementPushEnabled']);
 
       match /devices/{tokenHash} {
         allow read: if own(uid);
@@ -168,6 +168,70 @@ service cloud.firestore {
       allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
       allow list: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(60));
       allow write: if false;
+    }
+
+    // ---------- announcements (spec 2026-10-05) ----------
+    // Staff write directly; Functions own pushedAt/pushResult and the
+    // scheduled→published→expired moves. Guardians read only published posts
+    // whose audienceKeys overlap guardians/{uid}.audienceKeys (server-written).
+    // Mirrors coversPostKeys() in shared/announcements.js -- keep in step.
+    function postKeysInScope(keys) {
+      return isAdmin()
+        || (isStaff() && role() == 'jhs_coord' && keys.hasOnly(['g7', 'g8', 'g9', 'g10']))
+        || (isStaff() && role() == 'shs_coord' && keys.hasOnly(['g11', 'g12']))
+        || (isStaff() && role() == 'glc' && keys.hasOnly(['g' + string(profile().gradeLevel)]));
+    }
+    function validPost(d) {
+      return d.keys().hasOnly(['title', 'body', 'audience', 'audienceKeys', 'status', 'publishAt', 'publishedAt', 'expiresAt',
+                               'pinned', 'push', 'pushedAt', 'pushResult', 'createdBy', 'updatedBy', 'createdAt', 'updatedAt', 'editedAt'])
+        && d.title is string && d.title.size() >= 1 && d.title.size() <= 120
+        && d.body is string && d.body.size() >= 1 && d.body.size() <= 5000
+        && d.audience is map
+        && d.audienceKeys is list && d.audienceKeys.size() > 0
+        && d.audienceKeys.hasOnly(['all', 'g7', 'g8', 'g9', 'g10', 'g11', 'g12'])
+        && (!d.audienceKeys.hasAny(['all']) || d.audienceKeys.size() == 1)
+        && d.publishAt is timestamp
+        && (d.get('expiresAt', null) == null || d.expiresAt is timestamp)
+        && d.pinned is bool && d.push is bool
+        && d.updatedBy.uid == request.auth.uid && d.updatedAt == request.time;
+    }
+    function postChanged() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function guardianSeesPost() {
+      return isGuardian() && resource.data.status == 'published'
+        && resource.data.audienceKeys.hasAny(get(/databases/$(database)/documents/guardians/$(request.auth.uid)).data.get('audienceKeys', []));
+    }
+    match /announcements/{id} {
+      allow get: if isStaff() || guardianSeesPost();
+      allow list: if isStaff() || (guardianSeesPost() && bounded(50));
+      allow create: if isStaff() && validPost(request.resource.data)
+        && postKeysInScope(request.resource.data.audienceKeys)
+        && request.resource.data.createdBy.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && !request.resource.data.keys().hasAny(['pushedAt', 'pushResult', 'editedAt'])
+        && ((request.resource.data.status == 'published'
+              && request.resource.data.publishAt == request.time
+              && request.resource.data.publishedAt == request.time)
+          || (request.resource.data.status == 'scheduled'
+              && request.resource.data.publishAt > request.time
+              && !request.resource.data.keys().hasAny(['publishedAt'])));
+      allow update: if isStaff() && validPost(request.resource.data)
+        && !postChanged().hasAny(['pushedAt', 'pushResult', 'createdBy', 'createdAt', 'publishedAt'])
+        && postKeysInScope(resource.data.audienceKeys) && postKeysInScope(request.resource.data.audienceKeys)
+        && (
+          // Scheduled: anything staff own, still in the future, never "edited".
+          (resource.data.status == 'scheduled' && request.resource.data.status == 'scheduled'
+            && request.resource.data.publishAt > request.time
+            && !request.resource.data.keys().hasAny(['editedAt']))
+          // Live: wording, pin and expiry only; editedAt only ever set to now.
+          || (resource.data.status == 'published' && request.resource.data.status == 'published'
+            && postChanged().hasOnly(['title', 'body', 'pinned', 'expiresAt', 'editedAt', 'updatedAt', 'updatedBy'])
+            && (!postChanged().hasAny(['editedAt']) || request.resource.data.editedAt == request.time)
+            && (!postChanged().hasAny(['title', 'body']) || request.resource.data.editedAt == request.time))
+          // Unpublish: the status flip and the touch, nothing else.
+          || (resource.data.status == 'published' && request.resource.data.status == 'unpublished'
+            && postChanged().hasOnly(['status', 'updatedAt', 'updatedBy']))
+        );
+      allow delete: if isStaff() && resource.data.status == 'scheduled' && postKeysInScope(resource.data.audienceKeys);
     }
 
     // ---------- staff-only records written by Functions ----------
