@@ -1,5 +1,5 @@
 import { setGlobalOptions } from 'firebase-functions/v2';
-import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onDocumentCreated, onDocumentWritten, onDocumentWrittenWithAuthContext } from 'firebase-functions/v2/firestore';
 import { onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineString } from 'firebase-functions/params';
@@ -15,12 +15,14 @@ import { deleteGuardianAccount } from './src/handlers/account.js';
 import { createStaffUser, updateStaffUser, setStaffUserDisabled, resetStaffPassword, deleteStaffUser, changeOwnPassword } from './src/handlers/users.js';
 import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/scheduled.js';
 import { auditSettingsChange } from './src/handlers/settingsAudit.js';
+import { handleGuardianLinkWrite } from './src/handlers/guardianAudience.js';
+import { handleAnnouncementWrite, publishDueAnnouncements, announcementAudienceCount } from './src/handlers/announcements.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
 export const PORTAL_URL = defineString('PORTAL_URL', { default: 'https://bnhs-parent.web.app' });
 
-const deps = () => ({ db, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
+const deps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 
 export const onScanEventCreated = onDocumentCreated({ document: 'scan_events/{eventId}', retry: true }, async (event) => {
   const snap = event.data;
@@ -70,12 +72,30 @@ export const deleteStaffUserFn = adminCall(deleteStaffUser);
 // Any active staff member, including one still on a temporary password.
 export const changeOwnPasswordFn = staffCall(changeOwnPassword);
 
+// Any active staff member; the handler checks the audience is in their scope.
+export const announcementAudienceCountFn = staffCall(announcementAudienceCount);
+
 const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };
 
-export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED }, () => expireLinks(jobDeps()));
+export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED, timeoutSeconds: 540 }, () => expireLinks(jobDeps()));
 export const pruneDevicesJob = onSchedule({ schedule: '40 1 * * *', ...SCHED }, () => pruneDevices(jobDeps()));
 export const reconcileEventsJob = onSchedule({ schedule: '20 2 * * *', ...SCHED }, () => reconcileEvents(jobDeps()));
+export const publishAnnouncementsJob = onSchedule({ schedule: '*/5 * * * *', ...SCHED }, () => publishDueAnnouncements(jobDeps()));
 
 export const onParentPortalSettingsChanged = onDocumentWritten('settings/parent_portal', (event) =>
   auditSettingsChange(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));
+
+// Keeps guardians/{uid}.audienceKeys (which announcements a guardian may
+// read) in step with every activation, approval, revocation and expiry.
+export const onGuardianLinkWritten = onDocumentWritten({ document: 'guardian_links/{linkId}', retry: true }, (event) =>
+  handleGuardianLinkWrite(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));
+
+// Audits every announcement change and sends its push at most once. With
+// auth context so the audit names the staff member (authId) who wrote it.
+export const onAnnouncementWritten = onDocumentWrittenWithAuthContext(
+  { document: 'announcements/{id}', retry: true, timeoutSeconds: 300, memory: '512MiB' },
+  (event) => handleAnnouncementWrite(deps(), {
+    id: event.params.id, eventId: event.id, authId: event.authId, authType: event.authType,
+    before: event.data?.before?.data() || null, after: event.data?.after?.data() || null,
+  }));

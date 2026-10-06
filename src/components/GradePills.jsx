@@ -15,7 +15,7 @@ export default function GradePills({ options, value, onChange, label, disabled =
             style={{
               fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
               cursor: disabled ? 'not-allowed' : 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-              background: active ? T.primary : 'transparent', color: active ? '#fff' : T.inkMuted,
+              background: active ? T.primary : 'transparent', color: active ? T.onPrimary : T.inkMuted,
               opacity: disabled ? 0.6 : 1,
               transition: 'background 0.15s ease-out, color 0.15s ease-out, opacity 0.15s ease-out',
             }}

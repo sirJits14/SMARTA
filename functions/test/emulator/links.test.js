@@ -34,6 +34,28 @@ describe('access requests', () => {
     expect((await db().doc(`access_requests/${id2}`).get()).data().status).toBe('denied');
     expect((await db().doc('guardian_links/g2_S1').get()).exists).toBe(false);
   });
+  it('approval gives a guardian with no prior profile their audience keys at once', async () => {
+    const { id } = await requestAccess(guardian(), req);
+    await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' });
+    expect((await db().doc('guardians/gNew').get()).data().audienceKeys).toEqual(['all', 'g7']);
+  });
+  it('still approves when the audience refresh fails (the trigger and nightly job are the backstops)', async () => {
+    // refreshGuardianAudience is the only approve-path code that queries guardian_links.
+    const real = db();
+    const flaky = new Proxy(real, {
+      get(t, k) {
+        if (k === 'collection') return (name) => { if (name === 'guardian_links') throw new Error('refresh unavailable'); return t.collection(name); };
+        const v = t[k];
+        return typeof v === 'function' ? v.bind(t) : v;
+      },
+    });
+    const { id } = await requestAccess(guardian(), req);
+    await expect(resolveAccessRequest({ ...staff(), db: flaky }, { id, approve: true, studentId: 'S1', note: 'ID checked' })).resolves.toEqual({ status: 'approved' });
+    expect((await real.doc(`access_requests/${id}`).get()).data()).toMatchObject({ status: 'approved' });
+    expect((await real.doc('guardian_links/gNew_S1').get()).data()).toMatchObject({ status: 'active' });
+    const inbox = await real.collection('guardians/gNew/inbox').get();
+    expect(inbox.docs[0].data()).toMatchObject({ type: 'system', title: 'Access approved' });
+  });
 });
 
 describe('resolveAccessRequest over an expired adviser link', () => {

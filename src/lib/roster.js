@@ -4,7 +4,7 @@ export function fullName(s) {
   return `${s.lastName}, ${s.firstName}${mi}${ext}`;
 }
 
-function byLastThenFirstName(a, b) {
+export function byLastThenFirstName(a, b) {
   return a.lastName.localeCompare(b.lastName, 'en', { sensitivity: 'base' }) ||
     a.firstName.localeCompare(b.firstName, 'en', { sensitivity: 'base' });
 }

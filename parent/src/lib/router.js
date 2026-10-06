@@ -6,6 +6,8 @@ const ROUTES = [
   ['activate', /^\/activate$/],
   ['learner', /^\/learner\/([^/]+)$/, ['id']],
   ['inbox', /^\/inbox$/],
+  ['announcements', /^\/announcements$/],
+  ['announcement', /^\/announcements\/([^/]+)$/, ['id']],
   ['report', /^\/report\/([^/]+)$/, ['eventId']],
   ['requestAccess', /^\/request-access$/],
   ['settings', /^\/settings$/],

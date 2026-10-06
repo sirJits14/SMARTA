@@ -2,11 +2,12 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { MAX_OPEN_REQUESTS } from '../callable.js';
 import { audit } from '../audit.js';
-import { logEvent } from '../log.js';
+import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
 import { isOpenStatus } from '../lib/codeSlots.js';
+import { refreshGuardianAudience } from './guardianAudience.js';
 
 // A non-attendance inbox item. Never pushed (system messages are read when
 // the guardian next opens the portal).
@@ -63,6 +64,15 @@ export async function resolveAccessRequest(ctx, data) {
     const profileRef = db.doc(`guardians/${request.guardianUid}`);
     if (!(await profileRef.get()).exists) {
       await profileRef.set({ email: request.guardianEmail, displayName: request.guardianName || '', consentAcceptedAt: null, consentVersion: 0, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });
+    }
+    // onGuardianLinkWritten may have run before the profile existed (and
+    // refreshGuardianAudience never creates one), so set the keys here too.
+    // A failure here must not fail an approval that already wrote the link:
+    // onGuardianLinkWritten and the nightly expireLinks job re-derive the keys.
+    try {
+      await refreshGuardianAudience(db, request.guardianUid);
+    } catch (e) {
+      logWarn('audience_refresh_failed', { uid: request.guardianUid, message: e.message });
     }
     await systemInbox(db, request.guardianUid, { title: 'Access approved', body: 'The registrar approved your request. Your learner now appears on your home screen.', studentId });
   } else {

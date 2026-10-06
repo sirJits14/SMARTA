@@ -19,3 +19,20 @@ export function pushPayload({ tokens, inboxId, studentId, portalUrl, deviceLabel
     },
   };
 }
+
+export const ANNOUNCEMENT_PUSH_TITLE = 'BNHS announcement';
+
+// Announcements carry no learner information, so the post title is the
+// body. One tag per post: a re-delivered push replaces, not stacks.
+export function announcementPayload({ tokens, announcementId, title, portalUrl }) {
+  return {
+    tokens,
+    notification: { title: ANNOUNCEMENT_PUSH_TITLE, body: title },
+    data: { announcementId },
+    webpush: {
+      headers: { TTL: '86400', Urgency: 'normal' },
+      notification: { title: ANNOUNCEMENT_PUSH_TITLE, body: title, tag: `announcement-${announcementId}`, icon: '/icons/icon-192.png' },
+      fcmOptions: { link: `${portalUrl}/announcements/${announcementId}` },
+    },
+  };
+}

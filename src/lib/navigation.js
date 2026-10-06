@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { key: 'attendance', label: 'Attendance', icon: 'attendance' },
   { key: 'idcards', label: 'ID Cards', icon: 'idcards' },
   { key: 'guardians', label: 'Guardians', icon: 'guardians' },
+  { key: 'announcements', label: 'Announcements', icon: 'announcements' },
   { key: 'settings', label: 'Settings', icon: 'settings' },
   { key: 'accounts', label: 'Accounts', icon: 'accounts' },
 ];

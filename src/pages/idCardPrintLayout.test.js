@@ -41,7 +41,9 @@ describe('ID card print layout', () => {
       /\.id-card-qr\s*\{[^}]*box-sizing: border-box !important;/s,
     );
     expect(ID_CARD_PRINT_STYLES).toContain('-webkit-line-clamp: 2;');
-    expect(ID_CARD_PRINT_STYLES).toContain('.id-card-section { display: none !important; }');
+    expect(ID_CARD_PRINT_STYLES).not.toContain('.id-card-section { display: none !important; }');
+    expect(ID_CARD_PRINT_STYLES).toMatch(/\.id-card-section\s*\{[^}]*font-size: 4pt !important;[^}]*\}/s);
+    expect(ID_CARD_PRINT_STYLES).toMatch(/\.id-card-section\s*\{[^}]*white-space: nowrap;[^}]*text-overflow: ellipsis;[^}]*\}/s);
   });
 
   it('never reserves a fixed full-page height for the sheet, so a partial roster does not overflow onto a spurious blank page', () => {
