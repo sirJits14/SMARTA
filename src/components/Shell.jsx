@@ -64,7 +64,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
           <span>{NAV_ITEMS.find(item => item.key === page)?.label || 'BNHS SIMS'}</span></div>
         <span className="sims-school-year">SY {schoolYear}</span>
       </Card>
-      <main id="sims-main" ref={mainRef} tabIndex={-1}>{children}</main>
+      <main id="sims-main" ref={mainRef} tabIndex={-1}><div key={page} className="sims-page-transition">{children}</div></main>
     </div>
     {tooltip && <div role="tooltip" className="sims-rail-tooltip" style={{ top:tooltip.top }}>{tooltip.label}</div>}
   </div>;

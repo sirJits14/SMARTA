@@ -5,11 +5,68 @@ import { splitByGender, rowsFor, dailyTallies, summaryFigures, mondayAlignmentOf
 
 const DAY_LETTER = ['S', 'M', 'T', 'W', 'TH', 'F', 'S']; // Date#getDay() index 0=Sun..6=Sat
 
-function writeRoster(ws, students, schoolDays, docsByDate, startRow, startIndex, colOffset) {
+// Original template coordinates. Insert before each group's final row so
+// its bottom border stays next to the total, moving the summary/signatures too.
+const MALE_START = 14;
+const MALE_TOTAL = 35;
+const FEMALE_START = 36;
+const FEMALE_TOTAL = 61;
+
+function expandRosterRows(ws, maleCount, femaleCount) {
+  const maleExtra = Math.max(0, maleCount - (MALE_TOTAL - MALE_START));
+  const femaleExtra = Math.max(0, femaleCount - (FEMALE_TOTAL - FEMALE_START));
+  const rowNumber = (row) => row
+    + (row >= MALE_TOTAL - 1 ? maleExtra : 0)
+    + (row >= FEMALE_TOTAL - 1 ? femaleExtra : 0);
+  if (!maleExtra && !femaleExtra) return rowNumber;
+
+  // ExcelJS row splicing does not reliably move merged ranges. Rebuild the
+  // template's row models and merges together, retaining individual cell
+  // styles (especially the outer borders of merged names/remarks).
+  const model = structuredClone(ws.model);
+  const shiftAddress = (address, shift) => address.replace(/\d+$/, (row) => Number(row) + shift);
+  const moveRow = (source, number) => ({
+    ...source,
+    number,
+    cells: source.cells.map((cell) => {
+      const moved = { ...cell, address: shiftAddress(cell.address, number - source.number) };
+      if (moved.type === ExcelJS.ValueType.Merge) {
+        // Restore as styled blank cells; the ranges below recreate the merges.
+        moved.type = ExcelJS.ValueType.Null;
+        delete moved.master;
+      }
+      return moved;
+    }),
+  });
+  const rows = model.rows.map((row) => moveRow(row, rowNumber(row.number)));
+  const merges = model.merges.map((range) => range.replace(/\d+/g, (row) => rowNumber(Number(row))));
+
+  for (const [totalRow, extra] of [[MALE_TOTAL, maleExtra], [FEMALE_TOTAL, femaleExtra]]) {
+    // Copy an interior blank student row, avoiding the group's top/bottom edges.
+    const source = model.rows.find((row) => row.number === totalRow - 2);
+    const sourceMerges = model.merges.filter((range) =>
+      range.split(':').every((address) => Number(address.match(/\d+$/)[0]) === source.number));
+    const firstNewRow = totalRow - 1 + (totalRow === FEMALE_TOTAL ? maleExtra : 0);
+    for (let i = 0; i < extra; i++) {
+      const number = firstNewRow + i;
+      rows.push(moveRow(source, number));
+      merges.push(...sourceMerges.map((range) =>
+        range.split(':').map((address) => shiftAddress(address, number - source.number)).join(':')));
+    }
+  }
+  model.merges.forEach((range) => ws.unMergeCells(range));
+  ws.model = { ...model, rows: rows.sort((a, b) => a.number - b.number), mergeCells: merges };
+  // Keep the form one page wide, allowing a longer roster to print over
+  // multiple pages without shrinking every student name to fit one page.
+  ws.pageSetup = { ...ws.pageSetup, fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+  return rowNumber;
+}
+
+function writeRoster(ws, students, schoolDays, docsByDate, startRow, colOffset) {
   const rows = rowsFor(students, schoolDays, docsByDate);
   rows.forEach((row, i) => {
     const r = ws.getRow(startRow + i);
-    r.getCell(1).value = startIndex + i + 1; // A: running count, continues across overflow pages
+    r.getCell(1).value = i + 1; // A: running count within each gender
     r.getCell(2).value = fullName(row.student); // B (anchor of the B:C merge)
     row.marks.forEach((mark, dayIdx) => { r.getCell(4 + colOffset + dayIdx).value = mark; }); // D..AB, shifted by the Monday-alignment offset
     r.getCell(29).value = row.absentTotal; // AC
@@ -23,7 +80,8 @@ function writeDailyTotals(ws, students, schoolDays, docsByDate, row, colOffset) 
   return tallies;
 }
 
-function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex }) {
+function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, rowNumber }) {
+  const cell = (address) => ws.getCell(address.replace(/\d+$/, (row) => rowNumber(Number(row))));
   ws.getCell('C6').value = schoolId;
   ws.getCell('K6').value = section.schoolYear;
   ws.getCell('X6').value = monthLabelText;
@@ -40,12 +98,12 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
     ws.getRow(12).getCell(4 + colOffset + i).value = DAY_LETTER[dow];
   });
 
-  writeRoster(ws, male, schoolDays, docsByDate, 14, startIndex.male, colOffset);
-  writeRoster(ws, female, schoolDays, docsByDate, 36, startIndex.female, colOffset);
-  const maleTallies = writeDailyTotals(ws, male, schoolDays, docsByDate, 35, colOffset);
-  const femaleTallies = writeDailyTotals(ws, female, schoolDays, docsByDate, 61, colOffset);
+  writeRoster(ws, male, schoolDays, docsByDate, rowNumber(MALE_START), colOffset);
+  writeRoster(ws, female, schoolDays, docsByDate, rowNumber(FEMALE_START), colOffset);
+  const maleTallies = writeDailyTotals(ws, male, schoolDays, docsByDate, rowNumber(MALE_TOTAL), colOffset);
+  const femaleTallies = writeDailyTotals(ws, female, schoolDays, docsByDate, rowNumber(FEMALE_TOTAL), colOffset);
   schoolDays.forEach((_, i) => {
-    ws.getRow(62).getCell(4 + colOffset + i).value = maleTallies[i] + femaleTallies[i];
+    ws.getRow(rowNumber(62)).getCell(4 + colOffset + i).value = maleTallies[i] + femaleTallies[i];
   });
 
   // No real historical-enrollment-date tracking exists yet (dateEnrolled is
@@ -54,28 +112,28 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
   // data available" rather than a real zero -- leave both figures blank for
   // the registrar to fill in by hand instead of printing a misleading 0/0%.
   if (enrolledAsOfCutoff > 0) {
-    ws.getCell('AJ66').value = enrolledAsOfCutoff;
-    ws.getCell('AJ72').value = summary.percentEnrolment;
+    cell('AJ66').value = enrolledAsOfCutoff;
+    cell('AJ72').value = summary.percentEnrolment;
   }
-  ws.getCell('AH70').value = summary.maleTotal;
-  ws.getCell('AI70').value = summary.femaleTotal;
-  ws.getCell('AJ70').value = summary.registeredEndOfMonth;
-  ws.getCell('AH74').value = summary.maleAvgDailyAttendance;
-  ws.getCell('AI74').value = summary.femaleAvgDailyAttendance;
-  ws.getCell('AJ74').value = summary.avgDailyAttendance;
+  cell('AH70').value = summary.maleTotal;
+  cell('AI70').value = summary.femaleTotal;
+  cell('AJ70').value = summary.registeredEndOfMonth;
+  cell('AH74').value = summary.maleAvgDailyAttendance;
+  cell('AI74').value = summary.femaleAvgDailyAttendance;
+  cell('AJ74').value = summary.avgDailyAttendance;
   // AH75 alone (unlike its row-mates AI75/AJ75) carries a pre-existing '0%'
   // number format in the real template -- Excel would multiply our already-
   // in-percentage-points value by 100 again for display (e.g. 98.4 -> a
   // garbled "9840%"). Override it so all three cells in the row render the
   // same plain-number way.
-  ws.getCell('AH75').numFmt = 'General';
-  ws.getCell('AH75').value = summary.malePercentAttendance;
-  ws.getCell('AI75').value = summary.femalePercentAttendance;
-  ws.getCell('AJ75').value = summary.percentAttendance;
-  ws.getCell('AC64').value = monthLabelText;
-  ws.getCell('AG64').value = schoolDays.length;
+  cell('AH75').numFmt = 'General';
+  cell('AH75').value = summary.malePercentAttendance;
+  cell('AI75').value = summary.femalePercentAttendance;
+  cell('AJ75').value = summary.percentAttendance;
+  cell('AC64').value = monthLabelText;
+  cell('AG64').value = schoolDays.length;
 
-  ws.getCell('AD88').value = section.adviserName || '';
+  cell('AD88').value = section.adviserName || '';
 }
 
 export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {
@@ -86,8 +144,7 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
   const templateSheet = wb.worksheets[0];
 
   const { male, female } = splitByGender(roster);
-  const MALE_CAP = 21;
-  const FEMALE_CAP = 25;
+  const rowNumber = expandRosterRows(templateSheet, male.length, female.length);
 
   const registeredEndOfMonth = male.length + female.length;
   const maleTallies = dailyTallies(male, schoolDays, docsByDate);
@@ -110,56 +167,9 @@ export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate
     femalePercentAttendance: femaleFigures.percentAttendance,
   };
 
-  if (male.length <= MALE_CAP && female.length <= FEMALE_CAP) {
-    fillSheet(templateSheet, { section, male, female, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff, summary, startIndex: { male: 0, female: 0 } });
-    return wb;
-  }
-
-  // Overflow: one section's roster exceeds this page's fixed row capacity.
-  // Continue onto additional cloned copies of the same template sheet,
-  // matching the official form's own "Page __ of __" convention.
-  const maleChunks = chunk(male, MALE_CAP);
-  const femaleChunks = chunk(female, FEMALE_CAP);
-  const pageCount = Math.max(maleChunks.length, femaleChunks.length, 1);
-
-  // Clone every extra sheet from templateSheet while it is still pristine --
-  // BEFORE any fillSheet call writes data into it. Filling page 1 first and
-  // cloning from it afterward would copy page 1's own rows/values onto
-  // every overflow page (target.model = {...source.model} copies cell data,
-  // not just layout), leaving stale duplicate rows on every page after the
-  // first.
-  const sheets = [templateSheet];
-  for (let i = 1; i < pageCount; i++) {
-    const ws = wb.addWorksheet(`SF2 (${i + 1})`, { properties: templateSheet.properties });
-    cloneSheetLayout(templateSheet, ws);
-    sheets.push(ws);
-  }
-
-  let maleSeen = 0;
-  let femaleSeen = 0;
-  for (let i = 0; i < pageCount; i++) {
-    const maleChunk = maleChunks[i] || [];
-    const femaleChunk = femaleChunks[i] || [];
-    fillSheet(sheets[i], {
-      section,
-      male: maleChunk,
-      female: femaleChunk,
-      schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff,
-      summary, startIndex: { male: maleSeen, female: femaleSeen },
-    });
-    maleSeen += maleChunk.length;
-    femaleSeen += femaleChunk.length;
-  }
+  fillSheet(templateSheet, {
+    section, male, female, schoolDays, docsByDate, monthLabelText,
+    schoolId, schoolName, enrolledAsOfCutoff, summary, rowNumber,
+  });
   return wb;
-}
-
-function chunk(items, size) {
-  const out = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
-}
-
-function cloneSheetLayout(source, target) {
-  target.model = { ...source.model, name: target.name, id: target.id };
-  source.model.merges.forEach((range) => target.mergeCells(range));
 }

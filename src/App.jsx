@@ -52,22 +52,26 @@ function AttendanceArea({ me, schoolYear, entry }) {
           return (
             <button
               key={key}
+              className="sims-tab"
+              aria-pressed={active}
               onClick={() => setTab(key)}
               style={{
                 fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
                 cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
                 background: active ? T.primary : 'transparent',
                 color: active ? '#fff' : T.inkMuted,
-                transition: 'background 0.15s ease-out, color 0.15s ease-out',
+                transition: 'background 0.16s ease-out, color 0.16s ease-out, box-shadow 0.16s ease-out, transform 0.16s ease-out',
               }}
             >{label}</button>
           );
         })}
       </div>
       <Suspense fallback={<PageFallback />}>
-        {tab === 'take'
-          ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
-          : <AttendanceSummaryPage me={me} schoolYear={schoolYear} />}
+        <div key={tab} className="sims-page-transition">
+          {tab === 'take'
+            ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
+            : <AttendanceSummaryPage me={me} schoolYear={schoolYear} />}
+        </div>
       </Suspense>
     </div>
   );

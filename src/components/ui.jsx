@@ -10,7 +10,7 @@ export const Btn = ({ style, className = '', variant = 'solid', ...p }) => (
     background: variant === 'solid' ? T.primary : 'transparent',
     color: variant === 'solid' ? '#fff' : T.primary,
     border: variant === 'solid' ? 'none' : `1.5px solid ${T.primary}`,
-    transition: 'background 0.15s ease-out, opacity 0.15s ease-out',
+    transition: 'background 0.16s ease-out, color 0.16s ease-out, opacity 0.16s ease-out, box-shadow 0.16s ease-out, transform 0.16s ease-out',
     ...style }} />
 );
 export const Inp = ({ style, className = '', ...p }) => (

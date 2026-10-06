@@ -49,7 +49,7 @@ export default function IDCardsPage({ me, schoolYear }) {
         })}
       </div>
 
-      <div role="tabpanel" id={`id-cards-panel-${tab}`} aria-labelledby={`id-cards-tab-${tab}`}>
+      <div key={tab} role="tabpanel" id={`id-cards-panel-${tab}`} aria-labelledby={`id-cards-tab-${tab}`} className="sims-page-transition">
         {tab === 'section' ? <BySectionTab {...data} /> : <PrintQueueTab {...data} />}
       </div>
     </div>

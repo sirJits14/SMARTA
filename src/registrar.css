@@ -1,18 +1,20 @@
 /* Registrar screen styles. Print and login retain their established styles. */
 @media screen {
-  .sims-ui { --sims-nav:rgba(255,255,255,.76); --sims-summary:rgba(255,255,255,.82); --sims-working:rgba(255,255,255,.97); --sims-radius:16px; --sims-field-font:14px; --sims-field-radius:12px; --sims-control-height:44px; --sims-control-border:#7a9294; --sims-ink:#12313a; --sims-muted:#55706f; color:var(--sims-ink); font-family:Inter,system-ui,sans-serif; font-size:14px; }
+  .sims-ui { box-sizing:border-box; --sims-nav:rgba(255,255,255,.76); --sims-summary:rgba(255,255,255,.82); --sims-working:rgba(255,255,255,.97); --sims-radius:16px; --sims-field-font:14px; --sims-field-radius:12px; --sims-control-height:44px; --sims-control-border:#7a9294; --sims-ink:#12313a; --sims-muted:#55706f; color:var(--sims-ink); font-family:Inter,system-ui,sans-serif; font-size:14px; }
   .sims-ui * { box-sizing:border-box; }
-  .app-shell.sims-ui { height:100dvh; overflow:hidden; padding:24px; display:grid; grid-template-columns:232px minmax(0,1fr); gap:24px; background:radial-gradient(ellipse at 7% 95%,#d2ece8 0,transparent 48%),radial-gradient(ellipse at 94% 78%,#dcebf1 0,transparent 48%),radial-gradient(ellipse at 48% 10%,#dcefec 0,transparent 60%),#eef5f4; }
+  .app-shell.sims-ui { height:100dvh; overflow:hidden; padding:24px; display:grid; grid-template-columns:232px minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:24px; background:radial-gradient(ellipse at 7% 95%,#d2ece8 0,transparent 48%),radial-gradient(ellipse at 94% 78%,#dcebf1 0,transparent 48%),radial-gradient(ellipse at 48% 10%,#dcefec 0,transparent 60%),#eef5f4; transition:grid-template-columns 220ms cubic-bezier(.16,1,.3,1); }
   .app-shell.sims-ui.is-collapsed { grid-template-columns:72px minmax(0,1fr); }
   .sims-ui .sims-surface { min-width:0; }
   .sims-ui .sims-surface--working { --sims-surface-fill:var(--sims-working); --sims-radius:16px; }
   .sims-ui .sims-surface--summary,.sims-ui .sims-surface--navigation { --sims-radius:24px; --sims-surface-border:rgba(255,255,255,.8); --sims-surface-shadow:0 8px 32px rgba(21,72,84,.06),inset 0 1px 0 rgba(255,255,255,.65); }
-  .sims-ui .sims-surface--summary { --sims-surface-fill:var(--sims-summary); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  .sims-ui .sims-surface--summary { --sims-surface-fill:var(--sims-summary); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); transition:box-shadow 180ms ease-out; }
+  .sims-ui .sims-surface--summary:hover { --sims-surface-shadow:0 12px 34px rgba(21,72,84,.1),inset 0 1px 0 rgba(255,255,255,.65); }
   .sims-ui .sims-surface--navigation { --sims-surface-fill:var(--sims-nav); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
   .sims-ui :focus-visible { outline:3px solid #154854; outline-offset:3px; }
   .sims-ui button { -webkit-tap-highlight-color:transparent; }
-  .sims-ui .sims-btn { min-height:44px; transition:background 160ms ease-out,box-shadow 160ms ease-out; }
-  .sims-ui .sims-btn:not(:disabled):hover { box-shadow:0 4px 12px rgba(21,72,84,.16); }
+  .sims-ui .sims-btn { min-height:44px; }
+  .sims-ui .sims-btn:not(:disabled):hover { box-shadow:0 4px 12px rgba(21,72,84,.16); transform:translateY(-1px); }
+  .sims-ui .sims-btn:not(:disabled):active { transform:translateY(0); }
   .sims-ui button:disabled { cursor:not-allowed; opacity:.6; }
   .sims-ui .sims-input { min-height:44px; }
   .sims-ui .sims-input::placeholder { color:#5f7577; opacity:1; }
@@ -20,8 +22,9 @@
   .sims-ui .sims-brand { display:flex; gap:10px; align-items:center; padding:0 8px 26px; white-space:nowrap; }
   .sims-ui .sims-wordmark { display:block; width:100%; max-width:188px; height:auto; }
   .sims-ui .sims-nav { flex:1; display:flex; flex-direction:column; gap:5px; min-height:0; overflow-y:auto; }
-  .sims-ui .sims-nav-item { display:flex; align-items:center; gap:12px; position:relative; border:0; background:transparent; color:#4e6669; border-radius:13px; padding:12px; min-height:44px; width:100%; text-align:left; font:inherit; font-size:13px; font-weight:500; cursor:pointer; flex-shrink:0; }
-  .sims-ui .sims-nav-item:hover { background:rgba(255,255,255,.7); color:#12313a; }
+  .sims-ui .sims-nav-item { display:flex; align-items:center; gap:12px; position:relative; border:0; background:transparent; color:#4e6669; border-radius:13px; padding:12px; min-height:44px; width:100%; text-align:left; font:inherit; font-size:13px; font-weight:500; cursor:pointer; flex-shrink:0; transition:background 160ms ease-out,color 160ms ease-out,box-shadow 160ms ease-out,transform 160ms ease-out; }
+  .sims-ui .sims-nav-item:hover { background:rgba(255,255,255,.7); color:#12313a; transform:translateY(-1px); }
+  .sims-ui .sims-nav-item:active { transform:translateY(0); }
   .sims-ui .sims-nav-item[aria-current="page"] { background:#007a72; color:white; box-shadow:0 5px 14px rgba(0,122,114,.18); font-weight:600; }
   .sims-ui .sims-nav-item svg { flex-shrink:0; }
   .sims-ui .sims-account { border-top:1px solid rgba(21,72,84,.12); margin-top:16px; padding-top:16px; display:grid; gap:8px; }
@@ -31,7 +34,9 @@
   .sims-ui .app-topbar { min-height:72px; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-shrink:0; }
   .sims-ui .sims-school-year { border:1px solid rgba(0,122,114,.17); background:#e3f3f1; color:#154854; border-radius:999px; padding:8px 14px; font-size:12px; font-weight:600; white-space:nowrap; }
   .sims-ui #sims-main { flex:1; min-height:0; min-width:0; overflow:auto; padding:4px 4px 20px; }
-  .sims-ui .sims-icon-button { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; background:rgba(255,255,255,.7); border:1px solid rgba(21,72,84,.14); border-radius:14px; color:#3e5a5e; cursor:pointer; flex-shrink:0; }
+  .sims-ui .sims-icon-button { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; background:rgba(255,255,255,.7); border:1px solid rgba(21,72,84,.14); border-radius:14px; color:#3e5a5e; cursor:pointer; flex-shrink:0; transition:background 160ms ease-out,color 160ms ease-out,box-shadow 160ms ease-out,transform 160ms ease-out; }
+  .sims-ui .sims-icon-button:hover { background:#fff; color:#154854; box-shadow:0 4px 12px rgba(21,72,84,.12); transform:translateY(-1px); }
+  .sims-ui .sims-icon-button:active { transform:translateY(0); }
   .sims-ui .sims-topbar-title { display:flex; align-items:center; gap:12px; font-size:14px; font-weight:600; }
   .sims-ui .sims-skip { position:fixed; left:24px; top:8px; transform:translateY(-200%); z-index:100; padding:12px; border-radius:10px; background:#fff; color:#154854; }
   .sims-ui .sims-skip:focus { transform:none; }
@@ -52,8 +57,12 @@
   .sims-ui .sims-feedback { padding:14px 16px; border-radius:12px; background:#fff4f3; color:#982525; font-size:14px; line-height:1.5; }
   .sims-ui .sims-loading { padding:40px; color:#55706f; min-height:160px; display:grid; place-items:center; }
   .sims-ui .sims-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:24px; }
-  .sims-ui .sims-tab { border:0; background:transparent; border-radius:999px; padding:10px 16px; min-height:44px; font:inherit; color:#4e6669; cursor:pointer; }
-  .sims-ui .sims-tab[aria-selected="true"],.sims-ui .sims-tab[aria-pressed="true"] { background:#007a72; color:#fff; font-weight:600; }
+  .sims-ui .sims-tab { border:0; background:transparent; border-radius:999px; padding:10px 16px; min-height:44px; font:inherit; color:#4e6669; cursor:pointer; transition:background 160ms ease-out,color 160ms ease-out,box-shadow 160ms ease-out,transform 160ms ease-out; }
+  .sims-ui .sims-tab:hover { transform:translateY(-1px); }
+  .sims-ui .sims-tab:active { transform:translateY(0); }
+  .sims-ui .sims-tab[aria-selected="true"],.sims-ui .sims-tab[aria-pressed="true"] { background:#007a72; color:#fff; font-weight:600; box-shadow:0 4px 12px rgba(0,122,114,.18); }
+  .sims-ui .sims-page-transition { animation:sims-page-enter 180ms cubic-bezier(.16,1,.3,1) both; }
+  @keyframes sims-page-enter { from { opacity:.72; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 }
 .sims-dialog { border:1px solid #dcebe8; border-radius:20px; padding:24px; background:#fff; color:#12313a; box-shadow:0 24px 80px rgba(18,49,58,.23); max-height:90dvh; overflow:auto; }
 .sims-dialog::backdrop { background:rgba(18,49,58,.35); }
@@ -61,8 +70,9 @@
   .app-shell.sims-ui { gap:16px; padding:16px; }
 }
 @media screen and (max-width:767px) {
-  .app-shell.sims-ui,.app-shell.sims-ui.is-collapsed { display:flex; padding:12px; }
+  .app-shell.sims-ui,.app-shell.sims-ui.is-collapsed { display:flex; height:auto; min-height:100dvh; overflow:visible; padding:12px; }
   .sims-ui .sims-content { width:100%; gap:16px; }
+  .sims-ui #sims-main { flex:initial; overflow:visible; }
   .sims-ui .app-topbar { padding:10px 14px; min-height:64px; }
   .sims-ui .sims-form-grid,.sims-ui .sims-page-grid { grid-template-columns:minmax(0,1fr); }
   .sims-ui .sims-heading { align-items:flex-start; }
