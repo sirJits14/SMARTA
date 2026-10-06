@@ -11,19 +11,19 @@ export const MAX_FAILURES = 5;
 // tokens[i] in the multicast that produced responses[i].
 export async function applyVerdicts(db, devDocs, responses) {
   // invalid-argument on every token of a multicast means the payload (or
-  // FCM) was at fault, not the tokens: touch no device rather than wipe the
-  // table. A single token's invalid-argument still marks it dead.
-  if (responses.length > 1 && responses.every((r) => !r.success && r.error?.code === 'messaging/invalid-argument')) {
-    logWarn('push_payload_rejected', { size: responses.length });
-    return { sent: 0, failed: responses.length, pruned: 0 };
-  }
+  // FCM) was at fault, or every token is malformed: we can't tell which, so
+  // never delete (that could wipe the table). Each device still takes a
+  // failure, so genuinely bad tokens reach MAX_FAILURES and are disabled. A
+  // single token's invalid-argument still marks it dead.
+  const payloadRejected = responses.length > 1 && responses.every((r) => !r.success && r.error?.code === 'messaging/invalid-argument');
+  if (payloadRejected) logWarn('push_payload_rejected', { size: responses.length });
   const batch = db.batch();
   let sent = 0, failed = 0, pruned = 0;
   responses.forEach((r, i) => {
     const docSnap = devDocs[i];
     if (r.success) { sent++; return; }
     failed++;
-    if (DEAD.has(r.error?.code)) { batch.delete(docSnap.ref); pruned++; return; }
+    if (!payloadRejected && DEAD.has(r.error?.code)) { batch.delete(docSnap.ref); pruned++; return; }
     const failureCount = (docSnap.data().failureCount || 0) + 1;
     const update = { failureCount };
     if (failureCount >= MAX_FAILURES) { update.enabled = false; update.disabledAt = Timestamp.now(); }
