@@ -80,6 +80,7 @@ service cloud.firestore {
     match /enrollments/{id} { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isAdmin(); }
     match /sections/{id}    { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isAdmin(); }
     match /schedules/{id}   { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isAdmin(); }
+    match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
     match /settings/app     { allow read: if isStaff() || isKiosk() || signedIn(); allow write: if isAdmin(); }
     match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isAdmin(); }
     match /users/{id}       { allow read: if isAdmin() || (signedIn() && request.auth.token.email != null && id == request.auth.token.email.lower()); allow write: if false; }
