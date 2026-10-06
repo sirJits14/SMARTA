@@ -9,29 +9,34 @@ const scenario=async name=>{await act(async()=>{window.previewScenario=name;wind
 const fill=async(node,value)=>{assert(node,'input absent');await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}))})};
 const waitFor=async(check,message,ms=8000)=>{const end=Date.now()+ms;while(!check()){if(Date.now()>end)throw Error(message);await act(async()=>new Promise(r=>setTimeout(r,50)))}};
 const admin={role:'admin',email:'admin@bnhs'};
-const openQueue=async()=>{try{localStorage.removeItem('sims.idCards.tab')}catch{}await scenario('normal');await render(<IDCardsPage me={admin} schoolYear="2026-2027"/>);await click(button('Print queue'));};
+const openBatch=async()=>{try{localStorage.removeItem('sims.idCards.tab')}catch{}await scenario('normal');await render(<IDCardsPage me={admin} schoolYear="2026-2027"/>);await click(button('Saved batch'));};
 const dialogText=()=>[...host.querySelectorAll('dialog[open]')].map(d=>d.textContent).join(' ');
 const stubPrint=()=>{const real=window.print;let calls=0;window.print=()=>{calls++};return{calls:()=>calls,restore:()=>{window.print=real}}};
 async function draftTest(Page,add,label){await scenario('normal');await render(<Page me={admin} schoolYear="2026-2027"/>);await click(button(add));await fill(input(label),'Retain this draft');await scenario('error');assert(host.querySelector('dialog[open]'),'Open draft dialog disappeared during resource error');assert(input(label).value==='Retain this draft','Draft lost during error');assert([...host.querySelectorAll('dialog button')].filter(n=>n.textContent.includes(add)).every(n=>n.matches(':disabled')),'Save remains enabled during error');await scenario('normal');assert(input(label).value==='Retain this draft','Draft lost after recovery');}
 function PrintCase({show}){const ref=useRef(null);const ready=usePrintReadiness(ref,'same-key',1);return <><output data-ready>{String(ready)}</output>{show&&<div ref={ref}><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E"/></div>}</>}
 const tests=[['Section details have a keyboard button',async()=>{await scenario('normal');await render(<SectionsPage me={admin} schoolYear="2026-2027"/>);const control=host.querySelector('button[aria-label="View Acacia section details"]');assert(control,'Section detail button absent');await click(control);assert(host.querySelector('dialog[open]'),'Section details did not open');}],['Learner draft survives retrieval failure',()=>draftTest(StudentsPage,'Add learner','Last name')],['Section draft survives retrieval failure',()=>draftTest(SectionsPage,'Add section','Section name')],['Schedule draft survives retrieval failure',()=>draftTest(SchedulesPage,'Add schedule','Schedule name')],['Print readiness resets when QR root detaches',async()=>{await render(<PrintCase show/>);await act(async()=>new Promise(r=>setTimeout(r,80)));assert(host.querySelector('[data-ready]').textContent==='true','Initial QR never became ready');await render(<PrintCase show={false}/>);assert(host.querySelector('[data-ready]').textContent==='false','Detached QR root still reports ready');await render(<PrintCase show/>);await act(async()=>new Promise(r=>setTimeout(r,80)));assert(host.querySelector('[data-ready]').textContent==='true','Remounted QR root never became ready');}]
-,['Print queue merges unprinted learners from every section onto shared sheets',async()=>{await openQueue();
-  assert(host.textContent.includes('115 learners not yet printed'),'Queue count wrong: expected 115 (s0 printed, s1 stale LRN)');
-  const cards=host.querySelectorAll('.id-cards-print-only .id-card');assert(cards.length===115,'Print sheet has '+cards.length+' cards, expected 115');
-  assert(host.querySelectorAll('.id-cards-print-only .id-cards-sheet').length===2,'Expected 115 cards on 2 sheets');
-  const labels=new Set([...host.querySelectorAll('.id-cards-print-only .id-card-section')].map(n=>n.textContent));assert(labels.size===8,'Expected cards from 8 sections, got '+labels.size);
-  assert(host.querySelector('.id-cards-print-only .id-card-section').textContent==='7 · Acacia','First card is not grade 7 Acacia');
-  assert(host.textContent.includes('115 cards · 2 sheets'),'Action bar summary missing');}]
-,['Printing the queue asks before marking, and both answers close the dialog',async()=>{const print=stubPrint();try{await openQueue();
+,['Saved batch prints its enrolled learners by section and sets aside the unenrolled one',async()=>{await openBatch();
+  const cards=[...host.querySelectorAll('.id-cards-print-only .id-card')];assert(cards.length===4,'Print sheet has '+cards.length+' cards, expected 4');
+  assert(cards.map(c=>c.querySelector('.id-card-section').textContent).join('|')==='7 · Acacia|8 · Camia|8 · Camia|9 · Faith','Cards are not in grade/section order');
+  assert(host.textContent.includes("Not enrolled — won't print · 1"),'Unenrolled batch learner not set aside');
+  assert(host.textContent.includes('4 of 80 — 76 more fills a sheet'),'Fill meter missing or wrong');
+  assert([...host.querySelectorAll('span')].filter(n=>n.textContent==='Printed').length===1,'Expected one Printed tag (s0)');}]
+,['Search offers enrolled learners not in the batch, and Add clears the search',async()=>{await openBatch();
+  await fill(input('Add a learner'),'Learner 004');
+  const add=host.querySelector('button[aria-label="Add Synthetic, Learner 004"]');assert(add,'Search did not offer Learner 004');
+  await fill(input('Add a learner'),'Learner 003');assert(!host.querySelector('button[aria-label="Add Synthetic, Learner 003"]'),'Search offered a learner already in the batch');
+  await fill(input('Add a learner'),'Learner 004');await click(host.querySelector('button[aria-label="Add Synthetic, Learner 004"]'));
+  assert(input('Add a learner').value==='','Add did not clear the search');}]
+,['Printing the batch asks before marking, and both answers close the dialog',async()=>{const print=stubPrint();try{await openBatch();
   await waitFor(()=>button('Print')&&!button('Print').disabled,'Print never became ready');
   await click(button('Print'));assert(print.calls()===1,'window.print not called');
-  assert(dialogText().includes('Did these 115 cards print correctly?'),'Confirm dialog missing after print');
+  assert(dialogText().includes('Did these 4 cards print correctly?'),'Confirm dialog missing after print');
   await click(button("No, don't mark"));assert(!dialogText().includes('print correctly'),'Dialog stayed open after No');
   await click(button('Print'));await click(button('Yes, mark as printed'));
   await waitFor(()=>!dialogText().includes('print correctly'),'Dialog stayed open after Yes');}finally{print.restore()}}]
-,['Mark as printed without printing asks first',async()=>{await openQueue();
-  await click(button('Mark as printed without printing'));
-  assert(dialogText().includes('Mark 115 learners as printed? They will leave the queue.'),'Mark-without-printing confirm missing');
+,['Clear batch asks first',async()=>{await openBatch();
+  await click(button('Clear batch'));
+  assert(dialogText().includes('Remove all 5 learners from the batch? Nothing is marked printed.'),'Clear confirm missing');
   await click(button('Cancel'));assert(!host.querySelector('dialog[open]'),'Confirm stayed open after Cancel');}]
 ,['Coordinator section print never asks to mark',async()=>{const print=stubPrint();try{await scenario('normal');
   await render(<SectionsPage me={{role:'jhs_coord'}} schoolYear="2026-2027"/>);

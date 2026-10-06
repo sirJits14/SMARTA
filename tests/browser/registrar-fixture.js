@@ -6,7 +6,8 @@ students[0].idCard={printedAt:{seconds:1},printedBy:'fixture@bnhs',lrn:students[
 students[1].idCard={printedAt:{seconds:1},printedBy:'fixture@bnhs',lrn:'000000000000'};
 const enrollments=students.slice(0,116).map((s,i)=>({id:s.id+'_'+sy,studentId:s.id,sectionId:'sec'+(i%8),schoolYear:sy,status:'enrolled',gradeLevel:sections[i%8].gradeLevel,dateEnrolled:today}));
 const attendance=[{id:'sec0_'+today,sectionId:'sec0',schoolYear:sy,date:today,marks:{}}];
-const data={students,sections,enrollments,student_attendance:attendance,schedules:[],kiosks:[]};
+const id_card_batch=['s0','s2','s10','s5','s120'].map(id=>({id,addedAt:{seconds:1},addedBy:'fixture@bnhs'}));
+const data={students,sections,enrollments,student_attendance:attendance,schedules:[],kiosks:[],id_card_batch};
 const settings={currentSchoolYear:sy,schoolId:'SYNTHETIC',schoolName:'BNHS Preview'};
 function useScenario(){const [s,set]=useState(window.previewScenario||'normal');useEffect(()=>{const f=()=>set(window.previewScenario||'normal');window.addEventListener('preview-change',f);return()=>window.removeEventListener('preview-change',f)},[]);return s;}
 const empty=[];
