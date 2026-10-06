@@ -2,7 +2,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { MAX_OPEN_REQUESTS } from '../callable.js';
 import { audit } from '../audit.js';
-import { logEvent } from '../log.js';
+import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
@@ -67,7 +67,13 @@ export async function resolveAccessRequest(ctx, data) {
     }
     // onGuardianLinkWritten may have run before the profile existed (and
     // refreshGuardianAudience never creates one), so set the keys here too.
-    await refreshGuardianAudience(db, request.guardianUid);
+    // A failure here must not fail an approval that already wrote the link:
+    // onGuardianLinkWritten and the nightly expireLinks job re-derive the keys.
+    try {
+      await refreshGuardianAudience(db, request.guardianUid);
+    } catch (e) {
+      logWarn('audience_refresh_failed', { uid: request.guardianUid, message: e.message });
+    }
     await systemInbox(db, request.guardianUid, { title: 'Access approved', body: 'The registrar approved your request. Your learner now appears on your home screen.', studentId });
   } else {
     await systemInbox(db, request.guardianUid, { title: 'Access request not approved', body: note ? `The registrar could not approve your request: ${note}` : 'The registrar could not approve your request. Please visit the school.' });
