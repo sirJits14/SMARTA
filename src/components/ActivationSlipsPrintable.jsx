@@ -22,7 +22,7 @@ function Slip({ slip, portalUrl }) {
 export default function ActivationSlipsPrintable({ slips, portalUrl }) {
   const sheets = useMemo(() => chunkSlips(slips), [slips]);
   return (
-    <div className="slips-print-root">
+    <div className="slips-print-root paper">
       <style>{SLIP_PRINT_STYLES}</style>
       {sheets.map((sheet, i) => <div className="slips-sheet" key={i}>{sheet.map((s) => <Slip key={s.studentId} slip={s} portalUrl={portalUrl} />)}</div>)}
     </div>
