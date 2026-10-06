@@ -18,4 +18,8 @@ describe('strings', () => {
       expect(typeof S[k], k).toBe('string');
     expect(S.activateAdviserDeped).toContain('@deped.gov.ph');
   });
+  it('has the appearance strings', () => {
+    for (const k of ['themeTitle', 'themeAuto', 'themeLight', 'themeDark', 'themeGroupLabel', 'themeAutoStatusLight', 'themeAutoStatusDark', 'themeFixedLight', 'themeFixedDark', 'themeSavedHere'])
+      expect(typeof S[k], k).toBe('string');
+  });
 });

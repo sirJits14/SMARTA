@@ -6,6 +6,7 @@ import S from '../strings.js';
 import { T } from '../styles.js';
 import { Btn, Card, Banner, Field, Inp } from '../components/ui.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import ThemeControl from '../components/ThemeControl.jsx';
 import { useLinks } from '../hooks/useLinks.js';
 import { useQuery, useDoc } from '../hooks/useDoc.js';
 import { notificationState } from '../lib/notificationState.js';
@@ -41,6 +42,11 @@ export default function Settings({ user, profile, navigate }) {
     <>
       <PageHeader title={S.settingsTitle} />
       {err && <Banner tone="danger">{err}</Banner>}
+      <Card>
+        <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.themeTitle}</h2>
+        <ThemeControl />
+        <p style={{ fontSize: 12, color: T.inkMuted, marginBottom: 0 }}>{S.themeSavedHere}</p>
+      </Card>
       <Card>
         <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsAccount}</h2>
         <div style={{ fontSize: 14, marginBottom: 12 }}>{S.signedInAs} <strong>{savedName || user.email}</strong>{savedName && <span style={{ color: T.inkMuted }}> · {user.email}</span>}</div>
