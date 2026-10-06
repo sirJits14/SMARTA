@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Card } from './ui.jsx';
+import { Btn, Card, Modal } from './ui.jsx';
 import DialogFrame from './DialogFrame.jsx';
 import NavIcon from './NavIcon.jsx';
+import ThemeControl from './ThemeControl.jsx';
+import ThemeMenuButton from './ThemeMenuButton.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
 import { canOpen } from '../lib/access.js';
 import { roleLabel } from '../../shared/staffRoles.js';
@@ -16,6 +18,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const [preference, setPreference] = useState(readPreference);
   const [drawer, setDrawer] = useState(false);
   const [tooltip, setTooltip] = useState(null);
+  const [appearance, setAppearance] = useState(false);
   const menuRef = useRef(null);
   const mainRef = useRef(null);
   const mobile = width < 768;
@@ -44,6 +47,9 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
     </nav>
     <div className="sims-account">
       {!collapsed && <><div className="sims-account-name">{me.name}</div><div className="sims-account-role">{roleLabel(me)}</div></>}
+      <button className="sims-nav-item" aria-label={collapsed ? 'Appearance' : undefined} onClick={() => { setTooltip(null); setAppearance(true); }}
+        onMouseEnter={e => showLabel(e,'Appearance')} onMouseLeave={() => setTooltip(null)} onFocus={e => showLabel(e,'Appearance')} onBlur={() => setTooltip(null)}>
+        <NavIcon name="theme"/><span className={collapsed ? 'sims-nav-tooltip' : ''}>Appearance</span></button>
       <button className="sims-nav-item" aria-label={collapsed ? `Sign out, ${me.name}` : undefined} onClick={onLogout}
         onMouseEnter={e => showLabel(e,'Sign out')} onMouseLeave={() => setTooltip(null)} onFocus={e => showLabel(e,'Sign out')} onBlur={() => setTooltip(null)}>
         <NavIcon name="logout"/><span className={collapsed ? 'sims-nav-tooltip' : ''}>Sign out</span></button>
@@ -64,10 +70,15 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
       <Card surface="navigation" className="app-topbar">
         <div className="sims-topbar-title">{mobile && <button ref={menuRef} className="sims-icon-button" aria-label="Open navigation" aria-expanded={drawer} aria-controls="sims-mobile-nav" onClick={() => setDrawer(true)}><NavIcon name="menu"/></button>}
           <span>{NAV_ITEMS.find(item => item.key === page)?.label || 'BNHS SIMS'}</span></div>
-        <span className="sims-school-year">SY {schoolYear}</span>
+        <div className="sims-topbar-actions"><ThemeMenuButton /><span className="sims-school-year">SY {schoolYear}</span></div>
       </Card>
       <main id="sims-main" ref={mainRef} tabIndex={-1}><div key={page} className="sims-page-transition">{children}</div></main>
     </div>
+    {appearance && <Modal title="Appearance" width={400} onClose={() => setAppearance(false)}>
+      <ThemeControl />
+      <p className="sims-theme-note">Saved on this device.</p>
+      <div style={{ display:'flex', justifyContent:'flex-end', marginTop:20 }}><Btn variant="ghost" onClick={() => setAppearance(false)}>Done</Btn></div>
+    </Modal>}
     {tooltip && <div role="tooltip" className="sims-rail-tooltip" style={{ top:tooltip.top }}>{tooltip.label}</div>}
   </div>;
 }
