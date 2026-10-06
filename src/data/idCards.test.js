@@ -1,13 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const firestore = vi.hoisted(() => {
-  const sets = [];
-  const commit = vi.fn().mockResolvedValue(undefined);
+  const batches = [];
   return {
-    sets,
-    commit,
+    batches,
     doc: vi.fn((_db, collectionName, id) => ({ path: `${collectionName}/${id}` })),
-    writeBatch: vi.fn(() => ({ set: (...args) => sets.push(args), commit })),
+    writeBatch: vi.fn(() => {
+      const batch = {
+        ops: [],
+        set: (...args) => batch.ops.push(['set', ...args]),
+        delete: (...args) => batch.ops.push(['delete', ...args]),
+        commit: vi.fn().mockResolvedValue(undefined),
+      };
+      batches.push(batch);
+      return batch;
+    }),
+    setDoc: vi.fn().mockResolvedValue(undefined),
+    deleteDoc: vi.fn().mockResolvedValue(undefined),
     serverTimestamp: vi.fn(() => 'SERVER_TIME'),
   };
 });
@@ -15,42 +24,75 @@ const firestore = vi.hoisted(() => {
 vi.mock('firebase/firestore', () => ({
   doc: firestore.doc,
   writeBatch: firestore.writeBatch,
+  setDoc: firestore.setDoc,
+  deleteDoc: firestore.deleteDoc,
   serverTimestamp: firestore.serverTimestamp,
 }));
 vi.mock('../firebase.js', () => ({ db: { kind: 'db' } }));
 
-import { markIdCardsPrinted } from './idCards.js';
+import { markIdCardsPrinted, addToIdCardBatch, removeFromIdCardBatch, clearIdCardBatch, markBatchPrinted } from './idCards.js';
 
 const me = { email: 'admin@bnhs.edu.ph' };
+const mark = (lrn) => ({ idCard: { printedAt: 'SERVER_TIME', printedBy: 'admin@bnhs.edu.ph', lrn } });
+const sizes = () => firestore.batches.map((b) => b.ops.length);
+const learners = (n) => Array.from({ length: n }, (_, i) => ({ id: `s${i}`, lrn: String(i) }));
 
 beforeEach(() => {
-  firestore.sets.length = 0;
-  firestore.commit.mockClear();
+  firestore.batches.length = 0;
   firestore.writeBatch.mockClear();
+  firestore.setDoc.mockClear();
+  firestore.deleteDoc.mockClear();
 });
 
 describe('markIdCardsPrinted', () => {
   it('merges the printed mark, with the LRN that was printed, into each learner', async () => {
     await markIdCardsPrinted([{ id: 's1', lrn: '111' }, { id: 's2', lrn: '222' }], me);
-
-    expect(firestore.sets).toEqual([
-      [{ path: 'students/s1' }, { idCard: { printedAt: 'SERVER_TIME', printedBy: 'admin@bnhs.edu.ph', lrn: '111' } }, { merge: true }],
-      [{ path: 'students/s2' }, { idCard: { printedAt: 'SERVER_TIME', printedBy: 'admin@bnhs.edu.ph', lrn: '222' } }, { merge: true }],
+    expect(firestore.batches[0].ops).toEqual([
+      ['set', { path: 'students/s1' }, mark('111'), { merge: true }],
+      ['set', { path: 'students/s2' }, mark('222'), { merge: true }],
     ]);
-    expect(firestore.commit).toHaveBeenCalledTimes(1);
+    expect(firestore.batches[0].commit).toHaveBeenCalledTimes(1);
   });
-
-  it('splits more than 500 learners across batches', async () => {
-    const students = Array.from({ length: 501 }, (_, i) => ({ id: `s${i}`, lrn: String(i) }));
-    await markIdCardsPrinted(students, me);
-
-    expect(firestore.writeBatch).toHaveBeenCalledTimes(2);
-    expect(firestore.commit).toHaveBeenCalledTimes(2);
-    expect(firestore.sets).toHaveLength(501);
+  it('splits 501 learners into batches of 500 and 1', async () => {
+    await markIdCardsPrinted(learners(501), me);
+    expect(sizes()).toEqual([500, 1]);
+    firestore.batches.forEach((b) => expect(b.commit).toHaveBeenCalledTimes(1));
   });
-
-  it('writes nothing for an empty batch', async () => {
+  it('writes nothing for an empty list', async () => {
     await markIdCardsPrinted([], me);
-    expect(firestore.commit).not.toHaveBeenCalled();
+    expect(firestore.batches).toHaveLength(0);
+  });
+});
+
+describe('saved batch', () => {
+  it('adds a learner with who added them and when', async () => {
+    await addToIdCardBatch('s1', me);
+    expect(firestore.setDoc).toHaveBeenCalledWith({ path: 'id_card_batch/s1' }, { addedAt: 'SERVER_TIME', addedBy: 'admin@bnhs.edu.ph' });
+  });
+  it('removes a learner', async () => {
+    await removeFromIdCardBatch('s1');
+    expect(firestore.deleteDoc).toHaveBeenCalledWith({ path: 'id_card_batch/s1' });
+  });
+  it('clears in batches of at most 500 deletes', async () => {
+    await clearIdCardBatch(Array.from({ length: 501 }, (_, i) => `s${i}`));
+    expect(sizes()).toEqual([500, 1]);
+    expect(firestore.batches[1].ops).toEqual([['delete', { path: 'id_card_batch/s500' }]]);
+  });
+});
+
+describe('markBatchPrinted', () => {
+  it('marks each learner and removes them from the batch in the same write', async () => {
+    await markBatchPrinted([{ id: 's1', lrn: '111' }, { id: 's2', lrn: '222' }], me);
+    expect(firestore.batches).toHaveLength(1);
+    expect(firestore.batches[0].ops).toEqual([
+      ['set', { path: 'students/s1' }, mark('111'), { merge: true }],
+      ['delete', { path: 'id_card_batch/s1' }],
+      ['set', { path: 'students/s2' }, mark('222'), { merge: true }],
+      ['delete', { path: 'id_card_batch/s2' }],
+    ]);
+  });
+  it('keeps each batch at 500 operations or fewer (250 learners)', async () => {
+    await markBatchPrinted(learners(300), me);
+    expect(sizes()).toEqual([500, 100]);
   });
 });
