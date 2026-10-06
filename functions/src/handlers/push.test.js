@@ -100,12 +100,28 @@ describe('applyVerdicts', () => {
     await applyVerdicts(db, [devDoc('d1', { token: 't1', failureCount: MAX_FAILURES - 1 })], [{ success: false, error: { code: 'x' } }]);
     expect(db.ops[0].data).toMatchObject({ failureCount: MAX_FAILURES, enabled: false });
   });
-  it('treats invalid-argument on every token of a multicast as a payload error: touches no device', async () => {
+  it('treats invalid-argument on every token of a multicast as a payload error: counts the failure, never deletes', async () => {
     const db = fakeDb();
     const devDocs = [devDoc('d1', { token: 't1' }), devDoc('d2', { token: 't2', failureCount: 1 }), devDoc('d3', { token: 't3' })];
     const bad = { success: false, error: { code: 'messaging/invalid-argument' } };
     expect(await applyVerdicts(db, devDocs, [bad, bad, bad])).toEqual({ sent: 0, failed: 3, pruned: 0 });
-    expect(db.ops).toEqual([]);
+    expect(db.ops).toEqual([
+      { type: 'update', ref: { id: 'd1' }, data: { failureCount: 1 } },
+      { type: 'update', ref: { id: 'd2' }, data: { failureCount: 2 } },
+      { type: 'update', ref: { id: 'd3' }, data: { failureCount: 1 } },
+    ]);
+    expect(db.ops.some((o) => o.type === 'delete')).toBe(false);
+  });
+  it('disables a device at MAX_FAILURES even when the whole multicast was invalid-argument', async () => {
+    const db = fakeDb();
+    const devDocs = [devDoc('d1', { token: 't1', failureCount: MAX_FAILURES - 1 }), devDoc('d2', { token: 't2' })];
+    const bad = { success: false, error: { code: 'messaging/invalid-argument' } };
+    expect(await applyVerdicts(db, devDocs, [bad, bad])).toEqual({ sent: 0, failed: 2, pruned: 0 });
+    expect(db.ops).toHaveLength(2);
+    expect(db.ops[0]).toMatchObject({ type: 'update', ref: { id: 'd1' }, data: { failureCount: MAX_FAILURES, enabled: false } });
+    expect(db.ops[0].data.disabledAt).toBeDefined();
+    expect(db.ops[1].data).toEqual({ failureCount: 1 });
+    expect(db.ops.some((o) => o.type === 'delete')).toBe(false);
   });
   it('still prunes a single token rejected as invalid-argument', async () => {
     const db = fakeDb();

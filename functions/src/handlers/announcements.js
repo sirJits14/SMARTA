@@ -167,11 +167,14 @@ export async function publishDueAnnouncements({ db, now }) {
     col.where('pushResult.status', '==', 'sending').where('pushResult.claimedAt', '<=', staleBefore).limit(200).get(),
   ]);
   const updates = new Map();
-  const newer = (a, b) => (!a || b.updateTime.seconds > a.updateTime.seconds
-    || (b.updateTime.seconds === a.updateTime.seconds && b.updateTime.nanoseconds > a.updateTime.nanoseconds) ? b : a);
+  // A post can come back from more than one query and its patch merges data
+  // from each read, so keep the OLDEST snapshot: a change after any of the
+  // reads then fails the precondition and the post waits for the next run.
+  const older = (a, b) => (!a || b.updateTime.seconds < a.updateTime.seconds
+    || (b.updateTime.seconds === a.updateTime.seconds && b.updateTime.nanoseconds < a.updateTime.nanoseconds) ? b : a);
   const add = (d, patch, kind) => {
     const prev = updates.get(d.ref.path);
-    updates.set(d.ref.path, { snap: newer(prev?.snap, d), patch: { ...(prev?.patch || {}), ...patch }, kinds: [...(prev?.kinds || []), kind] });
+    updates.set(d.ref.path, { snap: older(prev?.snap, d), patch: { ...(prev?.patch || {}), ...patch }, kinds: [...(prev?.kinds || []), kind] });
   };
   // A scheduled post already past its expiry never goes out (never visible,
   // never pushed): it goes straight to expired, with no publishedAt.
