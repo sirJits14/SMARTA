@@ -1,5 +1,5 @@
 import React,{act,useRef} from 'react';import {createRoot} from 'react-dom/client';
-import '/src/registrar.css';
+import '/shared/theme/theme.css';import '/src/registrar.css';
 import StudentsPage from '/src/pages/StudentsPage.jsx';import SectionsPage from '/src/pages/SectionsPage.jsx';import SchedulesPage from '/src/pages/SchedulesPage.jsx';import {usePrintReadiness} from '/src/hooks/usePrintReadiness.js';import IDCardsPage from '/src/pages/IDCardsPage.jsx';import Shell from '/src/components/Shell.jsx';
 window.IS_REACT_ACT_ENVIRONMENT=true;const host=document.getElementById('test-root');const root=createRoot(host);const results=document.getElementById('results');
 const assert=(condition,message)=>{if(!condition)throw Error(message)};const render=async node=>{await act(async()=>root.render(node))};
