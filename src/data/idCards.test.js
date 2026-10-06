@@ -91,7 +91,7 @@ describe('markBatchPrinted', () => {
       ['delete', { path: 'id_card_batch/s2' }],
     ]);
   });
-  it('keeps each batch at 500 operations or fewer (250 learners)', async () => {
+  it('splits 300 learners into batches of 500 and 100 operations (250 learners per batch)', async () => {
     await markBatchPrinted(learners(300), me);
     expect(sizes()).toEqual([500, 100]);
   });

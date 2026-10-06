@@ -24,7 +24,7 @@ export default function IDCardsPage({ me, schoolYear }) {
     try { localStorage.setItem(STORAGE, next); } catch { /* the tab still switches without storage */ }
   };
 
-  const resources = [sectionsResource, enrollmentsResource, studentsResource, batchResource];
+  const resources = [sectionsResource, enrollmentsResource, studentsResource];
   if (resources.some(r => r.loading || r.error)) return <ResourceState resources={resources}/>;
   const data = { me, schoolYear, sections: sectionsResource.data, enrollments: enrollmentsResource.data, students: studentsResource.data };
 
@@ -52,7 +52,7 @@ export default function IDCardsPage({ me, schoolYear }) {
       </div>
 
       <div role="tabpanel" id={`id-cards-panel-${tab}`} aria-labelledby={`id-cards-tab-${tab}`}>
-        {tab === 'section' ? <BySectionTab {...data} /> : <SavedBatchTab {...data} batchDocs={batchResource.data} />}
+        {tab === 'section' ? <BySectionTab {...data} /> : <ResourceState resources={[batchResource]}><SavedBatchTab {...data} batchDocs={batchResource.data} /></ResourceState>}
       </div>
     </div>
   );

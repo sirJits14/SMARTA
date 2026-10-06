@@ -131,6 +131,24 @@ describe('enrolledEntries and buildBatchView', () => {
   it('is empty for an empty batch', () => {
     expect(buildBatchView({ batchDocs: [], enrolled, students })).toEqual({ printable: [], notPrintable: [] });
   });
+  it('lists a learner once even with two enrolled enrollments in the year', () => {
+    const twice = enrolledEntries({
+      students: [ana],
+      sections: [rizal, bonifacio],
+      schoolYear: SY,
+      enrollments: [enroll(ana, rizal), enroll(ana, bonifacio, { id: 'ana_second' })],
+    });
+    expect(ids(twice)).toEqual(['ana']);
+  });
+  it('orders not-printable learners with identical names by id, whatever the batch order', () => {
+    const twinB = learner('twin-b', 'Twin', 'M', { lrn: '' });
+    const twinA = learner('twin-a', 'Twin', 'M', { lrn: '' });
+    const both = [twinB, twinA];
+    for (const batchDocs of [[{ id: 'twin-b' }, { id: 'twin-a' }], [{ id: 'twin-a' }, { id: 'twin-b' }]]) {
+      const result = buildBatchView({ batchDocs, enrolled: [], students: both });
+      expect(result.notPrintable.map((n) => n.id)).toEqual(['twin-a', 'twin-b']);
+    }
+  });
 });
 
 describe('sheetFillLabel', () => {

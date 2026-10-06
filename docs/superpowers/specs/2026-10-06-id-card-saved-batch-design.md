@@ -147,7 +147,7 @@ batch, so the admin can remove them.
 |---|---|
 | `firestore.rules` | Adds the `id_card_batch` rule. |
 | `tests/rules/idCardBatch.test.js` | **New.** Admin can read and write. Coordinator, kiosk, guardian and anonymous are denied both. |
-| `src/lib/idCardQueue.js` | Adds `buildBatchView({ batchDocs, students, enrollments, sections, schoolYear })` → `{ printable, notPrintable }` and `sheetFillLabel(n)`. `buildIdCardQueue` is replaced by `enrolledEntries(...)`, a sorted list of enrolled learners with an LRN, used for search. `listQueueEntries` is removed. |
+| `src/lib/idCardQueue.js` | Adds `buildBatchView({ batchDocs, enrolled, students })` → `{ printable, notPrintable }` and `sheetFillLabel(n)`. `buildIdCardQueue` is replaced by `enrolledEntries(...)`, a sorted list of enrolled learners with an LRN, used for search. `listQueueEntries` is removed. |
 | `src/lib/idCardQueue.test.js` | Tests for the above. |
 | `src/data/idCards.js` | Adds `addToIdCardBatch(studentId, me)`, `removeFromIdCardBatch(studentId)`, `clearIdCardBatch(studentIds)` and `markBatchPrinted(students, me)`. The last one marks the students and deletes their batch docs in the same chunked `writeBatch`. `markIdCardsPrinted` stays for the other two print paths. |
 | `src/data/idCards.test.js` | Tests for the new functions. |

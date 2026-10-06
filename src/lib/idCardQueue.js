@@ -30,11 +30,13 @@ export function enrolledEntries({ students, enrollments, sections, schoolYear })
   const studentById = new Map(students.map((s) => [s.id, s]));
   const sectionById = new Map(sections.map((s) => [s.id, s]));
   const entries = [];
+  const added = new Set();
   for (const enrollment of enrollments) {
     if (enrollment.schoolYear !== schoolYear || enrollment.status !== 'enrolled') continue;
     const student = studentById.get(enrollment.studentId);
     const section = sectionById.get(enrollment.sectionId);
-    if (!student || !section || !String(student.lrn ?? '').trim()) continue;
+    if (!student || !section || !String(student.lrn ?? '').trim() || added.has(student.id)) continue;
+    added.add(student.id);
     entries.push({ student, section });
   }
   return sortIdCardBatch(entries);
@@ -54,7 +56,7 @@ export function buildBatchView({ batchDocs, enrolled, students }) {
   }
   notPrintable.sort((a, b) =>
     (!a.student) - (!b.student) ||
-    (a.student && b.student ? byLastThenFirstName(a.student, b.student) : a.id.localeCompare(b.id)));
+    (a.student && b.student ? byLastThenFirstName(a.student, b.student) || a.id.localeCompare(b.id) : a.id.localeCompare(b.id)));
   return { printable: sortIdCardBatch(printable), notPrintable };
 }
 

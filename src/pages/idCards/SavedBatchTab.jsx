@@ -78,7 +78,7 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
             <Card style={{ position: 'sticky', top: 0, zIndex: 1, padding: '12px 20px', marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>{fill || 'Nothing in the batch can print yet'}</span>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <Btn variant="ghost" onClick={() => setConfirmClear(true)}>Clear batch</Btn>
+                <Btn variant="ghost" disabled={action.busy} onClick={() => setConfirmClear(true)}>Clear batch</Btn>
                 <Btn disabled={printable.length === 0 || !printReady} onClick={() => printAndConfirm(printableStudents)}>
                   {printable.length === 0 || printReady ? 'Print' : 'Preparing QR codes…'}
                 </Btn>
