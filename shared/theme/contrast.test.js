@@ -27,7 +27,7 @@ const TEXT = [
   ['feedback-ink', 'feedback-bg'], ['primary-deep', 'tint'], ['primary-deep', 'tint-strong'], ['nav-ink', 'tint'],
   ['tooltip-ink', 'tooltip-bg'], ['primary-deep', 'bevel-top'], ['primary-deep', 'bevel-bottom'],
 ];
-const NON_TEXT = [['control-border', 'surface'], ['control-border', 'dialog'], ['focus', 'bg'], ['focus', 'surface']];
+const NON_TEXT = [['control-border', 'surface'], ['control-border', 'dialog'], ['focus', 'bg'], ['focus', 'surface'], ['focus', 'dialog']];
 
 describe.each(Object.entries(PALETTES))('%s palette', (name, t) => {
   it.each(TEXT)('text %s on %s is at least 4.5:1', (fg, bg) => {
@@ -40,5 +40,22 @@ describe.each(Object.entries(PALETTES))('%s palette', (name, t) => {
   });
   it('defines the same tokens as the other palette', () => {
     expect(Object.keys(t).sort()).toEqual(Object.keys(PALETTES.light).sort());
+  });
+});
+
+describe('print is always light', () => {
+  it('keeps every [data-theme="dark"] rule inside the @media screen block', () => {
+    const start = css.indexOf('@media screen {');
+    expect(start).toBeGreaterThanOrEqual(0);
+    let depth = 0, end = -1;
+    for (let i = css.indexOf('{', start); i < css.length; i++) {
+      if (css[i] === '{') depth += 1;
+      else if (css[i] === '}' && --depth === 0) { end = i; break; }
+    }
+    expect(end).toBeGreaterThan(start);
+    const NOT_DARK = ':not([data-theme="dark"])';
+    const outside = css.slice(0, start) + css.slice(end + 1);
+    expect(outside.split(NOT_DARK).join('').includes('[data-theme="dark"]')).toBe(false);
+    expect(css.slice(start, end).includes('[data-theme="dark"]')).toBe(true);
   });
 });

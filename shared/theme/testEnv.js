@@ -18,8 +18,10 @@ export function fakeEnv({ stored, dark = false, blocked = false } = {}) {
     querySelector: (sel) => (sel === 'meta[name="theme-color"]' ? meta : null),
   };
   const timers = [];
+  const pending = new Map();
   const winHandlers = new Set();
-  const win = { document: doc, localStorage: storage, matchMedia: () => media, setTimeout: (fn) => { timers.push(fn); return timers.length; },
+  const win = { document: doc, localStorage: storage, matchMedia: () => media, setTimeout: (fn) => { timers.push(fn); pending.set(timers.length, fn); return timers.length; },
+    clearTimeout: (id) => { const fn = pending.get(id); pending.delete(id); const i = timers.indexOf(fn); if (i >= 0) timers.splice(i, 1); },
     addEventListener: (type, h) => { if (type === 'storage') winHandlers.add(h); }, removeEventListener: (type, h) => winHandlers.delete(h) };
   return { data, storage, media, meta, doc, win, classes, timers, winHandlers,
     theme: () => attrs.get('data-theme'),

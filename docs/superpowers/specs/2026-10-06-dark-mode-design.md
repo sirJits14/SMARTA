@@ -1,7 +1,7 @@
 # Dark mode (Auto / Light / Dark) for SIMS and the Parents App
 
 Date: 2026-10-06
-Status: approved in brainstorming, pending spec review
+Status: approved; implemented on branch claude/dark-mode-toggle-apps-98ef21
 
 ## Goal
 

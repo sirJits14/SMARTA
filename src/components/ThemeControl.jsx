@@ -1,8 +1,7 @@
 import { useRef } from 'react';
 import { PREFS, stepPref } from '../../shared/theme/theme.js';
 import { useTheme } from '../hooks/useTheme.js';
-
-export const THEME_LABEL = { auto: 'Auto', light: 'Light', dark: 'Dark' };
+import { THEME_LABEL } from '../lib/themeLabels.js';
 
 // Auto / Light / Dark as one radio group: arrow keys move and select, like native radios.
 export default function ThemeControl() {

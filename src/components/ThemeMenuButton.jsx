@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import NavIcon from './NavIcon.jsx';
-import { THEME_LABEL } from './ThemeControl.jsx';
+import { THEME_LABEL } from '../lib/themeLabels.js';
 import { PREFS, stepPref } from '../../shared/theme/theme.js';
 import { useTheme } from '../hooks/useTheme.js';
 

@@ -89,6 +89,18 @@ describe('createThemeStore', () => {
     expect(store.getPref()).toBe('dark');
     store.dispose();
   });
+  it('a second switch inside the fade window restarts it instead of ending it early', () => {
+    const env = fakeEnv({ dark: false });
+    const store = createThemeStore({ win: env.win });
+    store.setPref('dark');
+    expect(env.timers).toHaveLength(1);
+    store.setPref('light');
+    expect(env.timers).toHaveLength(1); // only the latest timer is pending
+    expect(env.classes.has('theme-switching')).toBe(true);
+    env.timers.forEach((fn) => fn());
+    expect(env.classes.has('theme-switching')).toBe(false);
+    store.dispose();
+  });
   it('switching between auto and the same resolved theme does not cross-fade', () => {
     const env = fakeEnv({ stored: 'auto', dark: false });
     const store = createThemeStore({ win: env.win });

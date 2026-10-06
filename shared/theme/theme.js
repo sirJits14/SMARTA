@@ -54,6 +54,7 @@ export function createThemeStore({ win = globalThis.window, doc = win?.document,
   const media = mediaOf(win);
   let systemDark = !!media?.matches;
   const listeners = new Set();
+  let switchTimer = null;
   const getTheme = () => resolveTheme(pref, systemDark);
 
   const update = () => {
@@ -64,7 +65,8 @@ export function createThemeStore({ win = globalThis.window, doc = win?.document,
       applyTheme(theme, doc);
       if (before && before !== theme && win?.setTimeout) {
         root.classList.add('theme-switching');
-        win.setTimeout(() => root.classList.remove('theme-switching'), SWITCH_MS);
+        if (switchTimer !== null) win.clearTimeout?.(switchTimer); // a quick second switch restarts the fade window
+        switchTimer = win.setTimeout(() => { switchTimer = null; root.classList.remove('theme-switching'); }, SWITCH_MS);
       }
     }
     listeners.forEach((listener) => listener());
@@ -98,6 +100,7 @@ export function createThemeStore({ win = globalThis.window, doc = win?.document,
       if (media?.removeEventListener) media.removeEventListener('change', onMedia);
       else media?.removeListener?.(onMedia);
       win?.removeEventListener?.('storage', onStorage);
+      if (switchTimer !== null) { win?.clearTimeout?.(switchTimer); switchTimer = null; }
       listeners.clear();
     },
   };

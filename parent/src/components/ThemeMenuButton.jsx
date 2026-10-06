@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import S from '../strings.js';
 import Icon from './Icon.jsx';
-import { THEME_LABEL } from './ThemeControl.jsx';
+import { THEME_LABEL } from '../lib/themeLabels.js';
 import { PREFS, stepPref } from '../../../shared/theme/theme.js';
 import { useTheme } from '../hooks/useTheme.js';
 

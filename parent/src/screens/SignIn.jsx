@@ -30,8 +30,8 @@ export default function SignIn() {
   const reset = async () => { setBusy(true); setMsg(null); try { await sendPasswordResetEmail(auth, email.trim()); } catch {} setMsg({ tone: 'info', text: S.resetSent }); setBusy(false); };
 
   return (
-    <div style={{ fontFamily: T.font, minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 16 }}>
-      <div style={{ position: 'fixed', top: 'calc(14px + env(safe-area-inset-top, 0px))', right: 16, zIndex: 11 }}><ThemeMenuButton /></div>
+    <div style={{ fontFamily: T.font, minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 16, position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 11 }}><ThemeMenuButton /></div>
       <Card style={{ width: '100%', maxWidth: 400 }}>
         <img src="/icons/icon-192.png" alt="" width={48} height={48} />
         <h1 style={{ fontSize: 22, margin: '8px 0 2px' }}>{S.appName}</h1>
