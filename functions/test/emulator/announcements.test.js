@@ -245,6 +245,28 @@ describe('publishDueAnnouncements', () => {
     expect(await read('b')).toMatchObject({ status: 'published', publishedAt: at });
     expect(r).toEqual({ published: 1, expired: 0, interrupted: 0 });
   });
+  it('commits a post that came back from two queries against its OLDEST snapshot time', async () => {
+    // 'x' is past its expiry (ended query) and has a stale claim (stuck query).
+    // The patch merges data from both reads, so any change after the older read
+    // must fail the precondition.
+    const ref = { path: 'announcements/x' };
+    const data = { status: 'published', expiresAt: ts(NOW.getTime() - 1), pushResult: { status: 'sending', claimedAt: ts(NOW.getTime() - CLAIM_STALE_MS - 1) } };
+    const snap = (updateTime) => ({ ref, updateTime, data: () => data });
+    const older = ts(1_000), newer = ts(2_000);
+    const results = [[], [snap(older)], [snap(newer)]]; // due, ended, stuck (query order)
+    let q = 0;
+    const query = { where: () => query, limit: () => query, get: async () => ({ docs: results[q++] }) };
+    const calls = [];
+    const stub = {
+      collection: () => query,
+      batch: () => ({ update: (...args) => calls.push(args), commit: async () => {} }),
+    };
+    const r = await publishDueAnnouncements({ db: stub, now: () => NOW });
+    expect(r).toEqual({ published: 0, expired: 1, interrupted: 1 });
+    expect(calls).toHaveLength(1);
+    expect(calls[0][2].lastUpdateTime).toBe(older);
+    expect(calls[0][1]).toMatchObject({ status: 'expired', pushResult: { status: 'interrupted' } });
+  });
   it('expires posts past their expiry and leaves open-ended ones', async () => {
     await write('old', post({ expiresAt: ts(NOW.getTime() - 1) }));
     await write('open', post({ expiresAt: null }));
