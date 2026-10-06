@@ -79,14 +79,6 @@ export const ID_CARD_PRINT_STYLES = `
       line-height: 1 !important;
       margin-top: 0.4mm !important;
     }
-    .id-card-section {
-      width: 100%;
-      overflow: hidden !important;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      font-size: 4pt !important;
-      line-height: 1 !important;
-      margin-top: 0.3mm !important;
-    }
+    .id-card-section { display: none !important; }
   }
 `;
