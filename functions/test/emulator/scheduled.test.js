@@ -129,4 +129,11 @@ describe('auditSettingsChange', () => {
     const rows = await db().collection('audit_log').where('action', '==', 'portal.settings_changed').get();
     expect(rows.docs[0].data().details).toMatchObject({ before: { notificationsPaused: false }, after: { notificationsPaused: true, pausedBy: 'registrar@bnhs.edu', pauseNote: 'Drill' } });
   });
+
+  it('records school contact detail changes', async () => {
+    await auditSettingsChange(db(), { before: { contactPhone: '' }, after: { contactPhone: '+63 44 815 1234', officeHours: 'Mon–Fri', updatedBy: 'admin@bnhs.edu' } });
+    const rows = await db().collection('audit_log').where('action', '==', 'portal.settings_changed').get();
+    const details = rows.docs.map((d) => d.data().details).find((d) => d.after.contactPhone);
+    expect(details).toMatchObject({ before: { contactPhone: '' }, after: { contactPhone: '+63 44 815 1234', officeHours: 'Mon–Fri' } });
+  });
 });
