@@ -29,6 +29,9 @@ describe('activeTab', () => {
   it('lights Settings for settings', () => {
     expect(activeTab('settings')).toBe('settings');
   });
+  it('keeps Settings lit on a settings sub-page', () => {
+    expect(activeTab(matchRoute('/settings/about').name)).toBe('settings');
+  });
   it('lights nothing on onboarding and unknown screens', () => {
     for (const name of ['verify', 'consent', 'activate', 'requestAccess', 'notFound', undefined]) {
       expect(activeTab(name)).toBeNull();
