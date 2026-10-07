@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { signOut, updateProfile } from 'firebase/auth';
-import { doc, updateDoc, collection, query, where, limit } from 'firebase/firestore';
-import { auth, db, callable } from '../firebase.js';
+import { collection, query, where, limit } from 'firebase/firestore';
+import { db } from '../firebase.js';
+import { saveDisplayName, setGuardianPrefs, deleteMyAccount, signOutNow } from '../lib/guardianWrites.js';
 import S from '../strings.js';
 import { T } from '../styles.js';
 import { Btn, Card, Banner, Field, Inp } from '../components/ui.jsx';
@@ -28,15 +28,15 @@ export default function Settings({ user, profile, navigate }) {
 
   const saveName = async () => {
     setBusy(true); setErr(null); setNameSaved(false);
-    try { await updateDoc(doc(db, 'guardians', user.uid), { displayName: name.trim() }); updateProfile(user, { displayName: name.trim() }).catch(() => {}); setNameSaved(true); }
+    try { await saveDisplayName(user, name.trim()); setNameSaved(true); }
     catch { setErr(S.reportFailed); }
     setBusy(false);
   };
-  const toggleAccount = () => updateDoc(doc(db, 'guardians', user.uid), { notificationsEnabled: !accountEnabled }).catch(() => setErr(S.reportFailed));
-  const toggleAnnouncements = () => updateDoc(doc(db, 'guardians', user.uid), { announcementPushEnabled: !announcementPush }).catch(() => setErr(S.reportFailed));
+  const toggleAccount = () => setGuardianPrefs(user.uid, { notificationsEnabled: !accountEnabled }).catch(() => setErr(S.reportFailed));
+  const toggleAnnouncements = () => setGuardianPrefs(user.uid, { announcementPushEnabled: !announcementPush }).catch(() => setErr(S.reportFailed));
   const enable = async () => { setBusy(true); setErr(null); try { await enableOnThisDevice(user.uid); } catch { setErr(S.notifBlockedHelp); } device.refresh(); setBusy(false); };
   const disable = async () => { setBusy(true); await disableOnThisDevice(user.uid); device.refresh(); setBusy(false); };
-  const remove = async () => { setBusy(true); try { await callable('deleteGuardianAccountFn')({}); await signOut(auth); } catch { setErr(S.reportFailed); setBusy(false); } };
+  const remove = async () => { setBusy(true); try { await deleteMyAccount(); } catch { setErr(S.reportFailed); setBusy(false); } };
 
   return (
     <>
@@ -86,7 +86,7 @@ export default function Settings({ user, profile, navigate }) {
         {portal?.privacyNoticeUrl && <p><a href={portal.privacyNoticeUrl} target="_blank" rel="noreferrer">{S.settingsPrivacy}</a></p>}
         {!confirmDelete && <Btn variant="ghost" onClick={() => setConfirmDelete(true)}>{S.settingsDelete}</Btn>}
         {confirmDelete && <><p>{S.settingsDeleteConfirm}</p><div style={{ display: 'grid', gap: 10 }}><Btn variant="danger" onClick={remove} disabled={busy}>{S.settingsDeleteButton}</Btn><Btn variant="ghost" onClick={() => setConfirmDelete(false)}>{S.cancel}</Btn></div></>}
-        <Btn variant="ghost" onClick={() => signOut(auth)} style={{ marginTop: 12 }}>{S.signOut}</Btn>
+        <Btn variant="ghost" onClick={signOutNow} style={{ marginTop: 12 }}>{S.signOut}</Btn>
       </Card>
     </>
   );
