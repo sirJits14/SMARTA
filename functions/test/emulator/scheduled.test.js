@@ -136,4 +136,11 @@ describe('auditSettingsChange', () => {
     const details = rows.docs.map((d) => d.data().details).find((d) => d.after.contactPhone);
     expect(details).toMatchObject({ before: { contactPhone: '' }, after: { contactPhone: '+63 44 815 1234', officeHours: 'Mon–Fri' } });
   });
+
+  it('credits the editor, not an earlier pauser, for later settings changes', async () => {
+    await auditSettingsChange(db(), { before: { pausedBy: 'old-pauser@bnhs.edu', contactPhone: '111' }, after: { pausedBy: 'old-pauser@bnhs.edu', contactPhone: '222-editor-credit', updatedBy: 'admin@bnhs.edu' } });
+    const rows = await db().collection('audit_log').where('action', '==', 'portal.settings_changed').get();
+    const row = rows.docs.map((d) => d.data()).find((d) => d.details.after.contactPhone === '222-editor-credit');
+    expect(row.actorUid).toBe('admin@bnhs.edu');
+  });
 });
