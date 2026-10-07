@@ -1,7 +1,7 @@
 # Parents App Settings, organized like phone Settings
 
 Date: 2026-10-07
-Status: approved design; not yet implemented (branch claude/parents-app-settings-categories-203f26)
+Status: implemented on branch claude/parents-app-settings-categories-203f26
 
 ## Goal
 
@@ -179,6 +179,16 @@ so its Firestore listeners are not re-created. `params.section` is
   and the Notifications page links to the Install page.
 - Delete confirm is open and the parent taps back: confirm state resets.
 - Deep link to `/settings/install` while installed: shows "This app is installed."
+
+## Implementation notes
+
+- Tile and switch colors are `--tile-*`, `--on-tile`, `--switch-knob` and
+  `--switch-shadow` in their own `:root` block in `shared/theme/theme.css`
+  (not `--t-*`), so the light/dark token-parity test doesn't apply to them.
+- The main list hides any row whose section has no page in `PAGES`; there is
+  no separate `isSection` helper.
+- Settings' writes live in `parent/src/lib/guardianWrites.js`, which lets the
+  synthetic browser preview (`parent/tests/browser/settings-*`) swap them out.
 
 ## Testing
 
