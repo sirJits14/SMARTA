@@ -20,7 +20,7 @@ export default function InstallPage({ back }) {
         <>
           <p className="settings-intro">{S.installBody}</p>
           {state === 'ready' && (
-            <SettingsGroup><SettingsRow tile="blue" icon="download" label={S.installButton} tone="primary" chevron={false} onClick={() => prompt.prompt()} /></SettingsGroup>
+            <SettingsGroup><SettingsRow tile="blue" icon="download" label={S.installButton} tone="primary" chevron={false} onClick={() => prompt.prompt().catch(() => {})} /></SettingsGroup>
           )}
           {state !== 'ready' && ios && (
             <SettingsGroup header={S.installIosHeader}>

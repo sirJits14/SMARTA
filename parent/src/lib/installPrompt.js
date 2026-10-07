@@ -15,11 +15,14 @@ export function createInstallPrompt(target) {
       if (!held) return 'unavailable';
       const e = held;
       held = null;
-      await e.prompt();
-      const { outcome } = await e.userChoice;
-      if (outcome === 'accepted') installed = true;
-      emit();
-      return outcome;
+      try {
+        await e.prompt();
+        const { outcome } = await e.userChoice;
+        if (outcome === 'accepted') installed = true;
+        return outcome;
+      } finally {
+        emit();
+      }
     },
   };
 }

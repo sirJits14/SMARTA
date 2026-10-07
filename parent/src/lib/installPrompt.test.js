@@ -43,6 +43,17 @@ describe('createInstallPrompt', () => {
   it('returns unavailable when nothing is held', async () => {
     expect(await setup().p.prompt()).toBe('unavailable');
   });
+  it('still notifies subscribers and goes idle when the browser prompt fails', async () => {
+    const { target, p } = setup();
+    const e = promptEvent('accepted');
+    e.prompt = vi.fn(async () => { throw new Error('nope'); });
+    target.dispatchEvent(e);
+    const fn = vi.fn();
+    p.subscribe(fn);
+    await expect(p.prompt()).rejects.toThrow('nope');
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(p.state()).toBe('idle');
+  });
   it('notifies subscribers until they unsubscribe', () => {
     const { target, p } = setup();
     const fn = vi.fn();
