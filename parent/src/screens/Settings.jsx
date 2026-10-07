@@ -20,12 +20,16 @@ import AppearancePage from './settings/AppearancePage.jsx';
 import LearnersPage from './settings/LearnersPage.jsx';
 import ReportsPage from './settings/ReportsPage.jsx';
 import PrivacyPage from './settings/PrivacyPage.jsx';
+import InstallPage from './settings/InstallPage.jsx';
+import HelpPage from './settings/HelpPage.jsx';
+import AboutPage from './settings/AboutPage.jsx';
+import { BUILD } from '../lib/buildInfo.js';
 
 // Sub-pages by route segment (/settings/<key>). A main-list row with no page
 // here is hidden, and an unknown segment falls back to the list.
 const PAGES = {
-  profile: ProfilePage, notifications: NotificationsPage, appearance: AppearancePage,
-  learners: LearnersPage, reports: ReportsPage, privacy: PrivacyPage,
+  profile: ProfilePage, notifications: NotificationsPage, appearance: AppearancePage, install: InstallPage,
+  learners: LearnersPage, reports: ReportsPage, help: HelpPage, privacy: PrivacyPage, about: AboutPage,
 };
 
 // One mounted screen for the list and every sub-page (same route name), so
@@ -58,6 +62,7 @@ function SettingsHome({ ctx }) {
     appearance: THEME_LABEL[pref],
     learners: links ? String(links.length) : '',
     reports: openReportCount(reports) || '',
+    about: BUILD.date,
   };
   return (
     <>
