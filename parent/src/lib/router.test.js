@@ -15,4 +15,10 @@ describe('matchRoute', () => {
     expect(matchRoute('/settings/', '').name).toBe('settings');
     expect(matchRoute('/nope', '').name).toBe('notFound');
   });
+  it('matches the settings list and a settings section', () => {
+    expect(matchRoute('/settings', '').params).toStrictEqual({});
+    expect(matchRoute('/settings/notifications', '')).toEqual({ name: 'settings', params: { section: 'notifications' }, query: {} });
+    expect(matchRoute('/settings/help/', '').params).toStrictEqual({ section: 'help' });
+    expect(matchRoute('/settings/a/b', '').name).toBe('notFound');
+  });
 });

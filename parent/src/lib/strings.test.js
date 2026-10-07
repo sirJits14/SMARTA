@@ -22,4 +22,11 @@ describe('strings', () => {
     for (const k of ['themeTitle', 'themeAuto', 'themeLight', 'themeDark', 'themeGroupLabel', 'themeAutoStatusLight', 'themeAutoStatusDark', 'themeFixedLight', 'themeFixedDark', 'themeSavedHere'])
       expect(typeof S[k], k).toBe('string');
   });
+  it('has the settings category strings', () => {
+    for (const k of ['settingsProfile', 'settingsInstall', 'settingsMyLearners', 'settingsReportsRequests', 'settingsHelp', 'settingsPrivacyAccount', 'settingsAbout',
+      'settingsLearnersEmpty', 'settingsReportsEmpty', 'reportReviewed', 'notifShortOn', 'notifShortOff', 'notifShortBlocked', 'notifShortUnsupported', 'notifShortInstall',
+      'notifRowScans', 'notifRowAnnouncements', 'notifHowToInstall', 'installBody', 'installButton', 'installDone', 'installIosHeader', 'installIosStep1', 'installIosStep2',
+      'installIosStep3', 'installOther', 'helpPhone', 'helpEmail', 'helpFacebook', 'helpHours', 'helpEmpty', 'aboutVersion'])
+      expect(typeof S[k], k).toBe('string');
+  });
 });

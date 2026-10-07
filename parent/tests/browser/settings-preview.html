@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Parents Settings preview</title>
+<script>
+  // Same rule as index.html's theme-boot script, so the saved theme applies before paint.
+  try { var v = localStorage.getItem('bnhs-theme'); var d = matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', v === 'dark' || ((v !== 'light') && d) ? 'dark' : 'light'); } catch (e) {}
+</script>
+</head><body><div id="root"></div><script type="module" src="./settings-preview.jsx"></script></body></html>

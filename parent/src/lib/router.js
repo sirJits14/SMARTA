@@ -10,7 +10,7 @@ const ROUTES = [
   ['announcement', /^\/announcements\/([^/]+)$/, ['id']],
   ['report', /^\/report\/([^/]+)$/, ['eventId']],
   ['requestAccess', /^\/request-access$/],
-  ['settings', /^\/settings$/],
+  ['settings', /^\/settings(?:\/([^/]+))?$/, ['section']],
 ];
 
 export function matchRoute(pathname, search = '') {
@@ -18,7 +18,8 @@ export function matchRoute(pathname, search = '') {
   const query = Object.fromEntries(new URLSearchParams(search));
   for (const [name, re, keys = []] of ROUTES) {
     const m = path.match(re);
-    if (m) return { name, params: Object.fromEntries(keys.map((k, i) => [k, decodeURIComponent(m[i + 1])])), query };
+    // Optional segments that didn't match are left out of params.
+    if (m) return { name, params: Object.fromEntries(keys.flatMap((k, i) => (m[i + 1] === undefined ? [] : [[k, decodeURIComponent(m[i + 1])]]))), query };
   }
   return { name: 'notFound', params: {}, query };
 }
