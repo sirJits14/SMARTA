@@ -14,6 +14,16 @@ describe('pages', () => {
     expect(canOpen(glc8, 'enroll')).toBe(false);
     expect(canOpen({ role: 'teacher' }, 'dashboard')).toBe(false);
   });
+  it('no coordinator role is an administrator or reaches admin-only pages', () => {
+    for (const me of [jhs, { role: 'shs_coord' }, glc8]) {
+      expect(isAdmin(me)).toBe(false);
+      for (const page of ['enroll', 'idcards', 'guardians', 'settings', 'accounts']) expect(canOpen(me, page)).toBe(false);
+    }
+  });
+  it('a profile with no role is still an administrator (pre-roles accounts)', () => {
+    expect(isAdmin({})).toBe(true);
+    expect(isAdmin({ role: '' })).toBe(true);
+  });
 });
 
 describe('grade controls', () => {
