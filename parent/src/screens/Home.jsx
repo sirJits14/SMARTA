@@ -11,8 +11,8 @@ import { notificationState } from '../lib/notificationState.js';
 import { useDeviceStatus } from '../lib/notifications.js';
 
 // A Messages-style row: name and today's latest scan time on top, then what
-// happened and the learner's section as the muted preview. The arrival icon
-// in the margin marks a learner who has entered and not yet left today.
+// happened and the learner's section as the muted preview. The icon in the
+// margin repeats today's latest scan: green arrival or slate departure.
 function LearnerRow({ link, data, error, navigate }) {
   const name = listName(data, link.learnerName);
   const avatar = <span className="learner-avatar" aria-hidden="true">{initials(data?.displayName || link.learnerName)}</span>;
@@ -32,7 +32,7 @@ function LearnerRow({ link, data, error, navigate }) {
   return (
     <li>
       <button type="button" className="learner-row" onClick={() => navigate(`/learner/${link.studentId}`)}>
-        {latest?.kind === 'in' && <span className="learner-row-mark" aria-hidden="true"><Icon name="arrive" size={14} strokeWidth={2.4} /></span>}
+        {latest && <span className={`learner-row-mark learner-row-mark--${latest.kind}`} aria-hidden="true"><Icon name={latest.kind === 'in' ? 'arrive' : 'leave'} size={14} strokeWidth={2.4} /></span>}
         {avatar}
         <span className="learner-row-body">
           <span className="learner-row-top">
