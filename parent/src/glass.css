@@ -320,18 +320,21 @@ button.settings-row:active:not(:disabled), a.settings-row:active { background: v
 [aria-checked="true"] > .settings-switch { background: var(--tile-green); }
 [aria-checked="true"] > .settings-switch::after { transform: translateX(20px); }
 
-/* ---- Home: compact learner list (screens/Home.jsx) ---- */
-.learner-list { margin: 0 0 12px; padding: 0; border-radius: 14px; overflow: hidden; list-style: none; }
+/* ---- Home: Messages-style learner list (screens/Home.jsx) ----
+   Rows sit on the page itself, edge to edge, with hairlines that start at
+   the text like iOS Messages. */
+.learner-list { margin: 0 -16px 12px; padding: 0; list-style: none; }
 .learner-list > li { position: relative; }
-.learner-list > li + li::before { content: ''; position: absolute; top: 0; right: 0; left: 66px; z-index: 1; border-top: 1px solid var(--t-border); }
+.learner-list > li + li::before { content: ''; position: absolute; top: 0; right: 16px; left: 84px; z-index: 1; border-top: 1px solid var(--t-border); }
 .learner-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 64px;
+  min-height: 76px;
   box-sizing: border-box;
-  padding: 10px 12px 10px 14px;
+  padding: 10px 16px 10px 26px;
   border: 0;
   background: transparent;
   color: var(--t-ink);
@@ -342,28 +345,22 @@ button.learner-row { cursor: pointer; -webkit-tap-highlight-color: transparent; 
 button.learner-row:active { background: var(--t-tint); }
 @media (hover: hover) { button.learner-row:hover { background: var(--t-tint-hover); } }
 .learner-row:focus-visible { outline: 2px solid var(--t-focus); outline-offset: -2px; }
+.learner-row-dot { position: absolute; top: 50%; left: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--t-present); transform: translateY(-50%); }
 .learner-avatar {
   display: grid; place-items: center; flex: 0 0 auto;
-  width: 40px; height: 40px; border-radius: 50%;
-  background: rgba(var(--t-primary-rgb), 0.13); color: var(--t-primary-deep);
-  font-size: 14px; font-weight: 800; letter-spacing: 0.02em;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--t-muted) 82%, var(--t-bg)), var(--t-muted));
+  color: var(--t-bg);
+  font-size: 19px; font-weight: 700; letter-spacing: 0.01em;
 }
-.learner-row-text { display: flex; flex: 1 1 auto; flex-direction: column; gap: 4px; min-width: 0; }
-.learner-row-name { font-size: 16px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
-.learner-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.learner-row-section { color: var(--t-muted); font-size: 13px; line-height: 1.3; }
-.learner-row-note { color: var(--t-warn-text); font-size: 13px; line-height: 1.35; }
-.learner-row-chevron { display: inline-flex; flex: 0 0 auto; color: var(--t-muted); opacity: 0.6; }
-.scan-pill {
-  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
-  padding: 2px 9px 2px 7px; border-radius: 999px;
-  background: rgba(var(--t-ink-rgb), 0.06); color: var(--t-ink);
-  font-size: 12.5px; font-weight: 600; line-height: 1.5; font-variant-numeric: tabular-nums; white-space: nowrap;
+.learner-row-body { display: flex; flex: 1 1 auto; flex-direction: column; gap: 3px; min-width: 0; }
+.learner-row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.learner-row-name { flex: 1 1 auto; min-width: 0; overflow: hidden; font-size: 17px; font-weight: 650; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.learner-row-time { flex: 0 0 auto; color: var(--t-muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+.learner-row-chevron { display: inline-flex; flex: 0 0 auto; margin: 0 -4px 0 -4px; color: var(--t-muted); opacity: 0.55; }
+.learner-row-preview {
+  display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  color: var(--t-muted); font-size: 15px; line-height: 1.35;
 }
-.scan-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t-muted); }
-.scan-pill--in { background: color-mix(in srgb, var(--t-present) 14%, transparent); }
-.scan-pill--in .scan-pill-dot { background: var(--t-present); }
-.scan-pill--out .scan-pill-dot { background: var(--t-excused); }
-.scan-pill--none { color: var(--t-muted); font-weight: 500; }
-.scan-pill--none .scan-pill-dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--t-muted); }
+.learner-row-preview--warn { color: var(--t-warn-text); }
 @media (prefers-reduced-motion: reduce) { button.learner-row { transition: none; } }
