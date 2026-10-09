@@ -346,6 +346,7 @@ button.learner-row:active { background: var(--t-tint); }
 @media (hover: hover) { button.learner-row:hover { background: var(--t-tint-hover); } }
 .learner-row:focus-visible { outline: 2px solid var(--t-focus); outline-offset: -2px; }
 .learner-row-mark { position: absolute; top: 50%; left: 7px; display: inline-flex; color: var(--t-present); transform: translateY(-50%); }
+.learner-row-mark--out { color: var(--t-excused); }
 .learner-avatar {
   display: grid; place-items: center; flex: 0 0 auto;
   width: 46px; height: 46px; border-radius: 50%;
