@@ -8,9 +8,9 @@ export const NAV_TABS = [
 ];
 
 const ROUTE_TAB = {
-  home: 'home', learner: 'home',
+  home: 'home', learner: 'home', report: 'home', // a report is opened from a learner's history
   announcements: 'notices', announcement: 'notices',
-  inbox: 'inbox', report: 'inbox', // a report is opened from an inbox item or its push
+  inbox: 'inbox',
   settings: 'settings',
 };
 
