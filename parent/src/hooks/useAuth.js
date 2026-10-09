@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db, appCheckReady } from '../firebase.js';
 import { clearLastSeen } from './useDoc.js';
+import { profileFrom } from '../lib/profile.js';
 
 // user: undefined (resolving) | null (signed out) | User
 // profile: undefined (loading) | null (no guardians/{uid} yet) | object
@@ -24,7 +25,7 @@ export function useAuth() {
     let cancelled = false; let unsub = () => {};
     appCheckReady.then(() => {
       if (cancelled) return;
-      unsub = onSnapshot(doc(db, 'guardians', user.uid), (s) => setProfile(s.exists() ? { id: s.id, ...s.data() } : null), () => setProfile(null));
+      unsub = onSnapshot(doc(db, 'guardians', user.uid), (s) => setProfile(s.exists() ? profileFrom(s) : null), () => setProfile(null));
     });
     return () => { cancelled = true; unsub(); };
   }, [user]);
