@@ -22,9 +22,11 @@ describe('activeTab', () => {
     expect(activeTab('announcements')).toBe('notices');
     expect(activeTab('announcement')).toBe('notices');
   });
-  it('lights Inbox for the inbox and a report opened from it', () => {
+  it('lights Inbox for the inbox', () => {
     expect(activeTab('inbox')).toBe('inbox');
-    expect(activeTab('report')).toBe('inbox');
+  });
+  it("keeps Home lit on a report, which is opened from a learner's history", () => {
+    expect(activeTab('report')).toBe('home');
   });
   it('lights Settings for settings', () => {
     expect(activeTab('settings')).toBe('settings');
