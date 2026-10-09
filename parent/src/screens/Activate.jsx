@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { updateProfile } from 'firebase/auth';
 import { callable } from '../firebase.js';
 import S from '../strings.js';
+import { nameCase } from '../lib/format.js';
 import { Btn, Card, Field, Inp, Sel, Banner } from '../components/ui.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 
@@ -50,7 +51,7 @@ export default function Activate({ user, profile, route, navigate }) {
 
   if (done) return (
     <Card>
-      <h1 style={{ fontSize: 20 }}>{S.activateSuccess} {done.displayName}</h1>
+      <h1 style={{ fontSize: 20 }}>{S.activateSuccess} {nameCase(done.displayName)}</h1>
       <p>{done.sectionLabel}</p>
       <div style={{ display: 'grid', gap: 10 }}>
         <Btn onClick={() => navigate('/')}>{S.continue}</Btn>

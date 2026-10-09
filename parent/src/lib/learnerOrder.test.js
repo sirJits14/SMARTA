@@ -40,5 +40,6 @@ describe('listName', () => {
     expect(listName({ displayName: 'Ana Cruz' })).toBe('Ana Cruz');
     expect(listName(null, 'Ana Cruz')).toBe('Ana Cruz');
     expect(listName(null)).toBe('—');
+    expect(listName({ formalName: 'DELA CRUZ, ANA B.' })).toBe('Dela Cruz, Ana B.');
   });
 });

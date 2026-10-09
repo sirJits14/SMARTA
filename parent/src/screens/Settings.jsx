@@ -12,7 +12,7 @@ import { notificationState } from '../lib/notificationState.js';
 import { useDeviceStatus } from '../lib/notifications.js';
 import { isStandalone } from '../lib/device.js';
 import { signOutNow } from '../lib/guardianWrites.js';
-import { initials } from '../lib/format.js';
+import { initials, nameCase } from '../lib/format.js';
 import { SECTIONS, sectionGroups, notificationValue, openReportCount } from '../lib/settingsSections.js';
 import ProfilePage from './settings/ProfilePage.jsx';
 import NotificationsPage from './settings/NotificationsPage.jsx';
@@ -69,7 +69,7 @@ function SettingsHome({ ctx }) {
       <PageHeader title={S.settingsTitle} />
       <SettingsGroup>
         <SettingsRow variant="profile" leading={<span className="settings-avatar" aria-hidden="true">{initials(savedName || user.email)}</span>}
-          label={savedName || user.email} subtitle={savedName ? user.email : undefined} onClick={() => navigate('/settings/profile')} />
+          label={nameCase(savedName) || user.email} subtitle={savedName ? user.email : undefined} onClick={() => navigate('/settings/profile')} />
       </SettingsGroup>
       {sectionGroups(hidden).map((group) => (
         <SettingsGroup key={group[0].key}>

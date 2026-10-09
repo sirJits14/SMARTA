@@ -1,4 +1,4 @@
-import { NAME_SUFFIXES } from './format.js';
+import { NAME_SUFFIXES, nameCase } from './format.js';
 
 // Home lists learners the way DepEd forms do: males first, then females, each
 // by last name and then first name. learners/{id} docs written before
@@ -26,4 +26,4 @@ export function orderLearners(entries) {
 }
 
 // "Dela Cruz, Juan S." when projected; the plain display name otherwise.
-export const listName = (learner, fallbackName) => learner?.formalName || learner?.displayName || fallbackName || '—';
+export const listName = (learner, fallbackName) => nameCase(learner?.formalName || learner?.displayName || fallbackName) || '—';
