@@ -10,14 +10,14 @@ const MEGAPHONE = 'M3 10v4a1 1 0 0 0 1 1h3l6 4.5V4.5L7 9H4a1 1 0 0 0-1 1z';
 const WAVES = 'M16.5 9a4 4 0 0 1 0 6 M19.5 6.5a8 8 0 0 1 0 11';
 const PHONE = 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z';
 
-export default function Icon({ name, filled = false, size = 24 }) {
+export default function Icon({ name, filled = false, size = 24, strokeWidth = 1.75 }) {
   const fill = filled ? 'currentColor' : 'none';
   // Cut-out detail on a filled icon uses the on-primary color so it reads on the
   // teal shape in both themes. Set via style: SVG attributes don't resolve var().
   const detail = filled ? T.onPrimary : 'currentColor';
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false"
-      fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+      fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
       {name === 'home' && <path d={HOUSE} fill={fill} />}
       {name === 'back' && <><path d="M15 18l-6-6 6-6" /><path d="M9 12h11" /></>}
       {name === 'inbox' && <><path d={TRAY} fill={fill} /><path d={TRAY_LIP} style={{ stroke: detail }} /></>}
@@ -38,6 +38,9 @@ export default function Icon({ name, filled = false, size = 24 }) {
       {name === 'share' && <><path d="M12 3v12" /><path d="M8 7l4-4 4 4" /><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1" /></>}
       {name === 'plusSquare' && <><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M12 8v8M8 12h8" /></>}
       {name === 'globe' && <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z" /></>}
+      {/* Arrow into a doorway / out of one: a learner entering or leaving school. */}
+      {name === 'arrive' && <><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5" /><path d="M9 16l4-4-4-4" /><path d="M13 12H3" /></>}
+      {name === 'leave' && <><path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /><path d="M16 16l4-4-4-4" /><path d="M20 12H9" /></>}
       {name === 'clock' && <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>}
     </svg>
   );
