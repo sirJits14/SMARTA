@@ -18,6 +18,13 @@ jobs:
       - run: npm --prefix functions test
       - run: npm --prefix parent test
       - run: npm run build
+        env:   # placeholders: vite.config.js refuses to build without them; CI only checks the bundle compiles
+          VITE_FIREBASE_API_KEY: ci-placeholder
+          VITE_FIREBASE_AUTH_DOMAIN: bnhs-sims-ci.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: bnhs-sims-ci
+          VITE_FIREBASE_STORAGE_BUCKET: bnhs-sims-ci.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
+          VITE_FIREBASE_APP_ID: '1:000000000000:web:ci'
       - run: npm --prefix parent run build && npm --prefix parent run size
       - run: npx firebase emulators:exec --only firestore,auth --project bnhs-sims-ci "npx vitest run -c vitest.rules.config.js && npm --prefix functions run test:emulator"
         env: { GCLOUD_PROJECT: bnhs-sims-ci }
