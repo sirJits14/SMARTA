@@ -97,17 +97,16 @@ describe('handleScanEvent', () => {
     expect((await db().doc('guardians/gA/inbox/k1_S1_202609210712').get()).data().pushStatus).toBe('failed');
   });
 
-  it('TEMP(kiosk-v1-compat): attendance-sync source is treated as a device without needing a kiosks/{uid} doc', async () => {
+  it('the retired kiosk v1 attendance-sync identity no longer bypasses the kiosks/{uid} check', async () => {
     const m = fakeMessaging();
     const r = await run(deps(m), 'legacy_SEC1_2026-09-21_S1_in', {
       studentId: 'S1', sectionId: 'SEC1', schoolYear: '2026-2027', kind: 'in', deviceId: 'attendance-sync',
       scannedAt: ts('2026-09-21T07:12:00+08:00'), scannedDate: '2026-09-21', scannedTime: '07:12',
       receivedAt: ts('2026-09-21T07:12:20+08:00'), source: 'attendance-sync',
     });
-    expect(r.outcome).toBe('processed');
-    const ev = (await db().doc('learners/S1/events/legacy_SEC1_2026-09-21_S1_in').get()).data();
-    expect(ev).toMatchObject({ deviceLabel: 'School gate', source: 'attendance-sync', status: 'recorded' });
-    expect(m.sent).toHaveLength(1);
+    expect(r.outcome).toBe('rejected:device');
+    expect((await db().doc('learners/S1/events/legacy_SEC1_2026-09-21_S1_in').get()).exists).toBe(false);
+    expect(m.sent).toHaveLength(0);
   });
 
   it('staff void marks the original voided and notifies', async () => {

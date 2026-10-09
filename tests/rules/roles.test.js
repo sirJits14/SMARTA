@@ -79,7 +79,7 @@ describe('coordinators', () => {
       await denied(db.doc('users/registrar@bnhs.edu').get());
       await ok(db.doc(`users/${who.token.email}`).get());
     });
-    it(`${name}: still reads roster collections (UI scopes them until the kiosk TEMP is removed)`, async () => {
+    it(`${name}: still reads roster collections (grade scoping of reads is UI-only for now)`, async () => {
       await ok(as(env, who).collection('students').get());
       await ok(as(env, who).collection('student_attendance').get());
     });
@@ -89,10 +89,7 @@ describe('coordinators', () => {
     await ok(as(env, JHS).doc('student_attendance/SEC8_2026-09-22').set({ ...att('SEC8'), date: '2026-09-22' }, { merge: true }));
     await ok(as(env, SHS).doc('student_attendance/SEC11_2026-09-21').set(att('SEC11'), { merge: true }));
   });
-  // TODO(K1/K2): the TEMP(kiosk-v1-compat) `|| signedIn()` on student_attendance
-  // lets every signed-in caller write today, so these cannot fail yet.
-  // Un-skip when that clause is removed from firestore.rules.
-  it.skip('cannot take attendance outside their grades', async () => {
+  it('cannot take attendance outside their grades', async () => {
     await denied(as(env, GLC8).doc('student_attendance/SEC11_2026-09-21').set(att('SEC11'), { merge: true }));
     await denied(as(env, SHS).doc('student_attendance/SEC8_2026-09-21').set(att('SEC8'), { merge: true }));
     await seed(env, (db) => db.doc('student_attendance/SEC8_2026-09-23').set({ ...att('SEC8'), date: '2026-09-23' }));
