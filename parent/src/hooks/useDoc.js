@@ -22,6 +22,29 @@ export function useDoc(path) {
   return state;
 }
 
+// Live docs for several paths at once, as { [path]: { data, error } }. A path
+// is missing from the result until its first snapshot (or error) arrives, so
+// callers can wait for all of them before ordering a list.
+export function useDocs(paths) {
+  const key = paths.join('|');
+  const [state, setState] = useState({});
+  useEffect(() => {
+    setState({});
+    if (!key) return;
+    let cancelled = false; const unsubs = [];
+    appCheckReady.then(() => {
+      if (cancelled) return;
+      for (const path of key.split('|')) {
+        unsubs.push(onSnapshot(doc(db, path),
+          (s) => setState((prev) => ({ ...prev, [path]: { data: s.exists() ? { id: s.id, ...s.data() } : null, error: null } })),
+          (e) => setState((prev) => ({ ...prev, [path]: { data: null, error: e.code || 'error' } }))));
+      }
+    });
+    return () => { cancelled = true; unsubs.forEach((u) => u()); };
+  }, [key]);
+  return state;
+}
+
 // buildQuery must return a Firestore Query with a limit (rules require it).
 export function useQuery(buildQuery, deps) {
   const [state, setState] = useState({ rows: undefined, error: null });

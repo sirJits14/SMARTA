@@ -74,6 +74,8 @@ const S = {
   homeEntered: 'Entered',
   homeLeft: 'Left',
   homeViewHistory: 'View history',
+  homeLearnersLabel: 'Your learners',
+  homeNoEntryShort: 'No entry today',
   notifBannerTitle: 'Get a notification for new gate scans',
   notifBannerButton: 'Turn on notifications',
   historyTitle: 'Gate scans',
