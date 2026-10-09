@@ -18,3 +18,13 @@ npm exec vite -- --config tests/browser/enrollment.config.mjs
 ```
 
 Open http://127.0.0.1:5188/tests/browser/enrollment-preview.html for the responsive preview with synthetic learners and sections. Add `?checks` for six browser checks covering grade/search filtering, deduplicated current-year rosters, drawer prefill and focus restoration, destination changes, failed saves and retries, move/withdraw confirmation, and draft retention during resource errors. The fixture intercepts enrollment writes locally and never calls production services.
+
+## Parents App Settings preview
+
+Run from `parent/`:
+
+```powershell
+npm exec vite -- --config tests/browser/settings.config.mjs
+```
+
+Open http://127.0.0.1:5189/tests/browser/settings-preview.html. It renders the real Settings screen and sub-pages with synthetic data: the hooks, account writes, device checks and Firebase are swapped out by `parent/tests/browser/settings.config.mjs`, so it never calls production services. Use "Preview controls" to switch scenarios (no contact details, no learners, iPhone, installed, blocked, notifications off), fire a fake install prompt, and read the write log.

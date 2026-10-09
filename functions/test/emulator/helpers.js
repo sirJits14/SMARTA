@@ -46,8 +46,8 @@ export async function seedSchool(d = db()) {
   b.set(d.doc('settings/parent_portal'), { notificationsPaused: false, consentVersion: 1 });
   b.set(d.doc('kiosks/k1'), { label: 'Main Gate', active: true });
   b.set(d.doc('kiosks/k9'), { label: 'Old Gate', active: false });
-  b.set(d.doc('students/S1'), { lrn: '100000000001', firstName: 'Ana', lastName: 'Cruz', middleName: 'B' });
-  b.set(d.doc('students/S2'), { lrn: '100000000002', firstName: 'Ben', lastName: 'Dy' });
+  b.set(d.doc('students/S1'), { lrn: '100000000001', firstName: 'Ana', lastName: 'Cruz', middleName: 'B', sex: 'F' });
+  b.set(d.doc('students/S2'), { lrn: '100000000002', firstName: 'Ben', lastName: 'Dy', sex: 'M' });
   b.set(d.doc('sections/SEC1'), { name: 'Rizal', gradeLevel: 7, schoolYear: '2026-2027' });
   b.set(d.doc('enrollments/S1_2026-2027'), { studentId: 'S1', sectionId: 'SEC1', schoolYear: '2026-2027', status: 'enrolled' });
   b.set(d.doc('guardian_links/gA_S1'), { guardianUid: 'gA', studentId: 'S1', status: 'active', schoolYear: '2026-2027', relationship: 'Mother' });

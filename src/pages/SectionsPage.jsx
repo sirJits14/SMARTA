@@ -15,7 +15,7 @@ import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
 import { useIdCardPrintConfirm } from '../components/IdCardPrintConfirm.jsx';
 import GradePills from '../components/GradePills.jsx';
-import { isAdmin, grades, singleGrade, scopeRoster } from '../lib/access.js';
+import { isAdmin, canPrintSectionQr, grades, singleGrade, scopeRoster } from '../lib/access.js';
 
 function SectionForm({ editing, schoolYear, schedules, onClose }) {
   const action = useAsyncAction();
@@ -81,6 +81,7 @@ export default function SectionsPage({ me, schoolYear }) {
   const enrollmentsResource = useCollectionResource('enrollments');
   const studentsResource = useCollectionResource('students');
   const admin = isAdmin(me);
+  const canPrint = canPrintSectionQr(me);
   const oneGrade = singleGrade(me);
   const { sections, enrollments, students } = useMemo(() => scopeRoster(
     { sections: sectionsResource.data, enrollments: enrollmentsResource.data, students: studentsResource.data }, grades(me), schoolYear),
@@ -210,14 +211,14 @@ export default function SectionsPage({ me, schoolYear }) {
       {form && <SectionForm editing={form.id ? form : null} schoolYear={schoolYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {detailSection && (
-        <SectionDetailModal printReady={printReady} onPrint={() => printAndConfirm(detailRosterDeped)}
+        <SectionDetailModal printReady={printReady} onPrint={canPrint ? () => printAndConfirm(detailRosterDeped) : undefined}
           section={detailSection}
           roster={detailRosterAlpha}
           onClose={() => setDetailSection(null)}
           onEditStudent={admin ? (s) => setEditingStudent(s) : null}
         />
       )}
-      {detailSection && <div ref={printRoot}><IdCardsPrintSheets entries={detailEntries} printOnly /></div>}
+      {canPrint && detailSection && <div ref={printRoot}><IdCardsPrintSheets entries={detailEntries} printOnly /></div>}
       {confirmDialog}
       {editingStudent && <StudentForm students={students} editing={editingStudent} sections={sections} enrollments={enrollments} schoolYear={schoolYear} onClose={() => setEditingStudent(null)} />}
     </div></EditorResources>

@@ -7,6 +7,7 @@ const COORDINATOR_PAGES = ['dashboard', 'students', 'sections', 'schedules', 'at
 export const DISABLED_MESSAGE = 'This account has been disabled. Contact an administrator.';
 
 export const isAdmin = (me) => roleOf(me) === 'admin';
+export const canPrintSectionQr = (me) => ['admin', 'jhs_coord', 'shs_coord'].includes(roleOf(me));
 export const grades = (me) => scopedGrades(me);
 export function allowedPages(me) {
   if (!roleOf(me)) return [];

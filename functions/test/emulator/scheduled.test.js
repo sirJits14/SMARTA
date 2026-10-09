@@ -46,7 +46,13 @@ describe('expireLinks', () => {
   it('fills in the learner name for linked learners who have no gate scan yet, once per learner', async () => {
     const r = await expireLinks(deps());
     expect(r.seeded).toBe(1);
-    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', formalName: 'Cruz, Ana B.', lastName: 'Cruz', firstName: 'Ana', sex: 'F', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+    expect((await expireLinks(deps())).seeded).toBe(0);
+  });
+  it('refreshes a learner projection written before the Home sort fields existed', async () => {
+    await db().doc('learners/S1').set({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal', today: { date: '2026-09-21', status: 'in' } });
+    expect((await expireLinks(deps())).seeded).toBe(1);
+    expect((await db().doc('learners/S1').get()).data()).toMatchObject({ formalName: 'Cruz, Ana B.', lastName: 'Cruz', sex: 'F', today: { status: 'in' } });
     expect((await expireLinks(deps())).seeded).toBe(0);
   });
   it('deletes old revoked links, old codes, old audit rows, dormant guardians', async () => {
@@ -128,5 +134,19 @@ describe('auditSettingsChange', () => {
     await auditSettingsChange(db(), { before: { notificationsPaused: false }, after: { notificationsPaused: true, pausedBy: 'registrar@bnhs.edu', pauseNote: 'Drill' } });
     const rows = await db().collection('audit_log').where('action', '==', 'portal.settings_changed').get();
     expect(rows.docs[0].data().details).toMatchObject({ before: { notificationsPaused: false }, after: { notificationsPaused: true, pausedBy: 'registrar@bnhs.edu', pauseNote: 'Drill' } });
+  });
+
+  it('records school contact detail changes', async () => {
+    await auditSettingsChange(db(), { before: { contactPhone: '' }, after: { contactPhone: '+63 44 815 1234', officeHours: 'Mon–Fri', updatedBy: 'admin@bnhs.edu' } });
+    const rows = await db().collection('audit_log').where('action', '==', 'portal.settings_changed').get();
+    const details = rows.docs.map((d) => d.data().details).find((d) => d.after.contactPhone);
+    expect(details).toMatchObject({ before: { contactPhone: '' }, after: { contactPhone: '+63 44 815 1234', officeHours: 'Mon–Fri' } });
+  });
+
+  it('credits the editor, not an earlier pauser, for later settings changes', async () => {
+    await auditSettingsChange(db(), { before: { pausedBy: 'old-pauser@bnhs.edu', contactPhone: '111' }, after: { pausedBy: 'old-pauser@bnhs.edu', contactPhone: '222-editor-credit', updatedBy: 'admin@bnhs.edu' } });
+    const rows = await db().collection('audit_log').where('action', '==', 'portal.settings_changed').get();
+    const row = rows.docs.map((d) => d.data()).find((d) => d.details.after.contactPhone === '222-editor-credit');
+    expect(row.actorUid).toBe('admin@bnhs.edu');
   });
 });

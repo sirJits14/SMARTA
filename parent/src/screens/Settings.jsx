@@ -1,93 +1,84 @@
-import { useState } from 'react';
-import { signOut, updateProfile } from 'firebase/auth';
-import { doc, updateDoc, collection, query, where, limit } from 'firebase/firestore';
-import { auth, db, callable } from '../firebase.js';
+import { useEffect } from 'react';
+import { collection, query, where, limit } from 'firebase/firestore';
+import { db } from '../firebase.js';
 import S from '../strings.js';
-import { T } from '../styles.js';
-import { Btn, Card, Banner, Field, Inp } from '../components/ui.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import ThemeControl from '../components/ThemeControl.jsx';
+import { SettingsGroup, SettingsRow } from '../components/SettingsList.jsx';
 import { useLinks } from '../hooks/useLinks.js';
 import { useQuery, useDoc } from '../hooks/useDoc.js';
+import { useTheme } from '../hooks/useTheme.js';
+import { THEME_LABEL } from '../lib/themeLabels.js';
 import { notificationState } from '../lib/notificationState.js';
-import { useDeviceStatus, enableOnThisDevice, disableOnThisDevice } from '../lib/notifications.js';
+import { useDeviceStatus } from '../lib/notifications.js';
+import { isStandalone } from '../lib/device.js';
+import { signOutNow } from '../lib/guardianWrites.js';
+import { initials, nameCase } from '../lib/format.js';
+import { SECTIONS, sectionGroups, notificationValue, openReportCount } from '../lib/settingsSections.js';
+import ProfilePage from './settings/ProfilePage.jsx';
+import NotificationsPage from './settings/NotificationsPage.jsx';
+import AppearancePage from './settings/AppearancePage.jsx';
+import LearnersPage from './settings/LearnersPage.jsx';
+import ReportsPage from './settings/ReportsPage.jsx';
+import PrivacyPage from './settings/PrivacyPage.jsx';
+import InstallPage from './settings/InstallPage.jsx';
+import HelpPage from './settings/HelpPage.jsx';
+import AboutPage from './settings/AboutPage.jsx';
+import { BUILD } from '../lib/buildInfo.js';
 
-const STATE_TEXT = { on: S.notifOn, off: S.notifOff, blocked: S.notifBlocked, unsupported: S.notifUnsupported, ios_needs_install: S.notifIosInstall, account_off: S.notifOff };
+// Sub-pages by route segment (/settings/<key>). A main-list row with no page
+// here is hidden, and an unknown segment falls back to the list.
+const PAGES = {
+  profile: ProfilePage, notifications: NotificationsPage, appearance: AppearancePage, install: InstallPage,
+  learners: LearnersPage, reports: ReportsPage, help: HelpPage, privacy: PrivacyPage, about: AboutPage,
+};
 
-export default function Settings({ user, profile, navigate }) {
+// One mounted screen for the list and every sub-page (same route name), so
+// the listeners below are set up once while the parent moves between them.
+export default function Settings({ user, profile, route, navigate }) {
   const { links } = useLinks(user.uid);
   const device = useDeviceStatus(user.uid);
   const portal = useDoc('settings/parent_portal').data;
   const { rows: reports } = useQuery(() => query(collection(db, 'reports'), where('guardianUid', '==', user.uid), limit(10)), [user.uid]);
   const accountEnabled = profile?.notificationsEnabled !== false;
-  const announcementPush = profile?.announcementPushEnabled !== false;
-  const state = notificationState({ ...device, accountEnabled });
-  const [busy, setBusy] = useState(false); const [confirmDelete, setConfirmDelete] = useState(false); const [err, setErr] = useState(null);
-  const savedName = profile?.displayName || user.displayName || '';
-  const [name, setName] = useState(savedName); const [nameSaved, setNameSaved] = useState(false);
-
-  const saveName = async () => {
-    setBusy(true); setErr(null); setNameSaved(false);
-    try { await updateDoc(doc(db, 'guardians', user.uid), { displayName: name.trim() }); updateProfile(user, { displayName: name.trim() }).catch(() => {}); setNameSaved(true); }
-    catch { setErr(S.reportFailed); }
-    setBusy(false);
+  const ctx = {
+    user, profile, navigate, links, device, portal, reports, accountEnabled,
+    announcementPush: profile?.announcementPushEnabled !== false,
+    state: notificationState({ ...device, accountEnabled }),
+    savedName: profile?.displayName || user.displayName || '',
   };
-  const toggleAccount = () => updateDoc(doc(db, 'guardians', user.uid), { notificationsEnabled: !accountEnabled }).catch(() => setErr(S.reportFailed));
-  const toggleAnnouncements = () => updateDoc(doc(db, 'guardians', user.uid), { announcementPushEnabled: !announcementPush }).catch(() => setErr(S.reportFailed));
-  const enable = async () => { setBusy(true); setErr(null); try { await enableOnThisDevice(user.uid); } catch { setErr(S.notifBlockedHelp); } device.refresh(); setBusy(false); };
-  const disable = async () => { setBusy(true); await disableOnThisDevice(user.uid); device.refresh(); setBusy(false); };
-  const remove = async () => { setBusy(true); try { await callable('deleteGuardianAccountFn')({}); await signOut(auth); } catch { setErr(S.reportFailed); setBusy(false); } };
+  const section = route.params.section;
+  const Page = section ? PAGES[section] : null;
+  useEffect(() => { if (section && !Page) navigate('/settings', { replace: true }); }, [section, Page, navigate]);
+  if (Page) return <Page ctx={ctx} back={() => navigate('/settings')} />;
+  return <SettingsHome ctx={ctx} />;
+}
 
+function SettingsHome({ ctx }) {
+  const { user, navigate, links, reports, state, savedName } = ctx;
+  const { pref } = useTheme();
+  const hidden = SECTIONS.filter((s) => !PAGES[s.key] || (s.key === 'install' && isStandalone())).map((s) => s.key);
+  const values = {
+    notifications: notificationValue(state),
+    appearance: THEME_LABEL[pref],
+    learners: links ? String(links.length) : '',
+    reports: openReportCount(reports) || '',
+    about: BUILD.date,
+  };
   return (
     <>
       <PageHeader title={S.settingsTitle} />
-      {err && <Banner tone="danger">{err}</Banner>}
-      <Card>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.themeTitle}</h2>
-        <ThemeControl />
-        <p style={{ fontSize: 12, color: T.inkMuted, marginBottom: 0 }}>{S.themeSavedHere}</p>
-      </Card>
-      <Card>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsAccount}</h2>
-        <div style={{ fontSize: 14, marginBottom: 12 }}>{S.signedInAs} <strong>{savedName || user.email}</strong>{savedName && <span style={{ color: T.inkMuted }}> · {user.email}</span>}</div>
-        {profile && <>
-          <Field label={S.yourName} hint={S.yourNameHint}><Inp autoComplete="name" autoCapitalize="words" maxLength={120} value={name} onChange={(e) => { setName(e.target.value); setNameSaved(false); }} /></Field>
-          {nameSaved && <Banner>{S.settingsNameSaved}</Banner>}
-          <Btn variant="ghost" onClick={saveName} disabled={busy || name.trim().length < 2 || name.trim() === savedName}>{S.settingsNameSave}</Btn>
-        </>}
-      </Card>
-      <Card>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsNotifications}</h2>
-        <label style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 44 }}>
-          <input type="checkbox" checked={accountEnabled} onChange={toggleAccount} style={{ width: 22, height: 22 }} />{S.settingsAccountToggle}
-        </label>
-        <label style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 44, opacity: accountEnabled ? 1 : 0.55 }}>
-          <input type="checkbox" checked={accountEnabled && announcementPush} disabled={!accountEnabled} onChange={toggleAnnouncements} style={{ width: 22, height: 22 }} />{S.settingsAnnouncementToggle}
-        </label>
-        <div style={{ fontSize: 13, color: T.inkMuted, marginTop: 8 }}>{S.settingsThisDevice}: {STATE_TEXT[state]}</div>
-        {state === 'blocked' && <p style={{ fontSize: 13 }}>{S.notifBlockedHelp}</p>}
-        {(state === 'off' || state === 'account_off') && accountEnabled && <Btn onClick={enable} disabled={busy} style={{ marginTop: 8 }}>{S.notifTurnOn}</Btn>}
-        {state === 'on' && <Btn variant="ghost" onClick={disable} disabled={busy} style={{ marginTop: 8 }}>{S.notifTurnOff}</Btn>}
-        <p style={{ fontSize: 12, color: T.inkMuted }}>{S.pushDisclaimer}</p>
-      </Card>
-      <Card>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsLearners}</h2>
-        {(links || []).map((l) => <div key={l.id} style={{ padding: '6px 0', fontSize: 14 }}>{l.learnerName ? <><strong>{l.learnerName}</strong> ({l.relationship})</> : l.relationship} · <button onClick={() => navigate(`/learner/${l.studentId}`)} style={{ background: 'none', border: 'none', color: T.primary, fontFamily: T.font, fontSize: 14, cursor: 'pointer', padding: 0 }}>{S.homeViewHistory}</button></div>)}
-        <Btn variant="ghost" onClick={() => navigate('/activate')} style={{ marginTop: 6 }}>{S.activateAnother}</Btn>
-        <p style={{ fontSize: 12, color: T.inkMuted }}>{S.settingsRemoveHint}</p>
-      </Card>
-      <Card>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsReports}</h2>
-        {(reports || []).length === 0 && <div style={{ fontSize: 13, color: T.inkMuted }}>—</div>}
-        {(reports || []).map((r) => <div key={r.id} style={{ fontSize: 14, padding: '6px 0' }}>{r.reason} — <strong>{r.status === 'open' ? S.requestOpen : 'Reviewed'}</strong>{r.resolutionNote ? `: ${r.resolutionNote}` : ''}</div>)}
-        <Btn variant="ghost" onClick={() => navigate('/request-access')} style={{ marginTop: 6 }}>{S.settingsRequests}</Btn>
-      </Card>
-      <Card>
-        {portal?.privacyNoticeUrl && <p><a href={portal.privacyNoticeUrl} target="_blank" rel="noreferrer">{S.settingsPrivacy}</a></p>}
-        {!confirmDelete && <Btn variant="ghost" onClick={() => setConfirmDelete(true)}>{S.settingsDelete}</Btn>}
-        {confirmDelete && <><p>{S.settingsDeleteConfirm}</p><div style={{ display: 'grid', gap: 10 }}><Btn variant="danger" onClick={remove} disabled={busy}>{S.settingsDeleteButton}</Btn><Btn variant="ghost" onClick={() => setConfirmDelete(false)}>{S.cancel}</Btn></div></>}
-        <Btn variant="ghost" onClick={() => signOut(auth)} style={{ marginTop: 12 }}>{S.signOut}</Btn>
-      </Card>
+      <SettingsGroup>
+        <SettingsRow variant="profile" leading={<span className="settings-avatar" aria-hidden="true">{initials(savedName || user.email)}</span>}
+          label={nameCase(savedName) || user.email} subtitle={savedName ? user.email : undefined} onClick={() => navigate('/settings/profile')} />
+      </SettingsGroup>
+      {sectionGroups(hidden).map((group) => (
+        <SettingsGroup key={group[0].key}>
+          {group.map((s) => <SettingsRow key={s.key} tile={s.tile} icon={s.icon} label={s.title} value={values[s.key]} onClick={() => navigate(`/settings/${s.key}`)} />)}
+        </SettingsGroup>
+      ))}
+      <SettingsGroup>
+        <SettingsRow variant="center" tone="danger" label={S.signOut} chevron={false} onClick={signOutNow} />
+      </SettingsGroup>
     </>
   );
 }

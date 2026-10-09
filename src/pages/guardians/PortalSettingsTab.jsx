@@ -4,6 +4,7 @@ import { ResourceState } from '../../components/ui.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useDocResource } from '../../hooks/useCollection.js';
 import { updatePortalSettings } from '../../data/guardians.js';
+import { cleanContact, contactError } from './portalContact.js';
 import { T, S } from '../../styles.js';
 import { Btn, Inp, Field, Card } from '../../components/ui.jsx';
 
@@ -12,9 +13,13 @@ export default function PortalSettingsTab({ me }) {
   const portalResource = useDocResource('settings/parent_portal');
   const portal = portalResource.data;
   const [note, setNote] = useState(''); const [announcement, setAnnouncement] = useState(''); const [url, setUrl] = useState(''); const [consentVersion, setConsentVersion] = useState(1);
+  const [contact, setContact] = useState(() => cleanContact({}));
   const initialized = useRef(false);
-  useEffect(() => { if (!portalResource.loading && !portalResource.error && !initialized.current) { initialized.current = true; setAnnouncement(portal?.announcement || ''); setUrl(portal?.privacyNoticeUrl || ''); setConsentVersion(portal?.consentVersion ?? 1); } }, [portal, portalResource.loading, portalResource.error]);
+  useEffect(() => { if (!portalResource.loading && !portalResource.error && !initialized.current) { initialized.current = true; setAnnouncement(portal?.announcement || ''); setUrl(portal?.privacyNoticeUrl || ''); setConsentVersion(portal?.consentVersion ?? 1); setContact(cleanContact(portal)); } }, [portal, portalResource.loading, portalResource.error]);
   const paused = portal?.notificationsPaused === true;
+  const contactClean = cleanContact(contact);
+  const contactProblem = contactError(contactClean);
+  const editContact = (key) => (e) => setContact((c) => ({ ...c, [key]: e.target.value }));
 
   const togglePause = () => updatePortalSettings(paused
     ? { notificationsPaused: false, pauseNote: '', pausedBy: me.email }
@@ -39,6 +44,16 @@ export default function PortalSettingsTab({ me }) {
         <Field label="Privacy notice URL"><Inp value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
         <Field label="Consent version (raise it to require every parent to re-accept)"><Inp type="number" value={consentVersion} onChange={(e) => setConsentVersion(Number(e.target.value))} style={{ width: 120 }} /></Field>
         <Btn disabled={action.busy} onClick={() => action.run('save', () => updatePortalSettings({ announcement: announcement.trim(), privacyNoticeUrl: url.trim(), consentVersion }, me))}>Save</Btn>
+      </Card>
+      <Card style={{ padding: 20, marginTop: 16 }}>
+        <h2 style={S.h2}>School contact details (shown in the Parents App)</h2>
+        <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>Parents see these under Settings → Help &amp; Contact School. Leave a field blank to hide it.</p>
+        <Field label="Phone"><Inp value={contact.contactPhone} onChange={editContact('contactPhone')} placeholder="e.g. (044) 123 4567" /></Field>
+        <Field label="Email"><Inp type="email" value={contact.contactEmail} onChange={editContact('contactEmail')} placeholder="e.g. registrar@school.edu.ph" /></Field>
+        <Field label="Facebook page link"><Inp value={contact.contactFacebookUrl} onChange={editContact('contactFacebookUrl')} placeholder="https://www.facebook.com/…" /></Field>
+        <Field label="Office hours"><Inp value={contact.officeHours} onChange={editContact('officeHours')} placeholder="e.g. Mon–Fri, 7:30 AM – 4:30 PM" /></Field>
+        {contactProblem && <p role="alert" style={{ fontFamily: T.body, fontSize: 13, color: T.absent }}>{contactProblem}</p>}
+        <Btn disabled={action.busy || Boolean(contactProblem)} onClick={() => action.run('saveContact', () => updatePortalSettings(contactClean, me))}>Save contact details</Btn>
       </Card>
     </>
   );

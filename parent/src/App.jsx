@@ -11,16 +11,32 @@ import SignIn from './screens/SignIn.jsx';
 import Verify from './screens/Verify.jsx';
 // Screens below are only needed once a route is resolved, so they're
 // route-split out of the sign-in/verify chunk to keep the initial load light.
-const Consent = lazy(() => import('./screens/Consent.jsx'));
-const Activate = lazy(() => import('./screens/Activate.jsx'));
-const Home = lazy(() => import('./screens/Home.jsx'));
-const History = lazy(() => import('./screens/History.jsx'));
-const Inbox = lazy(() => import('./screens/Inbox.jsx'));
-const Report = lazy(() => import('./screens/Report.jsx'));
-const RequestAccess = lazy(() => import('./screens/RequestAccess.jsx'));
-const Settings = lazy(() => import('./screens/Settings.jsx'));
-const Announcements = lazy(() => import('./screens/Announcements.jsx'));
-const AnnouncementDetail = lazy(() => import('./screens/AnnouncementDetail.jsx'));
+// Each can also be fetched ahead of time (preload); once it has loaded it
+// renders directly instead of through lazy(), so a page transition never
+// captures a loading spinner.
+function routeScreen(load) {
+  let Loaded = null; let pending = null;
+  const preload = () => (pending ??= load().then((m) => { Loaded = m.default; return m; }, (e) => { pending = null; throw e; }));
+  const Lazy = lazy(preload);
+  // Chosen once per mount: swapping Lazy for Loaded mid-life would remount the screen.
+  function Screen(props) {
+    const [Component] = useState(() => Loaded ?? Lazy);
+    return <Component {...props} />;
+  }
+  Screen.preload = preload;
+  return Screen;
+}
+const Consent = routeScreen(() => import('./screens/Consent.jsx'));
+const Activate = routeScreen(() => import('./screens/Activate.jsx'));
+const Home = routeScreen(() => import('./screens/Home.jsx'));
+const History = routeScreen(() => import('./screens/History.jsx'));
+const Inbox = routeScreen(() => import('./screens/Inbox.jsx'));
+const Report = routeScreen(() => import('./screens/Report.jsx'));
+const RequestAccess = routeScreen(() => import('./screens/RequestAccess.jsx'));
+const Settings = routeScreen(() => import('./screens/Settings.jsx'));
+const Announcements = routeScreen(() => import('./screens/Announcements.jsx'));
+const AnnouncementDetail = routeScreen(() => import('./screens/AnnouncementDetail.jsx'));
+const APP_SCREENS = [Home, History, Inbox, Report, Settings, Announcements, AnnouncementDetail];
 
 const CONSENT_KEY = 'bnhs-parent-consent';
 
@@ -44,6 +60,16 @@ export default function App() {
   // let B skip the Verify gate -- onAuthStateChanged firing for a new user
   // is exactly the "identity changed" signal this resets on.
   useEffect(() => { setVerifiedOverride(false); }, [user?.uid]);
+
+  // Once a linked guardian is in, fetch the other screens while idle.
+  const linked = Boolean(profile);
+  useEffect(() => {
+    if (!linked) return;
+    const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200));
+    const cancel = window.cancelIdleCallback || clearTimeout;
+    const id = idle(() => APP_SCREENS.forEach((screen) => screen.preload().catch(() => {})));
+    return () => cancel(id);
+  }, [linked]);
 
   useEffect(() => {
     if (!user) return;
