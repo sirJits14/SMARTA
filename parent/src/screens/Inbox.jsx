@@ -3,15 +3,18 @@ import { collection, query, orderBy, limit, doc, updateDoc, serverTimestamp } fr
 import { db } from '../firebase.js';
 import S from '../strings.js';
 import { nameCase } from '../lib/format.js';
-import { T } from '../styles.js';
 import { Spinner, EmptyState } from '../components/ui.jsx';
-import { Bubble, DayDivider } from '../components/Bubble.jsx';
+import { TimelineRow, TimelineDay } from '../components/Timeline.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { useQuery } from '../hooks/useDoc.js';
 import { toFeed } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 
 const KIND = { in: S.eventIn, out: S.eventOut, void: S.eventVoided };
+
+// Who the message is about (or that it's from the school), then the gate.
+const itemMeta = (item) => [nameCase(item.learnerName) || S.inboxFromSchool, item.type === 'attendance' && item.deviceLabel].filter(Boolean).join(' · ');
+const itemTone = (item) => (item.type !== 'attendance' ? 'school' : item.kind === 'in' ? 'in' : 'out');
 
 export default function Inbox({ user, navigate, route }) {
   const { rows, error } = useQuery(() => query(collection(db, `guardians/${user.uid}/inbox`), orderBy('createdAt', 'desc'), limit(30)), [user.uid]);
@@ -58,26 +61,23 @@ export default function Inbox({ user, navigate, route }) {
       {header}
       {toFeed(rows, localDate()).map((day) => (
         <div key={day.date}>
-          <DayDivider label={day.label} />
-          {day.runs.map((run, ri) => (
-            <div key={`${day.date}-${ri}`} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, margin: '0 0 4px 12px' }}>{nameCase(run.learnerName) || S.inboxFromSchool}</div>
-              {run.items.map((item, i) => (
-                <Bubble
-                  key={item.id}
-                  id={`msg-${item.id}`}
-                  first={i === 0}
-                  last={i === run.items.length - 1}
-                  unread={unreadAtOpen.current?.has(item.id)}
-                  title={item.type === 'attendance' ? (KIND[item.kind] || S.inboxNewEvent) : item.title}
-                  body={item.type === 'attendance' ? null : item.body}
-                  meta={item.type === 'attendance' ? item.deviceLabel : undefined}
-                  time={formatScanTime(item.time)}
-                  onClick={item.type === 'attendance' ? () => open(item) : undefined}
-                />
-              ))}
-            </div>
-          ))}
+          <TimelineDay label={day.label} />
+          <div className="timeline">
+            {day.runs.flatMap((run) => run.items).map((item) => (
+              <TimelineRow
+                key={item.id}
+                id={`msg-${item.id}`}
+                tone={itemTone(item)}
+                unread={unreadAtOpen.current?.has(item.id)}
+                title={item.type === 'attendance' ? (KIND[item.kind] || S.inboxNewEvent) : item.title}
+                time={formatScanTime(item.time)}
+                meta={itemMeta(item)}
+                body={item.type === 'attendance' ? null : item.body}
+                onClick={item.type === 'attendance' ? () => open(item) : undefined}
+                actionLabel={S.homeViewHistory}
+              />
+            ))}
+          </div>
         </div>
       ))}
       <div ref={endRef} />

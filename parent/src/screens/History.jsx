@@ -2,9 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import S from '../strings.js';
-import { T } from '../styles.js';
 import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
-import { Bubble, DayDivider } from '../components/Bubble.jsx';
+import { TimelineRow, TimelineDay } from '../components/Timeline.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 import { eventTitle, latestScanToday, nameCase } from '../lib/format.js';
 import { historyThread } from '../lib/thread.js';
@@ -13,10 +12,15 @@ import PageHeader from '../components/PageHeader.jsx';
 
 const PAGE = 30;
 
+// The gate, plus a note only when one applies (late, added or corrected).
 function eventMeta(ev) {
   const voided = ev.status === 'voided';
-  return `${ev.deviceLabel || ''}${ev.delayedSync ? ` · ${S.eventLate}` : ''}${ev.source === 'staff' && !voided ? ` · ${S.eventManual}` : ''}`
-    + `${voided ? ` · ${S.eventVoided}${ev.voidReason ? `: ${ev.voidReason}` : ''}` : ''}`;
+  return [
+    ev.deviceLabel,
+    ev.delayedSync && S.eventLate,
+    ev.source === 'staff' && !voided && S.eventManual,
+    voided && `${S.eventVoided}${ev.voidReason ? `: ${ev.voidReason}` : ''}`,
+  ].filter(Boolean).join(' · ');
 }
 
 export default function History({ studentId, navigate, route }) {
@@ -58,30 +62,27 @@ export default function History({ studentId, navigate, route }) {
             {rows.length === 0 && !busy && <EmptyState title={S.historyEmpty} />}
             {historyThread(rows, today).map((day) => (
               <div key={day.date}>
-                <DayDivider label={day.label} />
-                {day.items.map((ev, i) => {
-                  const voided = ev.status === 'voided';
-                  return (
-                    <Bubble
-                      key={ev.id}
-                      id={`ev-${ev.id}`}
-                      first={i === 0}
-                      last={i === day.items.length - 1}
-                      highlight={route.query.event === ev.id}
-                      struck={voided}
-                      title={eventTitle(ev)}
-                      time={formatScanTime(ev.scannedTime)}
-                      meta={eventMeta(ev)}
-                    >
-                      {!voided && (
-                        <button type="button" onClick={() => navigate(`/report/${ev.id}?student=${studentId}`)}
-                          style={{ background: 'none', border: 'none', color: T.primary, padding: '4px 0 0', minHeight: T.tap, fontFamily: T.font, fontSize: 13, cursor: 'pointer' }}>
-                          {S.reportThis}
-                        </button>
-                      )}
-                    </Bubble>
-                  );
-                })}
+                <TimelineDay label={day.label} />
+                <div className="timeline">
+                  {day.items.map((ev) => {
+                    const voided = ev.status === 'voided';
+                    // Tapping a scan reports it; corrected scans can't be reported.
+                    return (
+                      <TimelineRow
+                        key={ev.id}
+                        id={`ev-${ev.id}`}
+                        tone={ev.kind === 'in' && !voided ? 'in' : 'out'}
+                        highlight={route.query.event === ev.id}
+                        struck={voided}
+                        title={eventTitle(ev)}
+                        time={formatScanTime(ev.scannedTime)}
+                        meta={eventMeta(ev)}
+                        onClick={voided ? undefined : () => navigate(`/report/${ev.id}?student=${studentId}`)}
+                        actionLabel={S.reportThis}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>}
