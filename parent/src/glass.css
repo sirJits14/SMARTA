@@ -412,3 +412,30 @@ button.bubble:active { background: var(--t-tint); }
 .bubble--struck .bubble-title, .bubble--struck .bubble-time { color: var(--t-muted); text-decoration: line-through; }
 .bubble-hint { margin: 14px 0 0; color: var(--t-muted); font-size: 12px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { button.bubble { transition: none; } }
+
+/* ---- Page transitions (hooks/useRoute.js, lib/navMotion.js) ----
+   A shared-axis move: opening something deeper slides the new page in from
+   the right while the old one drifts left and fades out; going back mirrors
+   it; switching tabs is a quick cross-fade. Exits are faster than entrances.
+   The bottom nav is its own layer, so it stays put while its chip slides. */
+.gnav { view-transition-name: gnav; }
+::view-transition-old(gnav) { display: none; }
+::view-transition-new(gnav) { animation: none; }
+html[data-nav="forward"]::view-transition-old(root) { animation: nav-out-left 180ms cubic-bezier(0.4, 0, 1, 1) both; }
+html[data-nav="forward"]::view-transition-new(root) { animation: nav-in-right 340ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+html[data-nav="back"]::view-transition-old(root) { animation: nav-out-right 180ms cubic-bezier(0.4, 0, 1, 1) both; }
+html[data-nav="back"]::view-transition-new(root) { animation: nav-in-left 340ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+html[data-nav="fade"]::view-transition-old(root) { animation: nav-fade-out 120ms ease-in both; }
+html[data-nav="fade"]::view-transition-new(root) { animation: nav-fade-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes nav-out-left { to { opacity: 0; transform: translateX(-28px); } }
+@keyframes nav-in-right { from { opacity: 0; transform: translateX(44px); } }
+@keyframes nav-out-right { to { opacity: 0; transform: translateX(28px); } }
+@keyframes nav-in-left { from { opacity: 0; transform: translateX(-44px); } }
+@keyframes nav-fade-out { to { opacity: 0; } }
+@keyframes nav-fade-in { from { opacity: 0; transform: scale(0.985); } }
+/* Reduced motion: no movement, just a short cross-fade. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-nav]::view-transition-old(root) { animation: nav-fade-out 120ms ease-in both; }
+  html[data-nav]::view-transition-new(root) { animation: nav-fade-only 160ms ease-out both; }
+}
+@keyframes nav-fade-only { from { opacity: 0; } }
