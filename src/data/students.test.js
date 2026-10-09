@@ -49,6 +49,17 @@ beforeEach(() => {
 });
 
 describe('student persistence shape', () => {
+  it.each(['dropped', 'transferred'])('clears scope in the standalone update path for %s students', async status => {
+    await updateStudent('existing-student', { ...form, status, gradeLevel: 8, scopeSchoolYear: '2026-2027' });
+    expect(firestore.setDoc.mock.calls[0][1]).toMatchObject({ gradeLevel: null, scopeSchoolYear: null });
+  });
+
+  it('does not let standalone profile updates overwrite derived scope', async () => {
+    await updateStudent('existing-student', { ...form, gradeLevel: 12, scopeSchoolYear: 'spoofed' });
+    expect(firestore.setDoc.mock.calls[0][1]).not.toHaveProperty('gradeLevel');
+    expect(firestore.setDoc.mock.calls[0][1]).not.toHaveProperty('scopeSchoolYear');
+  });
+
   it('uses the same shaped fields for create, update, and a batch student write', async () => {
     await createStudent(form);
     await updateStudent('existing-student', form);
@@ -73,6 +84,38 @@ describe('student persistence shape', () => {
 });
 
 describe('saveStudentWithEnrollment', () => {
+  it.each([
+    ['active enrollment', 'enrolled', '2026-2027', 'active', { gradeLevel: 8, scopeSchoolYear: '2026-2027' }],
+    ['wrong school year', 'enrolled', '2025-2026', 'active', { gradeLevel: null, scopeSchoolYear: null }],
+    ['withdrawn enrollment', 'dropped', '2026-2027', 'active', { gradeLevel: null, scopeSchoolYear: null }],
+    ['inactive student', 'enrolled', '2026-2027', 'inactive', { gradeLevel: null, scopeSchoolYear: null }],
+  ])('derives scope for %s instead of accepting form scope', async (_name, status, year, studentStatus, expected) => {
+    await saveStudentWithEnrollment({
+      id: 'existing-student', isNew: false, schoolYear: '2026-2027',
+      form: { ...form, status: studentStatus, gradeLevel: 12, scopeSchoolYear: 'spoofed' },
+      enrollmentPlan: { kind: 'enroll', data: { gradeLevel: 8, schoolYear: year, status, sectionId: 'section-8' } },
+    });
+    expect(firestore.sets[0][1]).toMatchObject(expected);
+    expect(firestore.sets).toHaveLength(2);
+  });
+
+  it('preserves scope on profile-only edits by omitting derived fields', async () => {
+    await saveStudentWithEnrollment({
+      id: 'existing-student', isNew: false, form: { ...form, gradeLevel: 12, scopeSchoolYear: 'spoofed' },
+      schoolYear: '2026-2027', enrollmentPlan: { kind: 'none' },
+    });
+    expect(firestore.sets[0][1]).not.toHaveProperty('gradeLevel');
+    expect(firestore.sets[0][1]).not.toHaveProperty('scopeSchoolYear');
+  });
+
+  it('clears scope when a profile-only edit makes the student inactive', async () => {
+    await saveStudentWithEnrollment({
+      id: 'existing-student', isNew: false, form: { ...form, status: 'inactive' },
+      schoolYear: '2026-2027', enrollmentPlan: { kind: 'none' },
+    });
+    expect(firestore.sets[0][1]).toMatchObject({ gradeLevel: null, scopeSchoolYear: null });
+  });
+
   it('pre-generates a new student id and overwrites a new enrollment atomically', async () => {
     const id = await saveStudentWithEnrollment({
       form, isNew: true, schoolYear: '2026-2027',
@@ -85,6 +128,7 @@ describe('saveStudentWithEnrollment', () => {
     expect(id).toBe('generated-student');
     expect(firestore.sets).toHaveLength(2);
     expect(firestore.sets[0][0].path).toBe('students/generated-student');
+    expect(firestore.sets[0][1]).toMatchObject({ gradeLevel: 7, scopeSchoolYear: '2026-2027' });
     expect(firestore.sets[1]).toEqual([
       { kind: 'doc', path: 'enrollments/generated-student_2026-2027', id: 'generated-student_2026-2027' },
       expect.objectContaining({ studentId: 'generated-student', sectionId: 'rizal', type: 'transferee' }),
@@ -101,6 +145,7 @@ describe('saveStudentWithEnrollment', () => {
 
     expect(id).toBe('existing-student');
     expect(firestore.sets[0][2]).toEqual({ merge: true });
+    expect(firestore.sets[0][1]).toMatchObject({ gradeLevel: 11, scopeSchoolYear: '2026-2027' });
     expect(firestore.sets[1]).toEqual([
       { kind: 'doc', path: 'enrollments/existing-student_2026-2027', id: 'existing-student_2026-2027' },
       plan.data,

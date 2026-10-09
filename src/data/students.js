@@ -2,6 +2,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch } from 'firebase
 import { db } from '../firebase.js';
 import { localDate } from '../lib/dates.js';
 import { enrollmentId } from './enrollments.js';
+import { studentScopeFields } from './coordinatorScope.js';
 
 export const DOCS_DEFAULT = { form137:false, birthCert:false, goodMoral:false, form138:false };
 
@@ -19,7 +20,10 @@ export const createStudent = (form) =>
   addDoc(collection(db, 'students'), studentShape({ ...form, status:'active', createdAt:localDate() }));
 
 export const updateStudent = (id, form) =>
-  setDoc(doc(db, 'students', id), studentShape(form), { merge:true });
+  setDoc(doc(db, 'students', id), {
+    ...studentShape(form),
+    ...(form.status && form.status !== 'active' ? studentScopeFields(null) : {}),
+  }, { merge:true });
 
 export async function saveStudentWithEnrollment({ id, form, isNew, enrollmentPlan, schoolYear }) {
   const batch = writeBatch(db);
@@ -28,6 +32,17 @@ export async function saveStudentWithEnrollment({ id, form, isNew, enrollmentPla
   const shaped = isNew
     ? studentShape({ ...form, status:'active', createdAt:localDate() })
     : studentShape(form);
+
+  if (enrollmentPlan.kind !== 'none') {
+    // Transfer plans contain only changed fields; they transfer an enrolled
+    // record in the supplied active school year.
+    const enrollment = enrollmentPlan.kind === 'transfer'
+      ? { schoolYear, status: 'enrolled', ...enrollmentPlan.data }
+      : enrollmentPlan.data;
+    Object.assign(shaped, studentScopeFields(enrollment, schoolYear, shaped.status));
+  } else if (isNew || shaped.status !== 'active') {
+    Object.assign(shaped, studentScopeFields(null));
+  }
 
   if (isNew) batch.set(studentRef, shaped);
   else batch.set(studentRef, shaped, { merge:true });
