@@ -2,7 +2,7 @@ import { useAsyncAction } from '../hooks/useAsyncAction.js';
 import { ActionFeedback } from '../components/ui.jsx';
 import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollectionResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedules.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
@@ -42,11 +42,11 @@ function ScheduleForm({ editing, onClose }) {
 
 const sectionLabel = (s) => `${s.name} (Grade ${s.gradeLevel}, SY ${s.schoolYear})`;
 
-export default function SchedulesPage({ me }) {
+export default function SchedulesPage({ me, schoolYear }) {
   const admin = isAdmin(me);
-  const schedulesResource = useCollectionResource('schedules');
+  const schedulesResource = useStaffCollectionResource('schedules', { me, schoolYear });
   const schedules = schedulesResource.data;
-  const sectionsResource = useCollectionResource('sections');
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
   const sections = sectionsResource.data;
   const [form, setForm] = useState(null);
   const [confirm, setConfirm] = useState(null);

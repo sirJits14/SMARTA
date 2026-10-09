@@ -1,6 +1,6 @@
 import { ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollectionResource, useDocResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource, useDocResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
 import { markFor, summarizeMonth, formatScanTime } from '../lib/attendance.js';
@@ -21,16 +21,16 @@ function firstFridayOfJune(schoolYear) {
 }
 
 export default function AttendanceSummaryPage({ me, schoolYear }) {
-  const sectionsResource = useCollectionResource('sections');
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
   // Coordinators pick only their grades' sections; an out-of-scope dashboard
   // deep link resolves as an unavailable section.
   const sections = useMemo(() => scopeRoster({ sections: sectionsResource.data }, grades(me), schoolYear).sections,
     [sectionsResource.data, me, schoolYear]);
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
   const enrollments = enrollmentsResource.data;
-  const studentsResource = useCollectionResource('students');
+  const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
   const students = studentsResource.data;
-  const attendanceResource = useCollectionResource('student_attendance');
+  const attendanceResource = useStaffCollectionResource('student_attendance', { me, schoolYear });
   const attendance = attendanceResource.data;
   const settingsResource = useDocResource('settings/app');
   const settings = settingsResource.data;

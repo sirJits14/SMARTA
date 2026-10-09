@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useCollectionResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { useLocalToday } from '../hooks/useLocalToday.js';
 import { fullName } from '../lib/roster.js';
 import { activeStudentCount, enrolledCount, countByGrade, attendanceCoverage, recentEnrollments, unassignedCount } from '../lib/dashboardStats.js';
@@ -11,10 +11,10 @@ import AttentionPanel from '../components/dashboard/AttentionPanel.jsx';
 import CoveragePanel from '../components/dashboard/CoveragePanel.jsx';
 import NavIcon from '../components/NavIcon.jsx';
 export default function DashboardPage({ me, schoolYear, setPage }) {
-  const studentsResource = useCollectionResource('students');
-  const sectionsResource = useCollectionResource('sections');
-  const enrollmentsResource = useCollectionResource('enrollments');
-  const attendanceResource = useCollectionResource('student_attendance');
+  const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
+  const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
+  const attendanceResource = useStaffCollectionResource('student_attendance', { me, schoolYear });
   const admin = isAdmin(me);
   const { students, sections, enrollments, attendance } = useMemo(() => scopeRoster({
     students: studentsResource.data, sections: sectionsResource.data,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAsyncAction } from '../hooks/useAsyncAction.js';
-import { useCollectionResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { sectionMatches } from '../lib/search.js';
 import { enrollStudent, withdrawEnrollment } from '../data/enrollments.js';
@@ -14,11 +14,11 @@ import '../enrollment.css';
 const sectionLabel = section => section
   ? `${section.name} · Grade ${section.gradeLevel}${section.strand ? ` · ${section.strand}` : ''}` : '—';
 
-export default function EnrollPage({ schoolYear }) {
+export default function EnrollPage({ me, schoolYear }) {
   const action = useAsyncAction();
-  const studentsResource = useCollectionResource('students');
-  const sectionsResource = useCollectionResource('sections');
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
+  const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
   const resources = [studentsResource, sectionsResource, enrollmentsResource];
   const ready = resources.every(resource => !resource.loading && !resource.error);
   const students = studentsResource.data;

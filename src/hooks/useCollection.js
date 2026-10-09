@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { startResourceSubscription } from '../lib/resourceSubscription.js';
+import { staffCollectionQuery } from '../lib/staffQueries.js';
 const EMPTY = [];
 function useResource(subscribe, deps, emptyValue) {
   const [attempt, setAttempt] = useState(0);
@@ -29,6 +30,12 @@ export function useQueryResource(buildQuery, deps) {
     if (!query) { next(EMPTY); return; }
     return onSnapshot(query, snapshot => next(snapshot.docs.map(item => ({ id: item.id, ...item.data() }))), fail);
   }, deps, EMPTY);
+}
+export function useStaffCollectionResource(path, { me, schoolYear } = {}) {
+  const resource = useQueryResource(() => staffCollectionQuery(path, { me, schoolYear }),
+    [path, !!me, me?.role, me?.gradeLevel, schoolYear]);
+  // A profile that is still loading must never look like a successful empty roster.
+  return !me ? { ...resource, data: EMPTY, loading: true, error: null } : resource;
 }
 export const useCollection = path => useCollectionResource(path).data;
 export const useDoc = path => useDocResource(path).data;

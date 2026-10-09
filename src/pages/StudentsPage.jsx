@@ -1,6 +1,6 @@
 import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollectionResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { deleteStudent } from '../data/students.js';
 import { STUDENT_STATUS, UNASSIGNED } from '../lib/constants.js';
@@ -12,9 +12,9 @@ import { currentEnrollmentByStudent } from '../lib/enrollmentChange.js';
 import { isAdmin, grades, gradeOptions, singleGrade, scopeRoster } from '../lib/access.js';
 
 export default function StudentsPage({ me, schoolYear, initialGradeFilter, initialStatus }) {
-  const studentsResource = useCollectionResource('students');
-  const sectionsResource = useCollectionResource('sections');
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
+  const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
   const admin = isAdmin(me);
   const oneGrade = singleGrade(me);
   const { students, sections, enrollments } = useMemo(() => scopeRoster(

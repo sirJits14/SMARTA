@@ -3,7 +3,7 @@ import { useAsyncAction } from '../hooks/useAsyncAction.js';
 import { ActionFeedback } from '../components/ui.jsx';
 import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useRef, useState } from 'react';
-import { useCollectionResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { createSection, updateSection, deleteSection } from '../data/sections.js';
 import { GRADES, isSHS, TRACKS, STRANDS } from '../lib/constants.js';
 import { alphabeticalSort, depedSort } from '../lib/roster.js';
@@ -75,11 +75,11 @@ function SectionForm({ editing, schoolYear, schedules, onClose }) {
 }
 
 export default function SectionsPage({ me, schoolYear }) {
-  const sectionsResource = useCollectionResource('sections');
-  const schedulesResource = useCollectionResource('schedules');
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
+  const schedulesResource = useStaffCollectionResource('schedules', { me, schoolYear });
   const schedules = schedulesResource.data;
-  const enrollmentsResource = useCollectionResource('enrollments');
-  const studentsResource = useCollectionResource('students');
+  const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
+  const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
   const admin = isAdmin(me);
   const oneGrade = singleGrade(me);
   const { sections, enrollments, students } = useMemo(() => scopeRoster(

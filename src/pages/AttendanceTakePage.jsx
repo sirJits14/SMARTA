@@ -1,6 +1,6 @@
 import { resolveAttendanceEntry } from '../lib/attendanceEntry.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useCollectionResource, useDocResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource, useDocResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { localDate } from '../lib/dates.js';
 import { markFor, formatScanTime } from '../lib/attendance.js';
@@ -15,14 +15,14 @@ import { grades, scopeRoster } from '../lib/access.js';
 const NEXT = { P: 'L', L: 'A', A: 'E', E: 'P' };
 
 export default function AttendanceTakePage({ me, schoolYear, entry }) {
-  const sectionsResource = useCollectionResource('sections');
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
   // Coordinators pick only their grades' sections; an out-of-scope dashboard
   // deep link resolves as an unavailable section.
   const sections = useMemo(() => scopeRoster({ sections: sectionsResource.data }, grades(me), schoolYear).sections,
     [sectionsResource.data, me, schoolYear]);
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
   const enrollments = enrollmentsResource.data;
-  const studentsResource = useCollectionResource('students');
+  const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
   const students = studentsResource.data;
 
   const sectionsSY = useMemo(() =>
