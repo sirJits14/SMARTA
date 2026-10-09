@@ -46,7 +46,13 @@ describe('expireLinks', () => {
   it('fills in the learner name for linked learners who have no gate scan yet, once per learner', async () => {
     const r = await expireLinks(deps());
     expect(r.seeded).toBe(1);
-    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', formalName: 'Cruz, Ana B.', lastName: 'Cruz', firstName: 'Ana', sex: 'F', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+    expect((await expireLinks(deps())).seeded).toBe(0);
+  });
+  it('refreshes a learner projection written before the Home sort fields existed', async () => {
+    await db().doc('learners/S1').set({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal', today: { date: '2026-09-21', status: 'in' } });
+    expect((await expireLinks(deps())).seeded).toBe(1);
+    expect((await db().doc('learners/S1').get()).data()).toMatchObject({ formalName: 'Cruz, Ana B.', lastName: 'Cruz', sex: 'F', today: { status: 'in' } });
     expect((await expireLinks(deps())).seeded).toBe(0);
   });
   it('deletes old revoked links, old codes, old audit rows, dormant guardians', async () => {
