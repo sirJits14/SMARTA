@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { collection, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import S from '../strings.js';
+import { nameCase } from '../lib/format.js';
 import { T } from '../styles.js';
 import { Spinner, EmptyState } from '../components/ui.jsx';
 import { Bubble, DayDivider } from '../components/Bubble.jsx';
@@ -60,7 +61,7 @@ export default function Inbox({ user, navigate, route }) {
           <DayDivider label={day.label} />
           {day.runs.map((run, ri) => (
             <div key={`${day.date}-${ri}`} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, margin: '0 0 4px 12px' }}>{run.learnerName || S.inboxFromSchool}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, margin: '0 0 4px 12px' }}>{nameCase(run.learnerName) || S.inboxFromSchool}</div>
               {run.items.map((item, i) => (
                 <Bubble
                   key={item.id}

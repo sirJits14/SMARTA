@@ -5,6 +5,25 @@ export const eventTitle = (e) => (e.kind === 'in' ? S.eventIn : S.eventOut);
 
 export const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv']);
 
+// Name suffixes written as Roman numerals, kept in capitals as whole words.
+const ROMAN_SUFFIX = /^(ii|iii|iv)$/i;
+
+// "DELA CRUZ, ANA B. JR." -> "Dela Cruz, Ana B. Jr." for display only; the
+// registrar's records keep whatever casing was entered. Each run of letters
+// that is all upper- or all lower-case is recased, so hyphens and
+// apostrophes start a new capital (Santos-Villanueva, O'Neil); a run that is
+// already mixed (McDonald) is left alone. Initials and II/III/IV stay capital.
+export function nameCase(name) {
+  if (typeof name !== 'string') return name;
+  return name.replace(/\p{L}+/gu, (run, offset, all) => {
+    if (run !== run.toUpperCase() && run !== run.toLowerCase()) return run;
+    const before = all[offset - 1] || ' ';
+    const after = all[offset + run.length] || ' ';
+    if (run.length === 1 || (ROMAN_SUFFIX.test(run) && /[\s,]/.test(before) && /[\s,.]/.test(after))) return run.toUpperCase();
+    return run[0].toUpperCase() + run.slice(1).toLowerCase();
+  });
+}
+
 export function initials(name) {
   const words = typeof name === 'string' ? name.trim().split(/\s+/).filter(Boolean) : [];
   while (words.length > 1 && NAME_SUFFIXES.has(words[words.length - 1].replace(/\.$/, '').toLowerCase())) words.pop();

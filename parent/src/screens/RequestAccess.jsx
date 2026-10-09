@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { collection, query, where, limit } from 'firebase/firestore';
 import { db, callable } from '../firebase.js';
 import S from '../strings.js';
+import { nameCase } from '../lib/format.js';
 import { T } from '../styles.js';
 import { Btn, Card, Field, Inp, Sel, Banner } from '../components/ui.jsx';
 import { useQuery } from '../hooks/useDoc.js';
@@ -37,7 +38,7 @@ export default function RequestAccess({ user, profile, navigate }) {
           <Btn variant="ghost" onClick={() => navigate('/')}>{S.back}</Btn>
         </div>
       </Card>
-      {rows?.length > 0 && <Card><h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsRequests}</h2>{rows.map((r) => <div key={r.id} style={{ fontSize: 14, padding: '6px 0' }}>{r.learnerNameTyped} — <strong>{STATUS[r.status]}</strong>{r.resolutionNote ? `: ${r.resolutionNote}` : ''}</div>)}</Card>}
+      {rows?.length > 0 && <Card><h2 style={{ fontSize: 16, marginTop: 0 }}>{S.settingsRequests}</h2>{rows.map((r) => <div key={r.id} style={{ fontSize: 14, padding: '6px 0' }}>{nameCase(r.learnerNameTyped)} — <strong>{STATUS[r.status]}</strong>{r.resolutionNote ? `: ${r.resolutionNote}` : ''}</div>)}</Card>}
     </>
   );
 }

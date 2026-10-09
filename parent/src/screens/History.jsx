@@ -6,7 +6,7 @@ import { T } from '../styles.js';
 import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
 import { Bubble, DayDivider } from '../components/Bubble.jsx';
 import { useDoc } from '../hooks/useDoc.js';
-import { eventTitle, latestScanToday } from '../lib/format.js';
+import { eventTitle, latestScanToday, nameCase } from '../lib/format.js';
 import { historyThread } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 import PageHeader from '../components/PageHeader.jsx';
@@ -49,7 +49,7 @@ export default function History({ studentId, navigate, route }) {
   const today = localDate();
   return (
     <>
-      <PageHeader title={learner?.displayName} avatarName={learner?.displayName} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
+      <PageHeader title={nameCase(learner?.displayName)} avatarName={learner?.displayName} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
         status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')} />
       {error === 'permission-denied' ? <Banner tone="warn">{S.accessEnded}</Banner>
         : learner === undefined ? <Spinner label={S.loading} />
