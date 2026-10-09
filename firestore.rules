@@ -59,6 +59,20 @@ service cloud.firestore {
     function affectedOnly(keys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
+    // Validate the final merged document so stale enrollment/import writes
+    // cannot restore grade access after another write makes a student inactive.
+    // Unchanged legacy metadata may remain during profile-only repairs.
+    function validStudentScopeWrite() {
+      let d = request.resource.data;
+      let grade = d.get('gradeLevel', null);
+      let year = d.get('scopeSchoolYear', null);
+      return (resource != null
+          && !d.diff(resource.data).affectedKeys().hasAny(['gradeLevel', 'scopeSchoolYear', 'status']))
+        || (grade == null && year == null)
+        || (d.get('status', 'active') == 'active' && grade is int && grade >= 7 && grade <= 12
+          && year is string
+          && year == get(/databases/$(database)/documents/settings/app).data.currentSchoolYear);
+    }
 
     // ---------- roster (staff + registered kiosk only) ----------
     // No anonymous/any-signed-in fallback: a stale kiosk v1 tab (anonymous
@@ -68,7 +82,11 @@ service cloud.firestore {
     // collections is UI-only for now. Closing it server-side also needs
     // gradeLevel denormalized onto learner docs and the pages switched to
     // where('gradeLevel','in',...) queries -- see the staff-roles spec.
-    match /students/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /students/{id} {
+      allow read: if isStaff() || isKiosk();
+      allow create, update: if isAdmin() && validStudentScopeWrite();
+      allow delete: if isAdmin();
+    }
     match /enrollments/{id} { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
     match /sections/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
     match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
