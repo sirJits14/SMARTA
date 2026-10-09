@@ -10,14 +10,9 @@ import { formatScanTime, localDate } from '../../../shared/dates.js';
 import { notificationState } from '../lib/notificationState.js';
 import { useDeviceStatus } from '../lib/notifications.js';
 
-// Today's latest gate scan as a pill: the dot carries the tone, the text the fact.
-function ScanPill({ today }) {
-  const latest = latestScan(today, localDate());
-  const tone = latest ? latest.kind : 'none';
-  const text = latest ? `${latest.kind === 'in' ? S.homeEntered : S.homeLeft} ${formatScanTime(latest.time)}` : S.homeNoEntryShort;
-  return <span className={`scan-pill scan-pill--${tone}`}><span className="scan-pill-dot" aria-hidden="true" />{text}</span>;
-}
-
+// A Messages-style row: name and today's latest scan time on top, then what
+// happened and the learner's section as the muted preview. The dot in the
+// margin marks a learner who has entered and not yet left today.
 function LearnerRow({ link, data, error, navigate }) {
   const name = listName(data, link.learnerName);
   const avatar = <span className="learner-avatar" aria-hidden="true">{initials(data?.displayName || link.learnerName)}</span>;
@@ -25,26 +20,29 @@ function LearnerRow({ link, data, error, navigate }) {
     return (
       <li className="learner-row">
         {avatar}
-        <span className="learner-row-text">
-          <span className="learner-row-name">{name}</span>
-          <span className="learner-row-note">{S.accessEnded}</span>
+        <span className="learner-row-body">
+          <span className="learner-row-top"><span className="learner-row-name">{name}</span></span>
+          <span className="learner-row-preview learner-row-preview--warn">{S.accessEnded}</span>
         </span>
       </li>
     );
   }
+  const latest = latestScan(data?.today, localDate());
+  const happened = latest ? (latest.kind === 'in' ? S.eventIn : S.eventOut) : S.homeNoEntryShort;
   return (
     <li>
       <button type="button" className="learner-row" onClick={() => navigate(`/learner/${link.studentId}`)}>
+        {latest?.kind === 'in' && <span className="learner-row-dot" aria-hidden="true" />}
         {avatar}
-        <span className="learner-row-text">
-          <span className="learner-row-name">{name}</span>
-          <span className="learner-row-meta">
-            {data?.sectionLabel && <span className="learner-row-section">{data.sectionLabel}</span>}
-            <ScanPill today={data?.today} />
+        <span className="learner-row-body">
+          <span className="learner-row-top">
+            <span className="learner-row-name">{name}</span>
+            {latest && <span className="learner-row-time">{formatScanTime(latest.time)}</span>}
+            <span className="learner-row-chevron" aria-hidden="true"><Icon name="chevron" size={16} /></span>
           </span>
+          <span className="learner-row-preview">{[happened, data?.sectionLabel].filter(Boolean).join(' · ')}</span>
         </span>
         <span className="sr-only">{S.homeViewHistory}</span>
-        <span className="learner-row-chevron" aria-hidden="true"><Icon name="chevron" size={18} /></span>
       </button>
     </li>
   );
@@ -66,7 +64,7 @@ export default function Home({ user, profile, navigate }) {
       {entries.length === 0 && <EmptyState title={S.homeNoLinks} hint={S.activateBody} />}
       {entries.length === 0 && <Btn onClick={() => navigate('/activate')} style={{ width: '100%' }}>{S.activateTitle}</Btn>}
       {entries.length > 0 && (
-        <ul className="glass-card learner-list" aria-label={S.homeLearnersLabel}>
+        <ul className="learner-list" aria-label={S.homeLearnersLabel}>
           {orderLearners(entries).map((e) => <LearnerRow key={e.link.id} {...e} navigate={navigate} />)}
         </ul>
       )}
