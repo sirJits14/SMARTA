@@ -81,6 +81,7 @@ const S = {
   historyTitle: 'Gate scans',
   historyEmpty: 'No gate scans recorded yet.',
   historyLoadOlder: 'Load older scans',
+  historyTapHint: 'Tap a scan to report a problem with it.',
   eventIn: 'Entered school',
   eventOut: 'Left school',
   eventVoided: 'Corrected by the school',

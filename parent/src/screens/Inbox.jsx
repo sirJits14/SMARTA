@@ -4,16 +4,13 @@ import { db } from '../firebase.js';
 import S from '../strings.js';
 import { nameCase } from '../lib/format.js';
 import { Spinner, EmptyState } from '../components/ui.jsx';
-import { TimelineRow, TimelineDay } from '../components/Timeline.jsx';
+import { Bubble, DayDivider } from '../components/Bubble.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { useQuery } from '../hooks/useDoc.js';
 import { toFeed } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 
 const KIND = { in: S.eventIn, out: S.eventOut, void: S.eventVoided };
-
-// Who the message is about (or that it's from the school), then the gate.
-const itemMeta = (item) => [nameCase(item.learnerName) || S.inboxFromSchool, item.type === 'attendance' && item.deviceLabel].filter(Boolean).join(' · ');
 const itemTone = (item) => (item.type !== 'attendance' ? 'school' : item.kind === 'in' ? 'in' : 'out');
 
 export default function Inbox({ user, navigate, route }) {
@@ -61,23 +58,30 @@ export default function Inbox({ user, navigate, route }) {
       {header}
       {toFeed(rows, localDate()).map((day) => (
         <div key={day.date}>
-          <TimelineDay label={day.label} />
-          <div className="timeline">
-            {day.runs.flatMap((run) => run.items).map((item) => (
-              <TimelineRow
-                key={item.id}
-                id={`msg-${item.id}`}
-                tone={itemTone(item)}
-                unread={unreadAtOpen.current?.has(item.id)}
-                title={item.type === 'attendance' ? (KIND[item.kind] || S.inboxNewEvent) : item.title}
-                time={formatScanTime(item.time)}
-                meta={itemMeta(item)}
-                body={item.type === 'attendance' ? null : item.body}
-                onClick={item.type === 'attendance' ? () => open(item) : undefined}
-                actionLabel={S.homeViewHistory}
-              />
-            ))}
-          </div>
+          <DayDivider label={day.label} />
+          {day.runs.map((run, ri) => (
+            <div key={`${day.date}-${ri}`} className="bubble-run">
+              <div className="bubble-run-name">{nameCase(run.learnerName) || S.inboxFromSchool}</div>
+              <div className="bubble-group">
+                {run.items.map((item, i) => (
+                  <Bubble
+                    key={item.id}
+                    id={`msg-${item.id}`}
+                    first={i === 0}
+                    last={i === run.items.length - 1}
+                    tone={itemTone(item)}
+                    unread={unreadAtOpen.current?.has(item.id)}
+                    title={item.type === 'attendance' ? (KIND[item.kind] || S.inboxNewEvent) : item.title}
+                    body={item.type === 'attendance' ? null : item.body}
+                    meta={item.type === 'attendance' ? item.deviceLabel : undefined}
+                    time={formatScanTime(item.time)}
+                    onClick={item.type === 'attendance' ? () => open(item) : undefined}
+                    actionLabel={S.homeViewHistory}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ))}
       <div ref={endRef} />
