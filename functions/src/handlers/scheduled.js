@@ -46,11 +46,13 @@ export async function expireLinks({ db, auth, now }) {
       await db.doc(`guardians/${guardianUid}`).set({ lastActiveLinkAt: ms(nowMs) }, { merge: true });
       // Links made before activation seeded learners/{id} show "—" on the
       // guardian's Home card until the learner's first gate scan; fill the
-      // name in here instead.
+      // name in here instead. Docs written before the sort fields existed
+      // (no lastName) are refreshed the same way.
       if (!checkedLearners.has(studentId)) {
         checkedLearners.add(studentId);
         const learnerRef = db.doc(`learners/${studentId}`);
-        if (!(await learnerRef.get()).data()?.displayName) {
+        const current = (await learnerRef.get()).data();
+        if (!current?.displayName || current.lastName === undefined) {
           const [student, section] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`sections/${e.sectionId}`).get()]);
           if (student.exists) { await learnerRef.set(learnerIdentity(student.data(), section.data(), schoolYear), { merge: true }); seeded++; }
         }

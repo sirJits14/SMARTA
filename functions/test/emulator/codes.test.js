@@ -60,7 +60,7 @@ describe('activateCode', () => {
   it('seeds the learner projection with the full name before any gate scan', async () => {
     const code = await issue();
     await activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1 });
-    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+    expect((await db().doc('learners/S1').get()).data()).toEqual({ displayName: 'Ana B. Cruz', formalName: 'Cruz, Ana B.', lastName: 'Cruz', firstName: 'Ana', sex: 'F', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
   });
   it('keeps an existing scan summary when seeding the learner projection', async () => {
     await db().doc('learners/S1').set({ displayName: 'Ana Cruz', today: { date: '2026-09-21', status: 'in' } });

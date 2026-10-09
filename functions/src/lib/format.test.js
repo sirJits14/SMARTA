@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sectionLabel, displayName, fullName } from './format.js';
+import { sectionLabel, displayName, fullName, formalName, learnerIdentity } from './format.js';
 
 describe('format', () => {
   describe('sectionLabel', () => {
@@ -35,5 +35,22 @@ describe('fullName', () => {
   it('adds a period to a one-letter middle initial and skips blanks', () => {
     expect(fullName({ firstName: ' Ana ', middleName: 'B', lastName: 'Cruz', extName: ' ' })).toBe('Ana B. Cruz');
     expect(fullName({ firstName: 'Ben', lastName: 'Dy' })).toBe('Ben Dy');
+  });
+});
+
+describe('formalName', () => {
+  it('puts the last name first with a middle initial and extension', () => {
+    expect(formalName({ firstName: 'Juan', middleName: 'Santos', lastName: 'Dela Cruz', extName: 'Jr.' })).toBe('Dela Cruz, Juan S. Jr.');
+    expect(formalName({ firstName: ' Ben ', lastName: ' Dy ' })).toBe('Dy, Ben');
+  });
+});
+
+describe('learnerIdentity', () => {
+  it('carries the sort fields Home orders learners by', () => {
+    const id = learnerIdentity({ firstName: 'Juan', lastName: ' Dela Cruz ', sex: 'M' }, { gradeLevel: 8, name: 'Rizal' }, '2026-2027');
+    expect(id).toEqual({ displayName: 'Juan Dela Cruz', formalName: 'Dela Cruz, Juan', lastName: 'Dela Cruz', firstName: 'Juan', sex: 'M', sectionLabel: 'Grade 8 – Rizal', schoolYear: '2026-2027' });
+  });
+  it('stores an empty sex rather than an unexpected value', () => {
+    expect(learnerIdentity({ firstName: 'A', lastName: 'B', sex: 'x' }, null, 'SY').sex).toBe('');
   });
 });

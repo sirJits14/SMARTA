@@ -6,7 +6,7 @@ import { audit } from '../audit.js';
 import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, int } from '../lib/validators.js';
 import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activationCode.js';
-import { sectionLabel, learnerIdentity } from '../lib/format.js';
+import { sectionLabel, learnerIdentity, formalName } from '../lib/format.js';
 import { ADVISER, isDepedEmail, slotFor, claimSlot, newCodeSlots, isOpenStatus } from '../lib/codeSlots.js';
 
 // Guardian relationships. The class adviser (ADVISER) can only link through a
@@ -14,8 +14,6 @@ import { ADVISER, isDepedEmail, slotFor, claimSlot, newCodeSlots, isOpenStatus }
 export const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
 const GENERIC = 'That code could not be used. Ask the registrar to reissue your slip.';
 const ADVISER_DEPED = 'Sign in with your @deped.gov.ph account to link as adviser.';
-
-const formalName = (s) => { const mi = s.middleName?.trim() ? ` ${s.middleName.trim()[0]}.` : ''; const ext = s.extName?.trim() ? ` ${s.extName.trim()}` : ''; return `${s.lastName}, ${s.firstName}${mi}${ext}`; };
 
 // Revokes a learner's issued and exhausted (fully used) codes for one school year.
 async function revokeOpenCodes(db, studentId, schoolYear, by, reason) {
