@@ -3,7 +3,7 @@ import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase
 import { db } from '../firebase.js';
 import S from '../strings.js';
 import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
-import { TimelineRow, TimelineDay } from '../components/Timeline.jsx';
+import { Bubble, DayDivider } from '../components/Bubble.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 import { eventTitle, latestScanToday, nameCase } from '../lib/format.js';
 import { historyThread } from '../lib/thread.js';
@@ -62,15 +62,17 @@ export default function History({ studentId, navigate, route }) {
             {rows.length === 0 && !busy && <EmptyState title={S.historyEmpty} />}
             {historyThread(rows, today).map((day) => (
               <div key={day.date}>
-                <TimelineDay label={day.label} />
-                <div className="timeline">
-                  {day.items.map((ev) => {
+                <DayDivider label={day.label} />
+                <div className="bubble-group">
+                  {day.items.map((ev, i) => {
                     const voided = ev.status === 'voided';
                     // Tapping a scan reports it; corrected scans can't be reported.
                     return (
-                      <TimelineRow
+                      <Bubble
                         key={ev.id}
                         id={`ev-${ev.id}`}
+                        first={i === 0}
+                        last={i === day.items.length - 1}
                         tone={ev.kind === 'in' && !voided ? 'in' : 'out'}
                         highlight={route.query.event === ev.id}
                         struck={voided}
@@ -85,6 +87,7 @@ export default function History({ studentId, navigate, route }) {
                 </div>
               </div>
             ))}
+            {rows.length > 0 && <p className="bubble-hint">{S.historyTapHint}</p>}
           </div>}
     </>
   );
