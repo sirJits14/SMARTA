@@ -93,7 +93,7 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
     if (saveLock.current || !ready || !selectedSectionAvailable) return;
     saveLock.current = true; setSaving(true); setSaveError('');
     try {
-      await saveMarks({ sectionId, date, schoolYear, marks });
+      await saveMarks({ sectionId, gradeLevel: sectionsSY.find(s => s.id === sectionId)?.gradeLevel, date, schoolYear, marks });
       setSaved(true);
     } catch {
       setSaveError('Attendance could not be saved. Your changes are still here. Try again.');
