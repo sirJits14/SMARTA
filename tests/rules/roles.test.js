@@ -18,7 +18,7 @@ beforeEach(async () => {
 });
 
 const COORDS = [['jhs', JHS], ['shs', SHS], ['glc8', GLC8]];
-const att = (sectionId) => ({ sectionId, date: '2026-09-21', schoolYear: '2026-2027', marks: { S1: 'A' } });
+const att = (sectionId) => ({ sectionId, gradeLevel: sectionId === 'SEC11' ? 11 : 8, date: '2026-09-21', schoolYear: '2026-2027', marks: { S1: 'A' } });
 
 describe('administrators', () => {
   it('legacy registrar and role admin both write roster data', async () => {
@@ -79,9 +79,9 @@ describe('coordinators', () => {
       await denied(db.doc('users/registrar@bnhs.edu').get());
       await ok(db.doc(`users/${who.token.email}`).get());
     });
-    it(`${name}: still reads roster collections (grade scoping of reads is UI-only for now)`, async () => {
-      await ok(as(env, who).collection('students').get());
-      await ok(as(env, who).collection('student_attendance').get());
+    it(`${name}: cannot read broad roster collections`, async () => {
+      await denied(as(env, who).collection('students').get());
+      await denied(as(env, who).collection('student_attendance').get());
     });
   }
   it('take attendance for sections in their grades', async () => {

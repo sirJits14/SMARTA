@@ -40,12 +40,15 @@ describe('settings', () => {
 
 describe('student_attendance', () => {
   const ref = (db) => db.doc('student_attendance/SEC1_2026-09-21');
-  it('kiosk merge with allowed keys succeeds', async () => {
-    await ok(ref(as(env, KIOSK)).set({ sectionId: 'SEC1', date: '2026-09-21', schoolYear: '2026-2027', marks: { S1: 'P' }, timeIn: { S1: '07:12' }, rosterInitialized: true, updatedAt: '2026-09-21' }, { merge: true }));
+  it('kiosk cannot directly create attendance even with the former allowed keys', async () => {
+    await denied(ref(as(env, KIOSK)).set({ sectionId: 'SEC1', date: '2026-09-21', schoolYear: '2026-2027', marks: { S1: 'P' }, timeIn: { S1: '07:12' }, rosterInitialized: true, updatedAt: '2026-09-21' }, { merge: true }));
+    await ok(ref(as(env, STAFF)).set({ sectionId: 'SEC1', gradeLevel: 7, date: '2026-09-21', schoolYear: '2026-2027', marks: { S1: 'P' } }));
     await ok(ref(as(env, KIOSK)).get());
+    await denied(ref(as(env, KIOSK)).update({ 'marks.S1': 'A' }));
+    await denied(ref(as(env, KIOSK)).delete());
   });
   it('staff read and mark attendance (SIMS saveMarks shape)', async () => {
-    await ok(ref(as(env, STAFF)).set({ sectionId: 'SEC1', date: '2026-09-21', schoolYear: '2026-2027', marks: { S1: 'E' }, updatedAt: '2026-09-21' }, { merge: true }));
+    await ok(ref(as(env, STAFF)).set({ sectionId: 'SEC1', gradeLevel: 7, date: '2026-09-21', schoolYear: '2026-2027', marks: { S1: 'E' }, updatedAt: '2026-09-21' }, { merge: true }));
     await ok(ref(as(env, STAFF)).get());
   });
   it('kiosk cannot add unexpected keys; anonymous and inactive kiosk cannot write; guardian cannot read', async () => {

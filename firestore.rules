@@ -26,21 +26,47 @@ service cloud.firestore {
     // before roles existed (no role, or 'registrar') are administrators.
     function role() { return profile().get('role', 'admin'); }
     function isAdmin() { return isStaff() && (role() == null || role() in ['admin', 'registrar', '']); }
-    function coversGrade(g) {
-      return isAdmin()
-        || (isStaff() && role() == 'jhs_coord' && g in [7, 8, 9, 10])
-        || (isStaff() && role() == 'shs_coord' && g in [11, 12])
-        || (isStaff() && role() == 'glc' && g == profile().gradeLevel);
+    function coordinatorGrades() {
+      let p = profile();
+      let r = p.get('role', 'admin');
+      let g = p.get('gradeLevel', null);
+      return r == 'jhs_coord' ? [7, 8, 9, 10]
+        : r == 'shs_coord' ? [11, 12]
+        : r == 'glc' && g in [7, 8, 9, 10, 11, 12] ? [g]
+        : r == 'glc' && g in ['7', '8', '9', '10', '11', '12'] ? [int(g)]
+        : [];
     }
-    function coversSection(sectionId) {
-      return coversGrade(get(/databases/$(database)/documents/sections/$(sectionId)).data.gradeLevel);
+    function coordinatorCoversGrade(g) {
+      return g is int && g in coordinatorGrades();
+    }
+    function coordinatorMayReadGrade() {
+      return isStaff() && coordinatorCoversGrade(resource.data.get('gradeLevel', null));
+    }
+    function coordinatorMayReadStudent() {
+      let year = get(/databases/$(database)/documents/settings/app).data.get('currentSchoolYear', null);
+      return coordinatorMayReadGrade()
+        && year is string && year.matches('[0-9]{4}-[0-9]{4}')
+        && resource.data.get('scopeSchoolYear', null) == year;
+    }
+    function coordinatorMayReadSchedule() {
+      let grades = resource.data.get('gradeLevels', []);
+      // hasAny also rejects non-lists. A separate `is list` guard cannot be
+      // proven by Firestore's array-contains-any query authorization.
+      return isStaff() && grades.hasAny(coordinatorGrades());
+    }
+    function validAttendanceGrade() {
+      let d = request.resource.data;
+      let g = d.get('gradeLevel', null);
+      return g is int && g in [7, 8, 9, 10, 11, 12] && d.get('sectionId', null) is string
+        && g == get(/databases/$(database)/documents/sections/$(d.sectionId)).data.gradeLevel;
     }
     // On update both the old and new section must be in scope, so a
     // coordinator can't move a record into or out of their grades.
     function coordinatorMayWriteAttendance() {
       return isStaff() && request.resource != null
-        && coversSection(request.resource.data.sectionId)
-        && (resource == null || coversSection(resource.data.sectionId));
+        && coordinatorCoversGrade(request.resource.data.gradeLevel)
+        && (resource == null || (coordinatorCoversGrade(resource.data.get('gradeLevel', null))
+          && coordinatorCoversGrade(get(/databases/$(database)/documents/sections/$(resource.data.sectionId)).data.gradeLevel)));
     }
     // Kiosk = a per-device account allow-listed (and active) in kiosks/{uid}.
     function kioskDoc() { return get(/databases/$(database)/documents/kiosks/$(request.auth.uid)); }
@@ -78,30 +104,27 @@ service cloud.firestore {
     // No anonymous/any-signed-in fallback: a stale kiosk v1 tab (anonymous
     // sign-in) must fail loudly at the gate rather than keep writing
     // student_attendance that never reaches the parent portal.
-    // Staff roles (2026-10-04): coordinators' read scoping of these
-    // collections is UI-only for now. Closing it server-side also needs
-    // gradeLevel denormalized onto learner docs and the pages switched to
-    // where('gradeLevel','in',...) queries -- see the staff-roles spec.
+    // Coordinator queries must prove grade scope from trusted metadata.
+    // Full student records additionally require the active school year.
     match /students/{id} {
-      allow read: if isStaff() || isKiosk();
+      allow read: if isAdmin() || isKiosk() || coordinatorMayReadStudent();
       allow create, update: if isAdmin() && validStudentScopeWrite();
       allow delete: if isAdmin();
     }
-    match /enrollments/{id} { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
-    match /sections/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
-    match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /enrollments/{id} { allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade(); allow write: if isAdmin(); }
+    match /sections/{id}    { allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade(); allow write: if isAdmin(); }
+    match /schedules/{id}   { allow read: if isAdmin() || isKiosk() || coordinatorMayReadSchedule(); allow write: if isAdmin(); }
     match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
     match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
     match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isAdmin(); }
     match /users/{id}       { allow read: if isAdmin() || (signedIn() && request.auth.token.email != null && id == request.auth.token.email.lower()); allow write: if false; }
 
-    // Confirmed attendance. Staff edit freely; the registered kiosk merges
-    // only its known fields.
+    // Confirmed kiosk attendance is derived by the backend from scan events.
+    // Staff retain manual editing permissions.
     match /student_attendance/{id} {
-      allow read: if isStaff() || isKiosk();
-      allow write: if isAdmin() || coordinatorMayWriteAttendance()
-        || (isKiosk() && request.resource.data.keys().hasOnly(
-             ['sectionId', 'date', 'schoolYear', 'marks', 'timeIn', 'timeOut', 'rosterInitialized', 'updatedAt']));
+      allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade();
+      allow create, update: if validAttendanceGrade() && (isAdmin() || coordinatorMayWriteAttendance());
+      allow delete: if isAdmin();
     }
 
     // ---------- kiosks ----------
