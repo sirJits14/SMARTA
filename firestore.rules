@@ -57,14 +57,20 @@ service cloud.firestore {
     function validAttendanceGrade() {
       let d = request.resource.data;
       let g = d.get('gradeLevel', null);
+      let previousGrade = resource == null ? null : resource.data.get('gradeLevel', null);
+      let preservesHistory = resource != null && previousGrade is int
+        && previousGrade in [7, 8, 9, 10, 11, 12]
+        && d.get('sectionId', null) == resource.data.get('sectionId', null);
       return g is int && g in [7, 8, 9, 10, 11, 12] && d.get('sectionId', null) is string
-        && g == get(/databases/$(database)/documents/sections/$(d.sectionId)).data.gradeLevel;
+        && (preservesHistory ? g == previousGrade
+          : g == get(/databases/$(database)/documents/sections/$(d.sectionId)).data.gradeLevel);
     }
     // On update both the old and new section must be in scope, so a
     // coordinator can't move a record into or out of their grades.
     function coordinatorMayWriteAttendance() {
       return isStaff() && request.resource != null
         && coordinatorCoversGrade(request.resource.data.gradeLevel)
+        && coordinatorCoversGrade(get(/databases/$(database)/documents/sections/$(request.resource.data.sectionId)).data.gradeLevel)
         && (resource == null || (coordinatorCoversGrade(resource.data.get('gradeLevel', null))
           && coordinatorCoversGrade(get(/databases/$(database)/documents/sections/$(resource.data.sectionId)).data.gradeLevel)));
     }
@@ -96,7 +102,7 @@ service cloud.firestore {
           && !d.diff(resource.data).affectedKeys().hasAny(['gradeLevel', 'scopeSchoolYear', 'status']))
         || (grade == null && year == null)
         || (d.get('status', 'active') == 'active' && grade is int && grade >= 7 && grade <= 12
-          && year is string
+          && year is string && year.matches('[0-9]{4}-[0-9]{4}')
           && year == get(/databases/$(database)/documents/settings/app).data.currentSchoolYear);
     }
 

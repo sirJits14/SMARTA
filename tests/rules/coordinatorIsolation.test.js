@@ -131,6 +131,28 @@ describe('coordinator direct reads and list isolation', () => {
 });
 
 describe('attendance authoritative grade writes', () => {
+  it('boots an empty assigned-section day and reads the first created record through the app query', async () => {
+    state.db = as(env, GLC8);
+    const q = () => staffCollectionQuery('student_attendance', { me: { role: 'glc', gradeLevel: 8 }, sectionId: 'G8', date: '2026-10-10' });
+    expect((await ok(getDocs(q()))).size).toBe(0);
+    await denied(as(env, GLC8).doc('student_attendance/G8_2026-10-10').get());
+    await ok(as(env, GLC8).doc('student_attendance/G8_2026-10-10').set({ ...attendance(8), date: '2026-10-10' }));
+    expect((await ok(getDocs(q()))).docs.map(d => d.id)).toEqual(['G8_2026-10-10']);
+    await denied(as(env, GLC8).collection('student_attendance').where('sectionId', '==', 'G8').where('date', '==', '2026-10-10').get());
+  });
+  it('preserves historical grade while the same section current grade changes', async () => {
+    await seed(env, async db => {
+      await db.doc('student_attendance/G7_2026-10-09').set(attendance(7));
+      await db.doc('sections/G7').update({ gradeLevel: 8 });
+    });
+    await ok(as(env, JHS).doc('student_attendance/G7_2026-10-09').update({ marks: { S1: 'A' } }));
+    await denied(as(env, JHS).doc('student_attendance/G7_2026-10-09').update({ gradeLevel: 8 }));
+    await denied(as(env, STAFF).doc('student_attendance/G7_2026-10-09').update({ gradeLevel: 8 }));
+    await denied(as(env, GLC8).doc('student_attendance/G7_2026-10-09').update({ marks: { S1: 'E' } }));
+    await seed(env, db => db.doc(`users/${LEGACY.token.email}`).set({ role: 'glc', gradeLevel: 7 }));
+    await denied(as(env, LEGACY).doc('student_attendance/G7_2026-10-09').update({ marks: { S1: 'E' } }));
+    await ok(as(env, JHS).doc('student_attendance/G7_2026-10-10').set({ ...attendance(8, 'G7'), date: '2026-10-10' }));
+  });
   it('coordinators create and edit only section-matching grade metadata', async () => {
     await ok(as(env, GLC8).doc('student_attendance/NEW').set(attendance(8)));
     await ok(as(env, GLC8).doc('student_attendance/NEW').update({ marks: { S1: 'A' } }));

@@ -34,12 +34,18 @@ export async function applyScanAttendance(db, { eventId, data, date, scanTime })
     if (!enrolled || enrolled.status !== 'enrolled' || enrolled.sectionId !== data.sectionId
         || enrolled.studentId !== data.studentId || enrolled.schoolYear !== data.schoolYear
         || !student.exists || !section.exists || section.data().schoolYear !== data.schoolYear) return reject('enrollment');
-    const gradeLevel = section.data().gradeLevel;
-    if (!Number.isInteger(gradeLevel) || gradeLevel < 7 || gradeLevel > 12) return reject('grade');
+    const sectionGrade = section.data().gradeLevel;
+    const validGrade = grade => Number.isInteger(grade) && grade >= 7 && grade <= 12;
+    if (!validGrade(sectionGrade)) return reject('grade');
 
     const attendanceRef = db.doc(`student_attendance/${data.sectionId}_${date}`);
     const attendanceSnap = await tx.get(attendanceRef);
     const attendance = attendanceSnap.data() || {};
+    if (attendanceSnap.exists && attendance.sectionId !== data.sectionId) return reject('section');
+    if (attendanceSnap.exists && !validGrade(attendance.gradeLevel)) return reject('grade');
+    // Existing attendance retains its historical audience after section edits.
+    // A missing or invalid legacy audience requires an explicit admin repair.
+    const gradeLevel = attendanceSnap.exists ? attendance.gradeLevel : sectionGrade;
     if (attendance.schoolYear && attendance.schoolYear !== data.schoolYear) return reject('school-year');
     const marks = { ...(attendance.marks || {}) };
     if (!attendance.rosterInitialized) {

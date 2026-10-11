@@ -1,6 +1,6 @@
 import { resolveAttendanceEntry } from '../lib/attendanceEntry.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useStaffCollectionResource, useDocResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { localDate } from '../lib/dates.js';
 import { markFor, formatScanTime } from '../lib/attendance.js';
@@ -50,8 +50,8 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
     return depedSort(students.filter((s) => ids.has(s.id)));
   }, [enrollments, students, sectionId]);
 
-  const attendanceResource = useDocResource(sectionId ? `student_attendance/${attendanceId(sectionId, date)}` : null);
-  const attendanceDoc = attendanceResource.data;
+  const attendanceResource = useStaffCollectionResource('student_attendance', { me, sectionId, date });
+  const attendanceDoc = attendanceResource.data.find(item => item.id === attendanceId(sectionId, date)) ?? null;
   const resources = [sectionsResource, enrollmentsResource, studentsResource, attendanceResource];
   const selectedSectionAvailable = sectionsSY.some(s => s.id === sectionId);
   const ready = resources.every(r => !r.loading && !r.error);
@@ -93,7 +93,7 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
     if (saveLock.current || !ready || !selectedSectionAvailable) return;
     saveLock.current = true; setSaving(true); setSaveError('');
     try {
-      await saveMarks({ sectionId, gradeLevel: sectionsSY.find(s => s.id === sectionId)?.gradeLevel, date, schoolYear, marks });
+      await saveMarks({ sectionId, gradeLevel: sectionsSY.find(s => s.id === sectionId)?.gradeLevel, date, schoolYear, marks, existingAttendance: attendanceDoc });
       setSaved(true);
     } catch {
       setSaveError('Attendance could not be saved. Your changes are still here. Try again.');

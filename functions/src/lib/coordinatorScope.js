@@ -1,12 +1,13 @@
 // Pure migration decisions. Null fields mean an ambiguous source: report and skip.
 const validGrade = grade => Number.isInteger(grade) && grade >= 7 && grade <= 12;
+const validYear = year => typeof year === 'string' && /^[0-9]{4}-[0-9]{4}$/.test(year);
 const ok = fields => ({ fields, warnings: [] });
 const conflict = message => ({ fields: null, warnings: [message] });
 const clearedStudent = () => ok({ gradeLevel: null, scopeSchoolYear: null });
 
 export function deriveStudentScope(student, enrollments, schoolYear) {
   if (!student?.id) return conflict('Missing student source');
-  if (!schoolYear || typeof schoolYear !== 'string') return conflict('Missing current school year');
+  if (!validYear(schoolYear)) return conflict('Missing or invalid current school year');
   if (enrollments.some(e => e.studentId !== student.id)) return conflict('Enrollment studentId does not match student');
   if ((student.status === undefined ? 'active' : student.status) !== 'active') return clearedStudent();
   const active = enrollments.filter(e => e.schoolYear === schoolYear && e.status === 'enrolled');
@@ -32,7 +33,7 @@ export function deriveScheduleScope(scheduleId, sections) {
 }
 
 export function planCoordinatorScopeBackfill({ schoolYear, students = [], enrollments = [], sections = [], attendance = [], schedules = [] }) {
-  if (typeof schoolYear !== 'string' || !schoolYear.trim()) throw new Error('Missing current school year in settings/app');
+  if (!validYear(schoolYear)) throw new Error('Missing or invalid current school year in settings/app; expected YYYY-YYYY');
   const changes = [], warnings = [];
   const studentIds = new Set(students.map(s => s.id));
   const scheduleIds = new Set(schedules.map(s => s.id));

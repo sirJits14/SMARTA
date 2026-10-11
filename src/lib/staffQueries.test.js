@@ -11,6 +11,12 @@ import { staffCollectionQuery } from './staffQueries.js';
 const schoolYear = '2026-2027';
 const paths = ['students', 'sections', 'enrollments', 'student_attendance', 'schedules'];
 describe('staff collection query authorization filters', () => {
+  it.each([[{ role: 'glc', gradeLevel: 8 }, [8]], [{ role: 'jhs_coord' }, [7, 8, 9, 10]], [{ role: 'admin' }, null]])('filters a selected attendance day for %j', (me, allowed) => {
+    const filters = [where('sectionId', '==', 'G8'), where('date', '==', '2026-10-10')];
+    if (allowed) filters.push(where('gradeLevel', 'in', allowed));
+    expect(queryEqual(staffCollectionQuery('student_attendance', { me, sectionId: 'G8', date: '2026-10-10' }),
+      query(collection(db, 'student_attendance'), ...filters))).toBe(true);
+  });
   it.each([undefined, null])('does not query before the profile is available (%s)', me => {
     expect(staffCollectionQuery('students', { me, schoolYear })).toBeNull();
   });
@@ -33,7 +39,7 @@ describe('staff collection query authorization filters', () => {
   it.each([{ role: 'unknown' }, { role: 'glc', gradeLevel: 6 }, { role: 'glc' }])('fails closed for invalid scope (%j)', me => {
     for (const path of paths) expect(staffCollectionQuery(path, { me, schoolYear })).toBeNull();
   });
-  it.each([undefined, null, ''])('does not read coordinator students without an active school year (%s)', schoolYear => {
+  it.each([undefined, null, '', '2026/2027', '2026-27', 2026, ' 2026-2027 ', 'abcd-efgh', '2026-2027\n'])('does not read coordinator students without a canonical active school year (%s)', schoolYear => {
     expect(staffCollectionQuery('students', { me: { role: 'jhs_coord' }, schoolYear })).toBeNull();
   });
   it('does not expose an unsupported collection to coordinators', () => {

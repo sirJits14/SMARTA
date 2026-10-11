@@ -9,6 +9,10 @@ beforeEach(async () => { await env.clearFirestore(); await seedBaseline(env); })
 const activeScope = { status: 'active', gradeLevel: 8, scopeSchoolYear: '2026-2027' };
 
 describe('student scope write invariant', () => {
+  it.each(['2026/2027', '2026-27', 2026, ' 2026-2027 ', 'abcd-efgh', '2026-2027\n'])('denies noncanonical student scope even when settings matches year %s', async scopeSchoolYear => {
+    await env.withSecurityRulesDisabled(context => context.firestore().doc('settings/app').set({ currentSchoolYear: scopeSchoolYear }));
+    await denied(as(env, STAFF).doc('students/new-scoped').set({ ...activeScope, scopeSchoolYear }));
+  });
   it('uses the active default when a legacy student without status receives valid scope', async () => {
     await ok(as(env, STAFF).doc('students/S1').set({ gradeLevel: 8, scopeSchoolYear: '2026-2027' }, { merge: true }));
   });

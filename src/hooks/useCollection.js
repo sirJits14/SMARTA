@@ -31,9 +31,9 @@ export function useQueryResource(buildQuery, deps) {
     return onSnapshot(query, snapshot => next(snapshot.docs.map(item => ({ id: item.id, ...item.data() }))), fail);
   }, deps, EMPTY);
 }
-export function useStaffCollectionResource(path, { me, schoolYear } = {}) {
-  const resource = useQueryResource(() => staffCollectionQuery(path, { me, schoolYear }),
-    [path, !!me, me?.role, me?.gradeLevel, schoolYear]);
+export function useStaffCollectionResource(path, { me, schoolYear, sectionId, date } = {}) {
+  const resource = useQueryResource(() => staffCollectionQuery(path, { me, schoolYear, sectionId, date }),
+    [path, !!me, me?.role, me?.gradeLevel, schoolYear, sectionId, date]);
   // A profile that is still loading must never look like a successful empty roster.
   return !me ? { ...resource, data: EMPTY, loading: true, error: null } : resource;
 }

@@ -16,6 +16,29 @@ beforeEach(async () => { await clearAll(); clearCache(); await seedSchool();
 });
 
 describe('server-derived kiosk attendance', () => {
+  it('preserves historical attendance grade on a delayed scan after section grade changes', async () => {
+    await attendance().set({ sectionId: 'SEC1', gradeLevel: 7, schoolYear: '2026-2027', date: '2026-09-21', marks: { S1: 'A' } });
+    await db().doc('sections/SEC1').update({ gradeLevel: 8 });
+    expect((await run('historical_grade')).outcome).toBe('processed');
+    expect((await attendance().get()).data()).toMatchObject({ gradeLevel: 7, timeIn: { S1: '07:12' } });
+  });
+  it.each([null, '7', 13])('rejects malformed existing attendance grade %s rather than changing the audience', async gradeLevel => {
+    await attendance().set({ sectionId: 'SEC1', gradeLevel, schoolYear: '2026-2027', marks: { S1: 'E' } });
+    expect((await run('invalid_existing_grade')).outcome).toBe('rejected:grade');
+    expect((await attendance().get()).data()).toMatchObject({ gradeLevel, marks: { S1: 'E' } });
+    expect((await attendance().get()).data().timeIn).toBeUndefined();
+  });
+  it('requires an explicit repair for legacy attendance without grade metadata', async () => {
+    await attendance().set({ sectionId: 'SEC1', schoolYear: '2026-2027', marks: { S1: 'E' } });
+    expect((await run('missing_existing_grade')).outcome).toBe('rejected:grade');
+    expect((await attendance().get()).data().gradeLevel).toBeUndefined();
+    expect((await attendance().get()).data().timeIn).toBeUndefined();
+  });
+  it('rejects an existing attendance record with another section identity', async () => {
+    await attendance().set({ sectionId: 'OTHER', gradeLevel: 7, schoolYear: '2026-2027', marks: { S1: 'E' } });
+    expect((await run('mismatched_existing_section')).outcome).toBe('rejected:section');
+    expect((await attendance().get()).data()).toMatchObject({ sectionId: 'OTHER', gradeLevel: 7, marks: { S1: 'E' } });
+  });
   it('derives grade from the trusted section instead of kiosk input', async () => {
     await run('grade', scanDoc({ gradeLevel: 12 }));
     expect((await attendance().get()).data()?.gradeLevel).toBe(7);
@@ -35,7 +58,7 @@ describe('server-derived kiosk attendance', () => {
     expect((await attendance().get()).data()?.marks?.S1).toBe('L');
   });
   it('preserves staff marks and applies exit without inventing an entrance', async () => {
-    await attendance().set({ marks: { S1: 'E', S2: 'P' } });
+    await attendance().set({ sectionId: 'SEC1', gradeLevel: 7, schoolYear: '2026-2027', date: '2026-09-21', marks: { S1: 'E', S2: 'P' } });
     await run('exit', scanDoc({ kind: 'out' }));
     expect((await attendance().get()).data()).toMatchObject({ marks: { S1: 'E', S2: 'P' }, timeOut: { S1: '07:12' } });
     expect((await attendance().get()).data().timeIn).toBeUndefined();

@@ -6,6 +6,10 @@ const enrollment = { id: 'S1_2026-2027', studentId: 'S1', schoolYear: year, stat
 const section = { id: 'SEC1', schoolYear: year, gradeLevel: 7 };
 
 describe('coordinator scope derivation', () => {
+  it.each(['2026/2027', '2026-27', 2026, ' 2026-2027 ', 'abcd-efgh', '2026-2027\n'])('aborts planning on malformed settings year %s', schoolYear => {
+    expect(() => helpers.planCoordinatorScopeBackfill({ schoolYear, students: [student], enrollments: [{ ...enrollment, schoolYear }] })).toThrow(/school year/i);
+    expect(helpers.deriveStudentScope(student, [{ ...enrollment, schoolYear }], schoolYear).fields).toBeNull();
+  });
   it('derives current scope including legacy students without status', () => {
     expect(helpers.deriveStudentScope(student, [enrollment], year)).toEqual({ fields: { gradeLevel: 7, scopeSchoolYear: year }, warnings: [] });
   });

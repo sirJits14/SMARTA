@@ -34,6 +34,22 @@ const section = (gradeLevel, scheduleId = 'AM') => ({ name: 'Section', gradeLeve
 beforeEach(() => { fs.records.clear(); fs.records.set('schedules/AM', { name: 'Morning', gradeLevels: [7, 11] }); fs.records.set('sections/seven', section(7)); fs.records.set('sections/eleven', section(11)); });
 
 describe('attendance grade metadata', () => {
+  it.each([{ sectionId: 'another' }, { date: '2026-10-08' }, { schoolYear: '2025-2026' }])('does not borrow grade from another attendance record (%j)', mismatch => {
+    const existingAttendance = { sectionId: 'seven', date: '2026-10-09', schoolYear: '2026-2027', gradeLevel: 7, ...mismatch };
+    expect(() => saveMarks({ sectionId: 'seven', date: '2026-10-09', schoolYear: '2026-2027', gradeLevel: 8, marks: {}, existingAttendance })).toThrow(/does not match/i);
+    expect(fs.records.has('student_attendance/seven_2026-10-09')).toBe(false);
+  });
+  it('preserves historical record grade when a section has since moved grades', async () => {
+    const existingAttendance = { sectionId: 'seven', gradeLevel: 7, schoolYear: '2026-2027', date: '2026-10-09', marks: { student: 'P' } };
+    fs.records.set('student_attendance/seven_2026-10-09', existingAttendance);
+    await saveMarks({ sectionId: 'seven', gradeLevel: 8, date: '2026-10-09', schoolYear: '2026-2027', marks: { student: 'E' }, existingAttendance });
+    expect(fs.records.get('student_attendance/seven_2026-10-09')).toMatchObject({ gradeLevel: 7, marks: { student: 'E' } });
+  });
+  it.each([undefined, null, '7', 13])('refuses to silently repair invalid existing attendance grade %s', async oldGrade => {
+    const existingAttendance = { sectionId: 'seven', gradeLevel: oldGrade, date: '2026-10-09', schoolYear: '2026-2027' };
+    await expect(async () => saveMarks({ sectionId: 'seven', gradeLevel: 8, date: '2026-10-09', schoolYear: '2026-2027', marks: {}, existingAttendance })).rejects.toThrow(/grade/i);
+    expect(fs.records.has('student_attendance/seven_2026-10-09')).toBe(false);
+  });
   it('stores the selected section grade with manual marks', async () => {
     await saveMarks({ sectionId: 'seven', gradeLevel: 7, date: '2026-10-09', schoolYear: '2026-2027', marks: { student: 'P' } });
     expect(fs.records.get('student_attendance/seven_2026-10-09')).toMatchObject({ gradeLevel: 7, marks: { student: 'P' } });

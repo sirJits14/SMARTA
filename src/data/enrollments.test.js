@@ -30,6 +30,11 @@ it('does not grant student scope to an inactive student when enrolling', async (
   expect(firestore.writes.find(([ref]) => ref.path === 'students/s1')[1]).toEqual({ gradeLevel: null, scopeSchoolYear: null });
 });
 
+it.each(['2026/2027', '2026-27', 2026, ' 2026-2027 ', 'abcd-efgh', '2026-2027\n'])('never grants a student audience for malformed active year %s', async schoolYear => {
+  await enrollStudent({ student: { id: 's1', status: 'active' }, section: { id: 'sec', gradeLevel: 7 }, schoolYear });
+  expect(firestore.writes.find(([ref]) => ref.path === 'students/s1')[1]).toEqual({ gradeLevel: null, scopeSchoolYear: null });
+});
+
 it('atomically clears student scope when withdrawing the active-year enrollment', async () => {
   await withdrawEnrollment('s1', '2026-2027', 'dropped');
   expect(firestore.writes).toEqual([

@@ -1,5 +1,9 @@
 {
   "indexes": [
+    { "collectionGroup": "student_attendance", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" } ] },
+    { "collectionGroup": "student_attendance", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" } ] },
     { "collectionGroup": "students", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "scopeSchoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" } ] },
     { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
