@@ -20,6 +20,13 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react()],
+    optimizeDeps: {
+      // Vite's default scan globs **/*.html under the root, which reaches the Parents App
+      // (parent/index.html) and any checkouts under .claude/ or .worktrees/. Their imports then
+      // pre-bundle react-dom/client, firebase/app, etc. from parent/node_modules, so dev loads two
+      // copies of React and Firebase. Scan only this app's own pages.
+      entries: ['index.html', 'tests/browser/*.html'],
+    },
     test: {
       environment: 'node',
       include: ['src/**/*.test.js', 'shared/**/*.test.js'],
