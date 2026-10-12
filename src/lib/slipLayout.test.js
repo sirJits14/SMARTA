@@ -17,11 +17,13 @@ describe('slipLayout', () => {
     expect(paperOf('letter')).toBe(PAPER_SIZES.folio);
     expect(paperOf(undefined)).toBe(PAPER_SIZES.folio);
     expect(paperOf('a4')).toBe(PAPER_SIZES.a4);
+    expect(paperOf('constructor')).toBe(PAPER_SIZES.folio);
   });
 
   it('chunks 16 per Folio sheet by default, last sheet partial', () => {
     expect(chunkSlips(slips(35)).map((s) => s.length)).toEqual([16, 16, 3]);
     expect(chunkSlips(slips(35), 'folio').map((s) => s.length)).toEqual([16, 16, 3]);
+    expect(chunkSlips(slips(35), 'letter').map((s) => s.length)).toEqual([16, 16, 3]);
     expect(chunkSlips([])).toEqual([]);
   });
 

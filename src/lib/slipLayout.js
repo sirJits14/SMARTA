@@ -12,7 +12,7 @@ export const PAPER_SIZES = Object.freeze({
   a4: Object.freeze({ key: 'a4', label: 'A4', pageSize: 'A4 portrait', marginMm: 8, heightMm: 297, cols: 2, rows: 7 }),
 });
 
-export const paperOf = (key) => (Object.hasOwn(PAPER_SIZES, key ?? '') ? PAPER_SIZES[key] : PAPER_SIZES[DEFAULT_PAPER]);
+export const paperOf = (key) => (Object.prototype.hasOwnProperty.call(PAPER_SIZES, key ?? '') ? PAPER_SIZES[key] : PAPER_SIZES[DEFAULT_PAPER]); // not Object.hasOwn: iOS < 15.4 lacks it
 
 // Reading localStorage can itself throw (blocked site data), so the default
 // is resolved inside the try.
