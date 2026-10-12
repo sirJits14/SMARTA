@@ -3,6 +3,7 @@ import { ActionFeedback } from '../components/ui.jsx';
 import { ResourceState } from '../components/ui.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useDocResource } from '../hooks/useCollection.js';
+import InstallAppCard from '../components/InstallAppCard.jsx';
 import { updateSettings } from '../data/settings.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field, Card } from '../components/ui.jsx';
@@ -58,6 +59,7 @@ export default function SettingsPage() {
           <Btn onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Btn>
         </div>
       </Card>
+      <InstallAppCard/>
     </div>
   );
 }

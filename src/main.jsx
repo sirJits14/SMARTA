@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+// Imported here, not only in Settings, so it hears the browser's one install offer at load.
+import './hooks/useInstallApp.js';
 import '../shared/theme/theme.css';
 import './registrar.css';
 
