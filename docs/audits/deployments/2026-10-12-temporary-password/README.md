@@ -23,7 +23,7 @@ Immediately before integration, 433 SIMS and 138 backend unit tests passed; they
 
 ## Administrator checks before staff use resumes
 
-Reload SIMS and confirm ordinary staff sign-in. With a designated temporary-password account, confirm password setup succeeds and requires a fresh session; the old session must remain denied. Confirm ordinary Parent App access and one designated kiosk test badge. Investigate any denied access or failed scan before ending the staff maintenance hold. These operator checks have been requested and have not yet been independently confirmed.
+On October 12, the user confirmed that the administrator's requested checks passed: SIMS reload and ordinary staff sign-in, password setup with a designated temporary-password account, ordinary Parent App access, and one kiosk test badge. This is user-reported verification; Codex did not independently observe the browser or physical scanner checks. The staff maintenance hold can end.
 
 ## Recovery evidence
 

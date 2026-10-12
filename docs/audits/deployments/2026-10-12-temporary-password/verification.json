@@ -429,5 +429,16 @@
     "error": "UNAUTHENTICATED",
     "accountMutationPerformed": false
   },
-  "operatorChecks": "pending"
+  "operatorChecks": {
+    "status": "passed",
+    "source": "user-confirmed administrator checks",
+    "recordedAt": "2026-10-12T01:00:55Z",
+    "checks": [
+      "SIMS reload and ordinary staff sign-in",
+      "Designated temporary-password account password setup",
+      "Ordinary Parent App access",
+      "One kiosk test badge"
+    ],
+    "independentlyObservedByCodex": false
+  }
 }
