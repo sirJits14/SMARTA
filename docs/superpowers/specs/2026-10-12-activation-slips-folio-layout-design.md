@@ -82,7 +82,7 @@ that can be cut, and only for extremely long names.
 
 - A **Paper** toggle — two buttons, `Folio` and `A4`, with `aria-pressed`;
   default Folio. The choice is remembered per browser in `localStorage`
-  (key `bnhs.slips.paper`, wrapped in try/catch, falling back to Folio) since
+  (key `sims.slips.paper`, matching `sims.idCards.tab`; wrapped in try/catch, falling back to Folio) since
   an office prints on the same paper every time.
 - A one-line hint under the buttons: *"In the print dialog, set Paper size to
   Folio / 8.5×13 (or A4) and Scale to 100%."* The hint names the selected
