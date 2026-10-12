@@ -1,10 +1,10 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onIdTokenChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
-import { canOpen, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
+import { canOpen, canLoadStaffData, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
@@ -81,16 +81,43 @@ export default function App() {
   // authUser: undefined while Firebase Auth resolves, then a user or null.
   // me: undefined while that user's profile loads, then the profile or null.
   const [authUser, setAuthUser] = useState(undefined);
+  const [authTime, setAuthTime] = useState(undefined);
   const [me, setMe] = useState(undefined);
+  const [passwordChangePending, setPasswordChangePending] = useState(false);
   const [notice, setNotice] = useState('');
   const [page, setPageRaw] = useState('dashboard');
   const [pageParams, setPageParams] = useState(null);
   const [navigationSequence, setNavigationSequence] = useState(0);
   const setPage = (next, params = null) => { if (!shouldStartNavigation(page, next, params)) return; setPageRaw(next); setPageParams(params); setNavigationSequence(n => n + 1); };
-  const settings = useDoc('settings/app');
+  const settings = useDoc(canLoadStaffData(me, passwordChangePending, authTime) ? 'settings/app' : null);
   const schoolYear = settings?.currentSchoolYear || currentSchoolYear();
 
-  useEffect(() => onAuthStateChanged(auth, setAuthUser), []);
+  useEffect(() => {
+    let generation = 0;
+    const unsubscribe = onIdTokenChanged(auth, async user => {
+      const current = ++generation;
+      setAuthUser(user);
+      if (!user) { setAuthTime(undefined); return; }
+      try {
+        const token = await user.getIdTokenResult();
+        if (current === generation) setAuthTime(token.claims.auth_time);
+      } catch {
+        if (current === generation) { setNotice('Your session has ended. Please sign in again.'); signOut(auth); }
+      }
+    });
+    return () => { generation++; unsubscribe(); };
+  }, []);
+
+  // A reset or a password change in another tab invalidates this token even
+  // after the live profile clears mustChangePassword. Never open cached data.
+  useEffect(() => {
+    if (!authUser || !me || authTime === undefined || passwordChangePending) return;
+    const cutoff = me.sessionValidAfter ?? 0;
+    if (!Number.isSafeInteger(cutoff) || cutoff < 0 || !Number.isSafeInteger(authTime) || authTime < cutoff) {
+      setNotice('Your session has ended. Please sign in again.');
+      signOut(auth);
+    }
+  }, [authUser, me, authTime, passwordChangePending]);
 
   // Live profile: role/grade changes apply at once, and a disabled or deleted
   // profile signs the user out with an explanation on the login screen.
@@ -114,15 +141,19 @@ export default function App() {
     }, () => { if (auth.currentUser) refuse('Could not load your staff profile. Please sign in again.'); });
   }, [authUser]);
 
-  if (authUser === undefined || (authUser && me === undefined)) return <BootLoader />;
+  if (authUser === undefined || (authUser && (me === undefined || authTime === undefined))) return <BootLoader />;
 
   const reducedMotionGuard = (
     <style>{'@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }'}</style>
   );
-  const logout = () => { setNotice(''); signOut(auth); };
+  const logout = () => { setNotice(''); setPasswordChangePending(false); signOut(auth); };
 
   if (!me) return <>{reducedMotionGuard}<Login notice={notice} onAttempt={() => setNotice('')} /></>;
-  if (me.mustChangePassword) return <>{reducedMotionGuard}<ChangePassword me={me} onLogout={logout} /></>;
+  if (me.mustChangePassword || passwordChangePending) return <>{reducedMotionGuard}<ChangePassword me={me} onLogout={logout} onChanging={setPasswordChangePending} onReauthenticated={async () => {
+    const token = await auth.currentUser.getIdTokenResult();
+    setAuthTime(token.claims.auth_time);
+  }} /></>;
+  if (!canLoadStaffData(me, false, authTime)) return <BootLoader />;
 
   // A page this role can't open (stale state, or a role change) falls back to the dashboard.
   const shown = canOpen(me, page) ? page : 'dashboard';

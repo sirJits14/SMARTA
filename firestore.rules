@@ -3,7 +3,24 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ---------- identities (spec §8) ----------
-    function signedIn() { return request.auth != null; }
+    // Apply the restriction to every authenticated permission branch,
+    // including guardian/own-UID fallbacks. Own-profile get is the exception.
+    function restrictedStaffSession() {
+      return (request.auth.token.get('email', null) != null
+          || exists(/databases/$(database)/documents/staff_profiles/$(request.auth.uid)))
+        && exists(/databases/$(database)/documents/users/$(staffEmail()))
+        && restrictedProfile(profile());
+    }
+    function restrictedProfile(p) {
+      return p.get('uid', request.auth.uid) == request.auth.uid
+        && (p.get('mustChangePassword', false) == true || !currentPasswordSession(p));
+    }
+    function currentPasswordSession(p) {
+      let cutoff = p.get('sessionValidAfter', 0);
+      let authTime = request.auth.token.get('auth_time', 0);
+      return cutoff is int && cutoff >= 0 && authTime is int && authTime >= cutoff;
+    }
+    function signedIn() { return request.auth != null && !restrictedStaffSession(); }
     function notAnonymous() {
       return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
@@ -12,15 +29,29 @@ service cloud.firestore {
     // uid belongs to that Auth account only, so re-registering the email
     // elsewhere (e.g. the parent portal) can't claim it; legacy profiles
     // without one match by email until backfillUserRoles.mjs binds them.
-    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data; }
+    // Server-owned UID lookup survives an Auth email change. Older profiles
+    // retain the email fallback until backfillStaffProfileBindings completes.
+    function staffEmail() {
+      return exists(/databases/$(database)/documents/staff_profiles/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/staff_profiles/$(request.auth.uid)).data.email
+        : request.auth.token.email.lower();
+    }
+    function profile() { return get(/databases/$(database)/documents/users/$(staffEmail())).data; }
     // get(): an email-less token (the anonymous v1 kiosk) must short-circuit
     // here; a missing-key error would make every caller below evaluate all
     // their branches and hit the 1000-expression limit.
     function isStaff() {
-      return signedIn() && request.auth.token.get('email', null) != null
-        && exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower()))
-        && profile().get('disabled', false) != true
-        && profile().get('uid', request.auth.uid) == request.auth.uid;
+      // Check the loaded profile once. Calling signedIn() here would repeat
+      // the UID lookup/profile/session check already enforced below.
+      return request.auth != null && request.auth.token.get('email', null) != null
+        && staffEmail() == request.auth.token.email.lower()
+        && exists(/databases/$(database)/documents/users/$(staffEmail()))
+        && enabledStaffProfile(profile());
+    }
+    function enabledStaffProfile(p) {
+      return p.get('disabled', false) != true
+        && p.get('uid', request.auth.uid) == request.auth.uid
+        && p.get('mustChangePassword', false) != true && currentPasswordSession(p);
     }
     // Mirrors shared/staffRoles.js -- keep the two in step. Profiles made
     // before roles existed (no role, or 'registrar') are administrators.
@@ -123,7 +154,15 @@ service cloud.firestore {
     match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
     match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
     match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isAdmin(); }
-    match /users/{id}       { allow read: if isAdmin() || (signedIn() && request.auth.token.email != null && id == request.auth.token.email.lower()); allow write: if false; }
+    match /users/{id} {
+      // A blocked account needs its own profile for the password-change UI.
+      // This is a single-document exception, not a collection query grant.
+      allow get: if isAdmin() || (request.auth != null
+        && request.auth.token.get('email', null) != null && id == request.auth.token.email.lower()
+        && (resource == null || resource.data.get('uid', request.auth.uid) == request.auth.uid));
+      allow list: if isAdmin();
+      allow write: if false;
+    }
 
     // Confirmed kiosk attendance is derived by the backend from scan events.
     // Staff retain manual editing permissions.
@@ -229,10 +268,13 @@ service cloud.firestore {
     // whose audienceKeys overlap guardians/{uid}.audienceKeys (server-written).
     // Mirrors coversPostKeys() in shared/announcements.js -- keep in step.
     function postKeysInScope(keys) {
-      return isAdmin()
-        || (isStaff() && role() == 'jhs_coord' && keys.hasOnly(['g7', 'g8', 'g9', 'g10']))
-        || (isStaff() && role() == 'shs_coord' && keys.hasOnly(['g11', 'g12']))
-        || (isStaff() && role() == 'glc' && keys.hasOnly(['g' + string(profile().gradeLevel)]));
+      // Every caller already requires isStaff(). Repeating session checks
+      // for each audience branch exceeds the rules expression budget.
+      let r = role();
+      return r == null || r in ['admin', 'registrar', '']
+        || (r == 'jhs_coord' && keys.hasOnly(['g7', 'g8', 'g9', 'g10']))
+        || (r == 'shs_coord' && keys.hasOnly(['g11', 'g12']))
+        || (r == 'glc' && keys.hasOnly(['g' + string(profile().gradeLevel)]));
     }
     function validPost(d) {
       return d.keys().hasOnly(['title', 'body', 'audience', 'audienceKeys', 'status', 'publishAt', 'publishedAt', 'expiresAt',

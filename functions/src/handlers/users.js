@@ -1,4 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore';
+import { randomUUID } from 'node:crypto';
 import { audit } from '../audit.js';
 import { CallableError } from '../errors.js';
 import { str, oneOf, int, bool } from '../lib/validators.js';
@@ -61,6 +62,78 @@ async function uidFor(auth, email, profile) {
 const staffAudit = (db, action, actor, target, details = {}) =>
   audit(db, { action, actorType: 'staff', actorUid: actor, targetType: 'staff', targetId: target, details });
 
+// Serialize Auth mutations, which cannot participate in a Firestore
+// transaction. Never take over an interrupted operation automatically:
+// an Auth request may finish after the callable times out. Failures keep
+// access blocked; administrators must investigate an abandoned lock.
+async function beginPasswordOperation(db, email, uid, authTime) {
+  const operation = { id: randomUUID(), startedAt: Date.now() };
+  await db.runTransaction(async tx => {
+    const ref = userRef(db, email);
+    const p = await loadTarget(tx, db, email);
+    if (p.uid && p.uid !== uid) throw failed('The account changed. Please try again.');
+    if (p.passwordOperation) {
+      throw failed('A password change is already in progress. Please try again shortly.');
+    }
+    if (authTime !== undefined) {
+      if (p.disabled === true) throw new CallableError('permission-denied', 'This account has been disabled');
+      const cutoff = p.sessionValidAfter ?? 0;
+      if (!Number.isSafeInteger(authTime) || !Number.isSafeInteger(cutoff) || cutoff < 0 || authTime < cutoff) {
+        throw new CallableError('unauthenticated', 'Your session has ended. Please sign in again.');
+      }
+    }
+    const indexRef = db.doc(`staff_profiles/${uid}`);
+    const index = await tx.get(indexRef);
+    if (index.exists && index.data().email !== email) throw failed('The account changed. Please try again.');
+    if (!index.exists) tx.create(indexRef, { email });
+    tx.update(ref, { mustChangePassword: true, uid, passwordOperation: operation,
+      sessionValidAfter: Math.max(p.sessionValidAfter || 0, Math.floor(operation.startedAt / 1000) + 1), updatedAt: now() });
+  });
+  return operation.id;
+}
+
+async function finishPasswordOperation(db, email, operationId, patch = {}) {
+  await db.runTransaction(async tx => {
+    const ref = userRef(db, email);
+    const p = await loadTarget(tx, db, email);
+    if (p.passwordOperation?.id !== operationId) throw failed('The account changed. Please try again.');
+    tx.update(ref, { ...patch, passwordOperation: FieldValue.delete(), updatedAt: now() });
+  });
+}
+
+async function setPassword(db, auth, email, uid, password, mustChangePassword, authTime) {
+  const operationId = await beginPasswordOperation(db, email, uid, authTime);
+  let mutationStarted = false;
+  try {
+    // The caller may have waited after the endpoint's identity check. Once
+    // the lock is held, no password reset can race this revocation check.
+    if (authTime !== undefined) {
+      const current = await auth.getUser(uid);
+      if (current.disabled) throw new CallableError('permission-denied', 'This account has been disabled');
+      if (current.email?.toLowerCase() !== email || (current.tokensValidAfterTime
+          && authTime * 1000 < Date.parse(current.tokensValidAfterTime))) {
+        throw new CallableError('unauthenticated', 'Your session has ended. Please sign in again.');
+      }
+    }
+    mutationStarted = true;
+    await auth.updateUser(uid, { password });
+    await auth.revokeRefreshTokens(uid);
+    const user = await auth.getUser(uid);
+    // auth_time has second precision. Requiring the next second also rejects
+    // tokens issued in the same second as this change. The UI waits to sign in.
+    const sessionValidAfter = Math.max(Math.floor(Date.now() / 1000) + 1,
+      Math.ceil(Date.parse(user.tokensValidAfterTime) / 1000) || 0);
+    await finishPasswordOperation(db, email, operationId, { mustChangePassword, sessionValidAfter });
+    return sessionValidAfter;
+  } catch (e) {
+    // A transport error after dispatch does not prove the remote mutation
+    // stopped. Retain the lock and restriction until an administrator checks
+    // the interrupted operation. Pre-mutation validation failures are safe.
+    if (!mutationStarted) await finishPasswordOperation(db, email, operationId).catch(() => {});
+    throw e;
+  }
+}
+
 export async function createStaffUser(ctx, data) {
   const { db, auth, email: actor } = ctx;
   const name = str(data.name, { name: 'Name', min: 2, max: 80 });
@@ -72,10 +145,13 @@ export async function createStaffUser(ctx, data) {
   try { user = await auth.createUser({ email, password, displayName: name }); }
   catch (e) { if (e.code === 'auth/email-already-exists') throw duplicate(); throw e; }
   try {
-    await userRef(db, email).create({
+    const batch = db.batch();
+    batch.create(userRef(db, email), {
       name, role, gradeLevel, disabled: false, mustChangePassword: true, uid: user.uid,
       createdBy: actor, createdAt: now(), updatedAt: now(),
     });
+    batch.create(db.doc(`staff_profiles/${user.uid}`), { email });
+    await batch.commit();
   } catch (e) {
     // Never leave a login behind without its profile.
     await auth.deleteUser(user.uid).catch(() => {});
@@ -133,9 +209,7 @@ export async function resetStaffPassword(ctx, data) {
   const uid = await uidFor(auth, email, snap.data());
   if (!uid) throw new CallableError('not-found', 'This account has no sign-in. Delete it and create it again.');
   const password = generatePassword();
-  await auth.updateUser(uid, { password });
-  await auth.revokeRefreshTokens(uid);
-  await userRef(db, email).update({ mustChangePassword: true, uid, updatedAt: now() });
+  await setPassword(db, auth, email, uid, password, true);
   await staffAudit(db, 'staff.password_reset', actor, email);
   return { email, password };
 }
@@ -147,6 +221,11 @@ export async function deleteStaffUser(ctx, data) {
   const profile = await db.runTransaction(async (tx) => {
     const current = await loadTarget(tx, db, email);
     await assertAdminRemains(tx, db, email, null);
+    if (current.uid) {
+      const indexRef = db.doc(`staff_profiles/${current.uid}`);
+      const index = await tx.get(indexRef);
+      if (index.exists && index.data().email === email) tx.delete(indexRef);
+    }
     tx.delete(userRef(db, email));
     return current;
   });
@@ -164,8 +243,7 @@ export async function changeOwnPassword(ctx, data) {
   if (typeof pw !== 'string' || pw.length < MIN_PASSWORD || pw.length > MAX_PASSWORD) {
     throw new CallableError('invalid-argument', `Password must be ${MIN_PASSWORD} to ${MAX_PASSWORD} characters.`);
   }
-  await auth.updateUser(uid, { password: pw });
-  await userRef(db, email).update({ mustChangePassword: false, uid, updatedAt: now() });
+  const sessionValidAfter = await setPassword(db, auth, email, uid, pw, false, ctx.authTime);
   await staffAudit(db, 'staff.password_changed', email, email);
-  return { ok: true };
+  return { ok: true, sessionValidAfter };
 }

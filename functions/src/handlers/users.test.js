@@ -31,7 +31,8 @@ describe('createStaffUser rollback', () => {
   it('deletes the new Auth user when the profile write fails', async () => {
     const deleteUser = vi.fn().mockResolvedValue(undefined);
     const auth = { createUser: vi.fn().mockResolvedValue({ uid: 'u1' }), deleteUser };
-    const db = { doc: vi.fn(() => ({ get: vi.fn().mockResolvedValue({ exists: false }), create: vi.fn().mockRejectedValue(new Error('boom')) })) };
+    const db = { doc: vi.fn(() => ({ get: vi.fn().mockResolvedValue({ exists: false }) })),
+      batch: () => ({ create: () => {}, commit: async () => { throw new Error('boom'); } }) };
     await expect(createStaffUser({ db, auth, email: 'admin@bnhs.edu' }, { name: 'Ana Cruz', email: 'glc8@bnhs.edu', role: 'glc', gradeLevel: 8 }))
       .rejects.toThrow('boom');
     expect(deleteUser).toHaveBeenCalledWith('u1');

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../firebase.js';
 import { staffUsers } from '../data/staffUsers.js';
-import { passwordProblem, MIN_PASSWORD } from '../lib/password.js';
+import { passwordProblem, waitForPasswordSession, MIN_PASSWORD } from '../lib/password.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field } from './ui.jsx';
 import smartaWordmark from '../assets/smarta-wordmark.png';
@@ -10,24 +10,31 @@ import smartaWordmarkDark from '../assets/smarta-wordmark-dark.png';
 
 // Shown instead of the app while users/{email}.mustChangePassword is true
 // (new account or admin reset). The live profile clears it on success.
-export default function ChangePassword({ me, onLogout }) {
+export default function ChangePassword({ me, onLogout, onChanging, onReauthenticated }) {
   const [pw, setPw] = useState(''); const [confirm, setConfirm] = useState('');
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   const go = async () => {
     const problem = passwordProblem(pw, confirm);
     if (problem) { setErr(problem); return; }
     setBusy(true); setErr('');
+    onChanging?.(true);
     try {
-      await staffUsers.changeOwnPassword({ newPassword: pw });
+      const result = await staffUsers.changeOwnPassword({ newPassword: pw });
+      await waitForPasswordSession(result?.sessionValidAfter);
     } catch (e) {
       setErr(e?.message || 'Could not change the password. Please try again.');
       setBusy(false);
+      onChanging?.(false);
       return;
     }
     // A password change revokes the current session; sign straight back in,
     // or out to the login screen (with the new password) if that fails.
-    try { await signInWithEmailAndPassword(auth, me.email, pw); }
+    try {
+      await signInWithEmailAndPassword(auth, me.email, pw);
+      await onReauthenticated?.();
+    }
     catch { await signOut(auth); }
+    finally { onChanging?.(false); }
   };
   const enter = (e) => e.key === 'Enter' && go();
   return (

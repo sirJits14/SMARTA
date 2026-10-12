@@ -4,13 +4,25 @@ import { staffIdentity, adminIdentity } from './callable.js';
 // auth_time 1000s = 1970-01-01T00:16:40Z.
 const req = (email = 'a@bnhs.edu', authTime = 1000) => ({ app: {}, auth: { uid: 'u1', token: { email, auth_time: authTime } } });
 const dbWith = (profile) => ({
-  doc: () => ({ get: async () => ({ exists: profile !== undefined, data: () => profile }) }),
+  doc: path => ({ get: async () => ({ exists: !path.startsWith('staff_profiles/') && profile !== undefined, data: () => profile }) }),
 });
 // tokensValidAfterTime as Firebase Auth reports it (UTC string), or undefined.
 const authWith = (tokensValidAfterTime) => ({ getUser: async () => ({ uid: 'u1', tokensValidAfterTime }) });
 const auth = authWith(undefined);
 
 describe('staffIdentity', () => {
+  it.each(['admin', 'registrar', 'jhs_coord', 'shs_coord', 'glc'])('refuses temporary-password %s accounts', async (role) => {
+    await expect(staffIdentity(dbWith({ role, gradeLevel: 8, mustChangePassword: true }), auth, req()))
+      .rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('does not accept a password-change exception supplied by the client', async () => {
+    await expect(staffIdentity(dbWith({ role: 'admin', mustChangePassword: true }), auth,
+      { ...req(), data: { allowTemporaryPassword: true } })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('refuses a session older than the profile cutoff even after the restriction clears', async () => {
+    await expect(staffIdentity(dbWith({ role: 'admin', mustChangePassword: false, sessionValidAfter: 1005 }), auth, req()))
+      .rejects.toMatchObject({ code: 'unauthenticated' });
+  });
   it('returns the caller and their profile', async () => {
     const r = await staffIdentity(dbWith({ role: 'glc', gradeLevel: 8 }), auth, req('A@bnhs.edu'));
     expect(r).toEqual({ uid: 'u1', email: 'a@bnhs.edu', profile: { role: 'glc', gradeLevel: 8 } });

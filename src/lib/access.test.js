@@ -1,7 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { isAdmin, allowedPages, canOpen, gradeOptions, singleGrade, profileRefusal, ownProfile, scopeRoster } from './access.js';
+import * as access from './access.js';
 
 const admin = { role: 'registrar' }, jhs = { role: 'jhs_coord' }, glc8 = { role: 'glc', gradeLevel: 8 };
+
+describe('staff data startup', () => {
+  it('does not start data listeners while the profile is loading or restricted', () => {
+    expect(access.canLoadStaffData(undefined, false)).toBe(false);
+    expect(access.canLoadStaffData(null, false)).toBe(false);
+    expect(access.canLoadStaffData({ role: 'admin', mustChangePassword: true }, false)).toBe(false);
+  });
+  it('keeps the password-change screen active until reauthentication finishes', () => {
+    expect(access.canLoadStaffData({ role: 'admin', mustChangePassword: false }, true)).toBe(false);
+    expect(access.canLoadStaffData({ role: 'admin', mustChangePassword: false }, false)).toBe(true);
+  });
+  it('does not open staff pages when another tab clears the flag but this token is stale', () => {
+    const profile = { role: 'admin', mustChangePassword: false, sessionValidAfter: 1005 };
+    expect(access.canLoadStaffData(profile, false, 1000)).toBe(false);
+    expect(access.canLoadStaffData(profile, false, 1005)).toBe(true);
+  });
+});
 
 describe('pages', () => {
   it('admins open everything including Accounts', () => {

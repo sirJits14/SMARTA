@@ -13,6 +13,10 @@ export function allowedPages(me) {
   return isAdmin(me) ? NAV_ITEMS.map((item) => item.key) : COORDINATOR_PAGES;
 }
 export const canOpen = (me, page) => allowedPages(me).includes(page);
+export const canLoadStaffData = (me, passwordChangePending = false, authTime = 0) =>
+  !!me && !me.mustChangePassword && !passwordChangePending
+    && Number.isSafeInteger(me.sessionValidAfter ?? 0) && (me.sessionValidAfter ?? 0) >= 0
+    && Number.isSafeInteger(authTime) && authTime >= (me.sessionValidAfter ?? 0);
 export const gradeOptions = (me) => grades(me) ?? ALL_GRADES;
 export function singleGrade(me) {
   const g = grades(me);

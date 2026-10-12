@@ -5,7 +5,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineString } from 'firebase-functions/params';
 import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
-import { guardianIdentity, staffIdentity, adminIdentity, toHttpsError } from './src/callable.js';
+import { guardianIdentity, staffIdentity, passwordChangeIdentity, assertUnrestrictedSession, adminIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
 import { endSchoolYear } from './src/handlers/schoolYear.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted } from './src/handlers/links.js';
@@ -32,14 +32,18 @@ export const onScanEventCreated = onDocumentCreated({ document: 'scan_events/{ev
 
 const callDeps = () => ({ db, auth, now: () => new Date() });
 const guardianCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
-  try { return await fn({ ...callDeps(), ...guardianIdentity(req) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+  try {
+    const identity = guardianIdentity(req);
+    await assertUnrestrictedSession(db, req);
+    return await fn({ ...callDeps(), ...identity }, req.data || {});
+  } catch (e) { throw toHttpsError(e); }
 });
 const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
   try { return await fn({ ...callDeps(), ...(await staffIdentity(db, auth, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 // Account management and every page behind it (Guardians, Settings) is
 // administrator-only; coordinators reach none of these.
-const adminCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
+const adminCall = (fn) => onCall({ enforceAppCheck: true, timeoutSeconds: 60 }, async (req) => {
   try { return await fn({ ...callDeps(), ...(await adminIdentity(db, auth, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 
@@ -70,7 +74,11 @@ export const setStaffUserDisabledFn = adminCall(setStaffUserDisabled);
 export const resetStaffPasswordFn = adminCall(resetStaffPassword);
 export const deleteStaffUserFn = adminCall(deleteStaffUser);
 // Any active staff member, including one still on a temporary password.
-export const changeOwnPasswordFn = staffCall(changeOwnPassword);
+export const changeOwnPasswordFn = onCall({ enforceAppCheck: true, timeoutSeconds: 60 }, async (req) => {
+  try {
+    return await changeOwnPassword({ ...callDeps(), ...(await passwordChangeIdentity(db, auth, req)) }, req.data || {});
+  } catch (e) { throw toHttpsError(e); }
+});
 
 // Any active staff member; the handler checks the audience is in their scope.
 export const announcementAudienceCountFn = staffCall(announcementAudienceCount);

@@ -26,7 +26,7 @@ export const LEGACY = { uid: 'leg1', token: { email: 'legacy@bnhs.edu', email_ve
 export async function setup() {
   const env = await initializeTestEnvironment({
     projectId: 'bnhs-sims-rules-test',
-    firestore: { rules: readFileSync('firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
+    firestore: { rules: readFileSync(process.env.SIMS_RULES_PATH || 'firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
   });
   await env.clearFirestore();
   return env;
@@ -41,6 +41,11 @@ export const denied = assertFails;
 // Baseline documents every rules test can rely on.
 export async function seedBaseline(env) {
   await seed(env, async (db) => {
+    // Exercise the deployed UID lookup path, including coordinator audience
+    // writes near Firestore's expression budget. Legacy fallback has its own tests.
+    for (const who of [STAFF, ADMIN_NEW, JHS, SHS, GLC8, DISABLED_ADMIN, LEGACY]) {
+      await db.doc(`staff_profiles/${who.uid}`).set({ email: who.token.email });
+    }
     await db.doc('users/registrar@bnhs.edu').set({ name: 'Registrar', role: 'registrar' });
     await db.doc('kiosks/kiosk1').set({ label: 'Main Gate', active: true });
     await db.doc('kiosks/kiosk9').set({ label: 'Old Gate', active: false });
