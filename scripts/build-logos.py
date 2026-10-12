@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw
 SRC = Path('design/logos')
 SIMS = Path('src/assets')
 PARENT = Path('parent/public/icons')
+SIMS_ICONS = Path('public/icons')
 INK = (0x12, 0x31, 0x3a, 255)  # sidebar ink, behind the white S on the favicon
 WHITE = (255, 255, 255, 255)
 LIGHT_INK = (0xe2, 0xee, 0xec)  # --t-ink in the dark theme (shared/theme/theme.css)
@@ -84,6 +85,11 @@ def parent_icon(size, share):
     return on_canvas(trimmed('phone-app.png'), size, round(size * share), WHITE).convert('RGB')
 
 
+def sims_icon(size, share):
+    # The favicon's white S on sidebar ink, full-bleed and opaque (iOS fills transparency with black).
+    return on_canvas(trimmed('dashboard-app.png'), size, round(size * share), INK).convert('RGB')
+
+
 if __name__ == '__main__':
     save(favicon(), SIMS / 'sims-favicon.png')
     save(wordmark(), SIMS / 'smarta-wordmark.png')
@@ -94,3 +100,7 @@ if __name__ == '__main__':
     save(parent_icon(192, 0.8), PARENT / 'icon-192.png')
     save(parent_icon(512, 0.8), PARENT / 'icon-512.png')
     save(parent_icon(512, 0.6), PARENT / 'icon-maskable-512.png')
+    save(sims_icon(180, 0.7), SIMS_ICONS / 'apple-touch-icon.png')
+    save(sims_icon(192, 0.7), SIMS_ICONS / 'icon-192.png')
+    save(sims_icon(512, 0.7), SIMS_ICONS / 'icon-512.png')
+    save(sims_icon(512, 0.55), SIMS_ICONS / 'icon-maskable-512.png')
