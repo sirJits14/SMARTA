@@ -1,0 +1,433 @@
+{
+  "verifiedAt": "2026-10-12T00:35:59.002Z",
+  "project": "bnhs-sims",
+  "codeCommit": "a8c958b",
+  "ruleset": "projects/bnhs-sims/rulesets/42e6cc7c-5508-48f8-bdb1-ea794530ec94",
+  "rulesSha256": "457225c1ea03edfe3b99f90d02baa24117fad1a14c2fa206ba03cf0c8ce3b464",
+  "hostingRelease": "sites/bnhs-sims/channels/live/releases/1791765046444000",
+  "hostingVersion": "sites/bnhs-sims/versions/fdefc002d462788e",
+  "functions": [
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/issueActivationCodesFn",
+      "revision": "issueactivationcodesfn-00015-keg",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:36.030948230Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "issueActivationCodesFn/function-source.zip",
+          "generation": "1791765195415944"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/revokeLinkFn",
+      "revision": "revokelinkfn-00015-nub",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:34.707953891Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "revokeLinkFn/function-source.zip",
+          "generation": "1791765195425254"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/correctEventFn",
+      "revision": "correcteventfn-00015-vep",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:27.230090607Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "correctEventFn/function-source.zip",
+          "generation": "1791765195393002"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/deleteStaffUserFn",
+      "revision": "deletestaffuserfn-00007-hun",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:26.030291585Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deleteStaffUserFn/function-source.zip",
+          "generation": "1791765195411733"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/changeOwnPasswordFn",
+      "revision": "changeownpasswordfn-00007-rub",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:34.931869715Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "changeOwnPasswordFn/function-source.zip",
+          "generation": "1791765195459150"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/provisionKioskFn",
+      "revision": "provisionkioskfn-00013-rex",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:29.160881901Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "provisionKioskFn/function-source.zip",
+          "generation": "1791765195426165"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resetStaffPasswordFn",
+      "revision": "resetstaffpasswordfn-00007-voh",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:28.199086329Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resetStaffPasswordFn/function-source.zip",
+          "generation": "1791765195394151"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/announcementAudienceCountFn",
+      "revision": "announcementaudiencecountfn-00006-zuc",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:33.039096036Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "announcementAudienceCountFn/function-source.zip",
+          "generation": "1791765195501838"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/createStaffUserFn",
+      "revision": "createstaffuserfn-00007-pow",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:42.587922336Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "createStaffUserFn/function-source.zip",
+          "generation": "1791765195535028"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/deactivateKioskFn",
+      "revision": "deactivatekioskfn-00015-nin",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:28.036016328Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deactivateKioskFn/function-source.zip",
+          "generation": "1791765195441915"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/deleteGuardianAccountFn",
+      "revision": "deleteguardianaccountfn-00015-cew",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:26.985004644Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deleteGuardianAccountFn/function-source.zip",
+          "generation": "1791765195523655"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/addManualEventFn",
+      "revision": "addmanualeventfn-00015-sef",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:27.328113416Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "addManualEventFn/function-source.zip",
+          "generation": "1791765195408628"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resolveReportFn",
+      "revision": "resolvereportfn-00015-vap",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:27.147619022Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveReportFn/function-source.zip",
+          "generation": "1791765195421845"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/updateStaffUserFn",
+      "revision": "updatestaffuserfn-00007-muj",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:40.576445007Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "updateStaffUserFn/function-source.zip",
+          "generation": "1791765195441963"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resetKioskPasswordFn",
+      "revision": "resetkioskpasswordfn-00013-lek",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:27.027360978Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resetKioskPasswordFn/function-source.zip",
+          "generation": "1791765195455085"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/submitReportFn",
+      "revision": "submitreportfn-00015-wur",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:34.632766011Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "submitReportFn/function-source.zip",
+          "generation": "1791765195415541"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/revokeCodeFn",
+      "revision": "revokecodefn-00015-fes",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:30.001680044Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "revokeCodeFn/function-source.zip",
+          "generation": "1791765195524614"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resolveAccessRequestFn",
+      "revision": "resolveaccessrequestfn-00015-qob",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:40.122234781Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveAccessRequestFn/function-source.zip",
+          "generation": "1791765195428052"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/setStaffUserDisabledFn",
+      "revision": "setstaffuserdisabledfn-00007-hop",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:33.776552397Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "setStaffUserDisabledFn/function-source.zip",
+          "generation": "1791765195488408"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/activateCodeFn",
+      "revision": "activatecodefn-00015-xim",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:28.668791454Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "activateCodeFn/function-source.zip",
+          "generation": "1791765195384438"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/setActivationRestrictedFn",
+      "revision": "setactivationrestrictedfn-00015-ref",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:29.812944880Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "setActivationRestrictedFn/function-source.zip",
+          "generation": "1791765195444013"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/acceptConsentFn",
+      "revision": "acceptconsentfn-00015-coj",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:23.180050595Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "acceptConsentFn/function-source.zip",
+          "generation": "1791765112635275"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/endSchoolYearFn",
+      "revision": "endschoolyearfn-00009-mow",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:29.293696126Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "endSchoolYearFn/function-source.zip",
+          "generation": "1791765195401571"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/registerKioskFn",
+      "revision": "registerkioskfn-00015-puq",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:35.464472947Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "registerKioskFn/function-source.zip",
+          "generation": "1791765195535245"
+        }
+      }
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/requestAccessFn",
+      "revision": "requestaccessfn-00015-vov",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-12T00:33:41.010639633Z",
+      "deploymentHash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "requestAccessFn/function-source.zip",
+          "generation": "1791765195438575"
+        }
+      }
+    }
+  ],
+  "protectedFunctions": [
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onScanEventCreated",
+      "revision": "onscaneventcreated-00018-baz",
+      "unchanged": true
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/pruneDevicesJob",
+      "revision": "prunedevicesjob-00014-lih",
+      "unchanged": true
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/publishAnnouncementsJob",
+      "revision": "publishannouncementsjob-00005-fos",
+      "unchanged": true
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/expireLinksJob",
+      "revision": "expirelinksjob-00014-quk",
+      "unchanged": true
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onAnnouncementWritten",
+      "revision": "onannouncementwritten-00005-fin",
+      "unchanged": true
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onGuardianLinkWritten",
+      "revision": "onguardianlinkwritten-00005-zef",
+      "unchanged": true
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/reconcileEventsJob",
+      "revision": "reconcileeventsjob-00015-zeh",
+      "unchanged": true
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onParentPortalSettingsChanged",
+      "revision": "onparentportalsettingschanged-00014-jof",
+      "unchanged": true
+    }
+  ],
+  "runtimeSourceVerification": [
+    {
+      "file": "index.js",
+      "sha256": "f2cdff2770158c679c5a07bf0b716964456aa7bffc6ec65512d78fe2839c21d7",
+      "matches": true
+    },
+    {
+      "file": "src/callable.js",
+      "sha256": "deba70f80be316842f2ac01892fa5541ba17f3a65dbcd9f3f53564fde56adb74",
+      "matches": true
+    },
+    {
+      "file": "src/handlers/users.js",
+      "sha256": "dabd1e98aa861c2506557f3fb7324dc53575ded9362b2a92fff301f72d8ac824",
+      "matches": true
+    },
+    {
+      "file": "shared/staffRoles.js",
+      "sha256": "579f35b0cd9c1d415da7e0b8f05e23a2d465a008a23ac1c16205a56ab430eac0",
+      "matches": true
+    }
+  ],
+  "selectedDeploymentHashCount": 1,
+  "liveUnauthenticatedCheck": {
+    "function": "changeOwnPasswordFn",
+    "status": 401,
+    "error": "UNAUTHENTICATED",
+    "accountMutationPerformed": false
+  },
+  "operatorChecks": "pending"
+}

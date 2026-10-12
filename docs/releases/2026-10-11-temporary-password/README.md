@@ -1,6 +1,6 @@
 # Step 3: server-enforced temporary passwords
 
-Status: implemented and verified locally on October 11, 2026. Production rollout was authorized on October 12; the user confirmed staff usage and account changes are paused. The production rules baseline matches, all 33 functions are ACTIVE, and the staff binding dry-run has eight changes and zero warnings. Publication is in progress; final results are recorded in `docs/audits/deployments/2026-10-12-temporary-password`.
+Status: merged, pushed and deployed on October 12, 2026. Eight staff UID bindings were applied and verified with zero remaining changes/warnings. SIMS hosting, all 25 callables and the password-only rules are published and verified. The eight excluded background function revisions remain unchanged. Administrator sign-in/password/scanner checks are pending before staff usage resumes. See `docs/audits/deployments/2026-10-12-temporary-password` for final release references and verification.
 
 Staff using a temporary password cannot read school data, write records, invoke staff/admin operations, or use guardian/kiosk permission branches to bypass the restriction. Their bound profile GET and `changeOwnPasswordFn` remain available. A successful change revokes old sessions and requires a fresh sign-in. The SIMS screen waits for the server cutoff and keeps its data subscriptions closed until that sign-in completes.
 
