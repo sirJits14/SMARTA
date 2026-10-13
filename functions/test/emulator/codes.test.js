@@ -9,10 +9,20 @@ const guardian = (uid = 'gNew', email = `${uid}@gmail.com`) => ({ db: db(), now:
 const adviser = (uid = 'tAdv') => guardian(uid, `${uid}@deped.gov.ph`);
 const DAY = 86400_000;
 
+const SEC = { sectionId: 'SEC1', schoolYear: '2026-2027' };
+const seedLink = (uid, studentId, slot) => db().doc(`guardian_links/${uid}_${studentId}`).set({
+  guardianUid: uid, studentId, status: 'active', schoolYear: '2026-2027', relationship: slot === 'adviser' ? 'Adviser' : 'Mother', slot,
+});
+const linkAll = async (studentId) => { await seedLink('gA', studentId, 'guardian'); await seedLink('gB', studentId, 'guardian'); await seedLink('tAdv', studentId, 'adviser'); };
+
 beforeEach(async () => {
   await clearAll(); await seedSchool();
   await db().doc('users/registrar@bnhs.edu').set({ role: 'registrar' });
   await db().doc('enrollments/S2_2026-2027').set({ studentId: 'S2', sectionId: 'SEC1', schoolYear: '2026-2027', status: 'enrolled' });
+  // seedSchool() links two guardians to S1; new S1 codes would start with
+  // both guardian slots used. These tests link guardians themselves.
+  await db().doc('guardian_links/gA_S1').delete();
+  await db().doc('guardian_links/gB_S1').delete();
 });
 
 describe('issueActivationCodes', () => {
@@ -41,6 +51,23 @@ describe('issueActivationCodes', () => {
   it('enforces the staff daily limit', async () => {
     await db().doc('rate_limits/staff1').set({ issueCodes: { count: 20, windowStartMs: NOW.getTime() - 1000 } });
     await expect(issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: '2026-2027' })).rejects.toMatchObject({ code: 'resource-exhausted' });
+  });
+  it('pre-fills slots from the learner\'s active links', async () => {
+    await seedLink('gA', 'S1', 'guardian');
+    const r = await issueActivationCodes(staff(), SEC);
+    const code = r.slips.find((s) => s.studentId === 'S1').code;
+    expect((await db().doc(`activation_codes/${hashCode(code)}`).get()).data()).toMatchObject({ guardianRedemptions: 1, maxGuardians: 2, adviserRedemptions: 0, maxAdvisers: 1, status: 'issued' });
+    await activateCode(guardian('g1'), { code, relationship: 'Father', consentVersion: 1 });
+    await expect(activateCode(guardian('g2'), { code, relationship: 'Guardian', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('skips a learner whose every slot is linked and leaves their code alone', async () => {
+    const first = await issueActivationCodes(staff(), SEC);
+    const old = first.slips.find((s) => s.studentId === 'S1').code;
+    await linkAll('S1');
+    const r = await issueActivationCodes(staff(), SEC);
+    expect(r.skipped).toEqual([{ studentId: 'S1', reason: 'fully-linked' }]);
+    expect(r.slips.map((s) => s.studentId)).toEqual(['S2']);
+    expect((await db().doc(`activation_codes/${hashCode(old)}`).get()).data().status).toBe('issued');
   });
 });
 

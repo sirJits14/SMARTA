@@ -7,7 +7,7 @@ import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, int } from '../lib/validators.js';
 import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activationCode.js';
 import { sectionLabel, learnerIdentity, formalName } from '../lib/format.js';
-import { ADVISER, isDepedEmail, slotFor, claimSlot, newCodeSlots, isOpenStatus } from '../lib/codeSlots.js';
+import { ADVISER, isDepedEmail, slotFor, claimSlot, slotsFromLinks, isOpenStatus } from '../lib/codeSlots.js';
 
 // Guardian relationships. The class adviser (ADVISER) can only link through a
 // slip, never through requestAccess, so it is not in this list.
@@ -24,9 +24,26 @@ async function revokeOpenCodes(db, studentId, schoolYear, by, reason) {
   return n;
 }
 
+// Issues one learner's code with slots pre-filled from their active links
+// (spec 2026-10-13 §2). A learner whose every slot is linked is skipped and
+// keeps their current code: a new one could not link anybody.
+async function issueCodeFor(db, { studentId, student, section, schoolYear, by, reason }) {
+  const links = await db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active').get();
+  const slots = slotsFromLinks(links.docs.map((d) => d.data()), schoolYear);
+  if (slots.status === 'exhausted') return { skipped: 'fully-linked' };
+  await revokeOpenCodes(db, studentId, schoolYear, by, reason);
+  const code = generateCode(randomBytes(8));
+  await db.doc(`activation_codes/${hashCode(code)}`).set({ studentId, schoolYear, issuedAt: FieldValue.serverTimestamp(), issuedBy: by, ...slots });
+  return {
+    slip: { studentId, name: formalName(student), lrn: student.lrn, sectionLabel: sectionLabel(section), schoolYear, code },
+    slotsFree: { guardian: slots.maxGuardians - slots.guardianRedemptions, adviser: slots.maxAdvisers - slots.adviserRedemptions },
+  };
+}
+
 // Staff. One code per enrolled learner of the section; previous issued codes
-// for the same learner+SY are revoked. Raw codes are returned once for the
-// print job and never stored (spec §3).
+// for the same learner+SY are revoked. Learners whose slots are all linked
+// are skipped. Raw codes are returned once for the print job and never
+// stored (spec §3).
 export async function issueActivationCodes(ctx, data) {
   const { db, now, email } = ctx;
   const sectionId = str(data.sectionId, { name: 'sectionId', min: 1, max: 64 });
@@ -43,12 +60,9 @@ export async function issueActivationCodes(ctx, data) {
     const student = (await db.doc(`students/${studentId}`).get()).data();
     if (!student) { skipped.push({ studentId, reason: 'missing' }); continue; }
     if (student.activationRestricted === true) { skipped.push({ studentId, reason: 'restricted' }); continue; }
-    await revokeOpenCodes(db, studentId, schoolYear, email, 'reissued');
-    const code = generateCode(randomBytes(8));
-    await db.doc(`activation_codes/${hashCode(code)}`).set({
-      studentId, schoolYear, issuedAt: FieldValue.serverTimestamp(), issuedBy: email, ...newCodeSlots(), status: 'issued',
-    });
-    slips.push({ studentId, name: formalName(student), lrn: student.lrn, sectionLabel: sectionLabel(section), schoolYear, code });
+    const r = await issueCodeFor(db, { studentId, student, section, schoolYear, by: email, reason: 'reissued' });
+    if (r.skipped) { skipped.push({ studentId, reason: r.skipped }); continue; }
+    slips.push(r.slip);
   }
   await audit(db, { action: 'code.issued', actorType: 'staff', actorUid: email, targetType: 'section', targetId: sectionId, details: { schoolYear, count: slips.length, skipped: skipped.length } });
   logEvent('codes_issued', { sectionId, count: slips.length });
