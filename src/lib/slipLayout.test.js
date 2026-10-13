@@ -46,6 +46,10 @@ describe('slipLayout', () => {
     expect(slipPrintStyles('a4')).toContain('size: A4 portrait');
   });
 
+  it('hides .slips-print-hide content when printing', () => {
+    expect(slipPrintStyles('folio')).toMatch(/\.slips-print-hide\s*\{\s*display: none !important;/);
+  });
+
   it('writes the compact instructions without mentioning the adviser', () => {
     const text = slipInstructions('https://bnhs-parent.web.app/', '2026-2027');
     expect(text).toBe("Scan the QR or enter this code at bnhs-parent.web.app. Valid SY 2026-2027 · up to 2 parents/guardians. Keep this private. Activating means you agree to the school's privacy notice.");

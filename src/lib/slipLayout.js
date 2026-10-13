@@ -54,7 +54,7 @@ export function slipPrintStyles(paperKey) {
   .slip-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 18px; letter-spacing: 0.12em; font-weight: 700; line-height: 1.2; margin: 0.8mm 0; }
   .slip-note { font-size: 7.5px; color: #444; line-height: 1.2; }
   @media print {
-    .app-sidebar, .app-topbar, .guardians-heading, .guardians-tabs, .codes-tab-controls { display: none !important; }
+    .app-sidebar, .app-topbar, .guardians-heading, .guardians-tabs, .codes-tab-controls, .slips-print-hide { display: none !important; }
     .app-shell { grid-template-columns: 1fr !important; height: auto !important; overflow: visible !important; }
     main { padding: 0 !important; overflow: visible !important; }
     @page { size: ${paper.pageSize}; margin: ${paper.marginMm}mm; }
