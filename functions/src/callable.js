@@ -8,6 +8,9 @@ export const LIMITS = {
   activateAdviser: { windowMs: 60 * 60 * 1000, max: 60 },
   report: { windowMs: 24 * 60 * 60 * 1000, max: 5 },
   issueCodes: { windowMs: 24 * 60 * 60 * 1000, max: 20 },
+  // Replacing single lost slips has its own budget so it does not use up the
+  // section-wide one.
+  reissueCode: { windowMs: 24 * 60 * 60 * 1000, max: 60 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 

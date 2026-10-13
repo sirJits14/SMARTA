@@ -69,6 +69,29 @@ export async function issueActivationCodes(ctx, data) {
   return { slips, skipped };
 }
 
+// Staff. Replaces one learner's lost or damaged slip without touching the
+// rest of the section (spec 2026-10-13 §4).
+export async function reissueActivationCode(ctx, data) {
+  const { db, now, email } = ctx;
+  const studentId = str(data.studentId, { name: 'studentId', min: 1, max: 64 });
+  const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
+  const reason = str(data.reason, { name: 'Reason', min: 1, max: 200 });
+  await enforceRateLimit(db, ctx.uid, 'reissueCode', LIMITS.reissueCode, now().getTime());
+
+  const student = (await db.doc(`students/${studentId}`).get()).data();
+  if (!student) throw new CallableError('not-found', 'Learner not found');
+  if (student.activationRestricted === true) throw new CallableError('failed-precondition', 'This learner is restricted. Lift the restriction first.');
+  const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
+  if (enrollment?.status !== 'enrolled') throw new CallableError('failed-precondition', `This learner is not enrolled for ${schoolYear}.`);
+  const section = (await db.doc(`sections/${enrollment.sectionId}`).get()).data();
+
+  const r = await issueCodeFor(db, { studentId, student, section, schoolYear, by: email, reason });
+  if (r.skipped) throw new CallableError('failed-precondition', 'All guardian and adviser slots are linked. Revoke a link first.');
+  await audit(db, { action: 'code.reissued', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId, details: { schoolYear, reason, guardianSlotsFree: r.slotsFree.guardian, adviserSlotsFree: r.slotsFree.adviser } });
+  logEvent('code_reissued', { studentId });
+  return r;
+}
+
 export async function revokeCode(ctx, data) {
   const { db, email } = ctx;
   const studentId = str(data.studentId, { name: 'studentId', min: 1, max: 64 });
