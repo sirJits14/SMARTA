@@ -151,7 +151,14 @@ In `src/pages/guardians/LinksTab.jsx`, the selected learner's card gets a
 
 The paper toggle and print hint are currently inline in `CodesTab.jsx`.
 Move them into a small `SlipPrintControls` component (paper buttons, print
-hint, Print button) used by both tabs, so the two don't drift apart.
+hint, Print button) used by both tabs, so the two don't drift apart. The
+paper state with its `localStorage` write and the `PORTAL_URL` constant move
+with it.
+
+Printing hides page content by class. `slipPrintStyles` hides
+`.codes-tab-controls` today; it also hides a new generic `.slips-print-hide`
+class. Every Links tab card and message other than the slip gets that class,
+so only the slip prints.
 
 ## 6. Staff UI: Codes tab
 
