@@ -53,7 +53,7 @@ export const ID_CARD_PRINT_STYLES = `
       flex-direction: column !important;
       justify-content: center !important;
       align-items: center !important;
-      border: 0.5pt dashed #777 !important;
+      border: 0.5pt dashed rgba(119, 119, 119, 0.3) !important;
       border-top-width: 0 !important;
       border-left-width: 0 !important;
       border-radius: 0 !important;
