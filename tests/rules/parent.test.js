@@ -94,4 +94,11 @@ describe('links, requests, reports, staff-only records', () => {
     await denied(as(env, STAFF).doc('rate_limits/gA').get());
     await denied(as(env, GUARDIAN_A).doc('rate_limits/gA').get());
   });
+  it('school_years staff-read only, written only by Functions', async () => {
+    await seed(env, (db) => db.doc('school_years/2026-2027').set({ endedBy: 'registrar@bnhs.edu' }));
+    await ok(as(env, STAFF).doc('school_years/2026-2027').get());
+    await denied(as(env, GUARDIAN_A).doc('school_years/2026-2027').get());
+    await denied(as(env, STAFF).doc('school_years/2026-2027').set({ endedBy: null }));
+    await denied(as(env, STAFF).doc('school_years/2026-2027').delete());
+  });
 });

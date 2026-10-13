@@ -36,6 +36,13 @@ describe('endSchoolYear', () => {
     const audit = await db().collection('audit_log').where('action', '==', 'schoolyear.ended').get();
     expect(audit.docs[0].data()).toMatchObject({ targetId: SY, details: { codesRevoked: 2, linksExpired: 3, accountsNotified: 2 } });
   });
+  it('marks the year as ended so its slips can no longer be issued or redeemed', async () => {
+    await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
+    const marker = (await db().doc(`school_years/${SY}`).get()).data();
+    expect(marker).toMatchObject({ endedBy: 'registrar@bnhs.edu' });
+    expect(marker.endedAt).toBeTruthy();
+    expect((await db().doc('school_years/2027-2028').get()).exists).toBe(false);
+  });
   it('is safe to run twice', async () => {
     await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
     const r = await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
@@ -47,5 +54,6 @@ describe('endSchoolYear', () => {
     await expect(endSchoolYear(staff(), { schoolYear: '2026/2027', confirmText: '2026/2027' })).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(endSchoolYear(staff(), { schoolYear: '2026-2028', confirmText: '2026-2028' })).rejects.toMatchObject({ code: 'invalid-argument' });
     expect((await db().doc('activation_codes/c1').get()).data().status).toBe('issued');
+    expect((await db().collection('school_years').get()).size).toBe(0);
   });
 });

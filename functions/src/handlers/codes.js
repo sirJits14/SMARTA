@@ -7,6 +7,7 @@ import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, int } from '../lib/validators.js';
 import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activationCode.js';
 import { sectionLabel, learnerIdentity, formalName } from '../lib/format.js';
+import { schoolYearRef, isEnded, schoolYearEnded } from '../lib/schoolYears.js';
 import { ADVISER, isDepedEmail, slotFor, claimSlot, slotsFromLinks, isOpenStatus } from '../lib/codeSlots.js';
 
 // Guardian relationships. The class adviser (ADVISER) can only link through a
@@ -14,6 +15,10 @@ import { ADVISER, isDepedEmail, slotFor, claimSlot, slotsFromLinks, isOpenStatus
 export const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
 const GENERIC = 'That code could not be used. Ask the registrar to reissue your slip.';
 const ADVISER_DEPED = 'Sign in with your @deped.gov.ph account to link as adviser.';
+
+async function assertYearOpen(db, schoolYear) {
+  if (await schoolYearEnded(db, schoolYear)) throw new CallableError('failed-precondition', `The ${schoolYear} school year has ended.`);
+}
 
 // Revokes a learner's issued and exhausted (fully used) codes for one school year.
 async function revokeOpenCodes(db, studentId, schoolYear, by, reason) {
@@ -49,6 +54,7 @@ export async function issueActivationCodes(ctx, data) {
   const sectionId = str(data.sectionId, { name: 'sectionId', min: 1, max: 64 });
   const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
   await enforceRateLimit(db, ctx.uid, 'issueCodes', LIMITS.issueCodes, now().getTime());
+  await assertYearOpen(db, schoolYear);
 
   const section = (await db.doc(`sections/${sectionId}`).get()).data();
   if (!section) throw new CallableError('not-found', 'Section not found');
@@ -77,6 +83,7 @@ export async function reissueActivationCode(ctx, data) {
   const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
   const reason = str(data.reason, { name: 'Reason', min: 1, max: 200 });
   await enforceRateLimit(db, ctx.uid, 'reissueCode', LIMITS.reissueCode, now().getTime());
+  await assertYearOpen(db, schoolYear);
 
   const student = (await db.doc(`students/${studentId}`).get()).data();
   if (!student) throw new CallableError('not-found', 'Learner not found');
@@ -136,8 +143,10 @@ export async function activateCode(ctx, data) {
   if (!isOpenStatus(codeDoc.status)) throw fail(codeDoc.status);
 
   // Slips are valid for their own school year until staff revoke them
-  // (endSchoolYear / reissue); changing currentSchoolYear does not end them.
+  // (endSchoolYear / reissue) or end that year; changing currentSchoolYear
+  // does not end them.
   const { studentId, schoolYear } = codeDoc;
+  const yearRef = schoolYearRef(db, schoolYear);
   const [studentSnap, enrollSnap] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`enrollments/${studentId}_${schoolYear}`).get()]);
   const student = studentSnap.data(); const enrollment = enrollSnap.data();
   if (!student || student.activationRestricted === true) throw fail('restricted');
@@ -149,9 +158,12 @@ export async function activateCode(ctx, data) {
   const learnerRef = db.doc(`learners/${studentId}`);
   const learner = learnerIdentity(student, section, schoolYear);
   await db.runTransaction(async (tx) => {
-    const [c, link, profile] = await Promise.all([tx.get(codeRef), tx.get(linkRef), tx.get(profileRef)]);
+    // The year is read in the transaction so an endSchoolYear running now
+    // either refuses this link or expires it along with the year's others.
+    const [c, link, profile, year] = await Promise.all([tx.get(codeRef), tx.get(linkRef), tx.get(profileRef), yearRef && tx.get(yearRef)]);
     const cd = c.data();
     if (!isOpenStatus(cd.status)) throw fail(cd.status);
+    if (isEnded(year)) throw fail('year-ended');
     const alreadyActive = link.exists && link.data().status === 'active';
     if (alreadyActive) {
       if ((link.data().slot ?? 'guardian') !== slot) throw fail('slot-mismatch');

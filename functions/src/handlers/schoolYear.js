@@ -3,6 +3,7 @@ import { CallableError } from '../errors.js';
 import { audit } from '../audit.js';
 import { logEvent } from '../log.js';
 import { str } from '../lib/validators.js';
+import { schoolYearRef } from '../lib/schoolYears.js';
 
 // A links page can write one inbox doc per link as well, so 200 keeps every
 // batch at or under 400 writes (Firestore's batch limit is 500).
@@ -34,6 +35,10 @@ export async function endSchoolYear(ctx, data) {
   if (Number(schoolYear.slice(5)) !== Number(schoolYear.slice(0, 4)) + 1) throw new CallableError('invalid-argument', 'The second year must follow the first, like 2026-2027');
   const confirmText = str(data.confirmText, { name: 'confirmText', max: 20 });
   if (confirmText !== schoolYear) throw new CallableError('invalid-argument', 'Type the school year exactly to confirm.');
+
+  // Marked first, so no new slip for this year can be issued or redeemed
+  // while the year's existing slips and links are being closed below.
+  await schoolYearRef(db, schoolYear).set({ endedAt: FieldValue.serverTimestamp(), endedBy: email }, { merge: true });
 
   const codesRevoked = await drain(db,
     db.collection('activation_codes').where('schoolYear', '==', schoolYear).where('status', 'in', ['issued', 'exhausted']),

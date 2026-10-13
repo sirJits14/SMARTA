@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { db, clearAll, seedSchool, ts } from './helpers.js';
+import { endSchoolYear } from '../../src/handlers/schoolYear.js';
 import { issueActivationCodes, reissueActivationCode, revokeCode, activateCode, acceptConsent } from '../../src/handlers/codes.js';
 import { hashCode } from '../../src/lib/activationCode.js';
+import { logWarn } from '../../src/log.js';
+
+// Lets a test read the reason activateCode logs behind its generic message.
+vi.mock('../../src/log.js', () => ({ logEvent: vi.fn(), logWarn: vi.fn() }));
 
 const NOW = new Date('2026-09-21T08:00:00+08:00');
 const staff = () => ({ db: db(), now: () => NOW, uid: 'staff1', email: 'registrar@bnhs.edu' });
@@ -13,6 +18,7 @@ const SEC = { sectionId: 'SEC1', schoolYear: '2026-2027' };
 const seedLink = (uid, studentId, slot) => db().doc(`guardian_links/${uid}_${studentId}`).set({
   guardianUid: uid, studentId, status: 'active', schoolYear: '2026-2027', relationship: slot === 'adviser' ? 'Adviser' : 'Mother', slot,
 });
+const endYear = (schoolYear = '2026-2027') => endSchoolYear(staff(), { schoolYear, confirmText: schoolYear });
 const linkAll = async (studentId) => { await seedLink('gA', studentId, 'guardian'); await seedLink('gB', studentId, 'guardian'); await seedLink('tAdv', studentId, 'adviser'); };
 
 beforeEach(async () => {
@@ -69,6 +75,15 @@ describe('issueActivationCodes', () => {
     expect(r.slips.map((s) => s.studentId)).toEqual(['S2']);
     expect((await db().doc(`activation_codes/${hashCode(old)}`).get()).data().status).toBe('issued');
   });
+  it('refuses a school year that has ended', async () => {
+    await endYear();
+    await expect(issueActivationCodes(staff(), SEC)).rejects.toMatchObject({ code: 'failed-precondition', message: 'The 2026-2027 school year has ended.' });
+    expect((await db().collection('activation_codes').get()).size).toBe(0);
+  });
+  it('still issues for a year that has not ended', async () => {
+    await endYear('2025-2026');
+    expect((await issueActivationCodes(staff(), SEC)).slips).toHaveLength(2);
+  });
 });
 
 describe('reissueActivationCode', () => {
@@ -110,6 +125,12 @@ describe('reissueActivationCode', () => {
     await expect(reissue({ schoolYear: '2027-2028' })).rejects.toMatchObject({ code: 'failed-precondition', message: 'This learner is not enrolled for 2027-2028.' });
     await db().doc('students/S1').set({ activationRestricted: true }, { merge: true });
     await expect(reissue()).rejects.toMatchObject({ code: 'failed-precondition', message: 'This learner is restricted. Lift the restriction first.' });
+    expect((await db().collection('activation_codes').get()).size).toBe(0);
+    expect((await db().collection('audit_log').where('action', '==', 'code.reissued').get()).size).toBe(0);
+  });
+  it('refuses a school year that has ended', async () => {
+    await endYear();
+    await expect(reissue()).rejects.toMatchObject({ code: 'failed-precondition', message: 'The 2026-2027 school year has ended.' });
     expect((await db().collection('activation_codes').get()).size).toBe(0);
     expect((await db().collection('audit_log').where('action', '==', 'code.reissued').get()).size).toBe(0);
   });
@@ -244,6 +265,22 @@ describe('activateCode', () => {
     const code2 = await issue();
     await db().doc('students/S1').set({ activationRestricted: true }, { merge: true });
     await expect(activateCode(guardian(), { code: code2, relationship: 'Mother', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('refuses a slip whose school year has ended, even if it was never revoked', async () => {
+    const code = await issue();
+    // A slip that slipped past endSchoolYear's revocation (e.g. issued
+    // while it was running) must still not link anyone.
+    await endYear();
+    await db().doc(`activation_codes/${hashCode(code)}`).update({ status: 'issued' });
+    await expect(activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition', message: 'That code could not be used. Ask the registrar to reissue your slip.' });
+    expect(logWarn).toHaveBeenLastCalledWith('activation_failed', expect.objectContaining({ reason: 'year-ended' }));
+    expect((await db().doc('guardian_links/gNew_S1').get()).exists).toBe(false);
+    expect((await db().doc(`activation_codes/${hashCode(code)}`).get()).data().guardianRedemptions).toBe(0);
+  });
+  it('a slip for a year that has not ended still links after another year ends', async () => {
+    const code = await issue();
+    await endYear('2025-2026');
+    await expect(activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1 })).resolves.toMatchObject({ studentId: 'S1' });
   });
   it('rate-limits after 5 attempts per hour', async () => {
     for (let i = 0; i < 5; i++) await expect(activateCode(guardian(), { code: 'AAAAAAAA', relationship: 'Mother', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
