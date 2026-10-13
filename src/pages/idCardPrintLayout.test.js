@@ -35,7 +35,7 @@ describe('ID card print layout', () => {
     expect(ID_CARD_PRINT_STYLES).toContain('grid-template-columns: repeat(8, 1fr);');
     expect(ID_CARD_PRINT_STYLES).toContain('grid-auto-rows: 27mm;');
     expect(ID_CARD_PRINT_STYLES).toContain('width: 194mm;');
-    expect(ID_CARD_PRINT_STYLES).toContain('gap: 1mm;');
+    expect(ID_CARD_PRINT_STYLES).toContain('gap: 0;');
     expect(ID_CARD_PRINT_STYLES).toContain('width: 16mm !important;');
     expect(ID_CARD_PRINT_STYLES).toMatch(
       /\.id-card-qr\s*\{[^}]*box-sizing: border-box !important;/s,
@@ -57,7 +57,9 @@ describe('ID card print layout', () => {
     const rowHeightMatch = sheetRuleMatch[0].match(/grid-auto-rows:\s*([\d.]+)mm/);
     expect(rowHeightMatch).not.toBeNull();
     const rowHeightMm = Number(rowHeightMatch[1]);
-    const fullSheetHeightMm = rowHeightMm * ID_CARD_PRINT_LAYOUT.rows + 1 * (ID_CARD_PRINT_LAYOUT.rows - 1);
+    const gapMatch = sheetRuleMatch[0].match(/gap:\s*([\d.]+)(?:mm)?;/);
+    expect(gapMatch).not.toBeNull();
+    const fullSheetHeightMm = rowHeightMm * ID_CARD_PRINT_LAYOUT.rows + Number(gapMatch[1]) * (ID_CARD_PRINT_LAYOUT.rows - 1);
     expect(fullSheetHeightMm).toBeLessThan(281);
   });
 

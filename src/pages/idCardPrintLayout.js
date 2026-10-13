@@ -4,7 +4,7 @@ const rows = 10;
 // height (297mm A4 minus the 8mm top/bottom @page margins): a block sized to
 // *exactly* fill the printable area gives print engines zero rounding
 // tolerance, which reliably produces a spurious blank trailing page. A full
-// 10-row sheet at this height (270mm + 9 gaps of 1mm = 279mm) leaves a 2mm
+// 10-row sheet at this height (270mm with no gaps) leaves an 11mm
 // buffer. Rows are sized with grid-auto-rows rather than a fixed sheet
 // height so a roster that doesn't fill a whole sheet only reserves the rows
 // it actually uses, instead of always claiming the full page height.
@@ -39,7 +39,7 @@ export const ID_CARD_PRINT_STYLES = `
       grid-template-columns: repeat(${ID_CARD_PRINT_LAYOUT.columns}, 1fr);
       grid-auto-rows: ${ROW_HEIGHT_MM}mm;
       width: 194mm;
-      gap: 1mm;
+      gap: 0;
       overflow: hidden;
     }
     .id-cards-sheet:not(:last-child) { break-after: page; }
@@ -53,9 +53,15 @@ export const ID_CARD_PRINT_STYLES = `
       flex-direction: column !important;
       justify-content: center !important;
       align-items: center !important;
+      border: 0.5pt dashed #777 !important;
+      border-top-width: 0 !important;
+      border-left-width: 0 !important;
       border-radius: 0 !important;
       box-shadow: none !important;
     }
+    /* Shared edges draw once; the first row/column complete each outline. */
+    .id-card:nth-child(-n + ${ID_CARD_PRINT_LAYOUT.columns}) { border-top-width: 0.5pt !important; }
+    .id-card:nth-child(${ID_CARD_PRINT_LAYOUT.columns}n + 1) { border-left-width: 0.5pt !important; }
     .id-card-qr {
       box-sizing: border-box !important;
       width: 16mm !important;
