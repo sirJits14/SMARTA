@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db, clearAll, seedSchool, ts } from './helpers.js';
-import { issueActivationCodes, revokeCode, activateCode, acceptConsent } from '../../src/handlers/codes.js';
+import { issueActivationCodes, reissueActivationCode, revokeCode, activateCode, acceptConsent } from '../../src/handlers/codes.js';
 import { hashCode } from '../../src/lib/activationCode.js';
 
 const NOW = new Date('2026-09-21T08:00:00+08:00');
@@ -9,10 +9,20 @@ const guardian = (uid = 'gNew', email = `${uid}@gmail.com`) => ({ db: db(), now:
 const adviser = (uid = 'tAdv') => guardian(uid, `${uid}@deped.gov.ph`);
 const DAY = 86400_000;
 
+const SEC = { sectionId: 'SEC1', schoolYear: '2026-2027' };
+const seedLink = (uid, studentId, slot) => db().doc(`guardian_links/${uid}_${studentId}`).set({
+  guardianUid: uid, studentId, status: 'active', schoolYear: '2026-2027', relationship: slot === 'adviser' ? 'Adviser' : 'Mother', slot,
+});
+const linkAll = async (studentId) => { await seedLink('gA', studentId, 'guardian'); await seedLink('gB', studentId, 'guardian'); await seedLink('tAdv', studentId, 'adviser'); };
+
 beforeEach(async () => {
   await clearAll(); await seedSchool();
   await db().doc('users/registrar@bnhs.edu').set({ role: 'registrar' });
   await db().doc('enrollments/S2_2026-2027').set({ studentId: 'S2', sectionId: 'SEC1', schoolYear: '2026-2027', status: 'enrolled' });
+  // seedSchool() links two guardians to S1; new S1 codes would start with
+  // both guardian slots used. These tests link guardians themselves.
+  await db().doc('guardian_links/gA_S1').delete();
+  await db().doc('guardian_links/gB_S1').delete();
 });
 
 describe('issueActivationCodes', () => {
@@ -41,6 +51,83 @@ describe('issueActivationCodes', () => {
   it('enforces the staff daily limit', async () => {
     await db().doc('rate_limits/staff1').set({ issueCodes: { count: 20, windowStartMs: NOW.getTime() - 1000 } });
     await expect(issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: '2026-2027' })).rejects.toMatchObject({ code: 'resource-exhausted' });
+  });
+  it('pre-fills slots from the learner\'s active links', async () => {
+    await seedLink('gA', 'S1', 'guardian');
+    const r = await issueActivationCodes(staff(), SEC);
+    const code = r.slips.find((s) => s.studentId === 'S1').code;
+    expect((await db().doc(`activation_codes/${hashCode(code)}`).get()).data()).toMatchObject({ guardianRedemptions: 1, maxGuardians: 2, adviserRedemptions: 0, maxAdvisers: 1, status: 'issued' });
+    await activateCode(guardian('g1'), { code, relationship: 'Father', consentVersion: 1 });
+    await expect(activateCode(guardian('g2'), { code, relationship: 'Guardian', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('skips a learner whose every slot is linked and leaves their code alone', async () => {
+    const first = await issueActivationCodes(staff(), SEC);
+    const old = first.slips.find((s) => s.studentId === 'S1').code;
+    await linkAll('S1');
+    const r = await issueActivationCodes(staff(), SEC);
+    expect(r.skipped).toEqual([{ studentId: 'S1', reason: 'fully-linked' }]);
+    expect(r.slips.map((s) => s.studentId)).toEqual(['S2']);
+    expect((await db().doc(`activation_codes/${hashCode(old)}`).get()).data().status).toBe('issued');
+  });
+});
+
+describe('reissueActivationCode', () => {
+  const reissue = (data = {}) => reissueActivationCode(staff(), { studentId: 'S1', schoolYear: '2026-2027', reason: 'lost slip', ...data });
+  const slipCode = (r, id) => r.slips.find((s) => s.studentId === id).code;
+  const codeDoc = async (code) => (await db().doc(`activation_codes/${hashCode(code)}`).get()).data();
+
+  it('replaces only that learner\'s slip and returns it with the free slots', async () => {
+    const first = await issueActivationCodes(staff(), SEC);
+    const r = await reissue();
+    expect(r.slip).toMatchObject({ studentId: 'S1', name: 'Cruz, Ana B.', lrn: '100000000001', sectionLabel: 'Grade 7 – Rizal', schoolYear: '2026-2027' });
+    expect(r.slip.code).toMatch(/^[0-9A-HJKMNP-TV-Z]{8}$/);
+    expect(r.slotsFree).toEqual({ guardian: 2, adviser: 1 });
+    expect(await codeDoc(slipCode(first, 'S1'))).toMatchObject({ status: 'revoked', revokedReason: 'lost slip' });
+    expect((await codeDoc(r.slip.code)).status).toBe('issued');
+    expect((await codeDoc(slipCode(first, 'S2'))).status).toBe('issued');
+    await expect(activateCode(guardian('g1'), { code: slipCode(first, 'S2'), relationship: 'Mother', consentVersion: 1 })).resolves.toMatchObject({ studentId: 'S2' });
+  });
+  it('counts linked guardians: one more can link, a third is refused', async () => {
+    const first = await issueActivationCodes(staff(), SEC);
+    await activateCode(guardian('g1'), { code: slipCode(first, 'S1'), relationship: 'Mother', consentVersion: 1 });
+    const r = await reissue();
+    expect(r.slotsFree).toEqual({ guardian: 1, adviser: 1 });
+    // The already-linked guardian can enter the new code without using a slot.
+    await activateCode(guardian('g1'), { code: r.slip.code, relationship: 'Mother', consentVersion: 1 });
+    expect((await codeDoc(r.slip.code)).guardianRedemptions).toBe(1);
+    await activateCode(guardian('g2'), { code: r.slip.code, relationship: 'Father', consentVersion: 1 });
+    await expect(activateCode(guardian('g3'), { code: r.slip.code, relationship: 'Guardian', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('refuses when every slot is linked and leaves the current code alone', async () => {
+    const first = await issueActivationCodes(staff(), SEC);
+    await linkAll('S1');
+    await expect(reissue()).rejects.toMatchObject({ code: 'failed-precondition', message: 'All guardian and adviser slots are linked. Revoke a link first.' });
+    expect((await codeDoc(slipCode(first, 'S1'))).status).toBe('issued');
+  });
+  it('refuses an empty reason and unknown, not-enrolled or restricted learners', async () => {
+    await expect(reissue({ reason: '   ' })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(reissue({ studentId: 'NOPE' })).rejects.toMatchObject({ code: 'not-found', message: 'Learner not found' });
+    await expect(reissue({ schoolYear: '2027-2028' })).rejects.toMatchObject({ code: 'failed-precondition', message: 'This learner is not enrolled for 2027-2028.' });
+    await db().doc('students/S1').set({ activationRestricted: true }, { merge: true });
+    await expect(reissue()).rejects.toMatchObject({ code: 'failed-precondition', message: 'This learner is restricted. Lift the restriction first.' });
+    expect((await db().collection('activation_codes').get()).size).toBe(0);
+    expect((await db().collection('audit_log').where('action', '==', 'code.reissued').get()).size).toBe(0);
+  });
+  it('writes a code.reissued audit entry without the raw code', async () => {
+    const r = await reissue();
+    const rows = await db().collection('audit_log').where('action', '==', 'code.reissued').get();
+    expect(rows.size).toBe(1);
+    expect(rows.docs[0].data()).toMatchObject({
+      actorType: 'staff', actorUid: 'registrar@bnhs.edu', targetType: 'student', targetId: 'S1',
+      details: { schoolYear: '2026-2027', reason: 'lost slip', guardianSlotsFree: 2, adviserSlotsFree: 1 },
+    });
+    expect(JSON.stringify(rows.docs[0].data())).not.toContain(r.slip.code);
+  });
+  it('has its own daily limit, separate from section-wide issuing', async () => {
+    await db().doc('rate_limits/staff1').set({ issueCodes: { count: 20, windowStartMs: NOW.getTime() - 1000 } });
+    await expect(reissue()).resolves.toMatchObject({ slip: { studentId: 'S1' } });
+    await db().doc('rate_limits/staff1').set({ reissueCode: { count: 60, windowStartMs: NOW.getTime() - 1000 } }, { merge: true });
+    await expect(reissue()).rejects.toMatchObject({ code: 'resource-exhausted' });
   });
 });
 

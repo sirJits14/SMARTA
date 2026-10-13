@@ -8,6 +8,7 @@ const fn = (name) => async (data) => (await httpsCallable(functions, name)(data)
 // validated and audited server-side (spec §8). Names match functions/index.js.
 export const call = {
   issueActivationCodes: fn('issueActivationCodesFn'),
+  reissueActivationCode: fn('reissueActivationCodeFn'),
   revokeCode: fn('revokeCodeFn'),
   endSchoolYear: fn('endSchoolYearFn'),
   resolveAccessRequest: fn('resolveAccessRequestFn'),
