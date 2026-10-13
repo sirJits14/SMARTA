@@ -28,10 +28,15 @@ you re-activate it.
 3. On the device: open `/setup`, sign in once. Done.
 
 ## Parent lost the slip / new guardian / custody change
-- Reissue: Guardians → Activation slips → section → Issue → print. (Old
-  slips for that section stop working.) For one learner only: Learner
-  access → find learner → **Revoke slip**, then issue the section again
-  after the other slips are handed out — or approve an access request instead.
+- One learner (lost or damaged slip): Learner access → find learner → reason
+  → **Reissue slip** → print the slip right away (the code is shown once).
+  Only that learner's old slip stops working. Guardians already linked keep
+  access and use up slots on the new slip, so the panel shows how many
+  guardian/adviser slots are free. If every slot is linked, revoke a link
+  first. Approving an access request still works too.
+- Whole section: Guardians → Activation slips → section → Issue slips → print.
+  Every unused old slip in the section stops working. Learners whose guardian
+  and adviser slots are all linked are skipped and keep their slip.
 - Custody restriction: Learner access → find learner → reason → **Restrict**.
   This revokes every guardian's and adviser's access and blocks slips until lifted.
 - Remove one guardian: Learner access → row → **Revoke**.

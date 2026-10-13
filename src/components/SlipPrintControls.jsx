@@ -16,7 +16,7 @@ export function useSlipPaper() {
 }
 
 // Paper toggle, Print button and print-dialog hint, shared by the Codes tab
-// (a section's slips) and the Links tab (one reissued slip). `children`
+// (a section's slips) and the Learner access tab (one reissued slip). `children`
 // sit just before Print, e.g. the Issue slips button.
 export default function SlipPrintControls({ paper, onPaperChange, printReady, children }) {
   return (

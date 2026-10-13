@@ -73,14 +73,24 @@ export default function LinksTab({ schoolYear }) {
   const printRoot = useRef(null);
   const printReady = usePrintReadiness(printRoot, reissued, reissued ? 1 : 0);
 
+  // Always the learner currently shown, so a call that settles after staff
+  // pick someone else cannot show the first learner's slip or error.
+  const studentIdRef = useRef(studentId);
+  studentIdRef.current = studentId;
+
   const pickLearner = (id) => { setStudentId(id); setQ(''); setReissued(null); setReissueErr(''); };
   // Errors are caught here (not by action.run) so the server's own message,
   // e.g. "All guardian and adviser slots are linked", reaches staff.
   const reissue = async () => {
     if (!window.confirm(`Issue a new slip for ${fullName(student)}? Their current slip stops working. Guardians already linked keep access.`)) return;
+    const forId = student.id;
     setReissued(null); setReissueErr('');
-    try { setReissued(await call.reissueActivationCode({ studentId: student.id, schoolYear, reason })); }
-    catch (e) { setReissueErr(e.message || 'Could not reissue the slip.'); }
+    try {
+      const result = await call.reissueActivationCode({ studentId: forId, schoolYear, reason });
+      if (studentIdRef.current === forId) setReissued(result);
+    } catch (e) {
+      if (studentIdRef.current === forId) setReissueErr(e.message || 'Could not reissue the slip.');
+    }
   };
 
   const resources = [studentsResource, enrollmentsResource, sectionsResource];
@@ -108,8 +118,8 @@ export default function LinksTab({ schoolYear }) {
             <Field label="Reason (recorded in the audit log)"><Inp value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted} onClick={() => action.run('reissue', reissue)}>Reissue slip</Btn>
-              <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', async () => { await call.revokeCode({ studentId: student.id, schoolYear, reason }); setReissued(null); })}>Revoke slip</Btn>
-              <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', async () => { await call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }); setReissued(null); })}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', async () => { await call.revokeCode({ studentId: student.id, schoolYear, reason }); setReissued(null); setReissueErr(''); })}>Revoke slip</Btn>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', async () => { await call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }); setReissued(null); setReissueErr(''); })}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
             </div>
             {reissueErr && <p role="alert" className="sims-feedback" style={{ marginTop: 10 }}>{reissueErr}</p>}
           </Card>

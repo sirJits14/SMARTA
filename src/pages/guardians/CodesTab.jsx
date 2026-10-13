@@ -41,7 +41,7 @@ export default function CodesTab({ schoolYear }) {
       <ActionFeedback action={action}/>
       <Card className="codes-tab-controls" style={{ padding: 20, marginBottom: 16 }}>
         <h2 style={S.h2}>Issue activation slips</h2>
-        <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>One slip per enrolled learner. Print them right away — codes are shown only once. Slips work for the whole school year until you end it below. Hand them to parents in person (adviser/homeroom). Learners flagged "restricted", and learners whose guardian and adviser slots are all linked, are skipped. To replace one lost slip, use Reissue slip on the Links tab.</p>
+        <p style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted }}>One slip per enrolled learner. Print them right away — codes are shown only once. Slips work for the whole school year until you end it below. Hand them to parents in person (adviser/homeroom). Learners flagged "restricted", and learners whose guardian and adviser slots are all linked, are skipped. To replace one lost slip, use Reissue slip on the Learner access tab.</p>
         {err && <div style={{ color: T.absent, fontSize: 12, marginBottom: 8 }}>{err}</div>}
         <SectionPicker sections={sectionsSY} value={sectionId} disabled={busy || action.busy} label="Section" onChange={(id) => { setSectionId(id); setResult(null); }} />
         <SlipPrintControls paper={paper} onPaperChange={setPaper} printReady={printReady}>
