@@ -14,6 +14,21 @@ export const isOpenStatus = (status) => status === 'issued' || status === 'exhau
 export const slotFor = (relationship) => (relationship === ADVISER ? 'adviser' : 'guardian');
 export const newCodeSlots = () => ({ guardianRedemptions: 0, maxGuardians: MAX_GUARDIANS, adviserRedemptions: 0, maxAdvisers: MAX_ADVISERS });
 
+// Slots for a new code, counting the learner's links already active for
+// this school year, so reissuing a slip never raises the 2-guardian limit
+// (spec 2026-10-13 §1). Links made before the adviser slot existed have no
+// `slot` and count as guardians.
+export function slotsFromLinks(links, schoolYear) {
+  const used = { guardian: 0, adviser: 0 };
+  for (const l of links) if (l.status === 'active' && l.schoolYear === schoolYear) used[l.slot === 'adviser' ? 'adviser' : 'guardian'] += 1;
+  const guardianRedemptions = Math.min(used.guardian, MAX_GUARDIANS);
+  const adviserRedemptions = Math.min(used.adviser, MAX_ADVISERS);
+  return {
+    guardianRedemptions, maxGuardians: MAX_GUARDIANS, adviserRedemptions, maxAdvisers: MAX_ADVISERS,
+    status: guardianRedemptions >= MAX_GUARDIANS && adviserRedemptions >= MAX_ADVISERS ? 'exhausted' : 'issued',
+  };
+}
+
 export function readSlots(cd) {
   return {
     guardian: { used: cd.guardianRedemptions ?? cd.redemptions ?? 0, max: cd.maxGuardians ?? MAX_GUARDIANS },
