@@ -1,7 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { db, clearAll, seedSchool, ts } from './helpers.js';
 import { issueActivationCodes, reissueActivationCode, revokeCode, activateCode, acceptConsent } from '../../src/handlers/codes.js';
+import { requestAccess, resolveAccessRequest } from '../../src/handlers/links.js';
 import { hashCode } from '../../src/lib/activationCode.js';
+import { logWarn } from '../../src/log.js';
+
+// logWarn carries activateCode's real failure reason; firebase-functions'
+// logger can't be spied on (see scanEvent.test.js), so mock the module.
+vi.mock('../../src/log.js', () => ({ logEvent: vi.fn(), logWarn: vi.fn() }));
 
 const NOW = new Date('2026-09-21T08:00:00+08:00');
 const staff = () => ({ db: db(), now: () => NOW, uid: 'staff1', email: 'registrar@bnhs.edu' });
@@ -255,6 +261,53 @@ describe('activateCode', () => {
   it('still rate-limits an adviser once the adviser window is full', async () => {
     await db().doc('rate_limits/tAdv').set({ activateAdviser: { count: 60, windowStartMs: NOW.getTime() - 1000 } });
     await expect(activateCode(adviser(), { code: 'AAAAAAAA', relationship: 'Adviser', consentVersion: 1 })).rejects.toMatchObject({ code: 'resource-exhausted' });
+  });
+  describe('link cap (counts every active link, however it was made)', () => {
+    const accessReq = { studentLrn: '100000000001', learnerNameTyped: 'Ana Cruz', relationship: 'Guardian', contactNumber: '09171234567' };
+    const approveAccess = async (uid) => {
+      const { id } = await requestAccess(guardian(uid), accessReq);
+      await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' });
+    };
+    const failReasons = () => logWarn.mock.calls.filter(([e]) => e === 'activation_failed').map(([, f]) => f.reason);
+    beforeEach(() => logWarn.mockClear());
+
+    it('refuses a guardian once access-request approvals fill the guardian slots the code still shows free', async () => {
+      const code = await issue();
+      await approveAccess('g1');
+      await approveAccess('g2');
+      await expect(activateCode(guardian('g3'), { code, relationship: 'Guardian', consentVersion: 1 }))
+        .rejects.toMatchObject({ code: 'failed-precondition', message: 'That code could not be used. Ask the registrar to reissue your slip.' });
+      expect(failReasons()).toEqual(['cap']);
+      expect((await db().doc('guardian_links/g3_S1').get()).exists).toBe(false);
+      expect((await db().doc(`activation_codes/${hashCode(code)}`).get()).data()).toMatchObject({ guardianRedemptions: 0, status: 'issued' });
+      // The adviser slot is a separate cap and is still free.
+      await activateCode(adviser(), { code, relationship: 'Adviser', consentVersion: 1 });
+      expect((await db().doc('guardian_links/tAdv_S1').get()).data()).toMatchObject({ status: 'active', slot: 'adviser' });
+    });
+    it('an already-linked guardian can still re-enter the code while the slots are full', async () => {
+      const code = await issue();
+      await approveAccess('g1');
+      await approveAccess('g2');
+      await expect(activateCode(guardian('g1'), { code, relationship: 'Guardian', consentVersion: 1 })).resolves.toMatchObject({ studentId: 'S1' });
+      expect((await db().doc('guardian_links/g1_S1').get()).data()).toMatchObject({ status: 'active', activatedVia: 'code' });
+      expect((await db().doc(`activation_codes/${hashCode(code)}`).get()).data().guardianRedemptions).toBe(0);
+    });
+    it('refuses a second adviser when one is already linked outside this code', async () => {
+      const code = await issue();
+      await seedLink('t1', 'S1', 'adviser');
+      await expect(activateCode(adviser('t2'), { code, relationship: 'Adviser', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+      expect(failReasons()).toEqual(['cap']);
+      await activateCode(guardian('g1'), { code, relationship: 'Mother', consentVersion: 1 });
+    });
+    it('a guardian still active from last school year counts as a new link for this one', async () => {
+      const code = await issue();
+      await db().doc('guardian_links/gOld_S1').set({ guardianUid: 'gOld', studentId: 'S1', status: 'active', schoolYear: '2025-2026', relationship: 'Mother', slot: 'guardian' });
+      await seedLink('gA', 'S1', 'guardian');
+      await seedLink('gB', 'S1', 'guardian');
+      await expect(activateCode(guardian('gOld'), { code, relationship: 'Mother', consentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+      expect(failReasons()).toEqual(['cap']);
+      expect((await db().doc('guardian_links/gOld_S1').get()).data().schoolYear).toBe('2025-2026');
+    });
   });
   it('re-activation after revocation flips the same link back to active', async () => {
     const code = await issue();

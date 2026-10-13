@@ -148,11 +148,19 @@ export async function activateCode(ctx, data) {
   const profileRef = db.doc(`guardians/${uid}`);
   const learnerRef = db.doc(`learners/${studentId}`);
   const learner = learnerIdentity(student, section, schoolYear);
+  const activeLinksQuery = db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active');
   await db.runTransaction(async (tx) => {
-    const [c, link, profile] = await Promise.all([tx.get(codeRef), tx.get(linkRef), tx.get(profileRef)]);
+    const [c, link, profile, activeLinks] = await Promise.all([tx.get(codeRef), tx.get(linkRef), tx.get(profileRef), tx.get(activeLinksQuery)]);
     const cd = c.data();
     if (!isOpenStatus(cd.status)) throw fail(cd.status);
     const alreadyActive = link.exists && link.data().status === 'active';
+    // The learner's active links are the real cap (spec 2026-10-13 learner link cap):
+    // links approved through access requests never touch a code's counters.
+    // A link already active for this school year is already counted.
+    if (!(alreadyActive && link.data().schoolYear === schoolYear)) {
+      const used = slotsFromLinks(activeLinks.docs.filter((d) => d.id !== linkRef.id).map((d) => d.data()), schoolYear);
+      if (slot === 'adviser' ? used.adviserRedemptions >= used.maxAdvisers : used.guardianRedemptions >= used.maxGuardians) throw fail('cap');
+    }
     if (alreadyActive) {
       if ((link.data().slot ?? 'guardian') !== slot) throw fail('slot-mismatch');
       tx.update(codeRef, { lastRedeemedAt: FieldValue.serverTimestamp() });
