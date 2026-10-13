@@ -23,6 +23,7 @@ export default function Activate({ user, profile, route, navigate }) {
   const [Sheet, setSheet] = useState(null);
   const [loadingSheet, setLoadingSheet] = useState(false);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(null); const [done, setDone] = useState(null);
+  const [skipping, setSkipping] = useState(false);
 
   const closeScan = useCallback(() => setSheet(null), []);
   const scanned = useCallback((c) => { setCode(c); setErr(null); setSheet(null); }, []);
@@ -36,6 +37,7 @@ export default function Activate({ user, profile, route, navigate }) {
   };
 
   const submit = async () => {
+    if (busy || skipping) return;
     setBusy(true); setErr(null);
     let consentVersion = portal?.consentVersion ?? 1;
     try { const stored = localStorage.getItem('bnhs-parent-consent'); if (stored) consentVersion = Number(stored); } catch {}
@@ -47,6 +49,26 @@ export default function Activate({ user, profile, route, navigate }) {
     }
     catch (e) { setErr(String(e?.code || '').endsWith('permission-denied') ? S.activateAdviserDeped : S.activateFailed); }
     setBusy(false);
+  };
+
+  const skip = async () => {
+    if (busy || skipping) return;
+    setSkipping(true); setErr(null);
+    try {
+      // A server-side profile lets App admit this account on every device,
+      // and makes Settings usable before the first learner is linked.
+      let acceptedConsentVersion;
+      try { acceptedConsentVersion = Number(localStorage.getItem('bnhs-parent-consent')); } catch {}
+      if (acceptedConsentVersion !== (portal?.consentVersion ?? 1)) {
+        navigate('/consent'); return;
+      }
+      await callable('acceptConsentFn')({ acceptedConsentVersion });
+      navigate('/');
+    } catch (e) {
+      if (String(e?.code || '').endsWith('failed-precondition')) navigate('/consent');
+      else setErr(S.activateSkipFailed);
+    }
+    finally { setSkipping(false); }
   };
 
   if (done) return (
@@ -64,7 +86,7 @@ export default function Activate({ user, profile, route, navigate }) {
       <h1 style={{ fontSize: 20 }}>{S.activateTitle}</h1>
       <p>{S.activateBody}</p>
       {err && <Banner tone="danger">{err}</Banner>}
-      <Btn variant="ghost" onClick={openScan} disabled={loadingSheet} style={{ width: '100%', marginBottom: 14 }}>{S.scanButton}</Btn>
+      <Btn variant="ghost" onClick={openScan} disabled={loadingSheet || busy || skipping} style={{ width: '100%', marginBottom: 14 }}>{S.scanButton}</Btn>
       <Field label={S.activateCodeLabel}><Inp inputMode="text" autoCapitalize="characters" autoComplete="one-time-code" value={pretty(code)} onChange={(e) => setCode(normalize(e.target.value))} style={{ letterSpacing: '0.12em', fontSize: 20, textAlign: 'center' }} /></Field>
       <Field label={S.yourName} hint={S.yourNameHint}><Inp autoComplete="name" autoCapitalize="words" maxLength={120} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} /></Field>
       <Field label={S.activateRelationship} hint={relationship === ADVISER ? S.activateAdviserHint : undefined}>
@@ -73,8 +95,9 @@ export default function Activate({ user, profile, route, navigate }) {
           <option value={ADVISER}>{S.activateAdviserOption}</option>
         </Sel>
       </Field>
-      <Btn onClick={submit} disabled={busy || code.length !== 8 || guardianName.trim().length < 2} style={{ width: '100%' }}>{S.activateButton}</Btn>
+      <Btn onClick={submit} disabled={busy || skipping || code.length !== 8 || guardianName.trim().length < 2} style={{ width: '100%' }}>{S.activateButton}</Btn>
       <p style={{ textAlign: 'center' }}><a href="/request-access" onClick={(e) => { e.preventDefault(); navigate('/request-access'); }}>{S.activateNoSlip}</a></p>
+      {!profile && <Btn variant="ghost" onClick={skip} disabled={busy || skipping} style={{ width: '100%' }}>{skipping ? S.activateSkipping : S.activateSkip}</Btn>}
       {Sheet && <Sheet onCode={scanned} onClose={closeScan} />}
     </Card>
   );

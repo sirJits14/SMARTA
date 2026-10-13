@@ -60,9 +60,9 @@ export default function Home({ user, profile, navigate }) {
   return (
     <>
       {header}
-      {notif === 'off' && <Banner action={<Btn onClick={() => navigate('/settings')} style={{ padding: '6px 12px', minHeight: 36 }}>{S.notifBannerButton}</Btn>}>{S.notifBannerTitle}</Banner>}
-      {entries.length === 0 && <EmptyState title={S.homeNoLinks} hint={S.activateBody} />}
-      {entries.length === 0 && <Btn onClick={() => navigate('/activate')} style={{ width: '100%' }}>{S.activateTitle}</Btn>}
+      {entries.length > 0 && notif === 'off' && <Banner action={<Btn onClick={() => navigate('/settings')} style={{ padding: '6px 12px', minHeight: 36 }}>{S.notifBannerButton}</Btn>}>{S.notifBannerTitle}</Banner>}
+      {entries.length === 0 && <EmptyState title={S.homeNoLinks} hint={S.homeLinkHint} />}
+      {entries.length === 0 && <Btn onClick={() => navigate('/activate')} style={{ width: '100%' }}>{S.homeLinkLearners}</Btn>}
       {entries.length > 0 && (
         <ul className="learner-list" aria-label={S.homeLearnersLabel}>
           {orderLearners(entries).map((e) => <LearnerRow key={e.link.id} {...e} navigate={navigate} />)}

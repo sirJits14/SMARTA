@@ -150,16 +150,31 @@ export async function activateCode(ctx, data) {
   return { studentId, displayName: learner.displayName, sectionLabel: learner.sectionLabel };
 }
 
-// Guardian. activateCode only reconciles consentVersion when a NEW learner
-// is activated, so an already-linked guardian who never activates again
-// would never re-consent after settings/parent_portal.consentVersion is
-// raised (spec §7, "Re-shown when consentVersion changes"). This is the
-// path for that case. The live version is read fresh here -- a client-
-// submitted version is never trusted for this write.
-export async function acceptConsent(ctx) {
-  const { db, uid } = ctx;
+// Guardian. Also creates the account when first-time learner linking is
+// skipped. Read the live consent version here, never a client-supplied one.
+// A transaction preserves existing preferences if linking happens at the
+// same time as this write (for example, on another device).
+export async function acceptConsent(ctx, data = {}) {
+  const { db, uid, email, displayName } = ctx;
   const portal = (await db.doc('settings/parent_portal').get()).data() || {};
   const consentVersion = portal.consentVersion ?? 1;
-  await db.doc(`guardians/${uid}`).set({ consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion }, { merge: true });
+  // Skip must confirm the notice the parent actually saw. Older re-consent
+  // clients omit this field and continue to use the live server version.
+  if (data.acceptedConsentVersion !== undefined && data.acceptedConsentVersion !== consentVersion) {
+    throw new CallableError('failed-precondition', 'Please accept the current privacy notice.');
+  }
+  const ref = db.doc(`guardians/${uid}`);
+  await db.runTransaction(async (tx) => {
+    const profile = await tx.get(ref);
+    tx.set(ref, {
+      ...(!profile.exists ? {
+        email: email || '', displayName: displayName || '',
+        notificationsEnabled: true, audienceKeys: [], createdAt: FieldValue.serverTimestamp(),
+        // Start the existing dormancy clock even if this account never links.
+        lastActiveLinkAt: FieldValue.serverTimestamp(),
+      } : {}),
+      consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion,
+    }, { merge: true });
+  });
   return { consentVersion };
 }

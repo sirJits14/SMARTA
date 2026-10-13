@@ -43,9 +43,8 @@ const CONSENT_KEY = 'bnhs-parent-consent';
 export default function App() {
   const { route, navigate } = useRoute();
   const { user, profile } = useAuth();
-  // Only subscribed once a profile exists -- Consent.jsx reads this same
-  // doc itself for the pre-activation flow, so this is purely for the
-  // already-linked re-consent gate below.
+  // Consent.jsx reads this doc itself before the account profile exists.
+  // Profiles are created by linking a learner or choosing Skip for now.
   const portal = useDoc(profile ? 'settings/parent_portal' : null).data;
   // Verify.jsx confirms email verification client-side (user.reload() +
   // a forced getIdToken(true)) without a page reload -- a hard navigation
@@ -61,15 +60,15 @@ export default function App() {
   // is exactly the "identity changed" signal this resets on.
   useEffect(() => { setVerifiedOverride(false); }, [user?.uid]);
 
-  // Once a linked guardian is in, fetch the other screens while idle.
-  const linked = Boolean(profile);
+  // Once an account is admitted, fetch the other screens while idle.
+  const accountReady = Boolean(profile);
   useEffect(() => {
-    if (!linked) return;
+    if (!accountReady) return;
     const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200));
     const cancel = window.cancelIdleCallback || clearTimeout;
     const id = idle(() => APP_SCREENS.forEach((screen) => screen.preload().catch(() => {})));
     return () => cancel(id);
-  }, [linked]);
+  }, [accountReady]);
 
   useEffect(() => {
     if (!user) return;
@@ -86,7 +85,7 @@ export default function App() {
   if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate} gate><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Shell>;
   if (profile === undefined) return <Spinner label={S.loading} />;
 
-  // Re-consent gate: an already-linked guardian (profile exists) whose
+  // Re-consent gate: an admitted guardian (profile exists) whose
   // stored consentVersion has fallen behind the live
   // settings/parent_portal.consentVersion (staff raised it in Portal
   // Settings) is blocked here until they re-accept -- spec §7, "Re-shown
@@ -100,8 +99,9 @@ export default function App() {
     if (profile.consentVersion !== liveConsentVersion) return <Shell route={route} navigate={navigate} gate><Suspense fallback={<Spinner label={S.loading} />}><Consent user={user} profile={profile} route={route} navigate={navigate} onAccepted={() => { callable('acceptConsentFn')({}).catch(() => {}); }} /></Suspense></Shell>;
   }
 
-  // First-time flow: consent (stored locally until the first activation
-  // records it server-side) → activation. Deep links to /activate?c= survive.
+  // First-time flow: consent → learner linking, with an option to skip.
+  // Linking or skipping records consent in the server-side profile, so
+  // returning accounts enter the app. Deep links to /activate?c= survive.
   let consented = false;
   try { consented = Boolean(profile) || localStorage.getItem(CONSENT_KEY) !== null; } catch { consented = Boolean(profile); }
   const props = { user, profile, route, navigate };
@@ -111,7 +111,7 @@ export default function App() {
   else if (!profile && ['home', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'].includes(route.name)) { gate = true; screen = <Activate {...props} />; }
   else switch (route.name) {
     case 'home': screen = <Home {...props} />; break;
-    case 'consent': screen = <Consent {...props} onAccepted={() => navigate('/activate')} />; break;
+    case 'consent': screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate('/activate'); }} />; break;
     case 'activate': screen = <Activate {...props} />; break;
     case 'learner': screen = <History {...props} studentId={route.params.id} />; break;
     case 'inbox': screen = <Inbox {...props} />; break;

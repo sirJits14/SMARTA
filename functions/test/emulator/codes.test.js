@@ -180,6 +180,37 @@ describe('activateCode', () => {
 });
 
 describe('acceptConsent', () => {
+  it('requires the current notice to be accepted before a first-time parent can skip linking', async () => {
+    await db().doc('settings/parent_portal').set({ consentVersion: 2 }, { merge: true });
+    await expect(acceptConsent(guardian(), { acceptedConsentVersion: 1 })).rejects.toMatchObject({ code: 'failed-precondition' });
+    expect((await db().doc('guardians/gNew').get()).exists).toBe(false);
+  });
+  it('creates a usable account without linking a learner when onboarding is skipped', async () => {
+    await acceptConsent({ ...guardian(), email: 'parent@example.test', displayName: 'Ana Santos' }, { acceptedConsentVersion: 1 });
+    const profile = (await db().doc('guardians/gNew').get()).data();
+    expect(profile).toMatchObject({
+      email: 'parent@example.test', displayName: 'Ana Santos', consentVersion: 1,
+      notificationsEnabled: true, audienceKeys: [],
+    });
+    expect(profile.createdAt.toMillis()).toBeGreaterThan(0);
+    expect(profile.lastActiveLinkAt.toMillis()).toBe(profile.createdAt.toMillis());
+    expect((await db().collection('guardian_links').where('guardianUid', '==', 'gNew').get()).empty).toBe(true);
+  });
+  it('preserves an existing account and its audience when consent is accepted again', async () => {
+    await db().doc('guardians/gA').set({ displayName: 'Saved Name', notificationsEnabled: false, audienceKeys: ['all', 'g7'], createdAt: ts('2026-01-01T00:00:00Z') }, { merge: true });
+    await acceptConsent({ ...guardian('gA'), displayName: 'Auth Name' });
+    const profile = (await db().doc('guardians/gA').get()).data();
+    expect(profile).toMatchObject({ displayName: 'Saved Name', notificationsEnabled: false, audienceKeys: ['all', 'g7'] });
+    expect(profile.createdAt.toMillis()).toBe(Date.parse('2026-01-01T00:00:00Z'));
+  });
+  it('can link a learner later after skipping onboarding', async () => {
+    await acceptConsent({ ...guardian(), displayName: 'Ana Santos' });
+    const createdAt = (await db().doc('guardians/gNew').get()).data().createdAt;
+    const code = (await issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: '2026-2027' })).slips.find((s) => s.studentId === 'S1').code;
+    await activateCode(guardian(), { code, relationship: 'Mother', consentVersion: 1, guardianName: 'Ana Santos' });
+    expect((await db().doc('guardian_links/gNew_S1').get()).data().status).toBe('active');
+    expect((await db().doc('guardians/gNew').get()).data().createdAt.toMillis()).toBe(createdAt.toMillis());
+  });
   // seedSchool() links gA to S1 already (an "already-linked" guardian) with
   // no reconsent flow having ever touched their profile.
   it('updates the caller to the CURRENT live consentVersion, ignoring anything the client sent', async () => {
