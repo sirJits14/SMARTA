@@ -1,7 +1,8 @@
 import { useAsyncAction } from '../../hooks/useAsyncAction.js';
+import { usePrintReadiness } from '../../hooks/usePrintReadiness.js';
 import { ActionFeedback } from '../../components/ui.jsx';
 import { ResourceState } from '../../components/ui.jsx';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { collection, query, where, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useCollectionResource, useQueryResource, useDoc } from '../../hooks/useCollection.js';
@@ -10,10 +11,13 @@ import { depedSort, fullName } from '../../lib/roster.js';
 import { localDate } from '../../lib/dates.js';
 import { learnerMatches } from '../../lib/search.js';
 import { currentEnrollmentByStudent } from '../../lib/enrollmentChange.js';
+import { slotsFreeText } from '../../lib/slipIssue.js';
 import { GRADES, UNASSIGNED } from '../../lib/constants.js';
 import { T, S } from '../../styles.js';
 import { Btn, Inp, Sel, Field, Card, EmptyState } from '../../components/ui.jsx';
 import GradePills from '../../components/GradePills.jsx';
+import ActivationSlipsPrintable from '../../components/ActivationSlipsPrintable.jsx';
+import SlipPrintControls, { useSlipPaper, PORTAL_URL } from '../../components/SlipPrintControls.jsx';
 import { Table, when } from './RequestsTab.jsx';
 
 // The guardian's own profile wins (they can rename themselves in the portal);
@@ -61,36 +65,65 @@ export default function LinksTab({ schoolYear }) {
   const links = linksResource.data;
   const [reason, setReason] = useState('');
   const [manual, setManual] = useState({ kind: 'in', date: localDate(), time: '', reason: '' });
+  // A reissued slip's raw code lives only here, for the learner it was
+  // issued for; picking another learner drops it.
+  const [reissued, setReissued] = useState(null);
+  const [reissueErr, setReissueErr] = useState('');
+  const [paper, setPaper] = useSlipPaper();
+  const printRoot = useRef(null);
+  const printReady = usePrintReadiness(printRoot, reissued, reissued ? 1 : 0);
+
+  const pickLearner = (id) => { setStudentId(id); setQ(''); setReissued(null); setReissueErr(''); };
+  // Errors are caught here (not by action.run) so the server's own message,
+  // e.g. "All guardian and adviser slots are linked", reaches staff.
+  const reissue = async () => {
+    if (!window.confirm(`Issue a new slip for ${fullName(student)}? Their current slip stops working. Guardians already linked keep access.`)) return;
+    setReissued(null); setReissueErr('');
+    try { setReissued(await call.reissueActivationCode({ studentId: student.id, schoolYear, reason })); }
+    catch (e) { setReissueErr(e.message || 'Could not reissue the slip.'); }
+  };
 
   const resources = [studentsResource, enrollmentsResource, sectionsResource];
   if (resources.some(r => r.loading || r.error)) return <ResourceState resources={resources}/>;
 
   return (
     <>
-      <ActionFeedback action={action}/>
-      <Card style={{ padding: 20, marginBottom: 16 }}>
+      <div className="slips-print-hide"><ActionFeedback action={action}/></div>
+      <Card className="slips-print-hide" style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ marginBottom: 14 }}><GradePills options={gradeOptions} value={gradeFilter} onChange={setGradeFilter} label="Learner grade" /></div>
         <Field label="Find a learner (name or LRN)"><Inp type="search" value={q} onChange={(e) => setQ(e.target.value)} /></Field>
         {matches.map((s) => {
           const enrollment = enrollmentByStudent.get(s.id);
           const section = enrollment ? sectionById.get(enrollment.sectionId) : null;
           const placement = enrollment ? `Grade ${enrollment.gradeLevel} ${section?.name || 'Section unavailable'}` : 'Unassigned';
-          return <Btn key={s.id} variant="ghost" onClick={() => { setStudentId(s.id); setQ(''); }} style={{ marginRight: 6, marginBottom: 6, maxWidth: '100%', whiteSpace: 'normal', textAlign: 'left' }}>{fullName(s)} · {s.lrn} · {placement}</Btn>;
+          return <Btn key={s.id} variant="ghost" onClick={() => pickLearner(s.id)} style={{ marginRight: 6, marginBottom: 6, maxWidth: '100%', whiteSpace: 'normal', textAlign: 'left' }}>{fullName(s)} · {s.lrn} · {placement}</Btn>;
         })}
         {allMatches.length > 20 && <div aria-live="polite" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted }}>Showing 20 of {allMatches.length} — keep typing to narrow down.</div>}
       </Card>
-      {!student && <EmptyState title="Choose a learner" hint="See who can view their gate scans, revoke access, restrict self-service activation, or add a manual scan." />}
+      {!student && <div className="slips-print-hide"><EmptyState title="Choose a learner" hint="See who can view their gate scans, reissue or revoke their slip, restrict self-service activation, or add a manual scan." /></div>}
       {student && (
         <>
-          <Card style={{ padding: 20, marginBottom: 16 }}>
+          <Card className="slips-print-hide" style={{ padding: 20, marginBottom: 16 }}>
             <h2 style={S.h2}>{fullName(student)} · {student.lrn} {student.activationRestricted && <span style={{ color: T.absent }}>· RESTRICTED</span>}</h2>
             <Field label="Reason (recorded in the audit log)"><Inp value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', () => call.revokeCode({ studentId: student.id, schoolYear, reason }))}>Revoke slip</Btn>
-              <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', () => call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }))}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted} onClick={() => action.run('reissue', reissue)}>Reissue slip</Btn>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', async () => { await call.revokeCode({ studentId: student.id, schoolYear, reason }); setReissued(null); })}>Revoke slip</Btn>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', async () => { await call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }); setReissued(null); })}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
             </div>
+            {reissueErr && <p role="alert" className="sims-feedback" style={{ marginTop: 10 }}>{reissueErr}</p>}
           </Card>
-          <ResourceState resources={[linksResource]}><Card style={{ marginBottom: 16 }}>
+          {reissued && (
+            <>
+              <Card className="slips-print-hide" style={{ padding: 20, marginBottom: 16 }}>
+                <h2 style={S.h2}>Reissued slip</h2>
+                <p role="status" style={{ fontFamily: T.body, fontSize: 13, margin: 0 }}>{slotsFreeText(reissued.slotsFree)}</p>
+                <SlipPrintControls paper={paper} onPaperChange={setPaper} printReady={printReady} />
+              </Card>
+              <div ref={printRoot} style={{ marginBottom: 16 }}><ActivationSlipsPrintable slips={[reissued.slip]} portalUrl={PORTAL_URL} paper={paper} /></div>
+            </>
+          )}
+          <ResourceState resources={[linksResource]}><Card className="slips-print-hide" style={{ marginBottom: 16 }}>
             {links.length === 0 ? <EmptyState title="No guardians linked" /> : (
               <Table head={['Guardian', 'Relationship', 'Status', 'Activated', 'Via', 'Revoked', '']} rows={links.map((l) => (
                 <tr key={l.id}>
@@ -102,7 +135,7 @@ export default function LinksTab({ schoolYear }) {
               ))} />
             )}
           </Card></ResourceState>
-          <Card style={{ padding: 20 }}>
+          <Card className="slips-print-hide" style={{ padding: 20 }}>
             <h2 style={S.h2}>Add a manual gate scan (e.g. kiosk was down)</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, auto auto auto 1fr auto)', gap: 12, alignItems: 'end' }}>
               <Field label="Kind"><Sel value={manual.kind} onChange={(e) => setManual({ ...manual, kind: e.target.value })}><option value="in">Entered</option><option value="out">Left</option></Sel></Field>
