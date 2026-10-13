@@ -6,7 +6,7 @@ import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
-import { isOpenStatus } from '../lib/codeSlots.js';
+import { isOpenStatus, slotsFromLinks } from '../lib/codeSlots.js';
 import { refreshGuardianAudience } from './guardianAudience.js';
 
 // A non-attendance inbox item. Never pushed (system messages are read when
@@ -51,16 +51,28 @@ export async function resolveAccessRequest(ctx, data) {
     const [studentSnap, sectionSnap] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`sections/${enrollment.sectionId}`).get()]);
     if (!studentSnap.exists) throw new CallableError('not-found', 'Learner not found');
     const learner = learnerIdentity(studentSnap.data(), sectionSnap.data(), schoolYear);
-    // Seeded before the link goes active so the guardian's Home card already
-    // has the learner's name (see activateCode).
-    await db.doc(`learners/${studentId}`).set(learner, { merge: true });
-    await db.doc(`guardian_links/${request.guardianUid}_${studentId}`).set({
-      guardianUid: request.guardianUid, guardianName: request.guardianName || '', guardianEmail: request.guardianEmail || '', learnerName: learner.displayName,
-      studentId, schoolYear, relationship: request.relationship, slot: 'guardian', status: 'active',
-      activatedAt: FieldValue.serverTimestamp(), activatedVia: 'staff',
-      revokedAt: FieldValue.delete(), revokedBy: FieldValue.delete(), revokedReason: FieldValue.delete(),
-      expiredAt: FieldValue.delete(), expiredReason: FieldValue.delete(),
-    }, { merge: true });
+    const linkRef = db.doc(`guardian_links/${request.guardianUid}_${studentId}`);
+    const activeLinksQuery = db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active');
+    await db.runTransaction(async (tx) => {
+      // Staff approvals obey the same 2-guardian cap as slips (spec
+      // 2026-10-13 learner link cap). The requester's own link is not counted, so
+      // re-approving an already-linked guardian still works.
+      const others = (await tx.get(activeLinksQuery)).docs.filter((d) => d.id !== linkRef.id).map((d) => d.data());
+      const used = slotsFromLinks(others, schoolYear);
+      if (used.guardianRedemptions >= used.maxGuardians) {
+        throw new CallableError('failed-precondition', `This learner already has ${used.maxGuardians} linked guardians for ${schoolYear}. Revoke one on the Learner access tab first.`);
+      }
+      // Seeded with the link so the guardian's Home card already has the
+      // learner's name (see activateCode).
+      tx.set(db.doc(`learners/${studentId}`), learner, { merge: true });
+      tx.set(linkRef, {
+        guardianUid: request.guardianUid, guardianName: request.guardianName || '', guardianEmail: request.guardianEmail || '', learnerName: learner.displayName,
+        studentId, schoolYear, relationship: request.relationship, slot: 'guardian', status: 'active',
+        activatedAt: FieldValue.serverTimestamp(), activatedVia: 'staff',
+        revokedAt: FieldValue.delete(), revokedBy: FieldValue.delete(), revokedReason: FieldValue.delete(),
+        expiredAt: FieldValue.delete(), expiredReason: FieldValue.delete(),
+      }, { merge: true });
+    });
     const profileRef = db.doc(`guardians/${request.guardianUid}`);
     if (!(await profileRef.get()).exists) {
       await profileRef.set({ email: request.guardianEmail, displayName: request.guardianName || '', consentAcceptedAt: null, consentVersion: 0, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });

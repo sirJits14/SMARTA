@@ -9,8 +9,12 @@ const guardian = (uid = 'gNew') => ({ db: db(), now: () => NOW, uid, email: `${u
 const req = { studentLrn: '100000000001', learnerNameTyped: 'Ana Cruz', relationship: 'Guardian', contactNumber: '09171234567', message: 'Lost slip' };
 
 beforeEach(async () => { await clearAll(); await clearAllAuthUsers(); await seedSchool(); await db().doc('users/registrar@bnhs.edu').set({ role: 'registrar' }); });
+// seedSchool() links two guardians (gA, gB) to S1, which fills its guardian
+// slots; approval tests free one so a new guardian can be approved.
+const freeGuardianSlot = () => db().doc('guardian_links/gB_S1').delete();
 
 describe('access requests', () => {
+  beforeEach(freeGuardianSlot);
   it('creates an open request; max 3 open per guardian', async () => {
     const { id } = await requestAccess(guardian(), req);
     expect((await db().doc(`access_requests/${id}`).get()).data()).toMatchObject({ guardianUid: 'gNew', guardianEmail: 'gNew@gmail.com', studentLrn: '100000000001', status: 'open' });
@@ -40,11 +44,16 @@ describe('access requests', () => {
     expect((await db().doc('guardians/gNew').get()).data().audienceKeys).toEqual(['all', 'g7']);
   });
   it('still approves when the audience refresh fails (the trigger and nightly job are the backstops)', async () => {
-    // refreshGuardianAudience is the only approve-path code that queries guardian_links.
+    // refreshGuardianAudience is the only approve-path code that queries
+    // guardian_links by guardian (the cap check queries by learner).
     const real = db();
     const flaky = new Proxy(real, {
       get(t, k) {
-        if (k === 'collection') return (name) => { if (name === 'guardian_links') throw new Error('refresh unavailable'); return t.collection(name); };
+        if (k === 'collection') return (name) => {
+          const c = t.collection(name);
+          if (name !== 'guardian_links') return c;
+          return { where: (field, ...rest) => { if (field === 'guardianUid') throw new Error('refresh unavailable'); return c.where(field, ...rest); } };
+        };
         const v = t[k];
         return typeof v === 'function' ? v.bind(t) : v;
       },
@@ -59,6 +68,7 @@ describe('access requests', () => {
 });
 
 describe('resolveAccessRequest over an expired adviser link', () => {
+  beforeEach(freeGuardianSlot);
   it('reactivates the link as a guardian link and clears the expiry fields', async () => {
     await db().doc('guardian_links/gNew_S1').set({
       guardianUid: 'gNew', studentId: 'S1', status: 'expired', slot: 'adviser', relationship: 'Adviser',
@@ -70,6 +80,33 @@ describe('resolveAccessRequest over an expired adviser link', () => {
     expect(link).toMatchObject({ status: 'active', slot: 'guardian', relationship: 'Guardian' });
     expect(link.expiredReason).toBeUndefined();
     expect(link.expiredAt).toBeUndefined();
+  });
+});
+
+describe('resolveAccessRequest guardian cap', () => {
+  const approve = async (uid) => { const { id } = await requestAccess(guardian(uid), req); await resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' }); return id; };
+
+  it('refuses a third guardian and writes nothing', async () => {
+    const { id } = await requestAccess(guardian(), req);
+    await expect(resolveAccessRequest(staff(), { id, approve: true, studentId: 'S1', note: 'ID checked' }))
+      .rejects.toMatchObject({ code: 'failed-precondition', message: 'This learner already has 2 linked guardians for 2026-2027. Revoke one on the Learner access tab first.' });
+    expect((await db().doc(`access_requests/${id}`).get()).data().status).toBe('open');
+    expect((await db().doc('guardian_links/gNew_S1').get()).exists).toBe(false);
+    expect((await db().collection('guardians/gNew/inbox').get()).empty).toBe(true);
+    expect((await db().collection('audit_log').where('action', '==', 'access.approved').get()).empty).toBe(true);
+  });
+  it('re-approving an already-linked guardian is not counted against the cap', async () => {
+    await approve('gA');
+    expect((await db().doc('guardian_links/gA_S1').get()).data()).toMatchObject({ status: 'active', activatedVia: 'staff' });
+  });
+  it('counts code-linked guardians, ignores the adviser and revoked, expired or other-year links', async () => {
+    await db().doc('guardian_links/gB_S1').set({ status: 'revoked' }, { merge: true });
+    await db().doc('guardian_links/tAdv_S1').set({ guardianUid: 'tAdv', studentId: 'S1', status: 'active', schoolYear: '2026-2027', relationship: 'Adviser', slot: 'adviser' });
+    await db().doc('guardian_links/gOld_S1').set({ guardianUid: 'gOld', studentId: 'S1', status: 'active', schoolYear: '2025-2026', relationship: 'Mother', slot: 'guardian' });
+    await db().doc('guardian_links/gExp_S1').set({ guardianUid: 'gExp', studentId: 'S1', status: 'expired', schoolYear: '2026-2027', relationship: 'Father', slot: 'guardian' });
+    await approve('g1');
+    await expect(approve('g2')).rejects.toMatchObject({ code: 'failed-precondition' });
+    expect((await db().doc('guardian_links/g2_S1').get()).exists).toBe(false);
   });
 });
 
