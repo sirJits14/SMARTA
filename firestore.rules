@@ -332,6 +332,8 @@ service cloud.firestore {
     // ---------- staff-only records written by Functions ----------
     match /activation_codes/{id} { allow read: if isAdmin(); allow write: if false; }
     match /audit_log/{id}        { allow read: if isAdmin(); allow write: if false; }
+    // Written by endSchoolYear; an ended year's slips can't be issued or redeemed.
+    match /school_years/{id}     { allow read: if isAdmin(); allow write: if false; }
     match /rate_limits/{id}      { allow read, write: if false; }
 
     match /access_requests/{id} {
