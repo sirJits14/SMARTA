@@ -43,7 +43,7 @@ export default function ScanLogTab({ schoolYear }) {
       (gradeFilter === UNASSIGNED ? !learner || !enrollment : Number(enrollment?.gradeLevel) === Number(gradeFilter));
     return gradeHit && learnerMatches(searchQuery, learner);
   }), [byId, enrollmentByStudent, searchQuery, gradeFilter, sorted]);
-  const filterActive = !!filterQuery.trim() || gradeFilter !== '';
+  const filterActive = !!searchQuery.trim() || gradeFilter !== '';
   const resources = [kiosksResource, studentsResource, enrollmentsResource];
   if (resources.some(r => r.loading || r.error)) return <ResourceState resources={resources}/>;
 

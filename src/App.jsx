@@ -2,7 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { onIdTokenChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
-import { endSession, isEndingSession, takeStoredSignOutNotice } from './session.js';
+import { endSession, isEndingSession, reloadAfterOutsideSignOut, takeStoredSignOutNotice } from './session.js';
 import { shouldReloadAfterSignOut } from './lib/session.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
@@ -104,7 +104,7 @@ export default function App() {
     const unsubscribe = onIdTokenChanged(auth, async user => {
       const current = ++generation;
       if (user) hadUser = true;
-      else if (shouldReloadAfterSignOut({ hadUser, user, ending: isEndingSession() })) { window.location.reload(); return; }
+      else if (shouldReloadAfterSignOut({ hadUser, user, ending: isEndingSession() })) { reloadAfterOutsideSignOut(); return; }
       setAuthUser(user);
       if (!user) { setAuthTime(undefined); return; }
       try {

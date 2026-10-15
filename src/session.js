@@ -22,4 +22,13 @@ export const endSession = async (notice = '') => {
   if (!reloaded) ending = false;
 };
 
+// A tab signed out by another tab or by the auth SDK (revoked or expired token)
+// never ran endSession. Clear what this device cached, ignoring failures because
+// another tab may be clearing at the same time, then reload to the login screen.
+export const reloadAfterOutsideSignOut = async () => {
+  try { await terminate(db); } catch { /* already terminated by another tab */ }
+  try { await clearIndexedDbPersistence(db); } catch { /* another tab may be clearing it */ }
+  window.location.reload();
+};
+
 export const takeStoredSignOutNotice = () => takeSignOutNotice(storage);

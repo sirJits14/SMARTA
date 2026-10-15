@@ -136,6 +136,20 @@ describe('subscription registry', () => {
     expect(registry.peek('k')).not.toBeNull();
   });
 
+  it('restarts a key with its own start, never another key\'s', () => {
+    const registry = createSubscriptionRegistry();
+    const a = source(); const b = source();
+    registry.acquire('k1', a.start);
+    registry.acquire('k2', b.start);
+    a.publish({ data: [], loading: false, error: new Error('offline') });
+    registry.restart('k1');
+    expect(a.starts).toBe(2);
+    a.publish({ data: [], loading: false, error: new Error('offline again') });
+    registry.acquire('k1', b.start); // acquiring an errored key restarts it with its own start
+    expect(a.starts).toBe(3);
+    expect(b.starts).toBe(1);
+  });
+
   it('ignores a restart of an unknown key', () => {
     const registry = createSubscriptionRegistry();
     expect(() => registry.restart('missing')).not.toThrow();

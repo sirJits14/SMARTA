@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { startResourceSubscription } from '../lib/resourceSubscription.js';
@@ -19,15 +19,14 @@ function useResource(subscribe, deps, emptyValue) {
 }
 // The key must name everything the listener depends on: same key, same rows.
 function useSharedResource(key, subscribe, emptyValue) {
-  const subscribeRef = useRef(subscribe);
-  subscribeRef.current = subscribe;
+  // The key names every input of subscribe, so the subscribe captured when
+  // this key was first listened to stays correct for that key's restarts.
   const listen = useCallback(onChange => {
-    const handle = shared.acquire(key, publish =>
-      startResourceSubscription((next, fail) => subscribeRef.current(next, fail), publish, emptyValue));
+    const handle = shared.acquire(key, publish => startResourceSubscription(subscribe, publish, emptyValue));
     const unlisten = handle.listen(onChange);
     onChange(); // the listener may have published between render and this subscribe
     return () => { unlisten(); handle.release(); };
-  }, [key, emptyValue]);
+  }, [key, emptyValue]); // eslint-disable-line react-hooks/exhaustive-deps
   const state = useSyncExternalStore(listen, () => shared.peek(key));
   const retry = useCallback(() => shared.restart(key), [key]);
   return { ...(state ?? { data: emptyValue, loading: true, error: null }), retry };
