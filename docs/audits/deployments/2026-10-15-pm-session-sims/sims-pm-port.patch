@@ -1,0 +1,462 @@
+diff --git a/shared/scheduleSessions.js b/shared/scheduleSessions.js
+new file mode 100644
+index 0000000..4920d6f
+--- /dev/null
++++ b/shared/scheduleSessions.js
+@@ -0,0 +1,33 @@
++// Split-day schedules (e.g. Grade 12: 08:00–12:00 and 13:00–16:00), shared
++// by the SIMS, parent/ and functions/. Times are zero-padded "HH:MM", the
++// format schedules and kiosk scans already use, so string order is time order.
++const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
++const valid = (t) => typeof t === 'string' && HHMM.test(t);
++const toMinutes = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
++const fromMinutes = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
++
++export const hasPmSession = (schedule) =>
++  valid(schedule?.timeOut) && valid(schedule?.pmTimeIn) && valid(schedule?.pmTimeOut);
++
++// Halfway through the lunch break: a 12:05 tap-out is still the morning
++// departure and a 12:50 tap-in is already the afternoon arrival.
++export function sessionSplit(schedule) {
++  if (!hasPmSession(schedule)) return null;
++  return fromMinutes(Math.floor((toMinutes(schedule.timeOut) + toMinutes(schedule.pmTimeIn)) / 2));
++}
++
++export function sessionOf(time, schedule) {
++  const split = sessionSplit(schedule);
++  return split && time >= split ? 'pm' : 'am';
++}
++
++// Informational notes for one learner's day, from all of their tap-in times.
++// A missing afternoon tap-in is not a note: some learners stay on campus at lunch.
++export function sessionNotes({ inTimes, schedule }) {
++  if (!hasPmSession(schedule) || !inTimes?.length) return [];
++  const pm = inTimes.filter((t) => sessionOf(t, schedule) === 'pm').sort();
++  const notes = [];
++  if (pm.length === inTimes.length) notes.push('absentAm');
++  if (pm.length && pm[0] > schedule.pmTimeIn) notes.push('latePm');
++  return notes;
++}
+diff --git a/shared/scheduleSessions.test.js b/shared/scheduleSessions.test.js
+new file mode 100644
+index 0000000..a1be1f9
+--- /dev/null
++++ b/shared/scheduleSessions.test.js
+@@ -0,0 +1,71 @@
++import { describe, it, expect } from 'vitest';
++import { hasPmSession, sessionSplit, sessionOf, sessionNotes } from './scheduleSessions.js';
++
++const split = { timeIn: '08:00', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:00' };
++const single = { timeIn: '07:30', timeOut: '17:00' };
++
++describe('hasPmSession', () => {
++  it('needs AM departure and both PM times as valid HH:MM', () => {
++    expect(hasPmSession(split)).toBe(true);
++    expect(hasPmSession(single)).toBe(false);
++    expect(hasPmSession({ ...split, pmTimeOut: undefined })).toBe(false);
++    expect(hasPmSession({ ...split, pmTimeIn: '' })).toBe(false);
++    expect(hasPmSession({ ...split, pmTimeIn: '1:00' })).toBe(false);
++    expect(hasPmSession(undefined)).toBe(false);
++    expect(hasPmSession(null)).toBe(false);
++  });
++});
++
++describe('sessionSplit', () => {
++  it('is the midpoint of the lunch break, rounded down to the minute', () => {
++    expect(sessionSplit(split)).toBe('12:30');
++    expect(sessionSplit({ ...split, pmTimeIn: '12:45' })).toBe('12:22');
++    expect(sessionSplit({ ...split, timeOut: '11:30', pmTimeIn: '13:00' })).toBe('12:15');
++  });
++  it('is the shared time when there is no break', () => {
++    expect(sessionSplit({ ...split, pmTimeIn: '12:00' })).toBe('12:00');
++  });
++  it('is null without a PM session', () => {
++    expect(sessionSplit(single)).toBeNull();
++    expect(sessionSplit(undefined)).toBeNull();
++  });
++});
++
++describe('sessionOf', () => {
++  it('puts taps at or after the split in the afternoon', () => {
++    expect(sessionOf('07:55', split)).toBe('am');
++    expect(sessionOf('12:05', split)).toBe('am');
++    expect(sessionOf('12:29', split)).toBe('am');
++    expect(sessionOf('12:30', split)).toBe('pm');
++    expect(sessionOf('16:02', split)).toBe('pm');
++  });
++  it('is always am for a single-session or missing schedule', () => {
++    expect(sessionOf('15:00', single)).toBe('am');
++    expect(sessionOf('15:00', undefined)).toBe('am');
++  });
++});
++
++describe('sessionNotes', () => {
++  it('is empty for an on-time split day', () => {
++    expect(sessionNotes({ inTimes: ['07:55', '12:55'], schedule: split })).toEqual([]);
++  });
++  it('flags a late afternoon return without touching the morning', () => {
++    expect(sessionNotes({ inTimes: ['07:55', '13:15'], schedule: split })).toEqual(['latePm']);
++  });
++  it('flags a learner whose first tap-in is in the afternoon', () => {
++    expect(sessionNotes({ inTimes: ['12:50'], schedule: split })).toEqual(['absentAm']);
++    expect(sessionNotes({ inTimes: ['13:00'], schedule: split })).toEqual(['absentAm']);
++  });
++  it('can carry both notes, absentAm first', () => {
++    expect(sessionNotes({ inTimes: ['13:20'], schedule: split })).toEqual(['absentAm', 'latePm']);
++  });
++  it('judges Late PM on the earliest afternoon tap-in, in any input order', () => {
++    expect(sessionNotes({ inTimes: ['13:30', '07:50', '12:58'], schedule: split })).toEqual([]);
++  });
++  it('is empty with no tap-ins or no PM session', () => {
++    expect(sessionNotes({ inTimes: [], schedule: split })).toEqual([]);
++    expect(sessionNotes({ inTimes: undefined, schedule: split })).toEqual([]);
++    expect(sessionNotes({ inTimes: ['13:20'], schedule: single })).toEqual([]);
++    expect(sessionNotes({ inTimes: ['13:20'], schedule: undefined })).toEqual([]);
++  });
++});
+diff --git a/src/data/schedules.js b/src/data/schedules.js
+index 73fbefc..1a55a78 100644
+--- a/src/data/schedules.js
++++ b/src/data/schedules.js
+@@ -1,9 +1,12 @@
+-import { collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
++import { collection, addDoc, doc, setDoc, deleteDoc, deleteField } from 'firebase/firestore';
+ import { db } from '../firebase.js';
+ 
+-const shape = (f) => ({
++// With the afternoon session off, an edit removes any saved PM times.
++const shape = (f, { clearPm }) => ({
+   name: f.name.trim(), timeIn: f.timeIn, timeOut: f.timeOut,
++  ...(f.pm ? { pmTimeIn: f.pmTimeIn, pmTimeOut: f.pmTimeOut }
++    : clearPm ? { pmTimeIn: deleteField(), pmTimeOut: deleteField() } : {}),
+ });
+-export const createSchedule = (f) => addDoc(collection(db, 'schedules'), shape(f));
+-export const updateSchedule = (id, f) => setDoc(doc(db, 'schedules', id), shape(f), { merge: true });
++export const createSchedule = (f) => addDoc(collection(db, 'schedules'), shape(f, { clearPm: false }));
++export const updateSchedule = (id, f) => setDoc(doc(db, 'schedules', id), shape(f, { clearPm: true }), { merge: true });
+ export const deleteSchedule = (id) => deleteDoc(doc(db, 'schedules', id));
+diff --git a/src/lib/attendance.js b/src/lib/attendance.js
+index 9421e07..1b604cc 100644
+--- a/src/lib/attendance.js
++++ b/src/lib/attendance.js
+@@ -29,3 +29,30 @@ export function formatScanTime(hhmm) {
+   const ap = h >= 12 ? 'PM' : 'AM';
+   return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ap}`;
+ }
++
++// Split-day schedules: the backend stores afternoon taps and informational
++// notes beside timeIn/timeOut. Notes never change the P/L/A mark.
++const NOTE_LABELS = [['absentAm', 'Absent AM'], ['latePm', 'Late PM']];
++const PM_FIELDS = ['pmTimeIn', 'pmTimeOut', 'absentAm', 'latePm'];
++
++export function pmDetails(doc, studentId) {
++  return {
++    pmTimeIn: doc?.pmTimeIn?.[studentId],
++    pmTimeOut: doc?.pmTimeOut?.[studentId],
++    notes: NOTE_LABELS.filter(([key]) => doc?.[key]?.[studentId] === true).map(([, label]) => label),
++  };
++}
++
++export const hasPmData = (doc) => PM_FIELDS.some((k) => doc?.[k] && Object.keys(doc[k]).length > 0);
++
++// Hover text for one learner's day on the monthly summary grid.
++export function scanTitle(doc, studentId) {
++  const timeIn = doc?.timeIn?.[studentId];
++  const timeOut = doc?.timeOut?.[studentId];
++  const pm = pmDetails(doc, studentId);
++  const parts = [];
++  if (timeIn || timeOut) parts.push(`Time in: ${formatScanTime(timeIn)}  ·  Time out: ${formatScanTime(timeOut)}`);
++  if (pm.pmTimeIn || pm.pmTimeOut) parts.push(`PM in: ${formatScanTime(pm.pmTimeIn)}  ·  PM out: ${formatScanTime(pm.pmTimeOut)}`);
++  parts.push(...pm.notes);
++  return parts.length ? parts.join('  ·  ') : undefined;
++}
+diff --git a/src/lib/attendance.test.js b/src/lib/attendance.test.js
+index 016694d..25f2228 100644
+--- a/src/lib/attendance.test.js
++++ b/src/lib/attendance.test.js
+@@ -1,5 +1,5 @@
+ import { describe, it, expect } from 'vitest';
+-import { markFor, summarizeMonth, formatScanTime } from './attendance.js';
++import { markFor, summarizeMonth, formatScanTime, pmDetails, hasPmData, scanTitle } from './attendance.js';
+ 
+ const docsByDate = {
+   '2026-07-01': { marks: { s1:'A', s2:'L' } },
+@@ -37,3 +37,42 @@ describe('formatScanTime', () => {
+     expect(formatScanTime('')).toBe('—');
+   });
+ });
++
++describe('pmDetails', () => {
++  const doc = { pmTimeIn: { s1: '13:15' }, pmTimeOut: { s1: '16:02' }, latePm: { s1: true }, absentAm: { s2: true } };
++  it('reads one learner\'s afternoon taps and note labels', () => {
++    expect(pmDetails(doc, 's1')).toEqual({ pmTimeIn: '13:15', pmTimeOut: '16:02', notes: ['Late PM'] });
++    expect(pmDetails(doc, 's2')).toEqual({ pmTimeIn: undefined, pmTimeOut: undefined, notes: ['Absent AM'] });
++  });
++  it('orders Absent AM before Late PM', () => {
++    expect(pmDetails({ latePm: { s1: true }, absentAm: { s1: true } }, 's1').notes).toEqual(['Absent AM', 'Late PM']);
++  });
++  it('is empty for a missing record', () => {
++    expect(pmDetails(null, 's1')).toEqual({ pmTimeIn: undefined, pmTimeOut: undefined, notes: [] });
++  });
++});
++
++describe('hasPmData', () => {
++  it('is true only when some learner has afternoon data', () => {
++    expect(hasPmData({ pmTimeIn: { s1: '13:00' } })).toBe(true);
++    expect(hasPmData({ absentAm: { s1: true } })).toBe(true);
++    expect(hasPmData({ timeIn: { s1: '07:00' }, pmTimeIn: {} })).toBe(false);
++    expect(hasPmData(null)).toBe(false);
++  });
++});
++
++describe('scanTitle', () => {
++  it('keeps the single-session wording', () => {
++    expect(scanTitle({ timeIn: { s1: '07:12' } }, 's1')).toBe('Time in: 07:12 AM  ·  Time out: —');
++  });
++  it('adds afternoon taps and notes', () => {
++    expect(scanTitle({ timeIn: { s1: '07:55' }, timeOut: { s1: '12:05' }, pmTimeIn: { s1: '13:15' }, latePm: { s1: true } }, 's1'))
++      .toBe('Time in: 07:55 AM  ·  Time out: 12:05 PM  ·  PM in: 01:15 PM  ·  PM out: —  ·  Late PM');
++    expect(scanTitle({ pmTimeIn: { s1: '12:50' }, absentAm: { s1: true } }, 's1'))
++      .toBe('PM in: 12:50 PM  ·  PM out: —  ·  Absent AM');
++  });
++  it('is undefined with nothing recorded', () => {
++    expect(scanTitle({}, 's1')).toBeUndefined();
++    expect(scanTitle(undefined, 's1')).toBeUndefined();
++  });
++});
+diff --git a/src/lib/schedules.js b/src/lib/schedules.js
+new file mode 100644
+index 0000000..784f238
+--- /dev/null
++++ b/src/lib/schedules.js
+@@ -0,0 +1,12 @@
++// Schedule form rules. With the afternoon session on, times must run
++// AM arrival < AM departure <= PM arrival < PM departure ("HH:MM" strings).
++export function validateSchedule(f) {
++  if (!f.name?.trim()) return 'Schedule name is required.';
++  if (!f.timeIn || !f.timeOut) return f.pm ? 'AM arrival and AM departure are required.' : 'Time in and time out are required.';
++  if (f.timeOut <= f.timeIn) return f.pm ? 'AM departure must be later than AM arrival.' : 'Time out must be later than time in.';
++  if (!f.pm) return '';
++  if (!f.pmTimeIn || !f.pmTimeOut) return 'PM arrival and PM departure are required.';
++  if (f.pmTimeIn < f.timeOut) return 'PM arrival cannot be earlier than AM departure.';
++  if (f.pmTimeOut <= f.pmTimeIn) return 'PM departure must be later than PM arrival.';
++  return '';
++}
+diff --git a/src/lib/schedules.test.js b/src/lib/schedules.test.js
+new file mode 100644
+index 0000000..8d4e3bd
+--- /dev/null
++++ b/src/lib/schedules.test.js
+@@ -0,0 +1,35 @@
++import { describe, it, expect } from 'vitest';
++import { validateSchedule } from './schedules.js';
++
++const single = { name: 'Morning Shift', timeIn: '07:30', timeOut: '17:00', pm: false };
++const split = { name: 'Grade 12 Split', timeIn: '08:00', timeOut: '12:00', pm: true, pmTimeIn: '13:00', pmTimeOut: '16:00' };
++
++describe('validateSchedule', () => {
++  it('accepts a single-session and a split-day schedule', () => {
++    expect(validateSchedule(single)).toBe('');
++    expect(validateSchedule(split)).toBe('');
++  });
++  it('requires a name', () => {
++    expect(validateSchedule({ ...single, name: '  ' })).toBe('Schedule name is required.');
++  });
++  it('keeps the original single-session messages', () => {
++    expect(validateSchedule({ ...single, timeOut: '' })).toBe('Time in and time out are required.');
++    expect(validateSchedule({ ...single, timeOut: '07:30' })).toBe('Time out must be later than time in.');
++  });
++  it('uses AM wording when the afternoon session is on', () => {
++    expect(validateSchedule({ ...split, timeIn: '' })).toBe('AM arrival and AM departure are required.');
++    expect(validateSchedule({ ...split, timeOut: '07:00' })).toBe('AM departure must be later than AM arrival.');
++  });
++  it('requires both PM times when the afternoon session is on', () => {
++    expect(validateSchedule({ ...split, pmTimeOut: '' })).toBe('PM arrival and PM departure are required.');
++    expect(validateSchedule({ ...split, pmTimeIn: undefined })).toBe('PM arrival and PM departure are required.');
++  });
++  it('keeps the times in order', () => {
++    expect(validateSchedule({ ...split, pmTimeIn: '11:30' })).toBe('PM arrival cannot be earlier than AM departure.');
++    expect(validateSchedule({ ...split, pmTimeIn: '12:00' })).toBe('');
++    expect(validateSchedule({ ...split, pmTimeOut: '13:00' })).toBe('PM departure must be later than PM arrival.');
++  });
++  it('ignores leftover PM values when the afternoon session is off', () => {
++    expect(validateSchedule({ ...single, pmTimeIn: '01:00', pmTimeOut: '' })).toBe('');
++  });
++});
+diff --git a/src/pages/AttendanceSummaryPage.jsx b/src/pages/AttendanceSummaryPage.jsx
+index 82e89ce..7a4f555 100644
+--- a/src/pages/AttendanceSummaryPage.jsx
++++ b/src/pages/AttendanceSummaryPage.jsx
+@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
+ import { useCollectionResource, useDocResource } from '../hooks/useCollection.js';
+ import { fullName, depedSort } from '../lib/roster.js';
+ import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
+-import { markFor, summarizeMonth, formatScanTime } from '../lib/attendance.js';
++import { markFor, summarizeMonth, scanTitle as dayScanTitle } from '../lib/attendance.js';
+ import { buildSF2Workbook } from '../lib/sf2.js';
+ import { downloadWorkbook } from '../lib/downloadWorkbook.js';
+ import { T, S, MARK_COLOR } from '../styles.js';
+@@ -141,11 +141,7 @@ export default function AttendanceSummaryPage({ me, schoolYear }) {
+                     <td style={{ ...S.td, fontWeight: 600, color: T.ink, position: 'sticky', left: 28, background: T.surface }}>{fullName(s)}</td>
+                     {schoolDays.map((d) => {
+                       const m = markFor(docsByDate, d, s.id);
+-                      const timeIn = docsByDate[d]?.timeIn?.[s.id];
+-                      const timeOut = docsByDate[d]?.timeOut?.[s.id];
+-                      const scanTitle = timeIn || timeOut
+-                        ? `Time in: ${formatScanTime(timeIn)}  ·  Time out: ${formatScanTime(timeOut)}`
+-                        : undefined;
++                      const scanTitle = dayScanTitle(docsByDate[d], s.id);
+                       return (
+                         <td key={d} title={scanTitle} style={{ ...S.td, ...T.num, textAlign: 'center', padding: '8px 6px', color: MARK_COLOR[m], fontWeight: 700, cursor: scanTitle ? 'help' : 'default' }}>
+                           {m === 'P' ? '' : m}
+diff --git a/src/pages/AttendanceTakePage.jsx b/src/pages/AttendanceTakePage.jsx
+index dcbb486..3a80c09 100644
+--- a/src/pages/AttendanceTakePage.jsx
++++ b/src/pages/AttendanceTakePage.jsx
+@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
+ import { useCollectionResource, useDocResource } from '../hooks/useCollection.js';
+ import { fullName, depedSort } from '../lib/roster.js';
+ import { localDate } from '../lib/dates.js';
+-import { markFor, formatScanTime } from '../lib/attendance.js';
++import { markFor, formatScanTime, pmDetails, hasPmData } from '../lib/attendance.js';
++import { hasPmSession } from '../../shared/scheduleSessions.js';
+ import { attendanceId, saveMarks } from '../data/attendance.js';
+ import { MARK_LABEL } from '../lib/constants.js';
+ import { T, S } from '../styles.js';
+@@ -52,6 +53,11 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
+ 
+   const attendanceResource = useDocResource(sectionId ? `student_attendance/${attendanceId(sectionId, date)}` : null);
+   const attendanceDoc = attendanceResource.data;
++  // PM columns are display-only, so schedules stay out of `resources`: a
++  // schedule load problem must never block taking attendance.
++  const schedulesResource = useCollectionResource('schedules');
++  const sectionScheduleId = sectionsSY.find((s) => s.id === sectionId)?.scheduleId;
++  const showPm = hasPmSession(schedulesResource.data.find((s) => s.id === sectionScheduleId)) || hasPmData(attendanceDoc);
+   const resources = [sectionsResource, enrollmentsResource, studentsResource, attendanceResource];
+   const selectedSectionAvailable = sectionsSY.some(s => s.id === sectionId);
+   const ready = resources.every(r => !r.loading && !r.error);
+@@ -141,12 +147,13 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
+             <TallyChip label="Excused" value={tally.excused} color={T.excused} />
+           </div>
+ 
+-          <div className="sims-table-scroll" role="region" aria-label="Attendance roster" tabIndex={0}><div style={{ minWidth: 700 }}>
++          <div className="sims-table-scroll" role="region" aria-label="Attendance roster" tabIndex={0}><div style={{ minWidth: showPm ? 900 : 700 }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0 18px 8px' }}>
+             <span style={{ ...S.th, width: 110, flexShrink: 0, padding: 0, borderBottom: 'none' }}>LRN</span>
+             <span style={{ ...S.th, flex: '0 1 280px', minWidth: 140, padding: 0, borderBottom: 'none' }}>Name</span>
+-            <span style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time In</span>
+-            <span style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time Out</span>
++            {(showPm ? ['AM In', 'AM Out', 'PM In', 'PM Out'] : ['Time In', 'Time Out']).map((h) => (
++              <span key={h} style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>{h}</span>
++            ))}
+             <span style={{ ...S.th, width: 90, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Status</span>
+           </div>
+ 
+@@ -155,7 +162,15 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
+               const mark = shownMark(s.id);
+               const timeIn = attendanceDoc?.timeIn?.[s.id];
+               const timeOut = attendanceDoc?.timeOut?.[s.id];
+-              const scanLabel = `${timeIn ? ` Time in ${formatScanTime(timeIn)}.` : ''}${timeOut ? ` Time out ${formatScanTime(timeOut)}.` : ''}`;
++              const pm = pmDetails(attendanceDoc, s.id);
++              const amWord = showPm ? 'AM' : 'Time';
++              const scanLabel = [
++                timeIn && ` ${amWord} in ${formatScanTime(timeIn)}.`,
++                timeOut && ` ${amWord} out ${formatScanTime(timeOut)}.`,
++                pm.pmTimeIn && ` PM in ${formatScanTime(pm.pmTimeIn)}.`,
++                pm.pmTimeOut && ` PM out ${formatScanTime(pm.pmTimeOut)}.`,
++                ...pm.notes.map((n) => ` ${n}.`),
++              ].filter(Boolean).join('');
+               return (
+                 <div
+                   key={s.id}
+@@ -173,10 +188,12 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
+                 >
+                   <span style={{ ...T.num, fontSize: 12, color: T.ink,  width: 110, flexShrink: 0 }}>{s.lrn}</span>
+                   <span style={{ flex: '0 1 280px', minWidth: 140, fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>{fullName(s)}</span>
+-                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeIn ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeIn ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(timeIn)}</span>
+-                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeOut ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeOut ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(timeOut)}</span>
+-                  <span style={{ width: 90, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
++                  <TimeCell time={timeIn} />
++                  <TimeCell time={timeOut} />
++                  {showPm && <><TimeCell time={pm.pmTimeIn} /><TimeCell time={pm.pmTimeOut} /></>}
++                  <span style={{ width: 90, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                     <StatusPill mark={mark} />
++                    {pm.notes.map((n) => <span key={n} style={{ fontFamily: T.body, fontSize: 11, fontWeight: 600, color: T.inkMuted, whiteSpace: 'nowrap' }}>{n}</span>)}
+                   </span>
+                 </div>
+               );
+@@ -195,6 +212,10 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
+   );
+ }
+ 
++function TimeCell({ time }) {
++  return <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: time ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: time ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(time)}</span>;
++}
++
+ function TallyChip({ label, value, sub, color }) {
+   return (
+     <Card style={{ padding: '9px 16px', display: 'flex', alignItems: 'baseline', gap: 9 }}>
+diff --git a/src/pages/SchedulesPage.jsx b/src/pages/SchedulesPage.jsx
+index 676feb7..a2ff466 100644
+--- a/src/pages/SchedulesPage.jsx
++++ b/src/pages/SchedulesPage.jsx
+@@ -7,16 +7,19 @@ import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedule
+ import { T, S } from '../styles.js';
+ import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
+ import { isAdmin } from '../lib/access.js';
++import { validateSchedule } from '../lib/schedules.js';
++import { hasPmSession } from '../../shared/scheduleSessions.js';
++
++const check = { display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.ink, marginBottom: 12 };
+ 
+ function ScheduleForm({ editing, onClose }) {
+   const action = useAsyncAction();
+-  const [f, setF] = useState(editing || { name: '', timeIn: '', timeOut: '' });
++  const [f, setF] = useState(editing ? { ...editing, pm: hasPmSession(editing) } : { name: '', timeIn: '', timeOut: '', pm: false, pmTimeIn: '', pmTimeOut: '' });
+   const [err, setErr] = useState('');
+   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+   const save = async () => {
+-    if (!f.name?.trim()) { setErr('Schedule name is required.'); return; }
+-    if (!f.timeIn || !f.timeOut) { setErr('Time in and time out are required.'); return; }
+-    if (f.timeOut <= f.timeIn) { setErr('Time out must be later than time in.'); return; }
++    const problem = validateSchedule(f);
++    if (problem) { setErr(problem); return; }
+     await action.run('save', async () => {
+       editing ? await updateSchedule(editing.id, f) : await createSchedule(f);
+       onClose();
+@@ -29,9 +32,16 @@ function ScheduleForm({ editing, onClose }) {
+       {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 12 }}>{err}</div>}
+       <Field label="Schedule name"><Inp value={f.name || ''} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Morning Shift" /></Field>
+       <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
+-        <Field label="Time in"><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
+-        <Field label="Time out"><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
++        <Field label={f.pm ? 'AM arrival' : 'Time in'}><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
++        <Field label={f.pm ? 'AM departure' : 'Time out'}><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
+       </div>
++      <label style={check}><input type="checkbox" checked={f.pm} onChange={(e) => set('pm', e.target.checked)} /> Add afternoon session (PM)</label>
++      {f.pm && (
++        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
++          <Field label="PM arrival"><Inp type="time" value={f.pmTimeIn || ''} onChange={(e) => set('pmTimeIn', e.target.value)} /></Field>
++          <Field label="PM departure"><Inp type="time" value={f.pmTimeOut || ''} onChange={(e) => set('pmTimeOut', e.target.value)} /></Field>
++        </div>
++      )}
+       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+         <Btn variant="ghost" disabled={action.busy} onClick={onClose}>Cancel</Btn>
+         <Btn disabled={action.busy} onClick={save}>{editing ? 'Save changes' : 'Add schedule'}</Btn>
+@@ -77,13 +87,15 @@ export default function SchedulesPage({ me }) {
+         <Card style={{ padding: 0, overflow: 'hidden' }}>
+           <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+             <thead><tr style={S.thead}>
+-              {['Name', 'Time In', 'Time Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
++              {['Name', 'Time In', 'Time Out', 'PM In', 'PM Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+             </tr></thead>
+             <tbody>{rows.map((s) => (
+               <tr key={s.id}>
+                 <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
+                 <td style={{ ...S.td, ...T.num }}>{s.timeIn}</td>
+                 <td style={{ ...S.td, ...T.num }}>{s.timeOut}</td>
++                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeIn : '—'}</td>
++                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeOut : '—'}</td>
+                 <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                   {admin && <>
+                     <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
