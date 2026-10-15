@@ -14,6 +14,7 @@ const empty=[];
 export function useCollectionResource(path){const s=useScenario();return {data:s==='empty'?empty:(data[path]||empty),loading:s==='loading',error:s==='error'?new Error('Synthetic failure'):null,retry:()=>{window.previewScenario='normal';window.dispatchEvent(new Event('preview-change'))}};}
 export function useDocResource(path){useScenario();return {data:path==='settings/app'?settings:path?.startsWith('student_attendance/')?attendance.find(d=>d.id===path.split('/')[1])||null:null,loading:false,error:null,retry:()=>{}};}
 export function useQueryResource(){useScenario();return {data:empty,loading:false,error:null,retry:()=>{}};}
+export function useSchoolYearEnrollments(schoolYear){const r=useCollectionResource('enrollments');return {...r,data:r.data.filter(e=>e.schoolYear===schoolYear)};}
 export const useCollection=p=>useCollectionResource(p).data;
 export const useDoc=p=>useDocResource(p).data;
 export const useQueryRows=(q,d)=>useQueryResource(q,d).data;
