@@ -1,0 +1,444 @@
+[
+  {
+    "name": "acceptConsentFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-13T01:44:14.048864941Z",
+    "runtime": "nodejs22",
+    "uri": "https://acceptconsentfn-k7rk2gigtq-as.a.run.app",
+    "revision": "acceptconsentfn-00016-wux",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "acceptConsentFn/function-source.zip",
+      "generation": "1791855788897820"
+    }
+  },
+  {
+    "name": "activateCodeFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-13T08:41:46.295452829Z",
+    "runtime": "nodejs22",
+    "uri": "https://activatecodefn-k7rk2gigtq-as.a.run.app",
+    "revision": "activatecodefn-00017-kas",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "activateCodeFn/function-source.zip",
+      "generation": "1791880822272544"
+    }
+  },
+  {
+    "name": "addManualEventFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:27.328113416Z",
+    "runtime": "nodejs22",
+    "uri": "https://addmanualeventfn-k7rk2gigtq-as.a.run.app",
+    "revision": "addmanualeventfn-00015-sef",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "addManualEventFn/function-source.zip",
+      "generation": "1791765195408628"
+    }
+  },
+  {
+    "name": "announcementAudienceCountFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:33.039096036Z",
+    "runtime": "nodejs22",
+    "uri": "https://announcementaudiencecountfn-k7rk2gigtq-as.a.run.app",
+    "revision": "announcementaudiencecountfn-00006-zuc",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "announcementAudienceCountFn/function-source.zip",
+      "generation": "1791765195501838"
+    }
+  },
+  {
+    "name": "changeOwnPasswordFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:34.931869715Z",
+    "runtime": "nodejs22",
+    "uri": "https://changeownpasswordfn-k7rk2gigtq-as.a.run.app",
+    "revision": "changeownpasswordfn-00007-rub",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "changeOwnPasswordFn/function-source.zip",
+      "generation": "1791765195459150"
+    }
+  },
+  {
+    "name": "correctEventFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:27.230090607Z",
+    "runtime": "nodejs22",
+    "uri": "https://correcteventfn-k7rk2gigtq-as.a.run.app",
+    "revision": "correcteventfn-00015-vep",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "correctEventFn/function-source.zip",
+      "generation": "1791765195393002"
+    }
+  },
+  {
+    "name": "createStaffUserFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:42.587922336Z",
+    "runtime": "nodejs22",
+    "uri": "https://createstaffuserfn-k7rk2gigtq-as.a.run.app",
+    "revision": "createstaffuserfn-00007-pow",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "createStaffUserFn/function-source.zip",
+      "generation": "1791765195535028"
+    }
+  },
+  {
+    "name": "deactivateKioskFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:28.036016328Z",
+    "runtime": "nodejs22",
+    "uri": "https://deactivatekioskfn-k7rk2gigtq-as.a.run.app",
+    "revision": "deactivatekioskfn-00015-nin",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "deactivateKioskFn/function-source.zip",
+      "generation": "1791765195441915"
+    }
+  },
+  {
+    "name": "deleteGuardianAccountFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:26.985004644Z",
+    "runtime": "nodejs22",
+    "uri": "https://deleteguardianaccountfn-k7rk2gigtq-as.a.run.app",
+    "revision": "deleteguardianaccountfn-00015-cew",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "deleteGuardianAccountFn/function-source.zip",
+      "generation": "1791765195523655"
+    }
+  },
+  {
+    "name": "deleteStaffUserFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:26.030291585Z",
+    "runtime": "nodejs22",
+    "uri": "https://deletestaffuserfn-k7rk2gigtq-as.a.run.app",
+    "revision": "deletestaffuserfn-00007-hun",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "deleteStaffUserFn/function-source.zip",
+      "generation": "1791765195411733"
+    }
+  },
+  {
+    "name": "endSchoolYearFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-13T05:37:48.832840468Z",
+    "runtime": "nodejs22",
+    "uri": "https://endschoolyearfn-k7rk2gigtq-as.a.run.app",
+    "revision": "endschoolyearfn-00010-bov",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "endSchoolYearFn/function-source.zip",
+      "generation": "1791869859843792"
+    }
+  },
+  {
+    "name": "expireLinksJob",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-10T14:16:16.858959126Z",
+    "runtime": "nodejs22",
+    "uri": "https://expirelinksjob-k7rk2gigtq-as.a.run.app",
+    "revision": "expirelinksjob-00014-quk",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "expireLinksJob/function-source.zip",
+      "generation": "1791543191712595"
+    }
+  },
+  {
+    "name": "issueActivationCodesFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-13T05:37:48.833089838Z",
+    "runtime": "nodejs22",
+    "uri": "https://issueactivationcodesfn-k7rk2gigtq-as.a.run.app",
+    "revision": "issueactivationcodesfn-00017-jez",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "issueActivationCodesFn/function-source.zip",
+      "generation": "1791869860013889"
+    }
+  },
+  {
+    "name": "onAnnouncementWritten",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-10T14:16:18.096720010Z",
+    "runtime": "nodejs22",
+    "uri": "https://onannouncementwritten-k7rk2gigtq-as.a.run.app",
+    "revision": "onannouncementwritten-00005-fin",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "onAnnouncementWritten/function-source.zip",
+      "generation": "1791543149851568"
+    }
+  },
+  {
+    "name": "onGuardianLinkWritten",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-10T14:16:19.675800159Z",
+    "runtime": "nodejs22",
+    "uri": "https://onguardianlinkwritten-k7rk2gigtq-as.a.run.app",
+    "revision": "onguardianlinkwritten-00005-zef",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "onGuardianLinkWritten/function-source.zip",
+      "generation": "1791543191886000"
+    }
+  },
+  {
+    "name": "onParentPortalSettingsChanged",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-10T14:16:21.180509113Z",
+    "runtime": "nodejs22",
+    "uri": "https://onparentportalsettingschanged-k7rk2gigtq-as.a.run.app",
+    "revision": "onparentportalsettingschanged-00014-jof",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "onParentPortalSettingsChanged/function-source.zip",
+      "generation": "1791543191852797"
+    }
+  },
+  {
+    "name": "onScanEventCreated",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-15T04:17:32.794336223Z",
+    "runtime": "nodejs22",
+    "uri": "https://onscaneventcreated-k7rk2gigtq-as.a.run.app",
+    "revision": "onscaneventcreated-00019-pol",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "onScanEventCreated/function-source.zip",
+      "generation": "1792037762329517"
+    }
+  },
+  {
+    "name": "provisionKioskFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:29.160881901Z",
+    "runtime": "nodejs22",
+    "uri": "https://provisionkioskfn-k7rk2gigtq-as.a.run.app",
+    "revision": "provisionkioskfn-00013-rex",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "provisionKioskFn/function-source.zip",
+      "generation": "1791765195426165"
+    }
+  },
+  {
+    "name": "pruneDevicesJob",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-10T14:16:16.431304161Z",
+    "runtime": "nodejs22",
+    "uri": "https://prunedevicesjob-k7rk2gigtq-as.a.run.app",
+    "revision": "prunedevicesjob-00014-lih",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "pruneDevicesJob/function-source.zip",
+      "generation": "1791543191436765"
+    }
+  },
+  {
+    "name": "publishAnnouncementsJob",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-10T14:16:16.610452435Z",
+    "runtime": "nodejs22",
+    "uri": "https://publishannouncementsjob-k7rk2gigtq-as.a.run.app",
+    "revision": "publishannouncementsjob-00005-fos",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "publishAnnouncementsJob/function-source.zip",
+      "generation": "1791543192344351"
+    }
+  },
+  {
+    "name": "reconcileEventsJob",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-10T14:16:17.493831250Z",
+    "runtime": "nodejs22",
+    "uri": "https://reconcileeventsjob-k7rk2gigtq-as.a.run.app",
+    "revision": "reconcileeventsjob-00015-zeh",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "reconcileEventsJob/function-source.zip",
+      "generation": "1791554446708513"
+    }
+  },
+  {
+    "name": "registerKioskFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:35.464472947Z",
+    "runtime": "nodejs22",
+    "uri": "https://registerkioskfn-k7rk2gigtq-as.a.run.app",
+    "revision": "registerkioskfn-00015-puq",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "registerKioskFn/function-source.zip",
+      "generation": "1791765195535245"
+    }
+  },
+  {
+    "name": "reissueActivationCodeFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-13T05:37:47.392234418Z",
+    "runtime": "nodejs22",
+    "uri": "https://reissueactivationcodefn-k7rk2gigtq-as.a.run.app",
+    "revision": "reissueactivationcodefn-00002-puf",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "reissueActivationCodeFn/function-source.zip",
+      "generation": "1791869859718084"
+    }
+  },
+  {
+    "name": "requestAccessFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:41.010639633Z",
+    "runtime": "nodejs22",
+    "uri": "https://requestaccessfn-k7rk2gigtq-as.a.run.app",
+    "revision": "requestaccessfn-00015-vov",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "requestAccessFn/function-source.zip",
+      "generation": "1791765195438575"
+    }
+  },
+  {
+    "name": "resetKioskPasswordFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:27.027360978Z",
+    "runtime": "nodejs22",
+    "uri": "https://resetkioskpasswordfn-k7rk2gigtq-as.a.run.app",
+    "revision": "resetkioskpasswordfn-00013-lek",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "resetKioskPasswordFn/function-source.zip",
+      "generation": "1791765195455085"
+    }
+  },
+  {
+    "name": "resetStaffPasswordFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:28.199086329Z",
+    "runtime": "nodejs22",
+    "uri": "https://resetstaffpasswordfn-k7rk2gigtq-as.a.run.app",
+    "revision": "resetstaffpasswordfn-00007-voh",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "resetStaffPasswordFn/function-source.zip",
+      "generation": "1791765195394151"
+    }
+  },
+  {
+    "name": "resolveAccessRequestFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-13T08:41:52.753521853Z",
+    "runtime": "nodejs22",
+    "uri": "https://resolveaccessrequestfn-k7rk2gigtq-as.a.run.app",
+    "revision": "resolveaccessrequestfn-00016-ner",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "resolveAccessRequestFn/function-source.zip",
+      "generation": "1791880904365721"
+    }
+  },
+  {
+    "name": "resolveReportFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:27.147619022Z",
+    "runtime": "nodejs22",
+    "uri": "https://resolvereportfn-k7rk2gigtq-as.a.run.app",
+    "revision": "resolvereportfn-00015-vap",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "resolveReportFn/function-source.zip",
+      "generation": "1791765195421845"
+    }
+  },
+  {
+    "name": "revokeCodeFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:30.001680044Z",
+    "runtime": "nodejs22",
+    "uri": "https://revokecodefn-k7rk2gigtq-as.a.run.app",
+    "revision": "revokecodefn-00015-fes",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "revokeCodeFn/function-source.zip",
+      "generation": "1791765195524614"
+    }
+  },
+  {
+    "name": "revokeLinkFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:34.707953891Z",
+    "runtime": "nodejs22",
+    "uri": "https://revokelinkfn-k7rk2gigtq-as.a.run.app",
+    "revision": "revokelinkfn-00015-nub",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "revokeLinkFn/function-source.zip",
+      "generation": "1791765195425254"
+    }
+  },
+  {
+    "name": "setActivationRestrictedFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:29.812944880Z",
+    "runtime": "nodejs22",
+    "uri": "https://setactivationrestrictedfn-k7rk2gigtq-as.a.run.app",
+    "revision": "setactivationrestrictedfn-00015-ref",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "setActivationRestrictedFn/function-source.zip",
+      "generation": "1791765195444013"
+    }
+  },
+  {
+    "name": "setStaffUserDisabledFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:33.776552397Z",
+    "runtime": "nodejs22",
+    "uri": "https://setstaffuserdisabledfn-k7rk2gigtq-as.a.run.app",
+    "revision": "setstaffuserdisabledfn-00007-hop",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "setStaffUserDisabledFn/function-source.zip",
+      "generation": "1791765195488408"
+    }
+  },
+  {
+    "name": "submitReportFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:34.632766011Z",
+    "runtime": "nodejs22",
+    "uri": "https://submitreportfn-k7rk2gigtq-as.a.run.app",
+    "revision": "submitreportfn-00015-wur",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "submitReportFn/function-source.zip",
+      "generation": "1791765195415541"
+    }
+  },
+  {
+    "name": "updateStaffUserFn",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-12T00:33:40.576445007Z",
+    "runtime": "nodejs22",
+    "uri": "https://updatestaffuserfn-k7rk2gigtq-as.a.run.app",
+    "revision": "updatestaffuserfn-00007-muj",
+    "source": {
+      "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+      "object": "updateStaffUserFn/function-source.zip",
+      "generation": "1791765195441963"
+    }
+  }
+]
