@@ -17,6 +17,7 @@ import { expireLinks, pruneDevices, reconcileEvents } from './src/handlers/sched
 import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 import { handleGuardianLinkWrite } from './src/handlers/guardianAudience.js';
 import { handleAnnouncementWrite, publishDueAnnouncements, announcementAudienceCount } from './src/handlers/announcements.js';
+import { getCoordinatorSectionOptions, updateCoordinatorSection } from './src/handlers/sections.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -83,6 +84,8 @@ export const changeOwnPasswordFn = onCall({ enforceAppCheck: true, timeoutSecond
 
 // Any active staff member; the handler checks the audience is in their scope.
 export const announcementAudienceCountFn = staffCall(announcementAudienceCount);
+export const getCoordinatorSectionOptionsFn = staffCall(getCoordinatorSectionOptions);
+export const updateCoordinatorSectionFn = staffCall(updateCoordinatorSection);
 
 const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };

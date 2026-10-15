@@ -4,6 +4,36 @@ import * as access from './access.js';
 
 const admin = { role: 'registrar' }, jhs = { role: 'jhs_coord' }, glc8 = { role: 'glc', gradeLevel: 8 };
 
+describe('section editing permissions', () => {
+  const section = { gradeLevel: 8, schoolYear: '2026-2027' };
+  it('lets a grade coordinator edit their current and next-year sections', () => {
+    expect(access.canEditSection?.(glc8, section, '2026-2027')).toBe(true);
+    expect(access.canEditSection?.(glc8, { ...section, schoolYear: '2027-2028' }, '2026-2027')).toBe(true);
+  });
+  it('locks other grades, historical years, and years beyond next year', () => {
+    for (const changes of [{ gradeLevel: 9 }, { schoolYear: '2025-2026' }, { schoolYear: '2028-2029' }]) {
+      expect(access.canEditSection?.(glc8, { ...section, ...changes }, '2026-2027')).toBe(false);
+    }
+  });
+  it('advances the two-year window with the configured current school year', () => {
+    expect(access.canEditSection?.(glc8, section, '2027-2028')).toBe(false);
+    expect(access.canEditSection?.(glc8, { ...section, schoolYear: '2028-2029' }, '2027-2028')).toBe(true);
+    expect(access.sectionEditSchoolYears?.('2026-2027')).toEqual(['2026-2027', '2027-2028']);
+  });
+  it('does not grant the privilege to academic coordinators or restricted accounts', () => {
+    for (const me of [null, jhs, { role: 'shs_coord' }, { ...glc8, disabled: true }, { ...glc8, mustChangePassword: true }, { ...glc8, gradeLevel: 13 }]) {
+      expect(access.canEditSection?.(me, section, '2026-2027')).toBe(false);
+    }
+  });
+  it('fails closed for malformed current years and preserves administrator access', () => {
+    for (const year of [null, '', '2026-2028', '2026-27', '2026-2027\n']) {
+      expect(access.canEditSection?.(glc8, section, year)).toBe(false);
+      expect(access.sectionEditSchoolYears?.(year)).toEqual([]);
+    }
+    expect(access.canEditSection?.(admin, { gradeLevel: 9, schoolYear: '2020-2021' }, '2026-2027')).toBe(true);
+  });
+});
+
 describe('staff data startup', () => {
   it('does not start data listeners while the profile is loading or restricted', () => {
     expect(access.canLoadStaffData(undefined, false)).toBe(false);

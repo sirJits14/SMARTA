@@ -11,6 +11,17 @@ The visible result must show twelve PASS lines. This uses the real React compone
 
 These browser checks are separate from `npm test`. The fixture does not validate authentication, real queries or production writes.
 
+## Grade Level Coordinator section editor
+
+Run `npm exec vite -- --config tests/browser/section-editing.config.mjs` and open
+http://127.0.0.1:5190/tests/browser/section-editing.html?checks. Nine PASS lines cover
+role/grade/year controls, the restricted fields and save payload, save and schedule
+retrieval retries, draft retention during resource errors, next-year editing without
+future learner queries, administrator actions, year rollover, and keeping next-year
+setup separate from current-year learner editing. This uses the real
+page and callable request adapter with synthetic resources and a local transport;
+server authorization and shared-schedule audiences are covered by emulator tests.
+
 ## Enrollment preview and regressions
 
 ```powershell

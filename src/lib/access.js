@@ -1,5 +1,7 @@
 import { roleOf, scopedGrades, ALL_GRADES } from '../../shared/staffRoles.js';
 import { NAV_ITEMS } from './navigation.js';
+import { coordinatorCanEditSection } from '../../shared/sectionEditing.js';
+export { sectionEditSchoolYears } from '../../shared/sectionEditing.js';
 
 // Every page/permission decision the SIMS app makes about the signed-in staff
 // member. Pages ask here; nothing else compares role strings.
@@ -7,6 +9,8 @@ const COORDINATOR_PAGES = ['dashboard', 'students', 'sections', 'schedules', 'at
 export const DISABLED_MESSAGE = 'This account has been disabled. Contact an administrator.';
 
 export const isAdmin = (me) => roleOf(me) === 'admin';
+export const canEditSection = (me, section, currentSchoolYear) => isAdmin(me)
+  || coordinatorCanEditSection(me, section, currentSchoolYear);
 export const grades = (me) => scopedGrades(me);
 export function allowedPages(me) {
   if (!roleOf(me)) return [];

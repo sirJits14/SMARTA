@@ -171,7 +171,7 @@ Pages consult this module; none check role strings directly.
 |---|---|
 | Dashboard | Stats over scoped roster/attendance. "Enroll a learner" button and unassigned-learner panels hidden. |
 | Students | Only learners enrolled this school year in scope. Import, Add learner, Edit, Delete hidden. "Unassigned" filter removed. |
-| Sections | Only in-scope sections. Add/Edit/Delete hidden. Section detail roster viewable; ID/QR printing and per-student Edit hidden (admin-only). |
+| Sections | Only in-scope sections. GLCs can edit section name, adviser name and an existing shift assignment for the configured current or next school year, through the restricted server action. JHS/SHS coordinators remain view-only. Add/Delete, ID/QR printing and per-student Edit remain admin-only. Next-year setup edits section metadata; learner rosters stay in the current-year view. |
 | Schedules | Read-only: Add/Edit/Delete hidden. |
 | Attendance → Take | Section picker lists in-scope sections only. Save allowed. |
 | Attendance → Monthly Summary / SF2 | In-scope sections only. Export allowed. |
