@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase.js';
-import { DISABLED_MESSAGE } from '../lib/access.js';
+import { signInErrorMessage } from '../lib/authErrors.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field } from './ui.jsx';
 import smartaWordmark from '../assets/smarta-wordmark.png';
@@ -15,7 +15,7 @@ export default function Login({ notice = '', onAttempt }) {
   const go = async () => {
     setBusy(true); setErr(''); onAttempt?.();
     try { await signInWithEmailAndPassword(auth, email.trim(), pw); }
-    catch (e) { setErr(e?.code === 'auth/user-disabled' ? DISABLED_MESSAGE : 'That email and password did not match.'); }
+    catch (e) { setErr(signInErrorMessage(e)); }
     setBusy(false);
   };
   const shown = err || notice;
