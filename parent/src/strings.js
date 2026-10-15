@@ -78,6 +78,8 @@ const S = {
   homeTodayNone: 'No entry recorded today',
   homeEntered: 'Entered',
   homeLeft: 'Left',
+  noteAbsentAm: 'Absent AM',
+  noteLatePm: 'Late PM',
   homeViewHistory: 'View history',
   homeLearnersLabel: 'Your learners',
   homeNoEntryShort: 'No entry today',

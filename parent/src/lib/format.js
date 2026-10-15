@@ -45,8 +45,15 @@ export function latestScan(today, todayDate) {
   return events[events.length - 1] || null;
 }
 
+// Split-day schedule notes for today ('absentAm' / 'latePm'), as labels.
+const NOTE_LABEL = { absentAm: S.noteAbsentAm, latePm: S.noteLatePm };
+export function todayNotes(today, todayDate) {
+  if (!today || today.date !== todayDate) return [];
+  return (today.notes || []).map((n) => NOTE_LABEL[n]).filter(Boolean);
+}
+
 export function latestScanToday(today, todayDate) {
   const latest = latestScan(today, todayDate);
   if (!latest) return S.homeTodayNone;
-  return `${latest.kind === 'in' ? S.homeEntered : S.homeLeft} ${formatScanTime(latest.time)}`;
+  return [`${latest.kind === 'in' ? S.homeEntered : S.homeLeft} ${formatScanTime(latest.time)}`, ...todayNotes(today, todayDate)].join(' · ');
 }
