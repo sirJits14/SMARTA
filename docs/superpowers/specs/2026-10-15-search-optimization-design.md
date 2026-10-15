@@ -43,7 +43,7 @@ initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persis
 
 Emulator wiring stays as is.
 
-**1b. Clear on sign-out.** Add one helper (in `src/firebase.js`) `signOutAndClear(notice = '')`: store `notice` in `sessionStorage` under `sims.signOutNotice` (wrapped in try/catch) → `signOut(auth)` → `terminate(db)` → `clearIndexedDbPersistence(db)` (errors ignored) → `window.location.reload()`. On start, `App.jsx` reads and removes `sims.signOutNotice` and seeds its `notice` state with it, so forced sign-outs still explain themselves on the login screen ("Your session has ended…", "This account has no staff profile yet…"). Every SIMS sign-out path in `src/App.jsx` (manual logout, session-ended ×2, refused profile) and the failed re-sign-in in `src/components/ChangePassword.jsx` uses it. Consequence: the first page after each login downloads the roster from the server; later page opens in that session are served from memory.
+**1b. Clear on sign-out.** Add a pure helper `signOutAndClear(notice, deps)` in `src/lib/session.js`, wired to Firebase as `endSession(notice = '')` in `src/session.js` (kept out of `src/firebase.js` so browser fixtures that stub that module keep working): store `notice` in `sessionStorage` under `sims.signOutNotice` (wrapped in try/catch) → `signOut(auth)` → `terminate(db)` → `clearIndexedDbPersistence(db)` (errors ignored) → `window.location.reload()`. Once per page load (at module scope), `App.jsx` reads and removes `sims.signOutNotice` and seeds its `notice` state with it, so forced sign-outs still explain themselves on the login screen ("Your session has ended…", "This account has no staff profile yet…"). Every SIMS sign-out path in `src/App.jsx` (manual logout, session-ended ×2, refused profile) and the failed re-sign-in in `src/components/ChangePassword.jsx` uses it. Consequence: the first page after each login downloads the roster from the server; later page opens in that session are served from memory.
 
 Known edge: `clearIndexedDbPersistence` fails while another SIMS tab still holds the database. Logout still reloads; that cache is cleared the next time a tab signs out with no other tab open. This is accepted and stays documented here.
 
@@ -54,7 +54,7 @@ Known edge: `clearIndexedDbPersistence` fails while another SIMS tab still holds
 - Errors are published to every consumer of the key. `retry()` on any consumer drops the entry and resubscribes.
 - Keys are explicit strings built by the hooks, e.g. `students|all`, `enrollments|sy=2026-2027`, `students|sy=2026-2027|grades=7,8`. `useStaffCollectionResource` builds its key from `path`, `role`, `gradeLevel`, `schoolYear`, `sectionId`, `date`; `useCollectionResource(path)` uses `path|all`.
 - Public hook signatures (`useCollectionResource`, `useDocResource`, `useQueryResource`, `useStaffCollectionResource`, `useCollection`, `useDoc`, `useQueryRows`) are unchanged. `useQueryResource` and `useDocResource` gain an optional key; without a key they behave as today (unshared).
-- The registry is cleared by `signOutAndClear()` (the reload does this implicitly).
+- The registry is cleared by `endSession()` (the reload does this implicitly).
 
 **1d. Narrower enrollments for Guardians tabs and ID Cards.** `LinksTab`, `ReportsTab`, `RequestsTab`, `ScanLogTab` and `IDCardsPage` read enrollments through a shared, school-year-filtered query `where('schoolYear', '==', schoolYear)` (key `enrollments|sy=<sy>`). `currentEnrollmentByStudent(enrollments, schoolYear)` already discards other years, so results are identical. These pages keep the full `students` listener (key `students|all`) because the Links "Unassigned" filter and the Requests LRN lookup need learners with no current enrollment; the registry makes it one listener shared by all of them.
 
@@ -64,11 +64,11 @@ Not changed: `firestore.rules`, `src/lib/staffQueries.js` query shapes (they mus
 
 **2a. Indexed matcher in `src/lib/search.js`.**
 
-- `buildLearnerIndex(students)` → array of `{ student, words, lrn }`, sorted in DepEd order (males then females, each by last then first name — same order as `depedSort`). `words` = normalized words of `firstName` and `lastName`; `lrn` = normalized LRN with spaces removed. Built once per data change via `useMemo`.
-- `searchLearners(index, query, { includeLrn = false, accept, limit = Infinity })` normalizes the query once, walks the index in order and returns students where every query word is a prefix of some name word (any order), or — with `includeLrn` — the compact query is a prefix of the LRN. `accept(student)` is an optional extra predicate (grade, section, status). Stops when `limit` results are collected. An empty query returns every accepted learner (up to `limit`). Results are already in DepEd order; callers do not sort.
+- `buildLearnerIndex(items, toLearner = item => item)` → array of `{ item, words, lrn }` in the caller's order (Students and Links pass `depedSort(students)`; ID Cards passes its print-ordered entries). `words` = normalized words of `firstName` and `lastName`; `lrn` = normalized LRN. Built once per data change via `useMemo`.
+- `searchLearners(index, query, { includeLrn = false, accept, limit = Infinity })` normalizes the query once, walks the index in order and returns students where every query word is a prefix of some name word (any order), or — with `includeLrn` — the compact query is a prefix of the LRN. `accept(student)` is an optional extra predicate (grade, section, status). Stops when `limit` results are collected. An empty query returns every accepted learner (up to `limit`). Results keep the index order; callers do not sort.
 - `normalize`, `words`, `matchesWords`, `learnerMatches`, `sectionMatches` keep their current behaviour and signatures (section pickers and the Requests tab's typed-name match still use them).
 
-**2b. Callers.** Learner search in Students, Links, Reports, Requests, Scan Log and ID Cards → Saved batch uses `buildLearnerIndex` + `searchLearners`. Students uses `includeLrn: true` (word-start, replacing its substring match). Pages whose list is not learners (Reports, Requests, Scan Log rows) build a `Set` of matching student ids from `searchLearners` and filter their rows by it, keeping each row list's existing order.
+**2b. Callers.** Students, Links and ID Cards → Saved batch search the roster with `buildLearnerIndex` + `searchLearners` (`includeLrn: true`; Students switches from substring to word-start). Links asks for 21 results and shows "Showing the first 20 — keep typing to narrow down." when there are more, instead of counting every match. Reports, Requests and Scan Log filter at most 50/50/500 loaded rows, so they keep `learnerMatches` and gain only deferred typing and the narrower enrollments.
 
 **2c. Non-blocking typing.** Search inputs keep their controlled `value`; the filtering `useMemo` reads `useDeferredValue(query)`. No fixed debounce.
 
@@ -103,7 +103,7 @@ Not changed: `recordScan`, offline queueing, `scanEvent` ids, `SCAN_ERRORS` code
 - Kiosk ready gate covered by a unit test of the gate helper.
 - Full suites: SIMS `npm test` and `npm run test:rules` (rules unchanged, run as a guard); kiosk `npm test`.
 
-**Measurement** (emulator, ~3,000 seeded learners, recorded in each PR, before and after): Students page open cold and after navigating from Dashboard; keystroke-to-results on Students and Links; kiosk boot-to-first-accepted-scan and per-scan lookup time. No timing assertions in tests.
+**Measurement** (recorded in each PR, before and after; no timing assertions in tests): a Node micro-measure over 3,000 synthetic learners for per-keystroke search time and per-scan kiosk lookup time; and a manual DevTools check in the emulator for Students page open (cold and after navigating), returning to a page, and the longest task while typing.
 
 **Rollout**
 
