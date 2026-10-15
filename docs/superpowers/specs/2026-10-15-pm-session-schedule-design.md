@@ -107,11 +107,16 @@ For each applied kiosk tap:
    - An AM tap-in gives `L` if after `timeIn`, otherwise `P`. This is today's
      behavior.
    - A PM tap-in gives `P` and sets `absentAm`.
-4. **Late PM.** On the first PM tap-in (no `pmTimeIn` yet), if `scanTime`
-   is after `pmTimeIn`, set `latePm`.
+4. **Late PM.** Late PM is judged on the earliest afternoon tap-in. It is
+   set when the first PM tap-in (no `pmTimeIn` yet) is after `pmTimeIn`, and
+   cleared when any on-time PM tap-in (at or before `pmTimeIn`) is processed.
+   So the result doesn't depend on the order a delayed offline kiosk syncs
+   its taps.
 5. **Delayed morning tap.** If an AM tap-in is applied after a PM tap-in was
    already recorded (an offline kiosk syncing late), clear `absentAm` for
-   that learner. The day mark is left alone.
+   that learner. If the day mark is `P`, it is judged again against the AM
+   arrival (`L` if after `timeIn`, otherwise `P`), because the `P` came from
+   the PM-first rule. `E` and `L` marks are untouched.
 
 Sections whose schedule has no PM times take exactly the current path, so
 nothing changes for them.
@@ -183,6 +188,21 @@ from an attendance doc, so both pages use the same logic.
 - A tap-out before the split is the AM departure. The existing never-move-
   backwards rule keeps the latest morning tap-out.
 
+## Known limitations
+
+- AM In shows the latest morning tap-in. A learner who taps out at 12:05 and
+  back in before the 12:30 split shows that lunch tap as AM In. This is
+  display only, a keep-latest rule.
+- PM In shows the latest afternoon tap-in, while Late PM is judged on the
+  earliest. So "PM In 01:15 PM" can appear with no Late PM badge.
+- Office-entered scans (`source: 'staff'`) and voided scans affect the parent
+  app's notes but not the `student_attendance` notes. That's the existing
+  behavior: staff scans never touched `student_attendance`.
+- A morning tap-out with no morning tap-in still counts the day's first
+  tap-in as afternoon, so a learner gets "Absent AM".
+- If a schedule is edited mid-day, notes already written stay. The parent app
+  recomputes on the next tap.
+
 ## Testing
 
 - `shared/scheduleSessions.test.js`: split midpoint, `sessionOf` boundaries,
@@ -196,7 +216,9 @@ from an attendance doc, so both pages use the same logic.
   - a PM tap-in goes to `pmTimeIn` and leaves `timeIn` untouched
   - Late PM leaves the mark P
   - first tap at 12:50 gives P plus `absentAm`
-  - a delayed AM tap clears `absentAm`
+  - a delayed AM tap clears `absentAm`, re-marks a PM-first `P` as `L` when
+    it is after the AM time in, and leaves a staff `E` alone
+  - a delayed on-time PM tap clears a stale `latePm`
   - a schedule without PM is unchanged
 - `parent/src/lib/format.test.js`: `todayNotes`.
 
@@ -213,5 +235,13 @@ The coordinator rollout hold still applies:
   no held coordinator code.
 - SIMS hosting deploys from the release tree, not the root build. See
   `docs/audits/deployments/` for the current procedure.
+
+- Admins should not tick the PM checkbox on a schedule until the new
+  `onScanEventCreated` is live. Older functions keep putting PM taps in
+  `timeIn`.
+- The SIMS release tree (base 26a6ed7) uses `useCollectionResource`, not
+  `useStaffCollectionResource`, which belongs to the held coordinator
+  rollout. So the SIMS changes are a hand port into the release tree, not a
+  clean `git apply`.
 
 Deploying is a separate step that needs the user's go-ahead.

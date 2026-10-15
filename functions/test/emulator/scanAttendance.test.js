@@ -173,6 +173,36 @@ describe('split-day (PM session) schedules', () => {
     expect(doc).toMatchObject({ marks: { S1: 'P' }, timeIn: { S1: '07:50' }, pmTimeIn: { S1: '13:05' }, latePm: { S1: true } });
     expect(doc.absentAm?.S1).toBeUndefined();
   });
+  it('re-marks the day Late when a delayed late morning tap-in syncs after the PM-first Present', async () => {
+    await run('r_pm', at('13:05'));
+    expect((await attendance().get()).data().marks.S1).toBe('P');
+    await run('r_am', at('08:30', { receivedAt: ts('2026-09-21T13:20:00+08:00') }));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({ marks: { S1: 'L' }, timeIn: { S1: '08:30' } });
+    expect(doc.absentAm?.S1).toBeUndefined();
+    expect((await db().doc('scan_events/r_am').get()).data().attendanceResult).toMatchObject({ status: 'applied', mark: 'L' });
+  });
+  it('keeps a staff Excused mark when a delayed late morning tap-in syncs', async () => {
+    await attendance().set({ sectionId: 'SEC1', gradeLevel: 7, schoolYear: '2026-2027', date: '2026-09-21', marks: { S1: 'E' } });
+    await run('e_pm', at('13:10'));
+    await run('e_am', at('08:30', { receivedAt: ts('2026-09-21T13:20:00+08:00') }));
+    const doc = (await attendance().get()).data();
+    expect(doc.marks.S1).toBe('E');
+    expect(doc.absentAm?.S1).toBeUndefined();
+  });
+  it('clears a stale Late PM when a delayed on-time afternoon tap-in syncs', async () => {
+    await run('lp_late', at('13:10'));
+    expect((await attendance().get()).data().latePm?.S1).toBe(true);
+    await run('lp_early', at('12:55', { receivedAt: ts('2026-09-21T15:30:00+08:00') }));
+    const doc = (await attendance().get()).data();
+    expect(doc.latePm?.S1).toBeUndefined();
+    expect(doc.pmTimeIn.S1).toBe('13:10');
+  });
+  it('does not note Late PM for a second afternoon tap-in after an on-time one', async () => {
+    await run('lp_ok', at('12:55'));
+    await run('lp_again', at('13:20'));
+    expect((await attendance().get()).data().latePm?.S1).toBeUndefined();
+  });
   it('preserves a staff mark when the first tap-in is in the afternoon', async () => {
     await attendance().set({ sectionId: 'SEC1', gradeLevel: 7, schoolYear: '2026-2027', date: '2026-09-21', marks: { S1: 'E' } });
     await run('staff_e', at('13:10'));

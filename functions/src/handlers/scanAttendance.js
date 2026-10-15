@@ -80,8 +80,16 @@ export async function applyScanAttendance(db, { eventId, data, date, scanTime })
       // Notes are informational only and never change the mark.
       if (pm && firstOfDay) update.absentAm = { [id]: true };
       if (pm && !attendance.pmTimeIn?.[id] && scanTime > schedule.pmTimeIn) update.latePm = { [id]: true };
+      // Late PM is judged on the earliest afternoon tap-in, so any on-time one
+      // proves the earliest was on time, whatever order the taps are processed in.
+      if (pm && scanTime <= schedule.pmTimeIn && attendance.latePm?.[id]) update.latePm = { [id]: FieldValue.delete() };
       // A delayed morning tap-in proves the learner did come in the morning.
-      if (!pm && attendance.absentAm?.[id]) update.absentAm = { [id]: FieldValue.delete() };
+      if (!pm && attendance.absentAm?.[id]) {
+        update.absentAm = { [id]: FieldValue.delete() };
+        // absentAm marks a P that came from the PM-first rule; the real
+        // morning arrival now decides it. E and L are never touched.
+        if (marks[id] === 'P') marks[id] = schedule?.timeIn && scanTime > schedule.timeIn ? 'L' : 'P';
+      }
     }
     tx.set(attendanceRef, update, { merge: true });
     tx.update(rawRef, { attendanceResult: {
