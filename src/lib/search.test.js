@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { learnerMatches, matchesWords, normalize, sectionMatches, words } from './search.js';
+import { buildLearnerIndex, learnerMatches, matchesWords, normalize, searchLearners, sectionMatches, words } from './search.js';
 
 describe('normalize and words', () => {
   it('normalizes nullable and numeric values without throwing', () => {
@@ -64,5 +64,61 @@ describe('sectionMatches', () => {
   it('matches only section-name word prefixes', () => {
     expect(sectionMatches('jose riz', { name: 'Jose Rizal', adviserName: 'Ana Cruz' })).toBe(true);
     expect(sectionMatches('cruz', { name: 'Jose Rizal', adviserName: 'Ana Cruz' })).toBe(false);
+  });
+});
+
+describe('buildLearnerIndex and searchLearners', () => {
+  const ana = { id: 'a', firstName: 'Ana', lastName: 'Santos', lrn: '100000000001' };
+  const jose = { id: 'j', firstName: 'José', lastName: 'Nuñez', lrn: '100000000002' };
+  const juan = { id: 'u', firstName: 'Juan', lastName: 'Dela Cruz', lrn: '200000000003' };
+  const santana = { id: 's', firstName: 'Liza', lastName: 'Santana', lrn: '300000000004' };
+  const index = buildLearnerIndex([ana, jose, juan, santana]);
+
+  it('keeps the order it was given', () => {
+    expect(index.map((entry) => entry.item.id)).toEqual(['a', 'j', 'u', 's']);
+    expect(searchLearners(index, '')).toEqual([ana, jose, juan, santana]);
+  });
+
+  it('matches word starts in any order, not mid-word', () => {
+    expect(searchLearners(index, 'cruz juan')).toEqual([juan]);
+    expect(searchLearners(index, 'san')).toEqual([ana, santana]);
+    expect(searchLearners(index, 'ana')).toEqual([ana]);
+  });
+
+  it('ignores case and accents', () => {
+    expect(searchLearners(index, 'NUNEZ jose')).toEqual([jose]);
+  });
+
+  it('matches an LRN prefix only with includeLrn', () => {
+    expect(searchLearners(index, '1000')).toEqual([]);
+    expect(searchLearners(index, '1000 0000', { includeLrn: true })).toEqual([ana, jose]);
+  });
+
+  it('applies accept and stops at limit without visiting the rest', () => {
+    const seen = [];
+    const accept = (learner) => { seen.push(learner.id); return learner.id !== 'a'; };
+    expect(searchLearners(index, '', { accept, limit: 1 })).toEqual([jose]);
+    expect(seen).toEqual(['a', 'j']);
+  });
+
+  it('indexes wrapped items through toLearner', () => {
+    const entries = [{ student: juan, section: 'x' }, { student: ana, section: 'y' }];
+    const wrapped = buildLearnerIndex(entries, (entry) => entry.student);
+    expect(searchLearners(wrapped, 'ana')).toEqual([entries[1]]);
+  });
+
+  it('agrees with learnerMatches on every learner', () => {
+    for (const q of ['', 'a', 'san', 'cruz ju', 'nuñ', '2000', 'zzz']) {
+      for (const includeLrn of [false, true]) {
+        const expected = [ana, jose, juan, santana].filter((l) => learnerMatches(q, l, { includeLrn }));
+        expect(searchLearners(index, q, { includeLrn })).toEqual(expected);
+      }
+    }
+  });
+
+  it('survives missing fields', () => {
+    const blank = buildLearnerIndex([{}, null]);
+    expect(searchLearners(blank, '')).toHaveLength(2);
+    expect(searchLearners(blank, 'a', { includeLrn: true })).toEqual([]);
   });
 });

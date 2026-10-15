@@ -30,3 +30,31 @@ export function learnerMatches(query, student, { includeLrn = false } = {}) {
 export function sectionMatches(query, section) {
   return matchesWords(query, section?.name);
 }
+
+// Normalizes each learner once so typing only compares prepared words.
+// Keeps the caller's order (e.g. depedSort output or the ID card print order).
+export function buildLearnerIndex(items, toLearner = (item) => item) {
+  return items.map((item) => {
+    const learner = toLearner(item) || {};
+    return {
+      item,
+      words: [learner.firstName, learner.lastName].filter((field) => typeof field === 'string').flatMap(words),
+      lrn: normalize(learner.lrn),
+    };
+  });
+}
+
+// Same matching rules as learnerMatches, against a prebuilt index. Results
+// stay in index order, so callers never sort per keystroke.
+export function searchLearners(index, query, { includeLrn = false, accept, limit = Infinity } = {}) {
+  const queryWords = words(query);
+  const compactQuery = normalize(query).replace(/\s+/g, '');
+  const results = [];
+  for (const entry of index) {
+    if (results.length >= limit) break;
+    const nameHit = queryWords.every((queryWord) => entry.words.some((word) => word.startsWith(queryWord)));
+    const hit = nameHit || (includeLrn && entry.lrn.startsWith(compactQuery));
+    if (hit && (!accept || accept(entry.item))) results.push(entry.item);
+  }
+  return results;
+}
