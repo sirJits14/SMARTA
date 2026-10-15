@@ -202,6 +202,12 @@ from an attendance doc, so both pages use the same logic.
   tap-in as afternoon, so a learner gets "Absent AM".
 - If a schedule is edited mid-day, notes already written stay. The parent app
   recomputes on the next tap.
+- The delayed-AM re-judge keys on the mark being P. If staff hand-set P on a
+  learner who still has "Absent AM", a delayed late morning tap can still flip
+  it to L. The user accepted this.
+- If two delayed morning taps sync in the wrong order (08:30, then 07:50), the
+  first one processed decides the mark. This is the same "first processed
+  wins" behavior as the first-of-day rule.
 
 ## Testing
 
