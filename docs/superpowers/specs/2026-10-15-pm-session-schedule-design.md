@@ -204,5 +204,13 @@ from an attendance doc, so both pages use the same logic.
 Cloud Functions, SIMS hosting and the parent app hosting each deploy.
 Functions should go first so records carry the new fields before the pages
 read them. Every reader also treats missing fields as "no PM data", so any
-order is safe. SIMS hosting deploys from the release tree, not the root
-build.
+order is safe.
+
+The coordinator rollout hold still applies:
+- Functions deploy by name only: `functions:onScanEventCreated`. Never use a
+  bare `--only functions`. Check first that the trigger's import graph has
+  no held coordinator code.
+- SIMS hosting deploys from the release tree, not the root build. See
+  `docs/audits/deployments/` for the current procedure.
+
+Deploying is a separate step that needs the user's go-ahead.
