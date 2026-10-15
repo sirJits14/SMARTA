@@ -76,7 +76,8 @@ Staff `saveMarks` merges `marks` only, so it never wipes these fields.
 Pure helpers, used by SIMS, the parent app and Cloud Functions. Functions get
 them through the existing `scripts/syncShared.mjs` copy.
 
-- `hasPmSession(schedule)`: true when `pmTimeIn` and `pmTimeOut` are both set.
+- `hasPmSession(schedule)`: true when `timeOut`, `pmTimeIn` and `pmTimeOut`
+  are all valid HH:MM. The split needs the AM departure too.
 - `sessionSplit(schedule)`: the midpoint between AM departure (`timeOut`) and
   PM arrival (`pmTimeIn`), as HH:MM, rounded down to the minute. 12:00 and
   13:00 give 12:30.
