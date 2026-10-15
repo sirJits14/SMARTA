@@ -2,14 +2,14 @@ import { useAsyncAction } from '../../hooks/useAsyncAction.js';
 import { usePrintReadiness } from '../../hooks/usePrintReadiness.js';
 import { ActionFeedback } from '../../components/ui.jsx';
 import { ResourceState } from '../../components/ui.jsx';
-import { useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { collection, query, where, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
-import { useCollectionResource, useQueryResource, useDoc } from '../../hooks/useCollection.js';
+import { useCollectionResource, useQueryResource, useDoc, useSchoolYearEnrollments } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
 import { depedSort, fullName } from '../../lib/roster.js';
 import { localDate } from '../../lib/dates.js';
-import { learnerMatches } from '../../lib/search.js';
+import { buildLearnerIndex, searchLearners } from '../../lib/search.js';
 import { currentEnrollmentByStudent } from '../../lib/enrollmentChange.js';
 import { slotsFreeText } from '../../lib/slipIssue.js';
 import { GRADES, UNASSIGNED } from '../../lib/constants.js';
@@ -39,7 +39,7 @@ export default function LinksTab({ schoolYear }) {
   const action = useAsyncAction();
   const studentsResource = useCollectionResource('students');
   const students = studentsResource.data;
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollmentsResource = useSchoolYearEnrollments(schoolYear);
   const enrollments = enrollmentsResource.data;
   const sectionsResource = useCollectionResource('sections');
   const sections = sectionsResource.data;
@@ -53,13 +53,15 @@ export default function LinksTab({ schoolYear }) {
     ...GRADES.filter((grade) => enrolledGrades.has(grade)).map((grade) => ({ value: grade, label: `Grade ${grade}` })),
     { value: UNASSIGNED, label: 'Unassigned' },
   ], [enrolledGrades]);
-  const allMatches = useMemo(() => q.trim() ? depedSort(students.filter((candidate) => {
+  const learnerIndex = useMemo(() => buildLearnerIndex(depedSort(students)), [students]);
+  const searchQuery = useDeferredValue(q);
+  // One extra hit tells us there are more than 20 without counting them all.
+  const found = useMemo(() => searchQuery.trim() ? searchLearners(learnerIndex, searchQuery, { includeLrn: true, limit: 21, accept: (candidate) => {
     const enrollment = enrollmentByStudent.get(candidate.id);
-    const gradeHit = gradeFilter === '' ||
+    return gradeFilter === '' ||
       (gradeFilter === UNASSIGNED ? !enrollment : Number(enrollment?.gradeLevel) === Number(gradeFilter));
-    return gradeHit && learnerMatches(q, candidate, { includeLrn: true });
-  })) : [], [enrollmentByStudent, gradeFilter, q, students]);
-  const matches = allMatches.slice(0, 20);
+  } }) : [], [enrollmentByStudent, gradeFilter, learnerIndex, searchQuery]);
+  const matches = found.slice(0, 20);
   const student = students.find((s) => s.id === studentId);
   const linksResource = useQueryResource(() => studentId && query(collection(db, 'guardian_links'), where('studentId', '==', studentId), limit(20)), [studentId]);
   const links = linksResource.data;
@@ -108,7 +110,7 @@ export default function LinksTab({ schoolYear }) {
           const placement = enrollment ? `Grade ${enrollment.gradeLevel} ${section?.name || 'Section unavailable'}` : 'Unassigned';
           return <Btn key={s.id} variant="ghost" onClick={() => pickLearner(s.id)} style={{ marginRight: 6, marginBottom: 6, maxWidth: '100%', whiteSpace: 'normal', textAlign: 'left' }}>{fullName(s)} · {s.lrn} · {placement}</Btn>;
         })}
-        {allMatches.length > 20 && <div aria-live="polite" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted }}>Showing 20 of {allMatches.length} — keep typing to narrow down.</div>}
+        {found.length > 20 && <div aria-live="polite" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted }}>Showing the first 20 — keep typing to narrow down.</div>}
       </Card>
       {!student && <div className="slips-print-hide"><EmptyState title="Choose a learner" hint="See who can view their gate scans, reissue or revoke their slip, restrict self-service activation, or add a manual scan." /></div>}
       {student && (

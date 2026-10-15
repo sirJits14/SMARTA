@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCollectionResource } from '../hooks/useCollection.js';
+import { useCollectionResource, useSchoolYearEnrollments } from '../hooks/useCollection.js';
 import { ResourceState } from '../components/ui.jsx';
 import { S } from '../styles.js';
 import BySectionTab from './idCards/BySectionTab.jsx';
@@ -15,7 +15,7 @@ const readTab = () => {
 
 export default function IDCardsPage({ me, schoolYear }) {
   const sectionsResource = useCollectionResource('sections');
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollmentsResource = useSchoolYearEnrollments(schoolYear);
   const studentsResource = useCollectionResource('students');
   const batchResource = useCollectionResource('id_card_batch');
   const [tab, setTabState] = useState(readTab);

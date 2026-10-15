@@ -1,8 +1,8 @@
 import { ResourceState } from '../../components/ui.jsx';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { collection, query, where, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
-import { useCollectionResource, useQueryResource } from '../../hooks/useCollection.js';
+import { useCollectionResource, useQueryResource, useSchoolYearEnrollments } from '../../hooks/useCollection.js';
 import { fullName } from '../../lib/roster.js';
 import { localDate } from '../../lib/dates.js';
 import { formatScanTime } from '../../lib/attendance.js';
@@ -20,7 +20,7 @@ export default function ScanLogTab({ schoolYear }) {
   const kiosksResource = useCollectionResource('kiosks');
   const kiosks = kiosksResource.data; const studentsResource = useCollectionResource('students');
   const students = studentsResource.data;
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollmentsResource = useSchoolYearEnrollments(schoolYear);
   const enrollments = enrollmentsResource.data;
   const byId = useMemo(() => new Map(students.map((s) => [s.id, s])), [students]);
   const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
@@ -35,13 +35,14 @@ export default function ScanLogTab({ schoolYear }) {
   }, [date, deviceId]);
   const rows = rowsResource.data;
   const sorted = useMemo(() => [...rows].sort((a, b) => (a.scannedTime < b.scannedTime ? 1 : -1)), [rows]);
+  const searchQuery = useDeferredValue(filterQuery);
   const filtered = useMemo(() => sorted.filter((row) => {
     const learner = byId.get(row.studentId);
     const enrollment = learner ? enrollmentByStudent.get(learner.id) : null;
     const gradeHit = gradeFilter === '' ||
       (gradeFilter === UNASSIGNED ? !learner || !enrollment : Number(enrollment?.gradeLevel) === Number(gradeFilter));
-    return gradeHit && learnerMatches(filterQuery, learner);
-  }), [byId, enrollmentByStudent, filterQuery, gradeFilter, sorted]);
+    return gradeHit && learnerMatches(searchQuery, learner);
+  }), [byId, enrollmentByStudent, searchQuery, gradeFilter, sorted]);
   const filterActive = !!filterQuery.trim() || gradeFilter !== '';
   const resources = [kiosksResource, studentsResource, enrollmentsResource];
   if (resources.some(r => r.loading || r.error)) return <ResourceState resources={resources}/>;

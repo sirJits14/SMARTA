@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { usePrintReadiness } from '../../hooks/usePrintReadiness.js';
 import { useAsyncAction } from '../../hooks/useAsyncAction.js';
 import { ActionFeedback, Btn, Inp, Field, Card, EmptyState, Confirm } from '../../components/ui.jsx';
@@ -6,7 +6,7 @@ import IdCardsPrintSheets from '../../components/IdCardsPrintable.jsx';
 import { useIdCardPrintConfirm } from '../../components/IdCardPrintConfirm.jsx';
 import { addToIdCardBatch, removeFromIdCardBatch, clearIdCardBatch, markBatchPrinted } from '../../data/idCards.js';
 import { enrolledEntries, buildBatchView, groupBySection, isIdCardPrinted, sheetFillLabel } from '../../lib/idCardQueue.js';
-import { learnerMatches } from '../../lib/search.js';
+import { buildLearnerIndex, searchLearners } from '../../lib/search.js';
 import { fullName } from '../../lib/roster.js';
 import { T } from '../../styles.js';
 
@@ -28,9 +28,11 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
   const [query, setQuery] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const action = useAsyncAction();
-  const results = useMemo(() => (query.trim()
-    ? enrolled.filter((e) => !batchIds.has(e.student.id) && learnerMatches(query, e.student, { includeLrn: true })).slice(0, SEARCH_LIMIT)
-    : []), [enrolled, batchIds, query]);
+  const searchIndex = useMemo(() => buildLearnerIndex(enrolled, (e) => e.student), [enrolled]);
+  const searchQuery = useDeferredValue(query);
+  const results = useMemo(() => (searchQuery.trim()
+    ? searchLearners(searchIndex, searchQuery, { includeLrn: true, limit: SEARCH_LIMIT, accept: (e) => !batchIds.has(e.student.id) })
+    : []), [searchIndex, batchIds, searchQuery]);
 
   const { printAndConfirm, confirmDialog } = useIdCardPrintConfirm(me, { mark: markBatchPrinted });
   const printRoot = useRef(null);
@@ -64,8 +66,8 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
               ))}
             </ul>
           )}
-          {query.trim() && results.length === 0 && (
-            <p style={{ margin: 0, color: T.inkMuted, fontSize: 13 }}>No other enrolled learner matches “{query.trim()}”.</p>
+          {searchQuery.trim() && results.length === 0 && (
+            <p style={{ margin: 0, color: T.inkMuted, fontSize: 13 }}>No other enrolled learner matches “{searchQuery.trim()}”.</p>
           )}
         </Card>
 

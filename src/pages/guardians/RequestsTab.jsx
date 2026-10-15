@@ -1,10 +1,10 @@
 import { useAsyncAction } from '../../hooks/useAsyncAction.js';
 import { ActionFeedback } from '../../components/ui.jsx';
 import { ResourceState } from '../../components/ui.jsx';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
-import { useCollectionResource, useQueryResource } from '../../hooks/useCollection.js';
+import { useCollectionResource, useQueryResource, useSchoolYearEnrollments } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
 import { fullName } from '../../lib/roster.js';
 import { learnerMatches, matchesWords } from '../../lib/search.js';
@@ -32,7 +32,7 @@ export default function RequestsTab({ schoolYear }) {
   const open = openResource.data;
   const studentsResource = useCollectionResource('students');
   const students = studentsResource.data;
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollmentsResource = useSchoolYearEnrollments(schoolYear);
   const enrollments = enrollmentsResource.data;
   const byLrn = useMemo(() => new Map(students.map((s) => [s.lrn, s])), [students]);
   const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
@@ -45,14 +45,15 @@ export default function RequestsTab({ schoolYear }) {
     ...GRADES.map((grade) => ({ value: grade, label: `Grade ${grade}` })),
     { value: UNASSIGNED, label: 'Unassigned' },
   ], []);
+  const searchQuery = useDeferredValue(filterQuery);
   const filtered = useMemo(() => open.filter((request) => {
     const learner = byLrn.get(request.studentLrn);
     const enrollment = learner ? enrollmentByStudent.get(learner.id) : null;
-    const nameHit = learnerMatches(filterQuery, learner) || matchesWords(filterQuery, request.learnerNameTyped);
+    const nameHit = learnerMatches(searchQuery, learner) || matchesWords(searchQuery, request.learnerNameTyped);
     const gradeHit = gradeFilter === '' ||
       (gradeFilter === UNASSIGNED ? !learner || !enrollment : Number(enrollment?.gradeLevel) === Number(gradeFilter));
     return nameHit && gradeHit;
-  }), [byLrn, enrollmentByStudent, filterQuery, gradeFilter, open]);
+  }), [byLrn, enrollmentByStudent, searchQuery, gradeFilter, open]);
 
   const resolve = async (r, approve) => {
     const student = byLrn.get(r.studentLrn);
