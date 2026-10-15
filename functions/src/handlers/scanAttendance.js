@@ -1,4 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore';
+import { sessionOf } from '../../shared/scheduleSessions.js';
 
 export async function rejectScanAttendance(db, eventId, reason) {
   const ref = db.doc(`scan_events/${eventId}`);
@@ -56,22 +57,31 @@ export async function applyScanAttendance(db, { eventId, data, date, scanTime })
         if (typeof id === 'string' && !Object.hasOwn(marks, id)) marks[id] = 'A';
       }
     }
-    let scheduleTimeIn;
+    let schedule;
     if (section.data().scheduleId) {
-      const schedule = await tx.get(db.doc(`schedules/${section.data().scheduleId}`));
-      scheduleTimeIn = schedule.data()?.timeIn;
+      schedule = (await tx.get(db.doc(`schedules/${section.data().scheduleId}`))).data();
     }
     const update = { sectionId: data.sectionId, gradeLevel, schoolYear: data.schoolYear, date,
       marks, rosterInitialized: true, updatedAt: date };
-    const field = data.kind === 'in' ? 'timeIn' : 'timeOut';
-    const priorTime = attendance[field]?.[data.studentId];
+    const id = data.studentId;
+    // Split-day schedules keep afternoon taps apart, so a 1 PM tap-in cannot
+    // overwrite the morning arrival. Single-session schedules are always 'am'.
+    const pm = sessionOf(scanTime, schedule) === 'pm';
+    const field = { in: pm ? 'pmTimeIn' : 'timeIn', out: pm ? 'pmTimeOut' : 'timeOut' }[data.kind];
+    const priorTime = attendance[field]?.[id];
     // Delayed/offline events must not move a later recorded time backwards.
-    update[field] = { [data.studentId]: priorTime && priorTime > scanTime ? priorTime : scanTime };
-    if (data.kind === 'in' && !attendance.timeIn?.[data.studentId]) {
-      const existingMark = marks[data.studentId];
-      if (!existingMark || existingMark === 'A') {
-        marks[data.studentId] = scheduleTimeIn && scanTime > scheduleTimeIn ? 'L' : 'P';
+    update[field] = { [id]: priorTime && priorTime > scanTime ? priorTime : scanTime };
+    if (data.kind === 'in') {
+      const firstOfDay = !attendance.timeIn?.[id] && !attendance.pmTimeIn?.[id];
+      if (firstOfDay && (!marks[id] || marks[id] === 'A')) {
+        // An afternoon-only learner is Present; the Absent AM note says why.
+        marks[id] = !pm && schedule?.timeIn && scanTime > schedule.timeIn ? 'L' : 'P';
       }
+      // Notes are informational only and never change the mark.
+      if (pm && firstOfDay) update.absentAm = { [id]: true };
+      if (pm && !attendance.pmTimeIn?.[id] && scanTime > schedule.pmTimeIn) update.latePm = { [id]: true };
+      // A delayed morning tap-in proves the learner did come in the morning.
+      if (!pm && attendance.absentAm?.[id]) update.absentAm = { [id]: FieldValue.delete() };
     }
     tx.set(attendanceRef, update, { merge: true });
     tx.update(rawRef, { attendanceResult: {
