@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase.js';
+import { endSession } from '../session.js';
 import { staffUsers } from '../data/staffUsers.js';
 import { passwordProblem, waitForPasswordSession, MIN_PASSWORD } from '../lib/password.js';
 import { T, S } from '../styles.js';
@@ -33,7 +34,7 @@ export default function ChangePassword({ me, onLogout, onChanging, onReauthentic
       await signInWithEmailAndPassword(auth, me.email, pw);
       await onReauthenticated?.();
     }
-    catch { await signOut(auth); }
+    catch { await endSession(); }
     finally { onChanging?.(false); }
   };
   const enter = (e) => e.key === 'Enter' && go();

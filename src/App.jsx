@@ -1,7 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { onIdTokenChanged, signOut } from 'firebase/auth';
+import { onIdTokenChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
+import { endSession, takeStoredSignOutNotice } from './session.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
 import { canOpen, canLoadStaffData, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
@@ -27,6 +28,9 @@ const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const AccountsPage = lazy(() => import('./pages/AccountsPage.jsx'));
 const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage.jsx'));
+
+// Read once per page load: a forced sign-out leaves its notice here before reloading.
+const startupNotice = takeStoredSignOutNotice();
 
 const PageFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
@@ -84,7 +88,7 @@ export default function App() {
   const [authTime, setAuthTime] = useState(undefined);
   const [me, setMe] = useState(undefined);
   const [passwordChangePending, setPasswordChangePending] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(startupNotice);
   const [page, setPageRaw] = useState('dashboard');
   const [pageParams, setPageParams] = useState(null);
   const [navigationSequence, setNavigationSequence] = useState(0);
@@ -102,7 +106,7 @@ export default function App() {
         const token = await user.getIdTokenResult();
         if (current === generation) setAuthTime(token.claims.auth_time);
       } catch {
-        if (current === generation) { setNotice('Your session has ended. Please sign in again.'); signOut(auth); }
+        if (current === generation) { setNotice('Your session has ended. Please sign in again.'); endSession('Your session has ended. Please sign in again.'); }
       }
     });
     return () => { generation++; unsubscribe(); };
@@ -115,7 +119,7 @@ export default function App() {
     const cutoff = me.sessionValidAfter ?? 0;
     if (!Number.isSafeInteger(cutoff) || cutoff < 0 || !Number.isSafeInteger(authTime) || authTime < cutoff) {
       setNotice('Your session has ended. Please sign in again.');
-      signOut(auth);
+      endSession('Your session has ended. Please sign in again.');
     }
   }, [authUser, me, authTime, passwordChangePending]);
 
@@ -125,7 +129,7 @@ export default function App() {
     if (authUser === undefined) return;
     if (!authUser) { setMe(null); return; }
     const email = authUser.email?.toLowerCase();
-    const refuse = (message) => { setNotice(message); setMe(null); signOut(auth); };
+    const refuse = (message) => { setNotice(message); setMe(null); endSession(message); };
     if (!email) { refuse('This account has no staff profile yet. Ask an administrator to add one.'); return; }
     setMe(undefined);
     let loaded = false;
@@ -146,7 +150,7 @@ export default function App() {
   const reducedMotionGuard = (
     <style>{'@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }'}</style>
   );
-  const logout = () => { setNotice(''); setPasswordChangePending(false); signOut(auth); };
+  const logout = () => { setNotice(''); setPasswordChangePending(false); endSession(); };
 
   if (!me) return <>{reducedMotionGuard}<Login notice={notice} onAttempt={() => setNotice('')} /></>;
   if (me.mustChangePassword || passwordChangePending) return <>{reducedMotionGuard}<ChangePassword me={me} onLogout={logout} onChanging={setPasswordChangePending} onReauthenticated={async () => {
