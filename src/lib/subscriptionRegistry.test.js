@@ -113,6 +113,34 @@ describe('subscription registry', () => {
     expect(seen.at(-1)).toEqual(ready(['fresh']));
   });
 
+  it('starts a fresh listener when a key is acquired after its linger drop', () => {
+    const registry = createSubscriptionRegistry({ lingerMs: 1000 });
+    const src = source();
+    registry.acquire('k', src.start).release();
+    vi.advanceTimersByTime(1000);
+    registry.acquire('k', src.start);
+    expect(src.starts).toBe(2);
+    expect(src.stops).toBe(1);
+  });
+
+  it('does not let a handle from before clear stop a newer listener', () => {
+    const registry = createSubscriptionRegistry({ lingerMs: 1000 });
+    const oldSrc = source(); const newSrc = source();
+    const old = registry.acquire('k', oldSrc.start);
+    registry.clear();
+    registry.acquire('k', newSrc.start);
+    old.release();
+    vi.advanceTimersByTime(5000);
+    expect(oldSrc.stops).toBe(1);
+    expect(newSrc.stops).toBe(0);
+    expect(registry.peek('k')).not.toBeNull();
+  });
+
+  it('ignores a restart of an unknown key', () => {
+    const registry = createSubscriptionRegistry();
+    expect(() => registry.restart('missing')).not.toThrow();
+  });
+
   it('keeps keys independent and clear stops them all', () => {
     const registry = createSubscriptionRegistry();
     const one = source(); const two = source();

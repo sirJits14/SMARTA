@@ -3,7 +3,7 @@ import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { startResourceSubscription } from '../lib/resourceSubscription.js';
 import { createSubscriptionRegistry } from '../lib/subscriptionRegistry.js';
-import { staffCollectionQuery } from '../lib/staffQueries.js';
+import { staffCollectionQuery, staffResourceKey } from '../lib/staffQueries.js';
 const EMPTY = [];
 const rows = snapshot => snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
 // One listener per key for the whole app; pages that ask for the same rows share it.
@@ -62,7 +62,7 @@ export function useSchoolYearEnrollments(schoolYear) {
     () => (schoolYear ? query(collection(db, 'enrollments'), where('schoolYear', '==', schoolYear)) : null));
 }
 export function useStaffCollectionResource(path, { me, schoolYear, sectionId, date } = {}) {
-  const key = JSON.stringify(['staff', path, me ? me.role : null, me?.gradeLevel ?? null, schoolYear ?? null, sectionId ?? null, date ?? null]);
+  const key = staffResourceKey(path, { me, schoolYear, sectionId, date });
   const resource = useSharedQueryResource(key, () => staffCollectionQuery(path, { me, schoolYear, sectionId, date }));
   // A profile that is still loading must never look like a successful empty roster.
   return !me ? { ...resource, data: EMPTY, loading: true, error: null } : resource;

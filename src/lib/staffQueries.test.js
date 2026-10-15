@@ -6,7 +6,7 @@ vi.mock('../firebase.js', async () => {
   return { db: getFirestore(initializeApp({ projectId: 'staff-query-tests' }, 'staff-query-tests')) };
 });
 import { db } from '../firebase.js';
-import { staffCollectionQuery } from './staffQueries.js';
+import { staffCollectionQuery, staffResourceKey } from './staffQueries.js';
 
 const schoolYear = '2026-2027';
 const paths = ['students', 'sections', 'enrollments', 'student_attendance', 'schedules'];
@@ -44,5 +44,31 @@ describe('staff collection query authorization filters', () => {
   });
   it('does not expose an unsupported collection to coordinators', () => {
     expect(staffCollectionQuery('guardians', { me: { role: 'jhs_coord' }, schoolYear })).toBeNull();
+  });
+});
+
+describe('staff resource key', () => {
+  const base = { schoolYear, sectionId: 'G8', date: '2026-10-10' };
+  const keyFor = (over = {}) => staffResourceKey('student_attendance', { me: { role: 'glc', gradeLevel: 8 }, ...base, ...over });
+  it('never shares a key between no profile, a role-less admin, and an admin', () => {
+    const keys = [undefined, { email: 'a@x' }, { role: 'admin' }].map(me => staffResourceKey('students', { me, schoolYear }));
+    expect(new Set(keys).size).toBe(3);
+  });
+  it('is stable for the same inputs', () => {
+    expect(keyFor()).toBe(keyFor());
+  });
+  it.each([
+    ['gradeLevel', { me: { role: 'glc', gradeLevel: 9 } }],
+    ['schoolYear', { schoolYear: '2027-2028' }],
+    ['sectionId', { sectionId: 'G9' }],
+    ['date', { date: '2026-10-11' }],
+  ])('changes when %s changes', (_name, over) => {
+    expect(keyFor(over)).not.toBe(keyFor());
+  });
+  it('treats an undefined and a null role as the same legacy administrator', () => {
+    expect(staffResourceKey('students', { me: { role: undefined }, schoolYear })).toBe(staffResourceKey('students', { me: { role: null }, schoolYear }));
+  });
+  it('changes with the collection path', () => {
+    expect(staffResourceKey('students', { me: { role: 'admin' } })).not.toBe(staffResourceKey('sections', { me: { role: 'admin' } }));
   });
 });

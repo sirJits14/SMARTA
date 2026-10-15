@@ -26,3 +26,11 @@ export function staffCollectionQuery(path, { me, schoolYear, sectionId, date } =
   if (path === 'schedules') return query(collection(db, path), where('gradeLevels', 'array-contains-any', allowed));
   return null;
 }
+
+// Names everything staffCollectionQuery depends on, so a shared listener is
+// reused only for the same rows. "No profile yet" never shares a key with a
+// role-less (legacy admin) profile.
+export function staffResourceKey(path, { me, schoolYear, sectionId, date } = {}) {
+  const profile = me ? ['profile', me.role ?? null, me.gradeLevel ?? null] : ['no-profile'];
+  return JSON.stringify(['staff', path, profile, schoolYear ?? null, sectionId ?? null, date ?? null]);
+}

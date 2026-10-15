@@ -51,7 +51,10 @@ export function createSubscriptionRegistry({ lingerMs = LINGER_MS } = {}) {
         if (released) return;
         released = true;
         entry.users -= 1;
-        if (entry.users === 0) entry.timer = setTimeout(() => drop(key), lingerMs);
+        if (entries.get(key) !== entry) return;
+        if (entry.users === 0) {
+          entry.timer = setTimeout(() => { if (entries.get(key) === entry) drop(key); }, lingerMs);
+        }
       },
     };
   }
