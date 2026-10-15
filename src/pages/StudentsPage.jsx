@@ -1,7 +1,8 @@
 import { EditorResources, ResourceState } from '../components/ui.jsx';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
+import { buildLearnerIndex, searchLearners } from '../lib/search.js';
 import { deleteStudent } from '../data/students.js';
 import { STUDENT_STATUS, UNASSIGNED } from '../lib/constants.js';
 import { T, S } from '../styles.js';
@@ -10,6 +11,8 @@ import StudentForm from './StudentForm.jsx';
 import ImportStudentsWizard from './ImportStudentsWizard.jsx';
 import { currentEnrollmentByStudent } from '../lib/enrollmentChange.js';
 import { isAdmin, grades, gradeOptions, singleGrade, scopeRoster } from '../lib/access.js';
+
+const PAGE_SIZE = 100;
 
 export default function StudentsPage({ me, schoolYear, initialGradeFilter, initialStatus }) {
   const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
@@ -37,9 +40,10 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
 
   const setGradeFilterAndReset = (v) => { setGradeFilter(v); setSectionFilter(''); };
 
-  const rows = useMemo(() => depedSort(students.filter((s) => {
-    const hit = `${s.lastName} ${s.firstName} ${s.lrn}`.toLowerCase().includes(q.toLowerCase());
-    if (!hit) return false;
+  // Names are normalized once per roster change; typing only walks the index.
+  const learnerIndex = useMemo(() => buildLearnerIndex(depedSort(students)), [students]);
+  const searchQuery = useDeferredValue(q);
+  const rows = useMemo(() => searchLearners(learnerIndex, searchQuery, { includeLrn: true, accept: (s) => {
     const en = enrollmentByStudent.get(s.id);
     if (status === UNASSIGNED) { if (en) return false; }
     else if (status && s.status !== status) return false;
@@ -47,7 +51,13 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
     if (gradeFilter && (!en || String(en.gradeLevel) !== gradeFilter)) return false;
     if (sectionFilter && (!en || en.sectionId !== sectionFilter)) return false;
     return true;
-  })), [students, q, status, gradeFilter, sectionFilter, enrollmentByStudent]);
+  } }), [learnerIndex, searchQuery, status, gradeFilter, sectionFilter, enrollmentByStudent]);
+  // Drawing thousands of rows is what made typing lag; show a page at a time.
+  const filterKey = [searchQuery, status, gradeFilter, sectionFilter].join('|');
+  const [paging, setPaging] = useState({ key: filterKey, shown: PAGE_SIZE });
+  const shown = paging.key === filterKey ? paging.shown : PAGE_SIZE;
+  const visibleRows = rows.slice(0, shown);
+  const filtering = Boolean(q.trim() || status || gradeFilter || sectionFilter);
 
   const resources = [studentsResource,sectionsResource,enrollmentsResource];
 
@@ -85,13 +95,15 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
             </Sel></Field>
           </div>
         </div>
-        {rows.length === 0 ? <EmptyState title="No learners yet" hint={admin ? 'Add your first learner with the button above.' : 'No learners are enrolled in your grade levels this school year.'} /> : (
+        {rows.length === 0 ? (filtering
+          ? <EmptyState title={q.trim() ? `No learners match “${q.trim()}”` : 'No learners match these filters'} hint="Try another name, LRN or filter." />
+          : <EmptyState title="No learners yet" hint={admin ? 'Add your first learner with the button above.' : 'No learners are enrolled in your grade levels this school year.'} />) : (
           <div style={{ overflowX: 'auto' }}>
             <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr style={S.thead}>
                 {['LRN', 'Name', 'Sex', 'Status', 'Grade', 'Section', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
               </tr></thead>
-              <tbody>{rows.map((s) => {
+              <tbody>{visibleRows.map((s) => {
                 const en = enrollmentByStudent.get(s.id);
                 const sec = en ? sectionById.get(en.sectionId) : null;
                 return (
@@ -112,6 +124,10 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
                 );
               })}</tbody>
             </table></div>
+            {rows.length > PAGE_SIZE && <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+              <span aria-live="polite" style={{ fontSize: 13, color: T.inkMuted }}>Showing {visibleRows.length.toLocaleString()} of {rows.length.toLocaleString()} learners</span>
+              {shown < rows.length && <Btn variant="ghost" onClick={() => setPaging({ key: filterKey, shown: shown + PAGE_SIZE })}>Show 100 more</Btn>}
+            </div>}
           </div>
         )}
       </Card>
