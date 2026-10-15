@@ -53,11 +53,13 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
     return true;
   } }), [learnerIndex, searchQuery, status, gradeFilter, sectionFilter, enrollmentByStudent]);
   // Drawing thousands of rows is what made typing lag; show a page at a time.
-  const filterKey = [searchQuery, status, gradeFilter, sectionFilter].join('|');
+  const filterKey = [searchQuery.trim(), status, gradeFilter, sectionFilter].join('|');
   const [paging, setPaging] = useState({ key: filterKey, shown: PAGE_SIZE });
+  // A new search or filter always starts again at the first page.
+  if (paging.key !== filterKey) setPaging({ key: filterKey, shown: PAGE_SIZE });
   const shown = paging.key === filterKey ? paging.shown : PAGE_SIZE;
   const visibleRows = rows.slice(0, shown);
-  const filtering = Boolean(q.trim() || status || gradeFilter || sectionFilter);
+  const filtering = Boolean(searchQuery.trim() || status || gradeFilter || sectionFilter);
 
   const resources = [studentsResource,sectionsResource,enrollmentsResource];
 
@@ -96,7 +98,7 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
           </div>
         </div>
         {rows.length === 0 ? (filtering
-          ? <EmptyState title={q.trim() ? `No learners match “${q.trim()}”` : 'No learners match these filters'} hint="Try another name, LRN or filter." />
+          ? <EmptyState title={searchQuery.trim() ? `No learners match “${searchQuery.trim()}”` : 'No learners match these filters'} hint="Try another name, LRN or filter." />
           : <EmptyState title="No learners yet" hint={admin ? 'Add your first learner with the button above.' : 'No learners are enrolled in your grade levels this school year.'} />) : (
           <div style={{ overflowX: 'auto' }}>
             <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
