@@ -5,12 +5,21 @@ import { signOutAndClear, takeSignOutNotice } from './lib/session.js';
 
 const storage = () => window.sessionStorage;
 
-export const endSession = (notice = '') => signOutAndClear(notice, {
-  storage,
-  signOut: () => signOut(auth),
-  terminate: () => terminate(db),
-  clearCache: () => clearIndexedDbPersistence(db),
-  reload: () => window.location.reload(),
-});
+// True from the moment this tab starts its own sign-out, so its auth listener
+// does not also reload when the sign-out lands.
+let ending = false;
+export const isEndingSession = () => ending;
+
+export const endSession = async (notice = '') => {
+  ending = true;
+  const reloaded = await signOutAndClear(notice, {
+    storage,
+    signOut: () => signOut(auth),
+    terminate: () => terminate(db),
+    clearCache: () => clearIndexedDbPersistence(db),
+    reload: () => window.location.reload(),
+  });
+  if (!reloaded) ending = false;
+};
 
 export const takeStoredSignOutNotice = () => takeSignOutNotice(storage);

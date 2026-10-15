@@ -2,7 +2,8 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { onIdTokenChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
-import { endSession, takeStoredSignOutNotice } from './session.js';
+import { endSession, isEndingSession, takeStoredSignOutNotice } from './session.js';
+import { shouldReloadAfterSignOut } from './lib/session.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
 import { canOpen, canLoadStaffData, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
@@ -31,6 +32,7 @@ const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage.jsx'));
 
 // Read once per page load: a forced sign-out leaves its notice here before reloading.
 const startupNotice = takeStoredSignOutNotice();
+const SESSION_ENDED = 'Your session has ended. Please sign in again.';
 
 const PageFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
@@ -98,15 +100,18 @@ export default function App() {
 
   useEffect(() => {
     let generation = 0;
+    let hadUser = false;
     const unsubscribe = onIdTokenChanged(auth, async user => {
       const current = ++generation;
+      if (user) hadUser = true;
+      else if (shouldReloadAfterSignOut({ hadUser, user, ending: isEndingSession() })) { window.location.reload(); return; }
       setAuthUser(user);
       if (!user) { setAuthTime(undefined); return; }
       try {
         const token = await user.getIdTokenResult();
         if (current === generation) setAuthTime(token.claims.auth_time);
       } catch {
-        if (current === generation) { setNotice('Your session has ended. Please sign in again.'); endSession('Your session has ended. Please sign in again.'); }
+        if (current === generation) { setNotice(SESSION_ENDED); endSession(SESSION_ENDED); }
       }
     });
     return () => { generation++; unsubscribe(); };
@@ -118,8 +123,8 @@ export default function App() {
     if (!authUser || !me || authTime === undefined || passwordChangePending) return;
     const cutoff = me.sessionValidAfter ?? 0;
     if (!Number.isSafeInteger(cutoff) || cutoff < 0 || !Number.isSafeInteger(authTime) || authTime < cutoff) {
-      setNotice('Your session has ended. Please sign in again.');
-      endSession('Your session has ended. Please sign in again.');
+      setNotice(SESSION_ENDED);
+      endSession(SESSION_ENDED);
     }
   }, [authUser, me, authTime, passwordChangePending]);
 
