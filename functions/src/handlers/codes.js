@@ -103,8 +103,9 @@ export async function reissueActivationCode(ctx, data) {
 
 // Staff. Issues slips for the saved slip batch (spec 2026-10-16): up to
 // MAX_BATCH_ISSUE learners per press, oldest first. Learners who get a slip
-// leave the batch only after every slip of the press is written, so a press
-// that fails partway loses nobody. Skipped learners stay so staff see why.
+// leave the batch only after every slip and audit entry of the press is
+// written, so a press that fails partway loses nobody. Skipped learners stay so
+// staff see why.
 export async function issueSlipBatch(ctx, data) {
   const { db, now, email } = ctx;
   const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
@@ -130,15 +131,16 @@ export async function issueSlipBatch(ctx, data) {
     issued.push({ studentId, student, section, sectionId: enrollment.sectionId, reason, slip: r.slip, slotsFree: r.slotsFree });
   }
 
+  await Promise.all(issued.map(({ studentId, reason, slotsFree }) => audit(db, {
+    action: 'code.reissued', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId,
+    details: { schoolYear, reason, via: 'batch', guardianSlotsFree: slotsFree.guardian, adviserSlotsFree: slotsFree.adviser },
+  })));
+  // The batch delete is last: any earlier failure leaves every learner queued.
   if (issued.length) {
     const done = db.batch();
     issued.forEach(({ studentId }) => done.delete(db.doc(`slip_batch/${studentId}`)));
     await done.commit();
   }
-  await Promise.all(issued.map(({ studentId, reason, slotsFree }) => audit(db, {
-    action: 'code.reissued', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId,
-    details: { schoolYear, reason, via: 'batch', guardianSlotsFree: slotsFree.guardian, adviserSlotsFree: slotsFree.adviser },
-  })));
   logEvent('slip_batch_issued', { count: issued.length, skipped: skipped.length });
   return { slips: issued.sort(compareSlipEntries).map((e) => e.slip), skipped, remaining };
 }

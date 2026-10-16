@@ -6,6 +6,11 @@ import { hashCode } from '../../src/lib/activationCode.js';
 import { LIMITS } from '../../src/callable.js';
 
 vi.mock('../../src/log.js', () => ({ logEvent: vi.fn(), logWarn: vi.fn() }));
+const auditControl = vi.hoisted(() => ({ fail: false }));
+vi.mock('../../src/audit.js', async (importOriginal) => {
+  const real = await importOriginal();
+  return { ...real, audit: (...args) => (auditControl.fail ? Promise.reject(new Error('audit unavailable')) : real.audit(...args)) };
+});
 
 const NOW = new Date('2026-09-21T08:00:00+08:00');
 const SY = '2026-2027';
@@ -24,6 +29,7 @@ const seedLink = (uid, studentId, slot) => db().doc(`guardian_links/${uid}_${stu
 
 beforeEach(async () => {
   order = 0;
+  auditControl.fail = false;
   await clearAll(); await seedSchool();
   await db().doc('users/registrar@bnhs.edu').set({ role: 'registrar' });
   // seedSchool() links two guardians to S1; these tests link guardians themselves.
@@ -126,5 +132,12 @@ describe('issueSlipBatch', () => {
       details: { schoolYear: SY, reason: 'New enrollee / transferee', via: 'batch', guardianSlotsFree: 2, adviserSlotsFree: 1 },
     });
     for (const s of r.slips) expect(JSON.stringify(rows)).not.toContain(s.code);
+  });
+
+  it('keeps every learner in the batch when the audit write fails', async () => {
+    await batch('S1'); await batch('S2');
+    auditControl.fail = true;
+    await expect(issue()).rejects.toThrow('audit unavailable');
+    expect(await batchIds()).toEqual(['S1', 'S2']);
   });
 });
