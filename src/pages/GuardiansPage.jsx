@@ -51,7 +51,7 @@ export default function GuardiansPage({ schoolYear, me }) {
         {tab === 'codes' && <CodesTab me={me} schoolYear={schoolYear} />}
         {tab === 'requests' && <RequestsTab schoolYear={schoolYear} />}
         {tab === 'reports' && <ReportsTab schoolYear={schoolYear} />}
-        {tab === 'links' && <LinksTab schoolYear={schoolYear} />}
+        {tab === 'links' && <LinksTab me={me} schoolYear={schoolYear} />}
         {tab === 'devices' && <DevicesTab />}
         {tab === 'scanlog' && <ScanLogTab schoolYear={schoolYear} />}
         {tab === 'audit' && <AuditTab />}

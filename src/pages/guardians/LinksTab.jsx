@@ -7,6 +7,7 @@ import { collection, query, where, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useCollectionResource, useQueryResource, useDoc, useSchoolYearEnrollments } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
+import { addToSlipBatch } from '../../data/slipBatch.js';
 import { depedSort, fullName } from '../../lib/roster.js';
 import { localDate } from '../../lib/dates.js';
 import { buildLearnerIndex, searchLearners } from '../../lib/search.js';
@@ -35,7 +36,7 @@ function GuardianCell({ link }) {
   );
 }
 
-export default function LinksTab({ schoolYear }) {
+export default function LinksTab({ me, schoolYear }) {
   const action = useAsyncAction();
   const studentsResource = useCollectionResource('students');
   const students = studentsResource.data;
@@ -43,6 +44,9 @@ export default function LinksTab({ schoolYear }) {
   const enrollments = enrollmentsResource.data;
   const sectionsResource = useCollectionResource('sections');
   const sections = sectionsResource.data;
+  // Shared listener (same key as the Saved batch screen), so the button
+  // knows whether the learner is already waiting for a slip.
+  const slipBatch = useCollectionResource('slip_batch').data;
   const [q, setQ] = useState(''); const [studentId, setStudentId] = useState('');
   const [gradeFilter, setGradeFilter] = useState('');
   const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
@@ -63,6 +67,7 @@ export default function LinksTab({ schoolYear }) {
   } }) : [], [enrollmentByStudent, gradeFilter, learnerIndex, searchQuery]);
   const matches = found.slice(0, 20);
   const student = students.find((s) => s.id === studentId);
+  const inSlipBatch = !!student && slipBatch.some((d) => d.id === student.id);
   const linksResource = useQueryResource(() => studentId && query(collection(db, 'guardian_links'), where('studentId', '==', studentId), limit(20)), [studentId]);
   const links = linksResource.data;
   const [reason, setReason] = useState('');
@@ -120,6 +125,7 @@ export default function LinksTab({ schoolYear }) {
             <Field label="Reason (recorded in the audit log)"><Inp value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted} onClick={() => action.run('reissue', reissue)}>Reissue slip</Btn>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted || inSlipBatch} onClick={() => action.run('batch', () => addToSlipBatch(student.id, reason.trim().slice(0, 200), me))}>{inSlipBatch ? 'In slip batch' : 'Add to slip batch'}</Btn>
               <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', async () => { await call.revokeCode({ studentId: student.id, schoolYear, reason }); setReissued(null); setReissueErr(''); })}>Revoke slip</Btn>
               <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', async () => { await call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }); setReissued(null); setReissueErr(''); })}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
             </div>
