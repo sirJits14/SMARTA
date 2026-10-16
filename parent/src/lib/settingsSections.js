@@ -11,6 +11,7 @@ export const SECTIONS = [
   { key: 'help', group: 3, title: S.settingsHelp, tile: 'teal', icon: 'phone' },
   { key: 'privacy', group: 3, title: S.settingsPrivacyAccount, tile: 'grey', icon: 'shield' },
   { key: 'about', group: 3, title: S.settingsAbout, tile: 'grey', icon: 'info' },
+  { key: 'developers', group: 3, title: S.settingsDevelopers, tile: 'indigo', icon: 'people' },
 ];
 
 // Visible sections as one array per group, skipping `hidden` keys and empty groups.

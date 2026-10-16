@@ -23,6 +23,7 @@ import PrivacyPage from './settings/PrivacyPage.jsx';
 import InstallPage from './settings/InstallPage.jsx';
 import HelpPage from './settings/HelpPage.jsx';
 import AboutPage from './settings/AboutPage.jsx';
+import DevelopersPage from './settings/DevelopersPage.jsx';
 import { BUILD } from '../lib/buildInfo.js';
 
 // Sub-pages by route segment (/settings/<key>). A main-list row with no page
@@ -30,6 +31,7 @@ import { BUILD } from '../lib/buildInfo.js';
 const PAGES = {
   profile: ProfilePage, notifications: NotificationsPage, appearance: AppearancePage, install: InstallPage,
   learners: LearnersPage, reports: ReportsPage, help: HelpPage, privacy: PrivacyPage, about: AboutPage,
+  developers: DevelopersPage,
 };
 
 // One mounted screen for the list and every sub-page (same route name), so
