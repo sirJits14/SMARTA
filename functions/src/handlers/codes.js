@@ -9,6 +9,7 @@ import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activ
 import { sectionLabel, learnerIdentity, formalName, manilaDateTime } from '../lib/format.js';
 import { schoolYearRef, isEnded, schoolYearEnded } from '../lib/schoolYears.js';
 import { ADVISER, isDepedEmail, slotFor, claimSlot, slotsFromLinks, isOpenStatus } from '../lib/codeSlots.js';
+import { takeBatch, compareSlipEntries, ISSUE_TIME_BUDGET_MS } from '../lib/slipBatch.js';
 
 // Guardian relationships. The class adviser (ADVISER) can only link through a
 // slip, never through requestAccess, so it is not in this list.
@@ -98,6 +99,93 @@ export async function reissueActivationCode(ctx, data) {
   await audit(db, { action: 'code.reissued', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId, details: { schoolYear, reason, guardianSlotsFree: r.slotsFree.guardian, adviserSlotsFree: r.slotsFree.adviser } });
   logEvent('code_reissued', { studentId });
   return r;
+}
+
+// The batch is shared, so two staff pressing at once would revoke each other's
+// fresh codes. A press holds this lease (Admin SDK only; rules deny clients)
+// for at most LEASE_MS; an expired lease from a crashed press is taken over.
+const LEASE_MS = 90_000;
+const LEASE_PATH = 'locks/slipBatch';
+
+async function takeSlipBatchLease(db, owner, nowMs) {
+  const ref = db.doc(LEASE_PATH);
+  const expiresAt = nowMs + LEASE_MS;
+  await db.runTransaction(async (tx) => {
+    const held = (await tx.get(ref)).data();
+    if (typeof held?.expiresAt === 'number' && held.expiresAt > nowMs) {
+      throw new CallableError('failed-precondition', 'Another staff member is issuing the slip batch. Try again in a minute.');
+    }
+    tx.set(ref, { owner, expiresAt });
+  });
+  return { ref, owner, expiresAt };
+}
+
+// Deletes the lease only while it is still ours; a failure to release must not
+// hide the press's own result or error, and the lease expires by itself.
+async function releaseSlipBatchLease(db, { ref, owner, expiresAt }) {
+  try {
+    await db.runTransaction(async (tx) => {
+      const held = (await tx.get(ref)).data();
+      if (held?.owner === owner && held.expiresAt === expiresAt) tx.delete(ref);
+    });
+  } catch (e) {
+    logWarn('slip_batch_lease_release_failed', { message: e.message });
+  }
+}
+
+// Staff. Issues slips for the saved slip batch (spec 2026-10-16): up to
+// MAX_BATCH_ISSUE learners per press, oldest first, stopping at the time budget
+// so the press ends well inside the callable timeout. Each learner is audited
+// as soon as their slip exists, so a press that dies midway leaves no unaudited
+// code. Learners who get a slip leave the batch only after the whole loop, as
+// the last write, so a failed press loses nobody. Skipped learners stay so
+// staff see why.
+export async function issueSlipBatch(ctx, data) {
+  const { db, now, email } = ctx;
+  const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
+  await enforceRateLimit(db, ctx.uid, 'issueSlipBatch', LIMITS.issueSlipBatch, now().getTime(), (resetMs) =>
+    `Slip batches were issued ${LIMITS.issueSlipBatch.max} times in the last 24 hours, the daily limit. You can issue more after ${manilaDateTime(resetMs)}.`);
+  await assertYearOpen(db, schoolYear);
+
+  const lease = await takeSlipBatchLease(db, email, now().getTime());
+  try {
+    const batchSnap = await db.collection('slip_batch').get();
+    const { take, remaining: notTaken } = takeBatch(batchSnap.docs.map((d) => ({
+      id: d.id, reason: d.data().reason || 'Slip batch', addedAtMs: d.data().addedAt?.toMillis?.() ?? 0,
+    })));
+
+    const issued = [], skipped = [];
+    let remaining = notTaken;
+    const budgetMs = ctx.timeBudgetMs ?? ISSUE_TIME_BUDGET_MS;
+    const startedAt = Date.now();
+    for (const [i, { id: studentId, reason }] of take.entries()) {
+      if (Date.now() - startedAt >= budgetMs) { remaining += take.length - i; break; }
+      const student = (await db.doc(`students/${studentId}`).get()).data();
+      if (!student) { skipped.push({ studentId, reason: 'missing' }); continue; }
+      if (student.activationRestricted === true) { skipped.push({ studentId, reason: 'restricted' }); continue; }
+      const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
+      if (enrollment?.status !== 'enrolled') { skipped.push({ studentId, reason: 'not-enrolled' }); continue; }
+      const section = (await db.doc(`sections/${enrollment.sectionId}`).get()).data();
+      const r = await issueCodeFor(db, { studentId, student, section, schoolYear, by: email, reason });
+      if (r.skipped) { skipped.push({ studentId, reason: r.skipped }); continue; }
+      await audit(db, {
+        action: 'code.reissued', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId,
+        details: { schoolYear, reason, via: 'batch', guardianSlotsFree: r.slotsFree.guardian, adviserSlotsFree: r.slotsFree.adviser },
+      });
+      issued.push({ studentId, student, section, sectionId: enrollment.sectionId, slip: r.slip });
+    }
+
+    // The batch delete is last: any earlier failure leaves every learner queued.
+    if (issued.length) {
+      const done = db.batch();
+      issued.forEach(({ studentId }) => done.delete(db.doc(`slip_batch/${studentId}`)));
+      await done.commit();
+    }
+    logEvent('slip_batch_issued', { count: issued.length, skipped: skipped.length, remaining });
+    return { slips: issued.sort(compareSlipEntries).map((e) => e.slip), skipped, remaining };
+  } finally {
+    await releaseSlipBatchLease(db, lease);
+  }
 }
 
 export async function revokeCode(ctx, data) {

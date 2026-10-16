@@ -48,10 +48,10 @@ export default function GuardiansPage({ schoolYear, me }) {
       </div>
       <div key={tab} role="tabpanel" id={`guardian-panel-${tab}`} aria-labelledby={`guardian-tab-${tab}`} className="sims-page-transition">
       <Suspense fallback={<TabFallback />}>
-        {tab === 'codes' && <CodesTab schoolYear={schoolYear} />}
+        {tab === 'codes' && <CodesTab me={me} schoolYear={schoolYear} />}
         {tab === 'requests' && <RequestsTab schoolYear={schoolYear} />}
         {tab === 'reports' && <ReportsTab schoolYear={schoolYear} />}
-        {tab === 'links' && <LinksTab schoolYear={schoolYear} />}
+        {tab === 'links' && <LinksTab me={me} schoolYear={schoolYear} />}
         {tab === 'devices' && <DevicesTab />}
         {tab === 'scanlog' && <ScanLogTab schoolYear={schoolYear} />}
         {tab === 'audit' && <AuditTab />}
