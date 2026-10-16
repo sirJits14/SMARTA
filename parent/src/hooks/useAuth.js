@@ -18,8 +18,14 @@ export function useAuth() {
       setUser(u && !u.isAnonymous ? u : null);
     });
   }, []);
+  // Verify.jsx's reload() flips emailVerified on this same User object and
+  // onAuthStateChanged does not fire again, so the flag is a dependency of
+  // its own. App re-renders on onVerified(), which re-runs this effect;
+  // without it the profile never loads and Skip / Activate loop back to
+  // Activate until the page is reloaded.
+  const emailVerified = Boolean(user?.emailVerified);
   useEffect(() => {
-    if (!user || !user.emailVerified) { setProfile(user ? null : undefined); return; }
+    if (!user || !emailVerified) { setProfile(user ? null : undefined); return; }
     // See useDoc.js: wait for App Check to attach before subscribing, so a
     // too-early listener never gets a permission-denied that outlives it.
     let cancelled = false; let unsub = () => {};
@@ -28,6 +34,6 @@ export function useAuth() {
       unsub = onSnapshot(doc(db, 'guardians', user.uid), (s) => setProfile(s.exists() ? profileFrom(s) : null), () => setProfile(null));
     });
     return () => { cancelled = true; unsub(); };
-  }, [user]);
+  }, [user, emailVerified]);
   return { user, profile };
 }
