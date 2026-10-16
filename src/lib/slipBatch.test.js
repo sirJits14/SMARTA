@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, issueConfirmText, splitSlipBatch } from './slipBatch.js';
+import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, issueConfirmText, slipsAfterPress, splitSlipBatch } from './slipBatch.js';
 
 describe('reasons', () => {
   it('offers the fixed list with Other last', () => {
@@ -44,6 +44,23 @@ describe('splitSlipBatch', () => {
     const { canIssue, cantIssue } = splitSlipBatch({ batchDocs, enrolled, students, lastSkipped: new Map([['S2', 'fully-linked']]) });
     expect(canIssue.map((e) => e.student.id)).toEqual(['S1']);
     expect(cantIssue[0]).toMatchObject({ id: 'S2', reason: 'Damaged slip', why: 'all slots already linked' });
+  });
+  it('knows a restricted learner cannot be issued before any press', () => {
+    const restricted = { ...ben, activationRestricted: true };
+    const { canIssue, cantIssue } = splitSlipBatch({ batchDocs, enrolled: [{ student: restricted, section }, { student: ana, section }], students: [ana, restricted, gone] });
+    expect(canIssue.map((e) => e.student.id)).toEqual(['S1']);
+    expect(cantIssue[0]).toMatchObject({ id: 'S2', reason: 'Damaged slip', why: 'restricted' });
+  });
+});
+
+describe('slipsAfterPress', () => {
+  const onScreen = [{ studentId: 'S1', code: 'AAAABBBB' }];
+  it('shows the new slips when the press issued some', () => {
+    const fresh = [{ studentId: 'S2', code: 'CCCCDDDD' }];
+    expect(slipsAfterPress(onScreen, { slips: fresh, skipped: [] })).toBe(fresh);
+  });
+  it('keeps the unprinted slips when the press issued none, since their codes still work', () => {
+    expect(slipsAfterPress(onScreen, { slips: [], skipped: [{ studentId: 'S2', reason: 'fully-linked' }] })).toBe(onScreen);
   });
 });
 

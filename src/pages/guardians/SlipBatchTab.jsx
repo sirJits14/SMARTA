@@ -8,7 +8,7 @@ import SlipPrintControls, { useSlipPaper, PORTAL_URL } from '../../components/Sl
 import { call } from '../../data/guardians.js';
 import { addToSlipBatch, removeFromSlipBatch, clearSlipBatch } from '../../data/slipBatch.js';
 import { enrolledEntries, groupBySection } from '../../lib/idCardQueue.js';
-import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, issueConfirmText, splitSlipBatch } from '../../lib/slipBatch.js';
+import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, issueConfirmText, slipsAfterPress, splitSlipBatch } from '../../lib/slipBatch.js';
 import { slipSheetFillLabel } from '../../lib/slipLayout.js';
 import { issuedSummary } from '../../lib/slipIssue.js';
 import { buildLearnerIndex, searchLearners } from '../../lib/search.js';
@@ -32,7 +32,7 @@ export default function SlipBatchTab({ me, schoolYear, onIssuingChange }) {
     enrollments={enrollmentsResource.data} sections={sectionsResource.data} batchDocs={batchResource.data} />;
 }
 
-// Raw codes exist only in `result` after a press. Leaving the page loses
+// Raw codes exist only in `slips` after a press. Leaving the page loses
 // them; staff add the learners again and reissue (which revokes those codes).
 function SlipBatch({ me, schoolYear, onIssuingChange, students, enrollments, sections, batchDocs }) {
   const action = useAsyncAction();
@@ -55,11 +55,12 @@ function SlipBatch({ me, schoolYear, onIssuingChange, students, enrollments, sec
     : []), [searchIndex, batchIds, searchQuery]);
 
   const [paper, setPaper] = useSlipPaper();
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(null); // the last press, for its summary
+  const [slips, setSlips] = useState([]); // the slips on screen
   const [err, setErr] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const printRoot = useRef(null);
-  const printReady = usePrintReadiness(printRoot, result, result?.slips?.length || 0);
+  const printReady = usePrintReadiness(printRoot, slips, slips.length);
 
   const add = (id) => { setQuery(''); action.run('add', () => addToSlipBatch(id, reason, me)); };
   const remove = (id) => action.run('remove', () => removeFromSlipBatch(id));
@@ -67,11 +68,12 @@ function SlipBatch({ me, schoolYear, onIssuingChange, students, enrollments, sec
   // e.g. the daily limit and when it resets, reaches staff.
   const issue = async () => {
     const n = Math.min(canIssue.length, MAX_BATCH_ISSUE);
-    if (!window.confirm(issueConfirmText(n, result?.slips?.length || 0))) return;
+    if (!window.confirm(issueConfirmText(n, slips.length))) return;
     setErr(''); onIssuingChange?.(true);
     try {
       const r = await call.issueSlipBatch({ schoolYear });
       setResult(r);
+      setSlips((onScreen) => slipsAfterPress(onScreen, r));
       setLastSkipped(new Map(r.skipped.map((s) => [s.studentId, s.reason])));
     } catch (e) { setErr(e.message || 'Could not issue the slips.'); }
     finally { onIssuingChange?.(false); }
@@ -169,7 +171,7 @@ function SlipBatch({ me, schoolYear, onIssuingChange, students, enrollments, sec
         )}
       </div>
 
-      {result?.slips?.length > 0 && <div ref={printRoot}><ActivationSlipsPrintable slips={result.slips} portalUrl={PORTAL_URL} paper={paper} /></div>}
+      {slips.length > 0 && <div ref={printRoot}><ActivationSlipsPrintable slips={slips} portalUrl={PORTAL_URL} paper={paper} /></div>}
       {confirmClear && (
         <Confirm
           title="Clear the slip batch?"

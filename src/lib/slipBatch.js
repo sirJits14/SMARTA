@@ -28,9 +28,14 @@ export function issueConfirmText(n, unprinted = 0) {
     : base;
 }
 
+// A press revokes only the codes it reissues, so the slips already on screen
+// still work. A press that issued none must not take them off the screen.
+export const slipsAfterPress = (onScreen, response) => (response.slips.length ? response.slips : onScreen);
+
 // Splits the saved batch into learners the next press can issue (in print
-// order) and learners it can't: no longer enrolled or missing (known here),
-// or skipped by the server on the last press (`lastSkipped`: id → reason).
+// order) and learners it can't: no longer enrolled, missing or restricted
+// (known here), or skipped by the server on the last press (`lastSkipped`:
+// id → reason).
 export function splitSlipBatch({ batchDocs, enrolled, students, lastSkipped = new Map() }) {
   const { printable, notPrintable } = buildBatchView({ batchDocs, enrolled, students });
   const reasonById = new Map(batchDocs.map((d) => [d.id, d.reason]));
@@ -38,7 +43,7 @@ export function splitSlipBatch({ batchDocs, enrolled, students, lastSkipped = ne
   const cantIssue = [];
   for (const entry of printable) {
     const id = entry.student.id;
-    const skipped = lastSkipped.get(id);
+    const skipped = entry.student.activationRestricted === true ? 'restricted' : lastSkipped.get(id);
     if (skipped) cantIssue.push({ id, student: entry.student, reason: reasonById.get(id), why: skipReasonText(skipped) });
     else canIssue.push({ ...entry, reason: reasonById.get(id) });
   }
