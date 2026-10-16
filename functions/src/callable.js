@@ -8,8 +8,8 @@ export const LIMITS = {
   activateAdviser: { windowMs: 60 * 60 * 1000, max: 60 },
   report: { windowMs: 24 * 60 * 60 * 1000, max: 5 },
   // One call per section. SY 2026-2027 has 159 sections, so one registrar
-  // must be able to issue all of them (and redo some) in a single day.
-  issueCodes: { windowMs: 24 * 60 * 60 * 1000, max: 400 },
+  // must be able to issue all of them (and redo many) in a single day.
+  issueCodes: { windowMs: 24 * 60 * 60 * 1000, max: 2000 },
   // Replacing single lost slips has its own budget so it does not use up the
   // section-wide one.
   reissueCode: { windowMs: 24 * 60 * 60 * 1000, max: 60 },
