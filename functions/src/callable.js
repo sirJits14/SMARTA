@@ -13,6 +13,9 @@ export const LIMITS = {
   // Replacing single lost slips has its own budget so it does not use up the
   // section-wide one.
   reissueCode: { windowMs: 24 * 60 * 60 * 1000, max: 60 },
+  // A slip-batch press issues up to 64 learners (spec 2026-10-16); its own
+  // budget so it never uses up section-wide issuing or single reissues.
+  issueSlipBatch: { windowMs: 24 * 60 * 60 * 1000, max: 100 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 

@@ -9,6 +9,7 @@ import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activ
 import { sectionLabel, learnerIdentity, formalName, manilaDateTime } from '../lib/format.js';
 import { schoolYearRef, isEnded, schoolYearEnded } from '../lib/schoolYears.js';
 import { ADVISER, isDepedEmail, slotFor, claimSlot, slotsFromLinks, isOpenStatus } from '../lib/codeSlots.js';
+import { takeBatch, compareSlipEntries } from '../lib/slipBatch.js';
 
 // Guardian relationships. The class adviser (ADVISER) can only link through a
 // slip, never through requestAccess, so it is not in this list.
@@ -98,6 +99,48 @@ export async function reissueActivationCode(ctx, data) {
   await audit(db, { action: 'code.reissued', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId, details: { schoolYear, reason, guardianSlotsFree: r.slotsFree.guardian, adviserSlotsFree: r.slotsFree.adviser } });
   logEvent('code_reissued', { studentId });
   return r;
+}
+
+// Staff. Issues slips for the saved slip batch (spec 2026-10-16): up to
+// MAX_BATCH_ISSUE learners per press, oldest first. Learners who get a slip
+// leave the batch only after every slip of the press is written, so a press
+// that fails partway loses nobody. Skipped learners stay so staff see why.
+export async function issueSlipBatch(ctx, data) {
+  const { db, now, email } = ctx;
+  const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
+  await enforceRateLimit(db, ctx.uid, 'issueSlipBatch', LIMITS.issueSlipBatch, now().getTime(), (resetMs) =>
+    `Slip batches were issued ${LIMITS.issueSlipBatch.max} times in the last 24 hours, the daily limit. You can issue more after ${manilaDateTime(resetMs)}.`);
+  await assertYearOpen(db, schoolYear);
+
+  const batchSnap = await db.collection('slip_batch').get();
+  const { take, remaining } = takeBatch(batchSnap.docs.map((d) => ({
+    id: d.id, reason: d.data().reason || 'Slip batch', addedAtMs: d.data().addedAt?.toMillis?.() ?? 0,
+  })));
+
+  const issued = [], skipped = [];
+  for (const { id: studentId, reason } of take) {
+    const student = (await db.doc(`students/${studentId}`).get()).data();
+    if (!student) { skipped.push({ studentId, reason: 'missing' }); continue; }
+    if (student.activationRestricted === true) { skipped.push({ studentId, reason: 'restricted' }); continue; }
+    const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
+    if (enrollment?.status !== 'enrolled') { skipped.push({ studentId, reason: 'not-enrolled' }); continue; }
+    const section = (await db.doc(`sections/${enrollment.sectionId}`).get()).data();
+    const r = await issueCodeFor(db, { studentId, student, section, schoolYear, by: email, reason });
+    if (r.skipped) { skipped.push({ studentId, reason: r.skipped }); continue; }
+    issued.push({ studentId, student, section, sectionId: enrollment.sectionId, reason, slip: r.slip, slotsFree: r.slotsFree });
+  }
+
+  if (issued.length) {
+    const done = db.batch();
+    issued.forEach(({ studentId }) => done.delete(db.doc(`slip_batch/${studentId}`)));
+    await done.commit();
+  }
+  await Promise.all(issued.map(({ studentId, reason, slotsFree }) => audit(db, {
+    action: 'code.reissued', actorType: 'staff', actorUid: email, targetType: 'student', targetId: studentId,
+    details: { schoolYear, reason, via: 'batch', guardianSlotsFree: slotsFree.guardian, adviserSlotsFree: slotsFree.adviser },
+  })));
+  logEvent('slip_batch_issued', { count: issued.length, skipped: skipped.length });
+  return { slips: issued.sort(compareSlipEntries).map((e) => e.slip), skipped, remaining };
 }
 
 export async function revokeCode(ctx, data) {
