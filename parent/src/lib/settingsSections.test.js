@@ -9,11 +9,11 @@ describe('sectionGroups', () => {
     expect(keys(sectionGroups())).toEqual([
       ['notifications', 'appearance', 'install'],
       ['learners', 'reports'],
-      ['help', 'privacy', 'about'],
+      ['help', 'privacy', 'about', 'developers'],
     ]);
   });
   it('drops hidden rows and any group left empty', () => {
-    expect(keys(sectionGroups(['install', 'learners', 'reports']))).toEqual([['notifications', 'appearance'], ['help', 'privacy', 'about']]);
+    expect(keys(sectionGroups(['install', 'learners', 'reports']))).toEqual([['notifications', 'appearance'], ['help', 'privacy', 'about', 'developers']]);
   });
   it('gives every row a title, tile and icon', () => {
     for (const s of SECTIONS) {

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '../../../shared/theme/theme.css';
 import '../../src/glass.css';
 import Settings from '../../src/screens/Settings.jsx';
+import { T } from '../../src/styles.js';
 import { matchRoute } from '../../src/lib/router.js';
 import { installPrompt } from '../../src/lib/installPrompt.js';
 import { SCENARIOS, setScenario, useProfile, useWrites } from './settings-fixture.js';
@@ -25,7 +26,7 @@ function Preview() {
   const writes = useWrites();
   const route = matchRoute(path);
   return (
-    <main style={{ padding: '0 16px 96px', maxWidth: 560, margin: '0 auto', boxSizing: 'border-box' }}>
+    <main style={{ fontFamily: T.font, color: T.ink, padding: '0 16px 96px', maxWidth: 560, margin: '0 auto', boxSizing: 'border-box' }}>
       <details style={{ margin: '12px 0', fontSize: 12 }}>
         <summary>Preview controls · synthetic data · {path}</summary>
         <select aria-label="Preview scenario" onChange={(e) => setScenario(e.target.value)}>{SCENARIOS.map((s) => <option key={s}>{s}</option>)}</select>{' '}
