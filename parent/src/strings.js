@@ -172,7 +172,7 @@ const S = {
   settingsAbout: 'About',
   settingsDevelopers: 'Developers',
   developerVillaName: 'Geths Van C. Villa',
-  developerVillaPosition: 'Special Science Teacher',
+  developerVillaPosition: 'Special Science Teacher I',
   developerVillaRole: 'Lead Programmer',
   developerCandanoName: 'Emmanuel Candano',
   developerCandanoPosition: 'Teacher II',
