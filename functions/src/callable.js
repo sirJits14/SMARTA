@@ -7,7 +7,9 @@ export const LIMITS = {
   activate: { windowMs: 60 * 60 * 1000, max: 5 },
   activateAdviser: { windowMs: 60 * 60 * 1000, max: 60 },
   report: { windowMs: 24 * 60 * 60 * 1000, max: 5 },
-  issueCodes: { windowMs: 24 * 60 * 60 * 1000, max: 20 },
+  // One call per section. SY 2026-2027 has 159 sections, so one registrar
+  // must be able to issue all of them (and redo some) in a single day.
+  issueCodes: { windowMs: 24 * 60 * 60 * 1000, max: 400 },
   // Replacing single lost slips has its own budget so it does not use up the
   // section-wide one.
   reissueCode: { windowMs: 24 * 60 * 60 * 1000, max: 60 },
@@ -101,15 +103,17 @@ export async function adminIdentity(db, auth, req) {
 }
 
 // Transactional fixed-window limiter on rate_limits/{uid}.{action}.
-export async function enforceRateLimit(db, uid, action, { windowMs, max }, nowMs) {
+// `tooMany(resetMs)` gives a staff-facing message naming when the window
+// resets; without it callers get the generic message.
+export async function enforceRateLimit(db, uid, action, { windowMs, max }, nowMs, tooMany) {
   const ref = db.doc(`rate_limits/${uid}`);
-  const allowed = await db.runTransaction(async (tx) => {
+  const { allowed, resetMs } = await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const r = takeToken(snap.data()?.[action] || null, { nowMs, windowMs, max });
     tx.set(ref, { [action]: r.next }, { merge: true });
-    return r.allowed;
+    return { allowed: r.allowed, resetMs: r.next.windowStartMs + windowMs };
   });
-  if (!allowed) throw new CallableError('resource-exhausted', 'Too many attempts. Try again later.');
+  if (!allowed) throw new CallableError('resource-exhausted', tooMany ? tooMany(resetMs) : 'Too many attempts. Try again later.');
 }
 
 export function toHttpsError(err) {

@@ -5,6 +5,7 @@ import { issueActivationCodes, reissueActivationCode, revokeCode, activateCode, 
 import { requestAccess, resolveAccessRequest } from '../../src/handlers/links.js';
 import { hashCode } from '../../src/lib/activationCode.js';
 import { logWarn } from '../../src/log.js';
+import { LIMITS } from '../../src/callable.js';
 
 // logWarn carries activateCode's real failure reason; firebase-functions'
 // logger can't be spied on (see scanEvent.test.js), so mock the module.
@@ -56,9 +57,17 @@ describe('issueActivationCodes', () => {
     await issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: '2026-2027' });
     expect((await db().doc(`activation_codes/${hashCode(a.slips.find((s) => s.studentId === 'S1').code)}`).get()).data().status).toBe('revoked');
   });
-  it('enforces the staff daily limit', async () => {
-    await db().doc('rate_limits/staff1').set({ issueCodes: { count: 20, windowStartMs: NOW.getTime() - 1000 } });
-    await expect(issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: '2026-2027' })).rejects.toMatchObject({ code: 'resource-exhausted' });
+  it('lets one registrar issue every section of a large school in a day', async () => {
+    // 2026-10-16: the old 20/day limit stopped issuing after 20 of 159 sections.
+    await db().doc('rate_limits/staff1').set({ issueCodes: { count: 200, windowStartMs: NOW.getTime() - 1000 } });
+    await expect(issueActivationCodes(staff(), SEC)).resolves.toMatchObject({ slips: expect.any(Array) });
+  });
+  it('enforces the staff daily limit and says when it resets', async () => {
+    await db().doc('rate_limits/staff1').set({ issueCodes: { count: LIMITS.issueCodes.max, windowStartMs: NOW.getTime() - 3600_000 } });
+    await expect(issueActivationCodes(staff(), SEC)).rejects.toMatchObject({
+      code: 'resource-exhausted',
+      message: `Slips were issued for ${LIMITS.issueCodes.max} sections in the last 24 hours, the daily limit. You can issue more after Sep 22, 7:00 AM.`,
+    });
   });
   it('pre-fills slots from the learner\'s active links', async () => {
     await seedLink('gA', 'S1', 'guardian');
@@ -147,7 +156,7 @@ describe('reissueActivationCode', () => {
     expect(JSON.stringify(rows.docs[0].data())).not.toContain(r.slip.code);
   });
   it('has its own daily limit, separate from section-wide issuing', async () => {
-    await db().doc('rate_limits/staff1').set({ issueCodes: { count: 20, windowStartMs: NOW.getTime() - 1000 } });
+    await db().doc('rate_limits/staff1').set({ issueCodes: { count: LIMITS.issueCodes.max, windowStartMs: NOW.getTime() - 1000 } });
     await expect(reissue()).resolves.toMatchObject({ slip: { studentId: 'S1' } });
     await db().doc('rate_limits/staff1').set({ reissueCode: { count: 60, windowStartMs: NOW.getTime() - 1000 } }, { merge: true });
     await expect(reissue()).rejects.toMatchObject({ code: 'resource-exhausted' });
