@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   PAPER_SIZES, DEFAULT_PAPER, SLIP_ROW_MM, PAPER_STORAGE_KEY,
-  paperOf, chunkSlips, activationUrl, slipInstructions, slipPrintStyles, readStoredPaper,
+  paperOf, chunkSlips, activationUrl, slipInstructions, slipPrintStyles, readStoredPaper, slipSheetFillLabel,
 } from './slipLayout.js';
 
 const slips = (n) => Array.from({ length: n }, (_, i) => ({ studentId: `S${i}` }));
@@ -69,5 +69,20 @@ describe('slipLayout', () => {
   it('builds the QR deep link without a trailing slash problem', () => {
     expect(activationUrl('https://bnhs-parent.web.app', 'K7M4P2XQ')).toBe('https://bnhs-parent.web.app/activate?c=K7M4P2XQ');
     expect(activationUrl('https://bnhs-parent.web.app/', 'K7M4P2XQ')).toBe('https://bnhs-parent.web.app/activate?c=K7M4P2XQ');
+  });
+});
+
+describe('slipSheetFillLabel', () => {
+  it('describes how full the last Folio sheet is', () => {
+    expect(slipSheetFillLabel(0)).toBe('');
+    expect(slipSheetFillLabel(12)).toBe('12 of 16 — 4 more fills a sheet');
+    expect(slipSheetFillLabel(16, 'folio')).toBe('1 full sheet');
+    expect(slipSheetFillLabel(19, 'folio')).toBe('1 full sheet + 3 — 13 more fills the next sheet');
+    expect(slipSheetFillLabel(32, 'folio')).toBe('2 full sheets');
+  });
+  it('uses 14 per sheet on A4', () => {
+    expect(slipSheetFillLabel(12, 'a4')).toBe('12 of 14 — 2 more fills a sheet');
+    expect(slipSheetFillLabel(14, 'a4')).toBe('1 full sheet');
+    expect(slipSheetFillLabel(15, 'a4')).toBe('1 full sheet + 1 — 13 more fills the next sheet');
   });
 });

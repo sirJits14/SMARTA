@@ -63,3 +63,17 @@ export function slipPrintStyles(paperKey) {
   }
 `;
 }
+
+// How full the last sheet is for the chosen paper, so staff can top a batch
+// up instead of wasting paper. Same wording as the ID Cards batch.
+export function slipSheetFillLabel(n, paperKey = DEFAULT_PAPER) {
+  const { cols, rows } = paperOf(paperKey);
+  const perSheet = cols * rows;
+  const full = Math.floor(n / perSheet);
+  const rest = n % perSheet;
+  const sheets = (k) => `${k} full sheet${k === 1 ? '' : 's'}`;
+  if (n === 0) return '';
+  if (rest === 0) return sheets(full);
+  if (full === 0) return `${n} of ${perSheet} — ${perSheet - n} more fills a sheet`;
+  return `${sheets(full)} + ${rest} — ${perSheet - rest} more fills the next sheet`;
+}
