@@ -6,10 +6,18 @@ import { hashCode } from '../../src/lib/activationCode.js';
 import { LIMITS } from '../../src/callable.js';
 
 vi.mock('../../src/log.js', () => ({ logEvent: vi.fn(), logWarn: vi.fn() }));
-const auditControl = vi.hoisted(() => ({ fail: false }));
+const auditControl = vi.hoisted(() => ({ fail: false, failOnCall: 0, calls: 0, onCall: null }));
 vi.mock('../../src/audit.js', async (importOriginal) => {
   const real = await importOriginal();
-  return { ...real, audit: (...args) => (auditControl.fail ? Promise.reject(new Error('audit unavailable')) : real.audit(...args)) };
+  return {
+    ...real,
+    audit: async (...args) => {
+      auditControl.calls++;
+      await auditControl.onCall?.();
+      const down = auditControl.fail || auditControl.calls === auditControl.failOnCall;
+      return down ? Promise.reject(new Error('audit unavailable')) : real.audit(...args);
+    },
+  };
 });
 
 const NOW = new Date('2026-09-21T08:00:00+08:00');
@@ -29,7 +37,7 @@ const seedLink = (uid, studentId, slot) => db().doc(`guardian_links/${uid}_${stu
 
 beforeEach(async () => {
   order = 0;
-  auditControl.fail = false;
+  auditControl.fail = false; auditControl.failOnCall = 0; auditControl.calls = 0; auditControl.onCall = null;
   await clearAll(); await seedSchool();
   await db().doc('users/registrar@bnhs.edu').set({ role: 'registrar' });
   // seedSchool() links two guardians to S1; these tests link guardians themselves.
@@ -139,5 +147,69 @@ describe('issueSlipBatch', () => {
     auditControl.fail = true;
     await expect(issue()).rejects.toThrow('audit unavailable');
     expect(await batchIds()).toEqual(['S1', 'S2']);
+  });
+
+  it('audits each learner as soon as their slip is issued, so a failure midway leaves no unaudited code', async () => {
+    await batch('S1'); await batch('S2');
+    auditControl.failOnCall = 2;
+    await expect(issue()).rejects.toThrow('audit unavailable');
+    const rows = (await db().collection('audit_log').where('action', '==', 'code.reissued').get()).docs.map((d) => d.data());
+    expect(rows.map((x) => x.targetId)).toEqual(['S1']);
+    expect(await batchIds()).toEqual(['S1', 'S2']);
+  });
+});
+
+describe('issueSlipBatch lease and time budget', () => {
+  const lock = () => db().doc('locks/slipBatch');
+  const leaseExists = async () => (await lock().get()).exists;
+
+  it('refuses while another staff member holds an unexpired lease, leaving the batch untouched', async () => {
+    await batch('S1'); await batch('S2');
+    await lock().set({ owner: 'other@bnhs.edu', expiresAt: NOW.getTime() + 30_000 });
+    await expect(issue()).rejects.toMatchObject({
+      code: 'failed-precondition',
+      message: 'Another staff member is issuing the slip batch. Try again in a minute.',
+    });
+    expect(await batchIds()).toEqual(['S1', 'S2']);
+    expect((await db().collection('activation_codes').get()).size).toBe(0);
+    expect((await lock().get()).data()).toEqual({ owner: 'other@bnhs.edu', expiresAt: NOW.getTime() + 30_000 });
+  });
+
+  it('takes over an expired lease and releases it afterwards', async () => {
+    await batch('S1');
+    await lock().set({ owner: 'other@bnhs.edu', expiresAt: NOW.getTime() - 1 });
+    const r = await issue();
+    expect(r.slips).toHaveLength(1);
+    expect(await leaseExists()).toBe(false);
+  });
+
+  it('releases the lease after a successful press', async () => {
+    await batch('S1');
+    await issue();
+    expect(await leaseExists()).toBe(false);
+  });
+
+  it('releases the lease after a failed press', async () => {
+    await batch('S1');
+    auditControl.fail = true;
+    await expect(issue()).rejects.toThrow('audit unavailable');
+    expect(await leaseExists()).toBe(false);
+  });
+
+  it('does not release a lease that now belongs to someone else', async () => {
+    await batch('S1');
+    // Another admin takes the (expired, in their eyes) lease while this press runs.
+    auditControl.onCall = async () => { await lock().set({ owner: 'other@bnhs.edu', expiresAt: NOW.getTime() + 90_000 }); };
+    await issue();
+    expect((await lock().get()).data().owner).toBe('other@bnhs.edu');
+  });
+
+  it('stops at the time budget: nothing issued, all counted as remaining, batch unchanged, lease released', async () => {
+    await batch('S1'); await batch('S2'); await batch('S3');
+    const r = await issueSlipBatch({ ...staff(), timeBudgetMs: 0 }, { schoolYear: SY });
+    expect(r).toMatchObject({ slips: [], skipped: [], remaining: 3 });
+    expect(await batchIds()).toEqual(['S1', 'S2', 'S3']);
+    expect((await db().collection('activation_codes').get()).size).toBe(0);
+    expect(await leaseExists()).toBe(false);
   });
 });

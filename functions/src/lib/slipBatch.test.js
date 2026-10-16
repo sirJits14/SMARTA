@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { MAX_BATCH_ISSUE, takeBatch, compareSlipEntries } from './slipBatch.js';
+import { MAX_BATCH_ISSUE, ISSUE_TIME_BUDGET_MS, takeBatch, compareSlipEntries } from './slipBatch.js';
 
 const e = (id, addedAtMs) => ({ id, reason: 'Lost slip', addedAtMs });
+
+describe('ISSUE_TIME_BUDGET_MS', () => {
+  it('ends a press well inside the 60 s callable timeout', () => {
+    expect(ISSUE_TIME_BUDGET_MS).toBe(40_000);
+  });
+});
 
 describe('takeBatch', () => {
   it('takes the oldest entries first, ties by id', () => {

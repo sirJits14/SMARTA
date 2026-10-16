@@ -3,6 +3,11 @@
 // ~40-learner section takes about 14 s).
 export const MAX_BATCH_ISSUE = 64;
 
+// A press stops starting new learners after this long, so it ends well inside
+// the 60 s timeout; learners not reached stay in the batch and count as
+// `remaining`.
+export const ISSUE_TIME_BUDGET_MS = 40_000;
+
 // Oldest first, so learners who have waited longest are issued first.
 // `entries` are { id, reason, addedAtMs }.
 export function takeBatch(entries, max = MAX_BATCH_ISSUE) {
