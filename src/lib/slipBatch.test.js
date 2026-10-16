@@ -54,7 +54,7 @@ describe('issueConfirmText', () => {
     expect(issueConfirmText(12, 0)).toBe(`Issue new slips for 12 learners? ${base}`);
   });
   it('warns that slips still on screen will be replaced', () => {
-    expect(issueConfirmText(3, 1)).toBe(`Issue new slips for 3 learners? ${base} The 1 slip on screen will be replaced — print them first.`);
+    expect(issueConfirmText(3, 1)).toBe(`Issue new slips for 3 learners? ${base} The slip on screen will be replaced — print it first.`);
     expect(issueConfirmText(3, 40)).toBe(`Issue new slips for 3 learners? ${base} The 40 slips on screen will be replaced — print them first.`);
   });
 });

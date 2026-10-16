@@ -24,7 +24,7 @@ export const issueButtonLabel = (n) =>
 export function issueConfirmText(n, unprinted = 0) {
   const base = `Issue new slips for ${n} ${n === 1 ? 'learner' : 'learners'}? Their current slips stop working. Guardians already linked keep access.`;
   return unprinted > 0
-    ? `${base} The ${unprinted} ${unprinted === 1 ? 'slip' : 'slips'} on screen will be replaced — print them first.`
+    ? `${base} ${unprinted === 1 ? 'The slip on screen will be replaced — print it first.' : `The ${unprinted} slips on screen will be replaced — print them first.`}`
     : base;
 }
 
