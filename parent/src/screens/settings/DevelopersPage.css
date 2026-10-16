@@ -1,26 +1,26 @@
 .developers-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   padding-bottom: 16px;
 }
 
 .developers-person {
   margin: 0;
-  padding: 20px 16px;
+  padding: 16px;
   text-align: center;
 }
 
 .developers-portrait {
   display: block;
-  width: min(100%, 320px);
+  width: min(50%, 160px);
   height: auto;
   margin: 0 auto;
   border-radius: 12px;
 }
 
 .developers-caption {
-  margin-top: 20px;
+  margin-top: 12px;
   overflow-wrap: anywhere;
 }
 
