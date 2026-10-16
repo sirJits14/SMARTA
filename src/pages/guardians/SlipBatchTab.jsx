@@ -21,20 +21,20 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const row = { display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 13, flexWrap: 'wrap' };
 const reasonTag = { fontSize: 11, fontWeight: 600, color: T.inkMuted, border: `1px solid ${T.border}`, borderRadius: T.pill, padding: '1px 8px' };
 
-export default function SlipBatchTab({ me, schoolYear }) {
+export default function SlipBatchTab({ me, schoolYear, onIssuingChange }) {
   const studentsResource = useCollectionResource('students');
   const enrollmentsResource = useSchoolYearEnrollments(schoolYear);
   const sectionsResource = useCollectionResource('sections');
   const batchResource = useCollectionResource('slip_batch');
   const resources = [studentsResource, enrollmentsResource, sectionsResource, batchResource];
   if (resources.some((r) => r.loading || r.error)) return <ResourceState resources={resources} />;
-  return <SlipBatch me={me} schoolYear={schoolYear} students={studentsResource.data}
+  return <SlipBatch me={me} schoolYear={schoolYear} onIssuingChange={onIssuingChange} students={studentsResource.data}
     enrollments={enrollmentsResource.data} sections={sectionsResource.data} batchDocs={batchResource.data} />;
 }
 
 // Raw codes exist only in `result` after a press. Leaving the page loses
 // them; staff add the learners again and reissue (which revokes those codes).
-function SlipBatch({ me, schoolYear, students, enrollments, sections, batchDocs }) {
+function SlipBatch({ me, schoolYear, onIssuingChange, students, enrollments, sections, batchDocs }) {
   const action = useAsyncAction();
   const enrolled = useMemo(() => enrolledEntries({ students, enrollments, sections, schoolYear }),
     [students, enrollments, sections, schoolYear]);
@@ -66,14 +66,15 @@ function SlipBatch({ me, schoolYear, students, enrollments, sections, batchDocs 
   // Errors are caught here (not by action.run) so the server's own message,
   // e.g. the daily limit and when it resets, reaches staff.
   const issue = async () => {
-    const n = Math.min(batchDocs.length, MAX_BATCH_ISSUE);
+    const n = Math.min(canIssue.length, MAX_BATCH_ISSUE);
     if (!window.confirm(`Issue new slips for ${plural(n, 'learner', 'learners')}? Their current slips stop working. Guardians already linked keep access.`)) return;
-    setErr('');
+    setErr(''); onIssuingChange?.(true);
     try {
       const r = await call.issueSlipBatch({ schoolYear });
       setResult(r);
       setLastSkipped(new Map(r.skipped.map((s) => [s.studentId, s.reason])));
     } catch (e) { setErr(e.message || 'Could not issue the slips.'); }
+    finally { onIssuingChange?.(false); }
   };
 
   return (
@@ -115,10 +116,12 @@ function SlipBatch({ me, schoolYear, students, enrollments, sections, batchDocs 
 
         {(batchDocs.length > 0 || result) && (
           <Card style={{ position: 'sticky', top: 0, zIndex: 1, padding: '12px 20px', marginBottom: 12 }}>
-            <span style={{ fontWeight: 600 }}>{slipSheetFillLabel(canIssue.length, paper) || 'Nothing in the batch can be issued yet'}</span>
+            {batchDocs.length > 0 && <span style={{ fontWeight: 600 }}>{slipSheetFillLabel(canIssue.length, paper) || 'Nothing in the batch can be issued yet'}</span>}
             <SlipPrintControls paper={paper} onPaperChange={setPaper} printReady={printReady}>
-              <Btn variant="ghost" disabled={action.busy || batchDocs.length === 0} onClick={() => setConfirmClear(true)}>Clear batch</Btn>
-              <Btn disabled={action.busy || canIssue.length === 0} onClick={() => action.run('issue', issue)}>{issueButtonLabel(batchDocs.length)}</Btn>
+              {batchDocs.length > 0 && <>
+                <Btn variant="ghost" disabled={action.busy} onClick={() => setConfirmClear(true)}>Clear batch</Btn>
+                <Btn disabled={action.busy || canIssue.length === 0} onClick={() => action.run('issue', issue)}>{issueButtonLabel(canIssue.length)}</Btn>
+              </>}
             </SlipPrintControls>
             {err && <p role="alert" className="sims-feedback" style={{ margin: 0 }}>{err}</p>}
             {result && <p role="status" style={{ margin: 0, fontSize: 13 }}>{issuedSummary(result)}</p>}

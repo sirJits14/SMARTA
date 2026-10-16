@@ -15,7 +15,7 @@ import EndSchoolYearCard from './EndSchoolYearCard.jsx';
 
 // Raw codes exist only in this component's state after issuing. Closing the
 // page loses them; the registrar reissues (which revokes the old codes).
-export default function SectionSlipsTab({ schoolYear }) {
+export default function SectionSlipsTab({ schoolYear, onIssuingChange }) {
   const action = useAsyncAction();
   const sectionsResource = useCollectionResource('sections');
   const sections = sectionsResource.data;
@@ -28,9 +28,10 @@ export default function SectionSlipsTab({ schoolYear }) {
 
   const issue = async () => {
     if (!window.confirm('Issue new activation slips for this section? Any previously printed slips for these learners stop working.')) return;
-    setBusy(true); setErr('');
+    setBusy(true); setErr(''); onIssuingChange?.(true);
     try { setResult(await call.issueActivationCodes({ sectionId, schoolYear })); }
     catch (e) { setErr(e.message || 'Could not issue codes.'); }
+    finally { onIssuingChange?.(false); }
     setBusy(false);
   };
 

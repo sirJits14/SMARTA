@@ -26,15 +26,16 @@ export function useStoredTab(storageKey, tabs) {
 }
 
 // `tabs` is a list of [key, title]. The page renders the matching
-// `${idPrefix}-panel-${key}` tabpanel itself.
-export default function SubTabs({ tabs, value, onChange, idPrefix, label, className, style }) {
+// `${idPrefix}-panel-${key}` tabpanel itself. `disabled` locks every tab.
+export default function SubTabs({ tabs, value, onChange, idPrefix, label, className, style, disabled = false }) {
   return (
     <div className={className} role="tablist" aria-label={label} style={style}>
       {tabs.map(([k, title]) => {
         const active = value === k;
         return <button key={k} role="tab" className="sims-tab" id={`${idPrefix}-tab-${k}`}
-          aria-selected={active} aria-controls={`${idPrefix}-panel-${k}`} tabIndex={active ? 0 : -1}
+          aria-selected={active} disabled={disabled} aria-controls={`${idPrefix}-panel-${k}`} tabIndex={active ? 0 : -1}
           onClick={() => onChange(k)} onKeyDown={(event) => {
+            if (disabled) return;
             const next = nextTabIndex(event.key, tabs.findIndex(([key]) => key === k), tabs.length);
             if (next === null) return;
             event.preventDefault(); onChange(tabs[next][0]);

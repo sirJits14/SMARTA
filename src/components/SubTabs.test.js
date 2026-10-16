@@ -34,4 +34,16 @@ describe('SubTabs', () => {
     expect(html).toMatch(/id="slips-tab-section"[^>]*tabindex="-1"/);
     expect(html).toMatch(/id="slips-tab-batch"[^>]*tabindex="0"/);
   });
+  it('disables every tab button when disabled', () => {
+    const html = renderToStaticMarkup(React.createElement(SubTabs, {
+      tabs: [['section', 'By section'], ['batch', 'Saved batch']],
+      value: 'batch', onChange: vi.fn(), idPrefix: 'slips', label: 'Issue slips', disabled: true,
+    }));
+    expect(html.match(/<button[^>]*\sdisabled=""/g)).toHaveLength(2);
+    const enabled = renderToStaticMarkup(React.createElement(SubTabs, {
+      tabs: [['section', 'By section'], ['batch', 'Saved batch']],
+      value: 'batch', onChange: vi.fn(), idPrefix: 'slips', label: 'Issue slips',
+    }));
+    expect(enabled).not.toContain('disabled');
+  });
 });
