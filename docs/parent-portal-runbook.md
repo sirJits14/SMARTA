@@ -45,6 +45,8 @@ you re-activate it.
   "Adviser" link is not the section's adviser, revoke that link and reissue
   the learner's slip.
 
+**Saved batch.** To print slips for learners from different sections (lost or damaged slips, late enrollees, transferees), add them on Issue slips → Saved batch, or with **Add to slip batch** on Learner access. The bar shows how full the last sheet is. **Issue slips** issues up to 64 at a time; their old slips stop working, and guardians already linked keep access. Print right away: codes are shown only once.
+
 ## Parent says a record is wrong
 Guardians → Reports. Check the Scan log tab for that date/device. Resolve
 with "no change", or "Void this scan" (parent sees it struck through with
