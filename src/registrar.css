@@ -59,6 +59,7 @@
   .sims-ui .sims-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:24px; }
   .sims-ui .sims-tab { border:0; background:transparent; border-radius:999px; padding:10px 16px; min-height:44px; font:inherit; color:var(--t-nav-ink); cursor:pointer; transition:background 160ms ease-out,color 160ms ease-out,box-shadow 160ms ease-out,transform 160ms ease-out; }
   .sims-ui .sims-tab:hover { transform:translateY(-1px); }
+  .sims-ui .sims-tab:disabled,.sims-ui .sims-tab:disabled:hover,.sims-ui .sims-tab:disabled:active { cursor:not-allowed; opacity:.6; transform:none; }
   .sims-ui .sims-tab:active { transform:translateY(0); }
   .sims-ui .sims-tab[aria-selected="true"],.sims-ui .sims-tab[aria-pressed="true"] { background:var(--t-primary); color:var(--t-on-primary); font-weight:600; box-shadow:0 4px 12px rgba(var(--t-primary-rgb),.18); }
   .sims-ui .sims-page-transition { animation:sims-page-enter 180ms cubic-bezier(.16,1,.3,1) both; }

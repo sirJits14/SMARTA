@@ -13,7 +13,7 @@ export default function CodesTab({ me, schoolYear }) {
   const [issuing, setIssuing] = useState(false);
   return (
     <>
-      <SubTabs tabs={TABS} value={tab} onChange={setTab} disabled={issuing} idPrefix="slips" label="Issue slips" className="codes-tab-controls sims-tabs"
+      <SubTabs tabs={TABS} value={tab} onChange={setTab} disabled={issuing} idPrefix="slips" label="Activation slips" className="codes-tab-controls sims-tabs"
         style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }} />
       <div key={tab} role="tabpanel" id={`slips-panel-${tab}`} aria-labelledby={`slips-tab-${tab}`}>
         {tab === 'section' ? <SectionSlipsTab schoolYear={schoolYear} onIssuingChange={setIssuing} /> : <SlipBatchTab me={me} schoolYear={schoolYear} onIssuingChange={setIssuing} />}

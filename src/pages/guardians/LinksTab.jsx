@@ -46,7 +46,11 @@ export default function LinksTab({ me, schoolYear }) {
   const sections = sectionsResource.data;
   // Shared listener (same key as the Saved batch screen), so the button
   // knows whether the learner is already waiting for a slip.
-  const slipBatch = useCollectionResource('slip_batch').data;
+  const slipBatchResource = useCollectionResource('slip_batch');
+  const slipBatch = slipBatchResource.data;
+  // Until the batch has loaded, an already-queued learner could be re-added and
+  // moved to the back of the queue.
+  const slipBatchUnready = slipBatchResource.loading || !!slipBatchResource.error;
   const [q, setQ] = useState(''); const [studentId, setStudentId] = useState('');
   const [gradeFilter, setGradeFilter] = useState('');
   const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
@@ -125,7 +129,7 @@ export default function LinksTab({ me, schoolYear }) {
             <Field label="Reason (recorded in the audit log)"><Inp value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted} onClick={() => action.run('reissue', reissue)}>Reissue slip</Btn>
-              <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted || inSlipBatch} onClick={() => action.run('batch', () => addToSlipBatch(student.id, reason.trim().slice(0, 200), me))}>{inSlipBatch ? 'In slip batch' : 'Add to slip batch'}</Btn>
+              <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted || inSlipBatch || slipBatchUnready} onClick={() => action.run('batch', () => addToSlipBatch(student.id, reason.trim().slice(0, 200), me))}>{inSlipBatch ? 'In slip batch' : 'Add to slip batch'}</Btn>
               <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', async () => { await call.revokeCode({ studentId: student.id, schoolYear, reason }); setReissued(null); setReissueErr(''); })}>Revoke slip</Btn>
               <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', async () => { await call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }); setReissued(null); setReissueErr(''); })}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
             </div>

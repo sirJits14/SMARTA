@@ -8,14 +8,14 @@ import SlipPrintControls, { useSlipPaper, PORTAL_URL } from '../../components/Sl
 import { call } from '../../data/guardians.js';
 import { addToSlipBatch, removeFromSlipBatch, clearSlipBatch } from '../../data/slipBatch.js';
 import { enrolledEntries, groupBySection } from '../../lib/idCardQueue.js';
-import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, splitSlipBatch } from '../../lib/slipBatch.js';
+import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, issueConfirmText, splitSlipBatch } from '../../lib/slipBatch.js';
 import { slipSheetFillLabel } from '../../lib/slipLayout.js';
 import { issuedSummary } from '../../lib/slipIssue.js';
 import { buildLearnerIndex, searchLearners } from '../../lib/search.js';
 import { fullName } from '../../lib/roster.js';
 import { T } from '../../styles.js';
 
-const sectionLabel = (s) => `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}`;
+const sectionLabel = (s) => `Grade ${s.gradeLevel} – ${s.name}${s.strand ? ` · ${s.strand}` : ''}`;
 const SEARCH_LIMIT = 8;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const row = { display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 13, flexWrap: 'wrap' };
@@ -67,7 +67,7 @@ function SlipBatch({ me, schoolYear, onIssuingChange, students, enrollments, sec
   // e.g. the daily limit and when it resets, reaches staff.
   const issue = async () => {
     const n = Math.min(canIssue.length, MAX_BATCH_ISSUE);
-    if (!window.confirm(`Issue new slips for ${plural(n, 'learner', 'learners')}? Their current slips stop working. Guardians already linked keep access.`)) return;
+    if (!window.confirm(issueConfirmText(n, result?.slips?.length || 0))) return;
     setErr(''); onIssuingChange?.(true);
     try {
       const r = await call.issueSlipBatch({ schoolYear });

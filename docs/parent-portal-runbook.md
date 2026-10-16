@@ -34,7 +34,7 @@ you re-activate it.
   access and use up slots on the new slip, so the panel shows how many
   guardian/adviser slots are free. If every slot is linked, revoke a link
   first. Approving an access request still works too.
-- Whole section: Guardians → Activation slips → section → Issue slips → print.
+- Whole section: Guardians → Activation slips → **By section** → choose the section → Issue slips → print.
   Every unused old slip in the section stops working. Learners whose guardian
   and adviser slots are all linked are skipped and keep their slip.
 - Custody restriction: Learner access → find learner → reason → **Restrict**.
@@ -45,7 +45,7 @@ you re-activate it.
   "Adviser" link is not the section's adviser, revoke that link and reissue
   the learner's slip.
 
-**Saved batch.** To print slips for learners from different sections (lost or damaged slips, late enrollees, transferees), add them on Issue slips → Saved batch, or with **Add to slip batch** on Learner access. The bar shows how full the last sheet is. **Issue slips** issues up to 64 at a time; their old slips stop working, and guardians already linked keep access. Print right away: codes are shown only once.
+**Saved batch.** To print slips for learners from different sections (lost or damaged slips, late enrollees, transferees), add them on Guardians → Activation slips → **Saved batch**, or with **Add to slip batch** on Learner access. The bar shows how full the last sheet is. **Issue N slips** issues up to 64 at a time; their old slips stop working, and guardians already linked keep access. Print right away: codes are shown only once.
 
 ## Parent says a record is wrong
 Guardians → Reports. Check the Scan log tab for that date/device. Resolve

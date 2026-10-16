@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, splitSlipBatch } from './slipBatch.js';
+import { MAX_BATCH_ISSUE, OTHER_REASON, SLIP_BATCH_REASONS, batchReason, issueButtonLabel, issueConfirmText, splitSlipBatch } from './slipBatch.js';
 
 describe('reasons', () => {
   it('offers the fixed list with Other last', () => {
@@ -44,5 +44,17 @@ describe('splitSlipBatch', () => {
     const { canIssue, cantIssue } = splitSlipBatch({ batchDocs, enrolled, students, lastSkipped: new Map([['S2', 'fully-linked']]) });
     expect(canIssue.map((e) => e.student.id)).toEqual(['S1']);
     expect(cantIssue[0]).toMatchObject({ id: 'S2', reason: 'Damaged slip', why: 'all slots already linked' });
+  });
+});
+
+describe('issueConfirmText', () => {
+  const base = 'Their current slips stop working. Guardians already linked keep access.';
+  it('asks about the learners to issue', () => {
+    expect(issueConfirmText(1, 0)).toBe(`Issue new slips for 1 learner? ${base}`);
+    expect(issueConfirmText(12, 0)).toBe(`Issue new slips for 12 learners? ${base}`);
+  });
+  it('warns that slips still on screen will be replaced', () => {
+    expect(issueConfirmText(3, 1)).toBe(`Issue new slips for 3 learners? ${base} The 1 slip on screen will be replaced — print them first.`);
+    expect(issueConfirmText(3, 40)).toBe(`Issue new slips for 3 learners? ${base} The 40 slips on screen will be replaced — print them first.`);
   });
 });

@@ -18,6 +18,16 @@ export function batchReason(choice, note = '') {
 export const issueButtonLabel = (n) =>
   (n > MAX_BATCH_ISSUE ? `Issue first ${MAX_BATCH_ISSUE} slips` : `Issue ${n} ${n === 1 ? 'slip' : 'slips'}`);
 
+// The Issue confirmation. `n` is how many learners this press will issue (the
+// caller clamps it to MAX_BATCH_ISSUE); `unprinted` is how many slips are still
+// on screen, which a second press replaces (their codes are shown only once).
+export function issueConfirmText(n, unprinted = 0) {
+  const base = `Issue new slips for ${n} ${n === 1 ? 'learner' : 'learners'}? Their current slips stop working. Guardians already linked keep access.`;
+  return unprinted > 0
+    ? `${base} The ${unprinted} ${unprinted === 1 ? 'slip' : 'slips'} on screen will be replaced — print them first.`
+    : base;
+}
+
 // Splits the saved batch into learners the next press can issue (in print
 // order) and learners it can't: no longer enrolled or missing (known here),
 // or skipped by the server on the last press (`lastSkipped`: id → reason).
