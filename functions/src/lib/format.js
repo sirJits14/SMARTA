@@ -22,6 +22,11 @@ export const formalName = (s) => {
   return `${(s.lastName || '').trim()}, ${(s.firstName || '').trim()}${mi}${ext}`;
 };
 
+// "Oct 16, 2:20 PM" -- an instant in Philippine time, for staff-facing
+// messages. ICU puts a narrow no-break space before AM/PM; use a plain one.
+const MANILA = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+export const manilaDateTime = (ms) => MANILA.format(ms).replace(/\s/g, ' ');
+
 // The identity fields of learners/{id} -- written whenever a guardian is
 // linked so the Home card has a name before the learner's first gate scan.
 // lastName/firstName/sex let Home sort learners male-first, then by last

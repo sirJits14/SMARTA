@@ -6,7 +6,7 @@ import { audit } from '../audit.js';
 import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, int } from '../lib/validators.js';
 import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activationCode.js';
-import { sectionLabel, learnerIdentity, formalName } from '../lib/format.js';
+import { sectionLabel, learnerIdentity, formalName, manilaDateTime } from '../lib/format.js';
 import { schoolYearRef, isEnded, schoolYearEnded } from '../lib/schoolYears.js';
 import { ADVISER, isDepedEmail, slotFor, claimSlot, slotsFromLinks, isOpenStatus } from '../lib/codeSlots.js';
 
@@ -53,7 +53,8 @@ export async function issueActivationCodes(ctx, data) {
   const { db, now, email } = ctx;
   const sectionId = str(data.sectionId, { name: 'sectionId', min: 1, max: 64 });
   const schoolYear = str(data.schoolYear, { name: 'schoolYear', min: 9, max: 9 });
-  await enforceRateLimit(db, ctx.uid, 'issueCodes', LIMITS.issueCodes, now().getTime());
+  await enforceRateLimit(db, ctx.uid, 'issueCodes', LIMITS.issueCodes, now().getTime(), (resetMs) =>
+    `Slips were issued for ${LIMITS.issueCodes.max} sections in the last 24 hours, the daily limit. You can issue more after ${manilaDateTime(resetMs)}.`);
   await assertYearOpen(db, schoolYear);
 
   const section = (await db.doc(`sections/${sectionId}`).get()).data();

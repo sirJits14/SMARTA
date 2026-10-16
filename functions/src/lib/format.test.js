@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sectionLabel, displayName, fullName, formalName, learnerIdentity } from './format.js';
+import { sectionLabel, displayName, fullName, formalName, learnerIdentity, manilaDateTime } from './format.js';
 
 describe('format', () => {
   describe('sectionLabel', () => {
@@ -52,5 +52,12 @@ describe('learnerIdentity', () => {
   });
   it('stores an empty sex rather than an unexpected value', () => {
     expect(learnerIdentity({ firstName: 'A', lastName: 'B', sex: 'x' }, null, 'SY').sex).toBe('');
+  });
+});
+
+describe('manilaDateTime', () => {
+  it('shows an instant as Philippine date and time with plain spaces', () => {
+    expect(manilaDateTime(Date.parse('2026-10-16T06:20:34Z'))).toBe('Oct 16, 2:20 PM');
+    expect(manilaDateTime(Date.parse('2026-09-21T23:00:00Z'))).toBe('Sep 22, 7:00 AM');
   });
 });
