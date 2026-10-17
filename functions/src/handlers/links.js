@@ -6,7 +6,7 @@ import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
-import { ADVISER, isDepedEmail, isOpenStatus, slotFor, slotsFromLinks } from '../lib/codeSlots.js';
+import { ADVISER, isDepedEmail, isOpenStatus, slotFor, slotsFromLinks, moveSlot } from '../lib/codeSlots.js';
 import { schoolYearRef, isEnded } from '../lib/schoolYears.js';
 import { refreshGuardianAudience } from './guardianAudience.js';
 
@@ -72,6 +72,9 @@ export async function resolveAccessRequest(ctx, data) {
         activatedAt: FieldValue.serverTimestamp(), activatedVia: 'staff',
         revokedAt: FieldValue.delete(), revokedBy: FieldValue.delete(), revokedReason: FieldValue.delete(),
         expiredAt: FieldValue.delete(), expiredReason: FieldValue.delete(),
+        // Last year's relationship change is history once staff link them again;
+        // relationshipChangedFor stays so the once-a-year limit still holds.
+        previousRelationship: FieldValue.delete(), relationshipChangedAt: FieldValue.delete(),
       }, { merge: true });
     });
     const profileRef = db.doc(`guardians/${request.guardianUid}`);
@@ -101,8 +104,9 @@ const LINK_ENDED = 'This link is no longer active.';
 const OTHER_SIDE = 'Choose Adviser, or the relationship you have to the learner.';
 
 // A DepEd account fixes an Adviser/guardian mix-up on its own link, once per
-// link per school year (spec 2026-10-17). The learner's open slips are
-// recounted from the active links, so the slot the caller left is free again.
+// link per school year (spec 2026-10-17). Each of the learner's open slips
+// moves one count from the slot the caller left to the one they joined, so
+// the slot they left is free again. Revoked links keep their counts.
 export async function changeLinkRelationship(ctx, data) {
   const { db, now, uid, email } = ctx;
   // Checked before anything is read, like activateCode's adviser check.
@@ -117,7 +121,7 @@ export async function changeLinkRelationship(ctx, data) {
   const activeLinksQuery = db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active');
   const { from, fromSlot, schoolYear } = await db.runTransaction(async (tx) => {
     const l = (await tx.get(linkRef)).data();
-    if (!l || l.guardianUid !== uid || l.status !== 'active') throw refuse('inactive', 'failed-precondition', LINK_ENDED);
+    if (!l || l.guardianUid !== uid || l.studentId !== studentId || l.status !== 'active') throw refuse('inactive', 'failed-precondition', LINK_ENDED);
     const yearRef = schoolYearRef(db, l.schoolYear);
     const codesQuery = db.collection('activation_codes').where('studentId', '==', studentId).where('schoolYear', '==', l.schoolYear);
     const [year, activeLinks, codes] = await Promise.all([yearRef && tx.get(yearRef), tx.get(activeLinksQuery), tx.get(codesQuery)]);
@@ -141,10 +145,11 @@ export async function changeLinkRelationship(ctx, data) {
       relationship, slot: toSlot, previousRelationship: l.relationship ?? null,
       relationshipChangedFor: l.schoolYear, relationshipChangedAt: FieldValue.serverTimestamp(),
     });
-    // The slips' counters follow the links: the caller's link now holds toSlot.
+    // `after` is what the active links use once the caller's link holds toSlot;
+    // a slip's counters never drop below it.
     const after = slotsFromLinks([...others, { status: 'active', schoolYear: l.schoolYear, slot: toSlot }], l.schoolYear);
     for (const c of codes.docs) {
-      if (isOpenStatus(c.data().status)) tx.update(c.ref, { ...after, redemptions: FieldValue.delete(), maxRedemptions: FieldValue.delete() });
+      if (isOpenStatus(c.data().status)) tx.update(c.ref, { ...moveSlot(c.data(), current, toSlot, after), redemptions: FieldValue.delete(), maxRedemptions: FieldValue.delete() });
     }
     return { from: l.relationship ?? null, fromSlot: current, schoolYear: l.schoolYear };
   });

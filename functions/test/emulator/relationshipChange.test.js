@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db, clearAll, seedSchool } from './helpers.js';
 import { changeLinkRelationship } from '../../src/handlers/links.js';
-import { issueActivationCodes, activateCode } from '../../src/handlers/codes.js';
+import { issueActivationCodes, reissueActivationCode, activateCode } from '../../src/handlers/codes.js';
 import { hashCode } from '../../src/lib/activationCode.js';
 import { LIMITS } from '../../src/callable.js';
 
@@ -91,6 +91,65 @@ describe('changeLinkRelationship', () => {
     await seedLink('tAdv', { relationship: 'Adviser', slot: 'adviser', previousRelationship: 'Mother', relationshipChangedFor: '2025-2026' });
     await expect(change(deped(), 'Mother')).resolves.toEqual({ relationship: 'Mother', slot: 'guardian' });
     expect(await link('tAdv_S1')).toMatchObject({ previousRelationship: 'Adviser', relationshipChangedFor: SY });
+  });
+
+  it('leaves counts held by revoked links alone, moving one count only', async () => {
+    const code = await issueSlip();
+    await redeem(gmail('gX'), code, 'Father');
+    await redeem(deped(), code, 'Mother');
+    expect(await slip(code)).toMatchObject({ guardianRedemptions: 2, adviserRedemptions: 0, status: 'issued' });
+    // What revokeLink does to the link; it never lowers the slip's counters.
+    await db().doc('guardian_links/gX_S1').update({ status: 'revoked' });
+
+    await change(deped(), 'Adviser');
+    expect(await slip(code)).toMatchObject({ guardianRedemptions: 1, adviserRedemptions: 1 });
+
+    const generic = { code: 'failed-precondition', message: 'That code could not be used. Ask the registrar to reissue your slip.' };
+    await redeem(gmail('gA'), code, 'Mother');
+    await expect(redeem(gmail('gB'), code, 'Father')).rejects.toMatchObject(generic);
+    expect(await slip(code)).toMatchObject({ guardianRedemptions: 2, adviserRedemptions: 1 });
+  });
+
+  it('leaves a revoked slip alone', async () => {
+    const code = await issueSlip();
+    await redeem(deped(), code, 'Mother');
+    await db().doc(`activation_codes/${hashCode(code)}`).update({ status: 'revoked' });
+    const before = await slip(code);
+    await change(deped(), 'Adviser');
+    expect(await slip(code)).toEqual(before);
+  });
+
+  it('leaves a slip from another school year alone', async () => {
+    await seedLink('tAdv');
+    const old = { studentId: 'S1', schoolYear: '2025-2026', status: 'issued', guardianRedemptions: 1, maxGuardians: 2, adviserRedemptions: 0, maxAdvisers: 1 };
+    await db().doc('activation_codes/oldslip').set(old);
+    await change(deped(), 'Adviser');
+    expect((await db().doc('activation_codes/oldslip').get()).data()).toEqual(old);
+  });
+
+  it('changes a legacy link that has no slot to Adviser', async () => {
+    await db().doc('guardian_links/tAdv_S1').set({ guardianUid: 'tAdv', studentId: 'S1', status: 'active', schoolYear: SY, relationship: 'Mother' });
+    await expect(change(deped(), 'Adviser')).resolves.toEqual({ relationship: 'Adviser', slot: 'adviser' });
+    expect(await link('tAdv_S1')).toMatchObject({ relationship: 'Adviser', slot: 'adviser', previousRelationship: 'Mother' });
+  });
+
+  it('clears the change note when staff fix the teacher and the teacher links again', async () => {
+    const code = await issueSlip();
+    await redeem(deped(), code, 'Mother');
+    await change(deped(), 'Adviser');
+    // Staff revoke the link and reissue the slip (reissue rebuilds the counters from active links).
+    await db().doc('guardian_links/tAdv_S1').update({ status: 'revoked' });
+    const { slip: { code: fresh } } = await reissueActivationCode(staff(), { studentId: 'S1', schoolYear: SY, reason: 'fix' });
+    await redeem(deped(), fresh, 'Mother');
+
+    const l = await link('tAdv_S1');
+    expect(l).toMatchObject({ status: 'active', relationship: 'Mother', slot: 'guardian', relationshipChangedFor: SY });
+    expect(l.previousRelationship).toBeUndefined();
+    expect(l.relationshipChangedAt).toBeUndefined();
+    await expect(change(deped(), 'Adviser')).rejects.toMatchObject({ code: 'failed-precondition', message: expect.stringContaining('You already changed') });
+
+    await expect(redeem(deped('tReal'), fresh, 'Adviser')).resolves.toBeTruthy();
+    expect(await slip(fresh)).toMatchObject({ guardianRedemptions: 1, adviserRedemptions: 1 });
   });
 
   it('refuses when the learner already has an adviser', async () => {
