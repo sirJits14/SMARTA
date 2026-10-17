@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { localDate } from '../lib/dates.js';
-import { markFor, formatScanTime } from '../lib/attendance.js';
+import { markFor, formatScanTime, pmDetails, hasPmData } from '../lib/attendance.js';
+import { hasPmSession } from '../../shared/scheduleSessions.js';
 import { attendanceId, saveMarks } from '../data/attendance.js';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, S } from '../styles.js';
@@ -52,6 +53,11 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
 
   const attendanceResource = useStaffCollectionResource('student_attendance', { me, sectionId, date });
   const attendanceDoc = attendanceResource.data.find(item => item.id === attendanceId(sectionId, date)) ?? null;
+  // PM columns are display-only, so schedules stay out of `resources`: a
+  // schedule load problem must never block taking attendance.
+  const schedulesResource = useStaffCollectionResource('schedules', { me, schoolYear });
+  const sectionScheduleId = sectionsSY.find((s) => s.id === sectionId)?.scheduleId;
+  const showPm = hasPmSession(schedulesResource.data.find((s) => s.id === sectionScheduleId)) || hasPmData(attendanceDoc);
   const resources = [sectionsResource, enrollmentsResource, studentsResource, attendanceResource];
   const selectedSectionAvailable = sectionsSY.some(s => s.id === sectionId);
   const ready = resources.every(r => !r.loading && !r.error);
@@ -141,12 +147,13 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
             <TallyChip label="Excused" value={tally.excused} color={T.excused} />
           </div>
 
-          <div className="sims-table-scroll" role="region" aria-label="Attendance roster" tabIndex={0}><div style={{ minWidth: 700 }}>
+          <div className="sims-table-scroll" role="region" aria-label="Attendance roster" tabIndex={0}><div style={{ minWidth: showPm ? 900 : 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0 18px 8px' }}>
             <span style={{ ...S.th, width: 110, flexShrink: 0, padding: 0, borderBottom: 'none' }}>LRN</span>
             <span style={{ ...S.th, flex: '0 1 280px', minWidth: 140, padding: 0, borderBottom: 'none' }}>Name</span>
-            <span style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time In</span>
-            <span style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Time Out</span>
+            {(showPm ? ['AM In', 'AM Out', 'PM In', 'PM Out'] : ['Time In', 'Time Out']).map((h) => (
+              <span key={h} style={{ ...S.th, width: 84, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>{h}</span>
+            ))}
             <span style={{ ...S.th, width: 90, flexShrink: 0, textAlign: 'center', padding: 0, borderBottom: 'none' }}>Status</span>
           </div>
 
@@ -155,7 +162,15 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
               const mark = shownMark(s.id);
               const timeIn = attendanceDoc?.timeIn?.[s.id];
               const timeOut = attendanceDoc?.timeOut?.[s.id];
-              const scanLabel = `${timeIn ? ` Time in ${formatScanTime(timeIn)}.` : ''}${timeOut ? ` Time out ${formatScanTime(timeOut)}.` : ''}`;
+              const pm = pmDetails(attendanceDoc, s.id);
+              const amWord = showPm ? 'AM' : 'Time';
+              const scanLabel = [
+                timeIn && ` ${amWord} in ${formatScanTime(timeIn)}.`,
+                timeOut && ` ${amWord} out ${formatScanTime(timeOut)}.`,
+                pm.pmTimeIn && ` PM in ${formatScanTime(pm.pmTimeIn)}.`,
+                pm.pmTimeOut && ` PM out ${formatScanTime(pm.pmTimeOut)}.`,
+                ...pm.notes.map((n) => ` ${n}.`),
+              ].filter(Boolean).join('');
               return (
                 <div
                   key={s.id}
@@ -173,10 +188,12 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
                 >
                   <span style={{ ...T.num, fontSize: 12, color: T.ink,  width: 110, flexShrink: 0 }}>{s.lrn}</span>
                   <span style={{ flex: '0 1 280px', minWidth: 140, fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>{fullName(s)}</span>
-                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeIn ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeIn ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(timeIn)}</span>
-                  <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: timeOut ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: timeOut ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(timeOut)}</span>
-                  <span style={{ width: 90, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+                  <TimeCell time={timeIn} />
+                  <TimeCell time={timeOut} />
+                  {showPm && <><TimeCell time={pm.pmTimeIn} /><TimeCell time={pm.pmTimeOut} /></>}
+                  <span style={{ width: 90, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                     <StatusPill mark={mark} />
+                    {pm.notes.map((n) => <span key={n} style={{ fontFamily: T.body, fontSize: 11, fontWeight: 600, color: T.inkMuted, whiteSpace: 'nowrap' }}>{n}</span>)}
                   </span>
                 </div>
               );
@@ -193,6 +210,10 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
       </ResourceState>
     </div>
   );
+}
+
+function TimeCell({ time }) {
+  return <span style={{ ...T.num, fontSize: 12, fontWeight: 600, color: time ? T.ink : T.inkMuted, width: 84, flexShrink: 0, textAlign: 'center', padding: '4px 0', borderRadius: 8, background: time ? 'rgba(0,122,114,0.06)' : 'transparent' }}>{formatScanTime(time)}</span>;
 }
 
 function TallyChip({ label, value, sub, color }) {

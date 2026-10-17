@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { eventTitle, initials, latestScanToday, nameCase } from './format.js';
+import { eventTitle, initials, latestScanToday, nameCase, todayNotes } from './format.js';
 describe('format', () => {
   it('builds initials from the first and last name, skipping suffixes', () => {
     expect(initials('Juan P. Dela Cruz Jr.')).toBe('JC');
@@ -29,6 +29,18 @@ describe('format', () => {
     expect(latestScanToday({ date: '2026-09-21', status: 'in', firstIn: { time: '07:12' }, lastOut: null }, '2026-09-21')).toBe('Entered 07:12 AM');
     expect(latestScanToday({ date: '2026-09-21', status: 'out', firstIn: { time: '07:12' }, lastOut: { time: '16:05' } }, '2026-09-21')).toBe('Left 04:05 PM');
     expect(latestScanToday({ date: '2026-09-21', status: 'out', firstIn: null, lastOut: { time: '16:05' } }, '2026-09-21')).toBe('Left 04:05 PM');
+  });
+  it('lists today\'s split-day notes, and none for stale or older summaries', () => {
+    expect(todayNotes({ date: '2026-09-21', notes: ['absentAm', 'latePm'] }, '2026-09-21')).toEqual(['Absent AM', 'Late PM']);
+    expect(todayNotes({ date: '2026-09-21', notes: [] }, '2026-09-21')).toEqual([]);
+    expect(todayNotes({ date: '2026-09-21' }, '2026-09-21')).toEqual([]);
+    expect(todayNotes({ date: '2026-09-20', notes: ['latePm'] }, '2026-09-21')).toEqual([]);
+    expect(todayNotes(null, '2026-09-21')).toEqual([]);
+    expect(todayNotes({ date: '2026-09-21', notes: ['unknown'] }, '2026-09-21')).toEqual([]);
+  });
+  it('appends notes to today\'s latest scan', () => {
+    expect(latestScanToday({ date: '2026-09-21', status: 'in', events: [{ kind: 'in', time: '12:50' }], notes: ['absentAm'] }, '2026-09-21'))
+      .toBe('Entered 12:50 PM · Absent AM');
   });
 });
 

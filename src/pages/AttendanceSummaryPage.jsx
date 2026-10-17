@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useStaffCollectionResource, useDocResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
-import { markFor, summarizeMonth, formatScanTime } from '../lib/attendance.js';
+import { markFor, summarizeMonth, scanTitle as dayScanTitle } from '../lib/attendance.js';
 import { buildSF2Workbook } from '../lib/sf2.js';
 import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S, MARK_COLOR } from '../styles.js';
@@ -141,11 +141,7 @@ export default function AttendanceSummaryPage({ me, schoolYear }) {
                     <td style={{ ...S.td, fontWeight: 600, color: T.ink, position: 'sticky', left: 28, background: T.surface }}>{fullName(s)}</td>
                     {schoolDays.map((d) => {
                       const m = markFor(docsByDate, d, s.id);
-                      const timeIn = docsByDate[d]?.timeIn?.[s.id];
-                      const timeOut = docsByDate[d]?.timeOut?.[s.id];
-                      const scanTitle = timeIn || timeOut
-                        ? `Time in: ${formatScanTime(timeIn)}  ·  Time out: ${formatScanTime(timeOut)}`
-                        : undefined;
+                      const scanTitle = dayScanTitle(docsByDate[d], s.id);
                       return (
                         <td key={d} title={scanTitle} style={{ ...S.td, ...T.num, textAlign: 'center', padding: '8px 6px', color: MARK_COLOR[m], fontWeight: 700, cursor: scanTitle ? 'help' : 'default' }}>
                           {m === 'P' ? '' : m}

@@ -84,6 +84,8 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
   const learnerRef = db.doc(`learners/${studentId}`);
   const eventRef = learnerRef.collection('events').doc(eventId);
   const [studentSnap, sectionSnap] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`sections/${enrollment.sectionId}`).get()]);
+  const scheduleId = sectionSnap.data()?.scheduleId;
+  const schedule = scheduleId ? (await db.doc(`schedules/${scheduleId}`).get()).data() : undefined;
   const student = studentSnap.data();
   const learnerName = fullName(student);
 
@@ -109,7 +111,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
       if (idx >= 0) existing[idx] = row; else existing.push(row);
     }
 
-    const summary = recomputeSummary({ events: existing, todayDate });
+    const summary = recomputeSummary({ events: existing, todayDate, schedule });
     tx.set(learnerRef, {
       ...learnerIdentity(student, sectionSnap.data(), schoolYear),
       today: summary.today, recent: summary.recent, updatedAt: FieldValue.serverTimestamp(),

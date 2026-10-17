@@ -4,7 +4,7 @@ import Icon from '../components/Icon.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import { useLinks } from '../hooks/useLinks.js';
 import { useDocs } from '../hooks/useDoc.js';
-import { initials, latestScan } from '../lib/format.js';
+import { initials, latestScan, todayNotes } from '../lib/format.js';
 import { orderLearners, listName } from '../lib/learnerOrder.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 import { notificationState } from '../lib/notificationState.js';
@@ -40,7 +40,7 @@ function LearnerRow({ link, data, error, navigate }) {
             {latest && <span className="learner-row-time">{formatScanTime(latest.time)}</span>}
             <span className="learner-row-chevron" aria-hidden="true"><Icon name="chevron" size={16} /></span>
           </span>
-          <span className="learner-row-preview">{[happened, data?.sectionLabel].filter(Boolean).join(' · ')}</span>
+          <span className="learner-row-preview">{[happened, ...todayNotes(data?.today, localDate()), data?.sectionLabel].filter(Boolean).join(' · ')}</span>
         </span>
         <span className="sr-only">{S.homeViewHistory}</span>
       </button>

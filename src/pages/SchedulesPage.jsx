@@ -7,16 +7,19 @@ import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedule
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
 import { isAdmin } from '../lib/access.js';
+import { validateSchedule } from '../lib/schedules.js';
+import { hasPmSession } from '../../shared/scheduleSessions.js';
+
+const check = { display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.ink, marginBottom: 12 };
 
 function ScheduleForm({ editing, onClose }) {
   const action = useAsyncAction();
-  const [f, setF] = useState(editing || { name: '', timeIn: '', timeOut: '' });
+  const [f, setF] = useState(editing ? { ...editing, pm: hasPmSession(editing) } : { name: '', timeIn: '', timeOut: '', pm: false, pmTimeIn: '', pmTimeOut: '' });
   const [err, setErr] = useState('');
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const save = async () => {
-    if (!f.name?.trim()) { setErr('Schedule name is required.'); return; }
-    if (!f.timeIn || !f.timeOut) { setErr('Time in and time out are required.'); return; }
-    if (f.timeOut <= f.timeIn) { setErr('Time out must be later than time in.'); return; }
+    const problem = validateSchedule(f);
+    if (problem) { setErr(problem); return; }
     await action.run('save', async () => {
       editing ? await updateSchedule(editing.id, f) : await createSchedule(f);
       onClose();
@@ -29,9 +32,16 @@ function ScheduleForm({ editing, onClose }) {
       {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 12 }}>{err}</div>}
       <Field label="Schedule name"><Inp value={f.name || ''} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Morning Shift" /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
-        <Field label="Time in"><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
-        <Field label="Time out"><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
+        <Field label={f.pm ? 'AM arrival' : 'Time in'}><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
+        <Field label={f.pm ? 'AM departure' : 'Time out'}><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
       </div>
+      <label style={check}><input type="checkbox" checked={f.pm} onChange={(e) => set('pm', e.target.checked)} /> Add afternoon session (PM)</label>
+      {f.pm && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
+          <Field label="PM arrival"><Inp type="time" value={f.pmTimeIn || ''} onChange={(e) => set('pmTimeIn', e.target.value)} /></Field>
+          <Field label="PM departure"><Inp type="time" value={f.pmTimeOut || ''} onChange={(e) => set('pmTimeOut', e.target.value)} /></Field>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <Btn variant="ghost" disabled={action.busy} onClick={onClose}>Cancel</Btn>
         <Btn disabled={action.busy} onClick={save}>{editing ? 'Save changes' : 'Add schedule'}</Btn>
@@ -77,13 +87,15 @@ export default function SchedulesPage({ me, schoolYear }) {
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead><tr style={S.thead}>
-              {['Name', 'Time In', 'Time Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+              {['Name', 'Time In', 'Time Out', 'PM In', 'PM Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
             </tr></thead>
             <tbody>{rows.map((s) => (
               <tr key={s.id}>
                 <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
                 <td style={{ ...S.td, ...T.num }}>{s.timeIn}</td>
                 <td style={{ ...S.td, ...T.num }}>{s.timeOut}</td>
+                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeIn : '—'}</td>
+                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeOut : '—'}</td>
                 <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {admin && <>
                     <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>

@@ -164,4 +164,12 @@ describe('handleScanEvent', () => {
       expect(anomalies()).toEqual([]);
     }, 30000);
   });
+
+  it('adds split-day session notes to the learner summary', async () => {
+    await db().doc('sections/SEC1').update({ scheduleId: 'SPLIT' });
+    await db().doc('schedules/SPLIT').set({ timeIn: '08:00', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:00' });
+    const data = scanDoc({ scannedAt: ts('2026-09-21T12:50:00+08:00'), receivedAt: ts('2026-09-21T12:50:10+08:00'), scannedTime: '12:50' });
+    expect((await run(deps(), 'k1_S1_202609211250', data)).outcome).toBe('processed');
+    expect((await db().doc('learners/S1').get()).data().today.notes).toEqual(['absentAm']);
+  });
 });

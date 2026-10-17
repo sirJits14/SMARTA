@@ -11,6 +11,7 @@ const fs = vi.hoisted(() => {
     setDoc: async (...args) => set(...args),
     addDoc: async (r, value) => { const d = ref(`${r.path}/new`); set(d, value); return d; },
     deleteDoc: async r => records.delete(r.path),
+    deleteField: () => undefined,
     getDoc: async r => snap(r),
     where: (field, op, value) => ({ field, value }),
     query: (r, ...filters) => ({ ...r, filters }),
