@@ -26,7 +26,9 @@ export const failNextSkip = () => { rejectSkip = true; };
 export function reset() {
   state = { profile: null, links: [] }; rejectSkip = false;
   portal.consentVersion = 1;
-  localStorage.removeItem('bnhs-parent-consent'); navigate('/'); save();
+  localStorage.removeItem('bnhs-parent-consent');
+  localStorage.removeItem(`bnhs-parent-last-relationship:${user.uid}`);
+  navigate('/'); save();
 }
 export const updateNotice = () => { portal.consentVersion += 1; notify(); };
 export const callable = (name) => async () => {

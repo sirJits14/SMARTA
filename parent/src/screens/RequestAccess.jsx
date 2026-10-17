@@ -4,6 +4,7 @@ import { db, callable } from '../firebase.js';
 import S from '../strings.js';
 import { nameCase } from '../lib/format.js';
 import { RELATIONSHIPS } from '../lib/relationships.js';
+import { recallRelationship, rememberRelationship } from '../lib/lastRelationship.js';
 import { T } from '../styles.js';
 import { Btn, Card, Field, Inp, Sel, Banner } from '../components/ui.jsx';
 import { useQuery } from '../hooks/useDoc.js';
@@ -12,12 +13,12 @@ const STATUS = { open: S.requestOpen, approved: S.requestApproved, denied: S.req
 
 export default function RequestAccess({ user, profile, navigate }) {
   const { rows } = useQuery(() => query(collection(db, 'access_requests'), where('guardianUid', '==', user.uid), limit(10)), [user.uid]);
-  const [f, setF] = useState({ guardianName: profile?.displayName || user.displayName || '', studentLrn: '', learnerNameTyped: '', relationship: 'Guardian', contactNumber: '', message: '' });
+  const [f, setF] = useState(() => ({ guardianName: profile?.displayName || user.displayName || '', studentLrn: '', learnerNameTyped: '', relationship: recallRelationship(user.uid, RELATIONSHIPS, 'Guardian'), contactNumber: '', message: '' }));
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(null);
   const send = async () => {
     setBusy(true); setMsg(null);
-    try { await callable('requestAccessFn')(f); setMsg({ tone: 'info', text: S.requestSent }); setF((p) => ({ ...p, studentLrn: '', learnerNameTyped: '', message: '' })); }
+    try { await callable('requestAccessFn')(f); rememberRelationship(user.uid, f.relationship); setMsg({ tone: 'info', text: S.requestSent }); setF((p) => ({ ...p, studentLrn: '', learnerNameTyped: '', message: '' })); }
     catch (e) { setMsg({ tone: 'danger', text: e?.message || S.reportFailed }); }
     setBusy(false);
   };
