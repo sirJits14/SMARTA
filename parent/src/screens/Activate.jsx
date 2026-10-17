@@ -5,9 +5,8 @@ import S from '../strings.js';
 import { nameCase } from '../lib/format.js';
 import { Btn, Card, Field, Inp, Sel, Banner } from '../components/ui.jsx';
 import { useDoc } from '../hooks/useDoc.js';
+import { RELATIONSHIPS, ADVISER } from '../lib/relationships.js';
 
-const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
-const ADVISER = 'Adviser';
 const normalize = (v) => v.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 8);
 const pretty = (v) => (v.length > 4 ? `${v.slice(0, 4)}-${v.slice(4)}` : v);
 
