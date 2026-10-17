@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import S from '../strings.js';
 import { T } from '../styles.js';
@@ -12,6 +12,14 @@ export default function RelationshipSheet({ link, onSave, onClose }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const options = relationshipOptions(link.slot);
+  const dialog = useRef(null);
+  // Move focus into the dialog on open and give it back on close, so
+  // keyboard and screen-reader users land on the choices (aria-modal).
+  useEffect(() => {
+    const opener = document.activeElement;
+    dialog.current?.querySelector('input[type=radio]')?.focus();
+    return () => { if (opener instanceof HTMLElement) opener.focus(); };
+  }, []);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && !busy) onClose(); };
@@ -28,7 +36,7 @@ export default function RelationshipSheet({ link, onSave, onClose }) {
   return createPortal(
     <div onClick={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}
       style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.45)', display: 'grid', alignItems: 'end', justifyItems: 'center' }}>
-      <div role="dialog" aria-modal="true" aria-labelledby="rel-sheet-title"
+      <div ref={dialog} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="rel-sheet-title"
         style={{ width: 'min(100%, 480px)', boxSizing: 'border-box', background: T.surface, color: T.ink, fontFamily: T.font, borderRadius: `${T.radius}px ${T.radius}px 0 0`, padding: 16 }}>
         <h2 id="rel-sheet-title" style={{ fontSize: 18, margin: '0 0 12px' }}>{S.relSheetTitle}</h2>
         {err && <Banner tone="danger">{err}</Banner>}

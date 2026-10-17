@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
 import { db, callable } from '../firebase.js';
 import S from '../strings.js';
@@ -37,6 +37,7 @@ export default function History({ user, studentId, navigate, route }) {
     setSheetErr(null);
     import('../components/RelationshipSheet.jsx').then((m) => setSheet(() => m.default)).catch(() => setSheetErr(S.relChangeFailed));
   };
+  const closeSheet = useCallback(() => setSheet(null), []);
   const saveRelationship = (relationship) => callable('changeLinkRelationshipFn')({ studentId, relationship });
   const [rows, setRows] = useState([]); const [last, setLast] = useState(null); const [more, setMore] = useState(true); const [busy, setBusy] = useState(false);
 
@@ -70,7 +71,7 @@ export default function History({ user, studentId, navigate, route }) {
         status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')} />
       {deped && learner && <RelationshipRow link={link} onChange={openSheet} />}
       {sheetErr && <Banner tone="danger">{sheetErr}</Banner>}
-      {Sheet && link && <Sheet link={link} onSave={saveRelationship} onClose={() => setSheet(null)} />}
+      {Sheet && link && <Sheet link={link} onSave={saveRelationship} onClose={closeSheet} />}
       {error === 'permission-denied' ? <Banner tone="warn">{S.accessEnded}</Banner>
         : learner === undefined ? <Spinner label={S.loading} />
           : <div className="learner-history">
