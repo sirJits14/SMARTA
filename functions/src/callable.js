@@ -14,8 +14,9 @@ export const LIMITS = {
   // section-wide one.
   reissueCode: { windowMs: 24 * 60 * 60 * 1000, max: 60 },
   // A DepEd account fixing its own Adviser/guardian mix-up. The once-per-year
-  // lock is the real limit; this only stops scripted calls.
-  relationshipChange: { windowMs: 60 * 60 * 1000, max: 10 },
+  // lock per learner is the real limit; an adviser may be fixing a whole
+  // section in one sitting, so this only stops scripted calls.
+  relationshipChange: { windowMs: 60 * 60 * 1000, max: 60 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 
