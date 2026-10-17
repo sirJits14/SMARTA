@@ -21,3 +21,11 @@
    adviser)** as the relationship. You then see that learner's gate IN/OUT
    like a parent. With a whole section linked you can turn notifications
    off in Settings and check the Inbox instead.
+7. **Picked the wrong relationship?** If you chose Mother (or another
+   parent relationship) instead of **Adviser**, open the learner in the
+   app and tap **Change** next to "Linked as …". Pick **Adviser (class
+   adviser)** and confirm. This works only with your **@deped.gov.ph**
+   account, and only once per learner per school year. A DepEd teacher who
+   is really the learner's parent and chose Adviser can switch the other
+   way the same way. If it says the learner already has an adviser, or that
+   you already changed it, ask the registrar.
