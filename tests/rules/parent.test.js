@@ -71,6 +71,8 @@ describe('links, requests, reports, staff-only records', () => {
     await ok(as(env, GUARDIAN_A).collection('guardian_links').where('guardianUid', '==', 'gA').where('status', '==', 'active').limit(60).get());
     await denied(as(env, GUARDIAN_A).collection('guardian_links').where('guardianUid', '==', 'gA').where('status', '==', 'active').limit(61).get());
     await denied(as(env, GUARDIAN_A).doc('guardian_links/gA_S2').set({ guardianUid: 'gA', studentId: 'S2', status: 'active' }));
+    // Relationship changes go through changeLinkRelationshipFn only (spec 2026-10-17).
+    await denied(as(env, GUARDIAN_A).doc('guardian_links/gA_S1').update({ relationship: 'Adviser', slot: 'adviser' }));
     await ok(as(env, STAFF).collection('guardian_links').get());
   });
   it('requests and reports are readable by owner and staff, never client-written', async () => {

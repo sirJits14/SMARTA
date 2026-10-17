@@ -44,6 +44,15 @@ you re-activate it.
   Learner access tab shows each link's relationship and email. If an
   "Adviser" link is not the section's adviser, revoke that link and reissue
   the learner's slip.
+- A DepEd account can switch its own link between a parent relationship and
+  Adviser **once per school year** from the learner's screen in the app.
+  The Learner access tab then shows "changed from …" under the relationship,
+  and the audit log records `link.relationshipChanged`. The learner's open
+  slip moves one count from the side they left to the side they joined, so
+  the slot they left is free again (revoked links stay counted). If they need
+  a second change, **Revoke** their link, then **Reissue slip** for that
+  learner (reissuing recounts the slots from active links), and have them
+  redeem the new slip with the right relationship.
 
 ## Parent says a record is wrong
 Guardians → Reports. Check the Scan log tab for that date/device. Resolve

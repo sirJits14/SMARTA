@@ -49,3 +49,23 @@ export function claimSlot(cd, slot) {
     status: full(next.guardian) && full(next.adviser) ? 'exhausted' : 'issued',
   };
 }
+
+// The fields to write when one linked person moves from slot `from` to slot
+// `to` (spec 2026-10-17): one count leaves `from` and one joins `to`, never
+// below what the learner's active links already use (`inUse`, from
+// slotsFromLinks after the move) and never above the max. Revoked links keep
+// their counts, as everywhere else.
+export function moveSlot(cd, from, to, inUse) {
+  const s = readSlots(cd);
+  const active = { guardian: inUse.guardianRedemptions, adviser: inUse.adviserRedemptions };
+  const next = {
+    ...s,
+    [from]: { ...s[from], used: Math.max(active[from], s[from].used - 1) },
+    [to]: { ...s[to], used: Math.min(s[to].max, Math.max(active[to], s[to].used + 1)) },
+  };
+  return {
+    guardianRedemptions: next.guardian.used, maxGuardians: next.guardian.max,
+    adviserRedemptions: next.adviser.used, maxAdvisers: next.adviser.max,
+    status: full(next.guardian) && full(next.adviser) ? 'exhausted' : 'issued',
+  };
+}

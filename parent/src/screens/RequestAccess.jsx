@@ -3,11 +3,11 @@ import { collection, query, where, limit } from 'firebase/firestore';
 import { db, callable } from '../firebase.js';
 import S from '../strings.js';
 import { nameCase } from '../lib/format.js';
+import { RELATIONSHIPS } from '../lib/relationships.js';
 import { T } from '../styles.js';
 import { Btn, Card, Field, Inp, Sel, Banner } from '../components/ui.jsx';
 import { useQuery } from '../hooks/useDoc.js';
 
-const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Grandparent', 'Sibling', 'Other'];
 const STATUS = { open: S.requestOpen, approved: S.requestApproved, denied: S.requestDenied };
 
 export default function RequestAccess({ user, profile, navigate }) {

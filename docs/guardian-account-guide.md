@@ -39,6 +39,10 @@ below.
    your slip and your **relationship to the learner** (Mother, Father,
    Guardian, Grandparent, Sibling, Other), then tap **Link learner**.
 
+   Signed in with a **@deped.gov.ph** account and picked the wrong one
+   (for example Mother instead of Adviser)? Open the learner and tap
+   **Change** next to "Linked as …". You can do this once per school year.
+
 6. **Done.** You'll land on Home showing today's gate scans for your
    learner. From **Settings** you can turn on notifications for this
    device, view history, report a record you think is wrong, or delete

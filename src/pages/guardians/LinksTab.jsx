@@ -19,6 +19,7 @@ import GradePills from '../../components/GradePills.jsx';
 import ActivationSlipsPrintable from '../../components/ActivationSlipsPrintable.jsx';
 import SlipPrintControls, { useSlipPaper, PORTAL_URL } from '../../components/SlipPrintControls.jsx';
 import { Table, when } from './RequestsTab.jsx';
+import { relationshipChangeNote } from './linkRelationship.js';
 
 // The guardian's own profile wins (they can rename themselves in the portal);
 // the name/email copied onto the link at activation covers deleted profiles.
@@ -31,6 +32,17 @@ function GuardianCell({ link }) {
       {name ? <strong>{name}</strong> : <span style={{ color: T.inkMuted }}>Name not given</span>}
       {email && <><br /><span style={{ color: T.inkMuted }}>{email}</span></>}
       <br /><span style={{ ...T.num, fontSize: 11, color: T.inkMuted }}>{link.guardianUid}</span>
+    </td>
+  );
+}
+
+// Shows when a DepEd account switched its own link between guardian and Adviser.
+function RelationshipCell({ link }) {
+  const note = relationshipChangeNote(link);
+  return (
+    <td style={S.td}>
+      {link.relationship}
+      {note && <><br /><span style={{ fontSize: 11, color: T.inkMuted }}>{note} · {when(link.relationshipChangedAt)}</span></>}
     </td>
   );
 }
@@ -139,7 +151,7 @@ export default function LinksTab({ schoolYear }) {
             {links.length === 0 ? <EmptyState title="No guardians linked" /> : (
               <Table head={['Guardian', 'Relationship', 'Status', 'Activated', 'Via', 'Revoked', '']} rows={links.map((l) => (
                 <tr key={l.id}>
-                  <GuardianCell link={l} /><td style={S.td}>{l.relationship}</td><td style={S.td}>{l.status}</td>
+                  <GuardianCell link={l} /><RelationshipCell link={l} /><td style={S.td}>{l.status}</td>
                   <td style={S.td}>{when(l.activatedAt)}</td><td style={S.td}>{l.activatedVia}</td>
                   <td style={S.td}>{l.status === 'revoked' ? `${when(l.revokedAt)} — ${l.revokedReason || ''}` : '—'}</td>
                   <td style={S.td}>{l.status === 'active' && <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', () => call.revokeLink({ linkId: l.id, reason }))}>Revoke</Btn>}</td>
