@@ -25,8 +25,9 @@ editing a relationship in SIMS, a request/approval flow, notifying anyone.
 New handler in `functions/src/handlers/links.js`, exported from
 `functions/index.js` as `changeLinkRelationshipFn = guardianCall(changeLinkRelationship)`.
 New rate limit in `functions/src/callable.js`:
-`relationshipChange: { windowMs: 60 * 60 * 1000, max: 10 }`. The once-per-year
-lock is the real limit; the rate limit only stops scripted calls.
+`relationshipChange: { windowMs: 60 * 60 * 1000, max: 60 }`. The once-per-year
+lock is the real limit; an adviser may be fixing a whole section, so the rate
+limit only stops scripted calls.
 
 ### Checks, in order
 
@@ -71,11 +72,16 @@ In the same transaction:
 - Caller's link (`tx.update`): `relationship`, `slot`,
   `previousRelationship` (the old value), `relationshipChangedFor: link.schoolYear`,
   `relationshipChangedAt: serverTimestamp()`.
-- Each open slip of that learner and school year: the counters and `status`
-  from `slotsFromLinks` over the active links **after** the change (caller's
-  link with its new slot). `redemptions` / `maxRedemptions` are deleted as
-  `activateCode` does. This frees the slot the caller left, so the next real
-  parent can redeem the slip. `slotsFromLinks` caps each counter at its max.
+- Each open slip of that learner and school year: `moveSlot(slip, from, to,
+  inUse)` in `codeSlots.js`. One count leaves the slot the caller left and
+  one joins the slot they took; the side left is floored at what the learner's
+  active links use (`inUse` is `slotsFromLinks` over the active links **after**
+  the change) and the side joined is capped at its max. `status` follows the
+  new counters. `redemptions` / `maxRedemptions` are deleted as `activateCode`
+  does. This frees the slot the caller left, so the next real parent can
+  redeem the slip. The slip is not fully recounted because that would also
+  release counts held by **revoked** links; those stay counted, as everywhere
+  else (`revokeLink` never lowers a slip's counters).
 
 After the transaction: `audit(db, { action: 'link.relationshipChanged',
 actorType: 'guardian', actorUid: uid, targetType: 'student', targetId: studentId,
@@ -87,6 +93,12 @@ Returns `{ relationship, slot }`.
 
 The lock is keyed by school year: a link re-activated with next year's slip
 is a new link for that year and may change once again.
+
+Re-activation clears the old note: when `activateCode` or `resolveAccessRequest`
+writes a link that was not already active, it deletes `previousRelationship`
+and `relationshipChangedAt` and keeps `relationshipChangedFor`. Otherwise a
+teacher whom staff fixed would show "Linked as Mother · changed from Mother",
+and the once-a-year lock still holds for that school year.
 
 `guardian_links` stays server-write-only; `firestore.rules` does not change.
 
@@ -155,8 +167,8 @@ actions; **Revoke** remains the remedy for a wrong change.
 - `docs/guardian-account-guide.md`: one line that DepEd accounts can fix an
   Adviser/guardian mix-up once.
 - `docs/parent-portal-runbook.md`: when the one change is used up, staff
-  **Revoke** the link and the teacher redeems the slip again with the right
-  relationship; the `link.relationshipChanged` audit action.
+  **Revoke** the link, **Reissue slip** for the learner, and the teacher
+  redeems the new slip with the right relationship; the `link.relationshipChanged` audit action.
 
 ## 5. Testing
 

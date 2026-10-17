@@ -908,3 +908,15 @@ Expected: SIMS unit, functions unit, Parent unit, rules and functions emulator s
 
 Run: `git diff master --stat`
 Expected: only the files in the File map above, plus the spec and this plan. In particular, `firestore.rules` and `firestore.indexes.json` are unchanged.
+
+---
+
+## Revisions after final review
+
+The earlier tasks are left as written. The final whole-branch review changed five things:
+
+1. **One count moves per slip.** `changeLinkRelationship` no longer recounts open slips from `slotsFromLinks` (that also released counts held by revoked links). New `moveSlot(cd, from, to, inUse)` in `functions/src/lib/codeSlots.js` moves one count, floored at active links and capped at max.
+2. **Re-activation clears the change note.** `activateCode` (link not already active) and `resolveAccessRequest` delete `previousRelationship` and `relationshipChangedAt` and keep `relationshipChangedFor`.
+3. **Rate limit is 60 an hour** (`relationshipChange` in `functions/src/callable.js`), since an adviser may be fixing a whole section.
+4. **Tidy-ups.** The transaction also refuses a link whose `studentId` differs from the request; `RequestAccess.jsx` imports `RELATIONSHIPS` from `parent/src/lib/relationships.js`.
+5. **Docs.** Runbook and spec describe the one-count move, the Revoke then Reissue slip remedy for a second change, the rate limit and the re-activation clearing.
