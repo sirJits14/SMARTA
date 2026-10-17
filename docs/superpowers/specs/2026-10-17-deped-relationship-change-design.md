@@ -94,9 +94,10 @@ Returns `{ relationship, slot }`.
 The lock is keyed by school year: a link re-activated with next year's slip
 is a new link for that year and may change once again.
 
-Re-activation clears the old note: when `activateCode` or `resolveAccessRequest`
-writes a link that was not already active, it deletes `previousRelationship`
-and `relationshipChangedAt` and keeps `relationshipChangedFor`. Otherwise a
+Re-activation clears the old note: when `activateCode` writes a link that was
+not already active, and whenever `resolveAccessRequest` approves (it sets the
+relationship and slot anew), it deletes `previousRelationship` and
+`relationshipChangedAt` and keeps `relationshipChangedFor`. Otherwise a
 teacher whom staff fixed would show "Linked as Mother · changed from Mother",
 and the once-a-year lock still holds for that school year.
 
