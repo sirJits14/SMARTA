@@ -6,6 +6,7 @@ import { nameCase } from '../lib/format.js';
 import { Btn, Card, Field, Inp, Sel, Banner } from '../components/ui.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 import { RELATIONSHIPS, ADVISER } from '../lib/relationships.js';
+import { recallRelationship, rememberRelationship } from '../lib/lastRelationship.js';
 
 const normalize = (v) => v.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 8);
 const pretty = (v) => (v.length > 4 ? `${v.slice(0, 4)}-${v.slice(4)}` : v);
@@ -16,7 +17,8 @@ export default function Activate({ user, profile, route, navigate }) {
   // Prefilled from the guardian profile, else the Google account name or the
   // name typed when the email account was created.
   const [guardianName, setGuardianName] = useState(profile?.displayName || user?.displayName || '');
-  const [relationship, setRelationship] = useState('Mother');
+  // Starts from the relationship this account used last time (Mother on the first link).
+  const [relationship, setRelationship] = useState(() => recallRelationship(user?.uid, [...RELATIONSHIPS, ADVISER], 'Mother'));
   // Camera code and the jsQR fallback are fetched only when the parent taps
   // Scan. A failed download is reported inline; the form stays usable.
   const [Sheet, setSheet] = useState(null);
@@ -43,6 +45,7 @@ export default function Activate({ user, profile, route, navigate }) {
     const name = guardianName.trim();
     try {
       const r = await callable('activateCodeFn')({ code, relationship, consentVersion, guardianName: name });
+      rememberRelationship(user?.uid, relationship);
       if (user && user.displayName !== name) updateProfile(user, { displayName: name }).catch(() => {});
       setDone(r.data);
     }
