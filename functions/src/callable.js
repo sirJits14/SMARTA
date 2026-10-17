@@ -13,6 +13,9 @@ export const LIMITS = {
   // Replacing single lost slips has its own budget so it does not use up the
   // section-wide one.
   reissueCode: { windowMs: 24 * 60 * 60 * 1000, max: 60 },
+  // A DepEd account fixing its own Adviser/guardian mix-up. The once-per-year
+  // lock is the real limit; this only stops scripted calls.
+  relationshipChange: { windowMs: 60 * 60 * 1000, max: 10 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 

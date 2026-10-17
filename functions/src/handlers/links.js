@@ -1,12 +1,13 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
-import { MAX_OPEN_REQUESTS } from '../callable.js';
+import { MAX_OPEN_REQUESTS, LIMITS, enforceRateLimit } from '../callable.js';
 import { audit } from '../audit.js';
 import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
-import { isOpenStatus, slotsFromLinks } from '../lib/codeSlots.js';
+import { ADVISER, isDepedEmail, isOpenStatus, slotFor, slotsFromLinks } from '../lib/codeSlots.js';
+import { schoolYearRef, isEnded } from '../lib/schoolYears.js';
 import { refreshGuardianAudience } from './guardianAudience.js';
 
 // A non-attendance inbox item. Never pushed (system messages are read when
@@ -93,6 +94,63 @@ export async function resolveAccessRequest(ctx, data) {
   await ref.update({ status: approve ? 'approved' : 'denied', resolvedAt: FieldValue.serverTimestamp(), resolvedBy: email, resolutionNote: note, ...(approve ? { studentId: data.studentId } : {}) });
   await audit(db, { action: approve ? 'access.approved' : 'access.denied', actorType: 'staff', actorUid: email, targetType: 'access_request', targetId: id, details: { guardianUid: request.guardianUid, studentId: data.studentId || null, note } });
   return { status: approve ? 'approved' : 'denied' };
+}
+
+const DEPED_ONLY = 'Only DepEd (@deped.gov.ph) accounts can change their relationship.';
+const LINK_ENDED = 'This link is no longer active.';
+const OTHER_SIDE = 'Choose Adviser, or the relationship you have to the learner.';
+
+// A DepEd account fixes an Adviser/guardian mix-up on its own link, once per
+// link per school year (spec 2026-10-17). The learner's open slips are
+// recounted from the active links, so the slot the caller left is free again.
+export async function changeLinkRelationship(ctx, data) {
+  const { db, now, uid, email } = ctx;
+  // Checked before anything is read, like activateCode's adviser check.
+  if (!isDepedEmail(email)) throw new CallableError('permission-denied', DEPED_ONLY);
+  const studentId = str(data.studentId, { name: 'studentId', min: 1, max: 64 });
+  const relationship = oneOf(data.relationship, [...RELATIONSHIPS, ADVISER], 'relationship');
+  const toSlot = slotFor(relationship);
+  await enforceRateLimit(db, uid, 'relationshipChange', LIMITS.relationshipChange, now().getTime());
+
+  const refuse = (reason, code, message) => { logWarn('relationship_change_failed', { uid, studentId, reason }); return new CallableError(code, message); };
+  const linkRef = db.doc(`guardian_links/${uid}_${studentId}`);
+  const activeLinksQuery = db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active');
+  const { from, fromSlot, schoolYear } = await db.runTransaction(async (tx) => {
+    const l = (await tx.get(linkRef)).data();
+    if (!l || l.guardianUid !== uid || l.status !== 'active') throw refuse('inactive', 'failed-precondition', LINK_ENDED);
+    const yearRef = schoolYearRef(db, l.schoolYear);
+    const codesQuery = db.collection('activation_codes').where('studentId', '==', studentId).where('schoolYear', '==', l.schoolYear);
+    const [year, activeLinks, codes] = await Promise.all([yearRef && tx.get(yearRef), tx.get(activeLinksQuery), tx.get(codesQuery)]);
+    if (isEnded(year)) throw refuse('year-ended', 'failed-precondition', LINK_ENDED);
+    if (l.relationshipChangedFor === l.schoolYear) {
+      throw refuse('already-changed', 'failed-precondition', `You already changed your relationship for SY ${l.schoolYear}. Ask the registrar if it needs fixing again.`);
+    }
+    const current = l.slot ?? 'guardian';
+    if (toSlot === current) throw refuse('same-side', 'invalid-argument', OTHER_SIDE);
+    // Same cap as activateCode and resolveAccessRequest (spec 2026-10-13):
+    // the caller's own link is not counted against them.
+    const others = activeLinks.docs.filter((d) => d.id !== linkRef.id).map((d) => d.data());
+    const used = slotsFromLinks(others, l.schoolYear);
+    if (toSlot === 'adviser' && used.adviserRedemptions >= used.maxAdvisers) {
+      throw refuse('cap', 'failed-precondition', 'This learner already has an adviser linked. Ask the registrar to remove that link first.');
+    }
+    if (toSlot === 'guardian' && used.guardianRedemptions >= used.maxGuardians) {
+      throw refuse('cap', 'failed-precondition', `This learner already has ${used.maxGuardians} linked guardians. Ask the registrar to remove one first.`);
+    }
+    tx.update(linkRef, {
+      relationship, slot: toSlot, previousRelationship: l.relationship ?? null,
+      relationshipChangedFor: l.schoolYear, relationshipChangedAt: FieldValue.serverTimestamp(),
+    });
+    // The slips' counters follow the links: the caller's link now holds toSlot.
+    const after = slotsFromLinks([...others, { status: 'active', schoolYear: l.schoolYear, slot: toSlot }], l.schoolYear);
+    for (const c of codes.docs) {
+      if (isOpenStatus(c.data().status)) tx.update(c.ref, { ...after, redemptions: FieldValue.delete(), maxRedemptions: FieldValue.delete() });
+    }
+    return { from: l.relationship ?? null, fromSlot: current, schoolYear: l.schoolYear };
+  });
+  await audit(db, { action: 'link.relationshipChanged', actorType: 'guardian', actorUid: uid, targetType: 'student', targetId: studentId, details: { from, to: relationship, fromSlot, toSlot, schoolYear } });
+  logEvent('relationship_changed', { uid, studentId });
+  return { relationship, slot: toSlot };
 }
 
 async function revokeOne(db, linkRef, by, reason) {
