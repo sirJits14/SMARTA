@@ -94,8 +94,9 @@ is a new link for that year and may change once again.
 
 `parent/src/screens/History.jsx` (`/learner/:id`).
 
-**Who sees it.** Only when `user.emailVerified` and `isDepedEmail(user.email)`
-(client copy of the helper, display only; the server enforces it). For those
+**Who sees it.** Only when `isDepedEmail(user.email)` (client copy of the
+helper, display only; the server enforces it, and App's Verify gate already
+keeps unverified accounts off this screen). For those
 accounts History also reads `guardian_links/{uid}_{studentId}` with `useDoc`
 (the guardian may already `get` their own link). Other accounts make no new
 read and see no change. `History` needs `user` from the screen props
@@ -113,10 +114,10 @@ read and see no change. `History` needs `user` from the screen props
 same modal pattern as `ScanSheet`):
 
 - Title "Change your relationship".
-- Radio list of `relationshipOptions(link.relationship)`: currently guardian →
+- Radio list of `relationshipOptions(link.slot)`: currently guardian slot (or no slot) →
   `Adviser (class adviser)` only; currently Adviser → the six guardian
   relationships. Nothing pre-selected.
-- Note: "You can change this once for SY {SY}. After that, ask the registrar."
+- Note: "You can change this once per school year. After that, ask the registrar."
 - **Change** (disabled until a choice is made, and while the call runs) and
   **Cancel**.
 - Success: calls `callable('changeLinkRelationshipFn')`, closes the sheet; the
@@ -142,7 +143,8 @@ stays under budget.
 ## 3. SIMS — Learner access tab
 
 `src/pages/guardians/LinksTab.jsx`: the Relationship cell shows the
-relationship and, when `previousRelationship` is set, a second muted line
+relationship and, when `previousRelationship` is set and
+`relationshipChangedFor === link.schoolYear`, a second muted line
 "changed from {previousRelationship} · {when(relationshipChangedAt)}". No new
 actions; **Revoke** remains the remedy for a wrong change.
 
@@ -176,8 +178,8 @@ actions; **Revoke** remains the remedy for a wrong change.
 **Rules** (`tests/rules/parent.test.js`): a guardian still cannot update their
 own `guardian_links` doc (e.g. `relationship`). No rule changes.
 
-**Parent unit (vitest):** `relationshipOptions` for a guardian value,
-`Adviser`, and an unknown/legacy value (treated as guardian);
+**Parent unit (vitest):** `relationshipOptions` for the guardian slot, the
+adviser slot, and a missing (legacy) slot treated as guardian;
 `isDepedEmail` (case, whitespace, look-alike domains).
 
 **Parent browser fixture** (`parent/tests/browser`, existing pattern): DepEd
