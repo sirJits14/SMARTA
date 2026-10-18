@@ -28,10 +28,13 @@ describe('school request lifecycle', () => {
     expect((await db().doc(`school_role_requests/${request.id}`).get()).data().status).toBe('withdrawn');
     await assignSchoolRole(deps('admin'), { email: users.personal.email, role: 'adviser', sectionId: 'SEC1' });
   });
-  it('a request gives no access; scoped curriculum approval grants only the requested advisory section', async () => {
+  it('a request gives no access; a Curriculum Adviser cannot approve a DepEd request in their grade, an administrator can', async () => {
     const r = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
     expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
-    await resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true, reason: 'Verified teaching assignment' });
+    await expect(resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true, reason: 'Verified teaching assignment' })).rejects.toMatchObject({ code: 'permission-denied' });
+    expect((await db().doc(`school_role_requests/${r.id}`).get()).data().status).toBe('pending');
+    expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
+    await resolveSchoolRole(deps('admin'), { requestId: r.id, approve: true, reason: 'Verified teaching assignment' });
     expect((await loadSchoolActor(deps('teacher'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1', schoolYear: year }]);
   });
   it('requires an administrator for personal-email requests', async () => {
@@ -67,12 +70,13 @@ describe('school request lifecycle', () => {
     expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
     await expect(requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' })).rejects.toMatchObject({ code: 'failed-precondition' });
   });
-  it('returns only scoped approvable requests to curriculum advisers', async () => {
+  it('returns pending requests for review to administrators only', async () => {
     await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
     await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC8' });
     const c = await getSchoolContext(deps('curriculum'));
-    expect(c.reviewRequests).toHaveLength(1);
-    expect(c.reviewRequests[0].email).toBe(users.teacher.email);
+    expect(c.reviewRequests).toEqual([]);
     expect(c.managedAssignments).toBeUndefined();
+    const a = await getSchoolContext(deps('admin'));
+    expect(a.reviewRequests.map(r => r.email).sort()).toEqual([users.personal.email, users.teacher.email].sort());
   });
 });

@@ -20,12 +20,12 @@ The parent app has separate Family and School views on the same account. Approve
 | --- | --- | --- |
 | Adviser | Assigned section | Announcements, roster, AM/PM absence corrections on the same Manila school day |
 | Subject Teacher | Assigned teaching sections | Announcements; no learner tracking |
-| Curriculum Adviser | Assigned grades | Announcements, attendance review and corrections including earlier dates; eligible adviser-request approvals |
-| SIMS Administrator | School-wide | Assign, review and revoke school roles; attendance review and corrections |
+| Curriculum Adviser | Assigned grades | Announcements, attendance review and corrections including earlier dates; no role approvals |
+| SIMS Administrator | School-wide | Approve, assign and revoke school roles; attendance review and corrections |
 
 Administrators manage assignments under **Guardians → School access** in SIMS. Teachers request a role from the parent app's **School** view after creating and verifying their account. Requests confer no access until approved.
 
-A Curriculum Adviser can approve an adviser request only when the requester has a verified `@deped.gov.ph` email and the section belongs to that Curriculum Adviser's assigned grade. A personal-email adviser request requires an administrator. Subject Teacher and Curriculum Adviser assignments require an administrator. Nobody approves their own request. Replace a section adviser by explicitly revoking the old assignment first.
+Only an administrator can approve a school role request. Teachers may request adviser access with any verified email, including a personal one; a `@deped.gov.ph` email does not grant adviser access or an alternative approval path. Curriculum Advisers review and correct attendance within their assigned grades but cannot approve adviser access. Subject Teacher and Curriculum Adviser assignments also require an administrator. Nobody approves their own request. Replace a section adviser by explicitly revoking the old assignment first.
 
 Existing SIMS coordinator roles do not automatically become Curriculum Advisers. School assignments must be renewed for a new school year.
 
@@ -51,7 +51,7 @@ The new app reads all notices through authenticated callables. The new rules den
 4. Deploy the new Functions, including school-role callables, attendance callables and the correction trigger, before clients that invoke them. Shared files are copied by `scripts/syncShared.mjs` during the Functions predeploy step.
 5. Coordinate the rules and both app releases in a controlled release window. Deploy restrictive rules before enabling staff-targeted announcements, then publish the clients immediately; old notice queries will be unavailable until users refresh. Avoid publishing new role-targeted posts while old rules remain active.
 6. In SIMS, inspect **Legacy adviser links to verify**. Independently verify each teacher and section, then explicitly assign school roles. Old adviser slips/links grant neither family learner access nor School access. Preserve genuine family relationships and do not convert legacy adviser links into family access as a migration shortcut.
-7. Verify a personal-email adviser approval, a DepEd-email Curriculum Adviser approval, a subject-teacher notice, and an AM correction plus restoration in the release environment with designated test accounts. Confirm an unrelated teacher cannot read the roster.
+7. Verify a personal-email adviser approval by an administrator, that a Curriculum Adviser cannot approve a DepEd-email adviser request, a subject-teacher notice, and an AM correction plus restoration in the release environment with designated test accounts. Confirm an unrelated teacher cannot read the roster.
 
 ## Recovery
 
