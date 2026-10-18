@@ -62,7 +62,7 @@ export default function Settings({ user, profile, route, navigate, mode, setMode
   };
   const section = route.params.section;
   const Page = section && (section !== 'mode' || allowed) ? PAGES[section] : null;
-  useEffect(() => { if (section && !Page && !(section === 'mode' && school.loading)) navigate('/settings', { replace: true }); }, [section, Page, navigate]);
+  useEffect(() => { if (section && !Page && !(section === 'mode' && school.loading)) navigate('/settings', { replace: true }); }, [section, Page, school.loading, navigate]);
   if (Page) return <Page ctx={ctx} back={() => navigate('/settings')} />;
   return <SettingsHome ctx={ctx} />;
 }
