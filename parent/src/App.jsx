@@ -10,6 +10,7 @@ import SignIn from './screens/SignIn.jsx';
 import { portalView, notificationDestination } from './lib/nav.js';
 import { readMode, writeMode, reconcileMode, schoolHome } from './lib/portalMode.js';
 import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { preloadAnnouncements } from './hooks/useAnnouncements.js';
 // Screens below are only needed once a route is resolved, so they're
 // route-split out of the sign-in/verify chunk to keep the initial load light.
 // Each can also be fetched ahead of time (preload); once it has loaded it
@@ -60,7 +61,8 @@ export default function App() {
   useEffect(() => { setModeState(readMode(uid)); }, [uid]);
   const setMode = useCallback((next) => { writeMode(uid, next); setModeState(next); }, [uid]);
   // Access is re-checked on every refresh: revoked, year-end and promotion all land here.
-  const school = useSchoolContext(uid, Boolean(profile) && mode.view === 'school');
+  // Asked for every admitted account, so Settings and the Class tab open on an answer already in hand.
+  const school = useSchoolContext(uid, Boolean(profile));
   useEffect(() => {
     const { mode: next, changed } = reconcileMode(mode, school.data);
     if (!changed) return;
@@ -88,15 +90,18 @@ export default function App() {
   // is exactly the "identity changed" signal this resets on.
   useEffect(() => { setVerifiedOverride(false); }, [user?.uid]);
 
-  // Once an account is admitted, fetch the other screens while idle.
+  // Once an account is admitted, fetch the other screens and the Notices list while idle.
   const accountReady = Boolean(profile);
   useEffect(() => {
     if (!accountReady) return;
     const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200));
     const cancel = window.cancelIdleCallback || clearTimeout;
-    const id = idle(() => APP_SCREENS.forEach((screen) => screen.preload().catch(() => {})));
+    const id = idle(() => {
+      APP_SCREENS.forEach((screen) => screen.preload().catch(() => {}));
+      preloadAnnouncements(view).catch(() => {});
+    });
     return () => cancel(id);
-  }, [accountReady]);
+  }, [accountReady, view]);
 
   useEffect(() => {
     if (!user) return;

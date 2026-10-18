@@ -8,6 +8,9 @@ import { db, appCheckReady } from '../firebase.js';
 // replaces it moments later. Cleared on sign-in changes (hooks/useAuth.js).
 const lastSeen = new Map();
 export const clearLastSeen = () => lastSeen.clear();
+// Server answers (callables) share the same per-sign-in memory.
+export const recall = (key) => lastSeen.get(key);
+export const remember = (key, data) => { lastSeen.set(key, data); };
 
 export function useDoc(path) {
   const [state, setState] = useState(() => ({ data: path ? lastSeen.get(path) : undefined, error: null }));

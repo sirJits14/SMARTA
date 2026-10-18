@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db, appCheckReady } from '../firebase.js';
 import { clearLastSeen } from './useDoc.js';
+import { forgetSchoolContext } from './useSchoolContext.js';
 import { profileFrom } from '../lib/profile.js';
 
 // user: undefined (resolving) | null (signed out) | User
@@ -15,6 +16,8 @@ export function useAuth() {
     return onAuthStateChanged(auth, (u) => {
       // Another account (or none) must never see the previous one's data.
       if ((u?.uid ?? null) !== uid) { clearLastSeen(); uid = u?.uid ?? null; }
+      // School access is saved on the device for its account; signing out removes it.
+      if (!u) forgetSchoolContext();
       setUser(u && !u.isAnonymous ? u : null);
     });
   }, []);

@@ -43,7 +43,7 @@ export default function Settings({ user, profile, route, navigate, mode, setMode
   const { links } = useLinks(user.uid);
   const device = useDeviceStatus(user.uid);
   const portal = useDoc('settings/parent_portal').data;
-  const { rows: reports } = useQuery(() => query(collection(db, 'reports'), where('guardianUid', '==', user.uid), limit(10)), [user.uid]);
+  const { rows: reports } = useQuery(() => query(collection(db, 'reports'), where('guardianUid', '==', user.uid), limit(10)), [user.uid], `reports:${user.uid}`);
   const accountEnabled = profile?.notificationsEnabled !== false;
   const school = useSchoolContext(user.uid);
   const allowed = canUseSchool(school.data);
