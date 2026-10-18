@@ -55,7 +55,7 @@ export default function School({ user, navigate }) {
       </section>
       <AttendanceReview key={context.schoolYear} context={context} />
       <Card><h2 className="school-heading">Request a school role</h2>
-        <p className="school-note">Use your own account, including a personal email address. An administrator reviews requests; eligible DepEd adviser requests may also be reviewed by the grade's Curriculum Adviser.</p>
+        <p className="school-note">Use your own account, including a personal email address. Only an administrator approves requests; a DepEd email does not grant access on its own.</p>
         <form onSubmit={submit}><fieldset disabled={pending || context.ended} className="school-fieldset">
           <Field label="Responsibility"><Sel value={request.role} onChange={e => setRequest({ ...request, role: e.target.value })}><option value="adviser">Adviser</option><option value="subject_teacher">Subject Teacher · notices only</option></Sel></Field>
           <Field label="Section"><Sel required value={request.sectionId} onChange={e => setRequest({ ...request, sectionId: e.target.value })}><option value="">Choose section</option>{(context.sections || []).map(section => <option key={section.id} value={section.id}>{sectionLabel(section)}</option>)}</Sel></Field>

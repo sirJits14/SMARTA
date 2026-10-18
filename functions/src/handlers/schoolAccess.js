@@ -194,7 +194,7 @@ export async function getSchoolContext(deps) {
     const [sections, ownRequests, allPending] = await Promise.all([
       tx.get(deps.db.collection('sections').where('schoolYear', '==', actor.schoolYear)),
       tx.get(deps.db.collection('school_role_requests').where('uid', '==', actor.uid)),
-      actor.isAdmin || actor.assignments.some(a => a.role === 'curriculum_adviser')
+      actor.isAdmin
         ? tx.get(deps.db.collection('school_role_requests').where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear)) : null,
     ]);
     const result = { schoolYear: actor.schoolYear, ended: actor.ended, isAdmin: actor.isAdmin, assignments: actor.assignments,
