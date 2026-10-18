@@ -1,5 +1,11 @@
 {
   "indexes": [
+    { "collectionGroup": "school_role_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "uid", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "school_role_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" } ] },
+    { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "guardianUid", "order": "ASCENDING" }, { "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "student_attendance", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" } ] },
     { "collectionGroup": "student_attendance", "queryScope": "COLLECTION", "fields": [

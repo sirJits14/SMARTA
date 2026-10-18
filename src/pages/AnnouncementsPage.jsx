@@ -54,7 +54,7 @@ export default function AnnouncementsPage({ me }) {
               <tbody>{rows.map((p) => (
                 <tr key={p.id}>
                   <td style={{ ...S.td, fontWeight: 600 }}>{p.pinned && <span style={{ color: T.primary, fontWeight: 700 }}>Pinned · </span>}{p.title}{p.editedAt && <span style={{ color: T.inkMuted, fontWeight: 400 }}> (edited)</span>}</td>
-                  <td style={S.td}>{audienceLabel(p.audienceKeys)}</td>
+                  <td style={S.td}>{audienceLabel(p.audienceKeys, p.audience)}</td>
                   <td style={S.td}>{when(tab === 'scheduled' ? p.publishAt : p.publishedAt)}</td>
                   <td style={S.td}>{p.expiresAt ? when(p.expiresAt) : '—'}</td>
                   <td style={S.td}>{p.createdBy?.name || '—'}</td>

@@ -1,6 +1,7 @@
 // Tiny path router: enough for deep links from pushes and QR slips.
 const ROUTES = [
   ['home', /^\/$/],
+  ['school', /^\/school$/],
   ['verify', /^\/verify$/],
   ['consent', /^\/consent$/],
   ['activate', /^\/activate$/],

@@ -14,6 +14,7 @@ const ref = (post) => doc(db, 'announcements', post.id);
 
 export const announcements = {
   create(f, me) {
+    if (f.roles) return httpsCallable(functions, 'savePortalAnnouncementFn')({ form: f });
     const audience = audienceOf(f);
     const timing = f.when === 'now'
       ? { status: 'published', publishAt: serverTimestamp(), publishedAt: serverTimestamp() }
@@ -27,6 +28,7 @@ export const announcements = {
   // Scheduled: every field. Live: wording, pin and expiry only; "Edited"
   // (editedAt) only when the wording changed.
   update(post, f, me) {
+    if (post.audience?.roles || f.roles) return httpsCallable(functions, 'savePortalAnnouncementFn')({ id: post.id, form: f });
     const title = f.title.trim(), body = f.body.trim();
     const common = { title, body, pinned: f.pinned, expiresAt: expiresAtOf(f), ...touch(me) };
     if (post.status === 'published') {
@@ -41,5 +43,5 @@ export const announcements = {
   },
   unpublish: (post, me) => updateDoc(ref(post), { status: 'unpublished', ...touch(me) }),
   remove: (post) => deleteDoc(ref(post)),
-  audienceCount: async (audienceKeys) => (await httpsCallable(functions, 'announcementAudienceCountFn')({ audienceKeys })).data.count,
+  audienceCount: async (audience) => (await httpsCallable(functions, 'announcementAudienceCountFn')(Array.isArray(audience) ? { audienceKeys: audience } : { audience })).data.count,
 };

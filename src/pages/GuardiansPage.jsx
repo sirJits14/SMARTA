@@ -13,6 +13,7 @@ const LinksTab = lazy(() => import('./guardians/LinksTab.jsx'));
 const ScanLogTab = lazy(() => import('./guardians/ScanLogTab.jsx'));
 const AuditTab = lazy(() => import('./guardians/AuditTab.jsx'));
 const PortalSettingsTab = lazy(() => import('./guardians/PortalSettingsTab.jsx'));
+const SchoolAccessTab = lazy(() => import('./guardians/SchoolAccessTab.jsx'));
 
 const TabFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
@@ -23,6 +24,7 @@ const TabFallback = () => (
 const TABS = [
   ['codes', 'Activation slips'], ['requests', 'Access requests'], ['reports', 'Reports'], ['links', 'Learner access'],
   ['devices', 'Kiosk devices'], ['scanlog', 'Scan log'], ['audit', 'Audit log'], ['settings', 'Portal settings'],
+  ['school', 'School access'],
 ];
 
 export default function GuardiansPage({ schoolYear, me }) {
@@ -56,6 +58,7 @@ export default function GuardiansPage({ schoolYear, me }) {
         {tab === 'scanlog' && <ScanLogTab schoolYear={schoolYear} />}
         {tab === 'audit' && <AuditTab />}
         {tab === 'settings' && <PortalSettingsTab me={me} />}
+        {tab === 'school' && <SchoolAccessTab schoolYear={schoolYear} me={me} />}
       </Suspense></div>
     </div>
   );

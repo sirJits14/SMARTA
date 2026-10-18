@@ -117,3 +117,103 @@ describe('server-derived kiosk attendance', () => {
     expect((await db().doc('learners/S1/events/historical').get()).data()).toMatchObject({ scannedDate: '2026-09-18', scannedTime: '08:15' });
   });
 });
+
+describe('split-day (PM session) schedules', () => {
+  beforeEach(async () => {
+    await db().doc('schedules/AM').set({ timeIn: '08:00', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:00' });
+  });
+  // A tap at HH:MM on 2026-09-21, received 10 s later, unless overridden.
+  const at = (hhmm, over = {}) => scanDoc({
+    scannedAt: ts(`2026-09-21T${hhmm}:00+08:00`), receivedAt: ts(`2026-09-21T${hhmm}:10+08:00`), scannedTime: hhmm, ...over,
+  });
+
+  it('still marks the morning arrival against the AM time in', async () => {
+    await run('am_late', at('08:05'));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({ marks: { S1: 'L' }, timeIn: { S1: '08:05' } });
+    expect(doc.pmTimeIn).toBeUndefined();
+    expect(doc.absentAm).toBeUndefined();
+  });
+  it('keeps morning times when the learner taps out and back in at lunch', async () => {
+    await run('d_in1', at('07:55'));
+    await run('d_out1', at('12:05', { kind: 'out' }));
+    await run('d_in2', at('12:55'));
+    await run('d_out2', at('16:02', { kind: 'out' }));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({
+      marks: { S1: 'P' },
+      timeIn: { S1: '07:55' }, timeOut: { S1: '12:05' },
+      pmTimeIn: { S1: '12:55' }, pmTimeOut: { S1: '16:02' },
+    });
+    expect(doc.latePm).toBeUndefined();
+    expect(doc.absentAm).toBeUndefined();
+  });
+  it('notes a late afternoon return but keeps the day Present', async () => {
+    await run('l_in1', at('07:55'));
+    await run('l_in2', at('13:15'));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({ marks: { S1: 'P' }, latePm: { S1: true }, pmTimeIn: { S1: '13:15' } });
+    expect((await db().doc('scan_events/l_in2').get()).data().attendanceResult).toMatchObject({ status: 'applied', mark: 'P' });
+  });
+  it('marks Present with an Absent AM note when the first tap-in is after lunch', async () => {
+    await run('pm_first', at('12:50'));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({ marks: { S1: 'P', S2: 'A' }, absentAm: { S1: true }, pmTimeIn: { S1: '12:50' } });
+    expect(doc.timeIn).toBeUndefined();
+    expect(doc.latePm).toBeUndefined();
+  });
+  it('carries both notes for a learner who only arrives late in the afternoon', async () => {
+    await run('pm_late_first', at('13:20'));
+    expect((await attendance().get()).data()).toMatchObject({ marks: { S1: 'P' }, absentAm: { S1: true }, latePm: { S1: true } });
+  });
+  it('clears Absent AM when a delayed morning tap-in syncs later', async () => {
+    await run('x_pm', at('13:05'));
+    await run('x_am', at('07:50', { receivedAt: ts('2026-09-21T13:20:00+08:00') }));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({ marks: { S1: 'P' }, timeIn: { S1: '07:50' }, pmTimeIn: { S1: '13:05' }, latePm: { S1: true } });
+    expect(doc.absentAm?.S1).toBeUndefined();
+  });
+  it('re-marks the day Late when a delayed late morning tap-in syncs after the PM-first Present', async () => {
+    await run('r_pm', at('13:05'));
+    expect((await attendance().get()).data().marks.S1).toBe('P');
+    await run('r_am', at('08:30', { receivedAt: ts('2026-09-21T13:20:00+08:00') }));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({ marks: { S1: 'L' }, timeIn: { S1: '08:30' } });
+    expect(doc.absentAm?.S1).toBeUndefined();
+    expect((await db().doc('scan_events/r_am').get()).data().attendanceResult).toMatchObject({ status: 'applied', mark: 'L' });
+  });
+  it('keeps a staff Excused mark when a delayed late morning tap-in syncs', async () => {
+    await attendance().set({ sectionId: 'SEC1', gradeLevel: 7, schoolYear: '2026-2027', date: '2026-09-21', marks: { S1: 'E' } });
+    await run('e_pm', at('13:10'));
+    await run('e_am', at('08:30', { receivedAt: ts('2026-09-21T13:20:00+08:00') }));
+    const doc = (await attendance().get()).data();
+    expect(doc.marks.S1).toBe('E');
+    expect(doc.absentAm?.S1).toBeUndefined();
+  });
+  it('clears a stale Late PM when a delayed on-time afternoon tap-in syncs', async () => {
+    await run('lp_late', at('13:10'));
+    expect((await attendance().get()).data().latePm?.S1).toBe(true);
+    await run('lp_early', at('12:55', { receivedAt: ts('2026-09-21T15:30:00+08:00') }));
+    const doc = (await attendance().get()).data();
+    expect(doc.latePm?.S1).toBeUndefined();
+    expect(doc.pmTimeIn.S1).toBe('13:10');
+  });
+  it('does not note Late PM for a second afternoon tap-in after an on-time one', async () => {
+    await run('lp_ok', at('12:55'));
+    await run('lp_again', at('13:20'));
+    expect((await attendance().get()).data().latePm?.S1).toBeUndefined();
+  });
+  it('preserves a staff mark when the first tap-in is in the afternoon', async () => {
+    await attendance().set({ sectionId: 'SEC1', gradeLevel: 7, schoolYear: '2026-2027', date: '2026-09-21', marks: { S1: 'E' } });
+    await run('staff_e', at('13:10'));
+    expect((await attendance().get()).data()).toMatchObject({ marks: { S1: 'E' }, absentAm: { S1: true }, latePm: { S1: true } });
+  });
+  it('treats a schedule with only one PM time as a single session', async () => {
+    await db().doc('schedules/AM').set({ timeIn: '08:00', timeOut: '12:00', pmTimeIn: '13:00' });
+    await run('half_pm', at('13:10'));
+    const doc = (await attendance().get()).data();
+    expect(doc).toMatchObject({ marks: { S1: 'L' }, timeIn: { S1: '13:10' } });
+    expect(doc.pmTimeIn).toBeUndefined();
+    expect(doc.absentAm).toBeUndefined();
+  });
+});

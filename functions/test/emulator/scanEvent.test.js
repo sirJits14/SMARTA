@@ -24,6 +24,13 @@ const run = async (d, eventId, data, extra = {}) => {
 beforeEach(async () => { await clearAll(); clearCache(); clearDeviceRate(); await seedSchool(); });
 
 describe('handleScanEvent', () => {
+  it('excludes legacy adviser links and old-year family links from scan notifications', async () => {
+    await db().doc('guardian_links/old_adviser').set({ guardianUid: 'legacy_teacher', studentId: 'S1', schoolYear: '2026-2027', status: 'active', relationship: 'Adviser' });
+    await db().doc('guardian_links/old_family').set({ guardianUid: 'old_family', studentId: 'S1', schoolYear: '2025-2026', status: 'active', relationship: 'Mother' });
+    await run(deps(), 'family_only', scanDoc());
+    expect((await db().collection('guardians/legacy_teacher/inbox').get()).size).toBe(0);
+    expect((await db().collection('guardians/old_family/inbox').get()).size).toBe(0);
+  });
   it('projects the event, updates the summary, fans out inbox items, pushes to enabled devices only', async () => {
     const m = fakeMessaging();
     const r = await run(deps(m), 'k1_S1_202609210712', scanDoc());

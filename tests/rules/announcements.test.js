@@ -51,9 +51,9 @@ beforeEach(async () => {
 });
 
 describe('guardians read', () => {
-  it('lists published posts for their own keys, bounded', async () => {
-    await ok(guardianQuery(GUARDIAN_A, ['all', 'g7']).get());
-    await ok(guardianQuery(GUARDIAN_A, ['g7'], 1).get());
+  it('requires the authorized callable feed because legacy grade queries cannot exclude staff-only posts', async () => {
+    await denied(guardianQuery(GUARDIAN_A, ['all', 'g7']).get());
+    await denied(guardianQuery(GUARDIAN_A, ['g7'], 1).get());
     await denied(guardianQuery(GUARDIAN_A, ['all', 'g7'], 51).get());
     await denied(as(env, GUARDIAN_A).collection('announcements').where('audienceKeys', 'array-contains-any', ['all', 'g7']).where('status', '==', 'published').get());
   });
@@ -63,9 +63,9 @@ describe('guardians read', () => {
     await denied(as(env, GUARDIAN_A).collection('announcements').where('audienceKeys', 'array-contains-any', ['all', 'g7']).limit(50).get());
     await denied(guardianQuery(GUARDIAN_B, ['all']).get());
   });
-  it('gets one post only when it is published and theirs', async () => {
-    await ok(as(env, GUARDIAN_A).doc('announcements/p7').get());
-    await ok(as(env, GUARDIAN_A).doc('announcements/pAll').get());
+  it('requires callable authorization even for a matching published legacy post', async () => {
+    await denied(as(env, GUARDIAN_A).doc('announcements/p7').get());
+    await denied(as(env, GUARDIAN_A).doc('announcements/pAll').get());
     await denied(as(env, GUARDIAN_A).doc('announcements/p12').get());
     await denied(as(env, GUARDIAN_A).doc('announcements/pSched').get());
     await denied(as(env, GUARDIAN_A).doc('announcements/pGone').get());

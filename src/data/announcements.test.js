@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const fs = vi.hoisted(() => ({
   addDoc: vi.fn().mockResolvedValue({ id: 'new' }),
   updateDoc: vi.fn().mockResolvedValue(undefined),
+  callable: vi.fn().mockResolvedValue({ data: { ok: true } }),
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -14,14 +15,23 @@ vi.mock('firebase/firestore', () => ({
   serverTimestamp: () => 'now',
   Timestamp: { fromDate: (d) => ({ ms: d.getTime() }) },
 }));
-vi.mock('firebase/functions', () => ({ httpsCallable: vi.fn() }));
+vi.mock('firebase/functions', () => ({ httpsCallable: (_functions, name) => data => fs.callable(name, data) }));
 vi.mock('../firebase.js', () => ({ auth: { currentUser: { uid: 'u1' } }, db: {}, functions: {} }));
 
 import { announcements } from './announcements.js';
+import { formFromPost } from '../lib/announcements.js';
 
 const form = { title: ' Hi ', body: ' There ', all: true, grades: [], when: 'now', date: '', time: '', expires: '', pinned: false, push: false };
 
-beforeEach(() => { fs.addDoc.mockClear(); fs.updateDoc.mockClear(); });
+beforeEach(() => { fs.addDoc.mockClear(); fs.updateDoc.mockClear(); fs.callable.mockClear(); });
+
+it('saves section narrowing of a legacy scheduled family announcement through the authorized callable', async () => {
+  const post = { id: 'legacy', title: 'T', body: 'B', status: 'scheduled', audience: { grades: [7] }, publishAt: new Date('2026-10-20T08:00:00+08:00') };
+  const f = { ...formFromPost(post), sectionIds: ['SEC1'] };
+  await announcements.update(post, f, { role: 'admin' });
+  expect(fs.callable).toHaveBeenCalledWith('savePortalAnnouncementFn', { id: 'legacy', form: expect.objectContaining({ roles: ['family'], sectionIds: ['SEC1'], grades: [7] }) });
+  expect(fs.updateDoc).not.toHaveBeenCalled();
+});
 
 // Guardians can read createdBy/updatedBy, so a staff email must never land there.
 describe('announcement author', () => {

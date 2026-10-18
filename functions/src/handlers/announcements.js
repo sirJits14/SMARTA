@@ -5,6 +5,8 @@ import { applyVerdicts } from './push.js';
 import { announcementPayload } from '../lib/pushPayload.js';
 import { CallableError } from '../errors.js';
 import { coversPostKeys, POST_KEYS } from '../../shared/announcements.js';
+import { matchesAnnouncementAudience } from '../../shared/announcementAudience.js';
+import { announcementPeople, validateAnnouncementAudience } from './portalAnnouncements.js';
 
 // Announcements spec: docs/superpowers/specs/2026-10-05-announcements-design.md
 export const PUSH_CHUNK = 500;                 // FCM sendEachForMulticast limit
@@ -19,7 +21,7 @@ export function chunk(arr, n) {
 
 const norm = (v) => (v && typeof v.toMillis === 'function' ? v.toMillis() : v ?? null);
 const same = (a, b) => JSON.stringify(norm(a)) === JSON.stringify(norm(b));
-const STAFF_FIELDS = ['title', 'body', 'pinned', 'expiresAt', 'publishAt', 'audienceKeys', 'push'];
+const STAFF_FIELDS = ['title', 'body', 'pinned', 'expiresAt', 'publishAt', 'audience', 'audienceKeys', 'push'];
 
 // What a write means for the audit log; null for Functions' own bookkeeping
 // (push claims/results). Staff writes always move updatedAt; the publish job
@@ -76,11 +78,13 @@ export async function sendAnnouncementPush({ db, messaging, portalUrl, now }, id
     return { status: 'skipped_paused' };
   }
 
-  // audienceKeys cannot change once a post is published, so the keys read
-  // above are safe to use for the queries below.
-  const guardians = await db.collection('guardians').where('audienceKeys', 'array-contains-any', first.audienceKeys).get();
+  // Resolve current recipients for legacy and role-targeted posts alike;
+  // cached grade keys can outlive a revoked link or old adviser migration.
+  const people = await announcementPeople(db);
+  const guardians = await db.collection('guardians').get();
   const wanted = new Set(guardians.docs
     .filter((g) => g.data().notificationsEnabled !== false && g.data().announcementPushEnabled !== false)
+    .filter((g) => matchesAnnouncementAudience(first.audience, people.get(g.id), 'family') || matchesAnnouncementAudience(first.audience, people.get(g.id), 'school'))
     .map((g) => g.id));
   // One collection-group read instead of one devices query per guardian.
   const seen = new Set();
@@ -102,11 +106,13 @@ export async function sendAnnouncementPush({ db, messaging, portalUrl, now }, id
   if (!post) return { status: 'skipped_claimed' };
 
   let sent = 0, failed = 0, pruned = 0;
-  for (const part of chunk(devices, PUSH_CHUNK)) {
+  const deviceView = device => people && !matchesAnnouncementAudience(first.audience, people.get(device.ref.parent.parent.id), 'family') ? 'school' : 'family';
+  const parts = ['family', 'school'].flatMap(view => chunk(devices.filter(device => deviceView(device) === view), PUSH_CHUNK).map(part => ({ part, view })));
+  for (const { part, view } of parts) {
     let res;
     try {
       res = await messaging.sendEachForMulticast(announcementPayload({
-        tokens: part.map((d) => d.data().token), announcementId: id, title: post.title, portalUrl,
+        tokens: part.map((d) => d.data().token), announcementId: id, title: post.title, portalUrl, view,
       }));
     } catch (e) {
       logWarn('announcement_push_chunk_failed', { id, size: part.length, message: e?.message });
@@ -199,12 +205,19 @@ export async function publishDueAnnouncements({ db, now }) {
 
 // Staff callable behind the SIMS confirm dialog ("visible to about N
 // guardians"). Coordinators can't read guardians/*, so the count is here.
-export async function announcementAudienceCount({ db, profile }, { audienceKeys } = {}) {
+export async function announcementAudienceCount({ db, profile }, { audienceKeys, audience } = {}) {
+  if (audience?.roles) {
+    const schoolYear = (await db.doc('settings/app').get()).data()?.currentSchoolYear;
+    const normalized = await validateAnnouncementAudience(db, { get: ref => ref.get() }, audience, profile, schoolYear);
+    const people = await announcementPeople(db);
+    return { count: [...people.values()].filter(person => matchesAnnouncementAudience(normalized, person, 'family') || matchesAnnouncementAudience(normalized, person, 'school')).length };
+  }
   const keys = Array.isArray(audienceKeys) ? audienceKeys : [];
   if (!keys.length || keys.length > POST_KEYS.length || !keys.every((k) => POST_KEYS.includes(k))) {
     throw new CallableError('invalid-argument', 'Choose who the announcement is for.');
   }
   if (!coversPostKeys(profile, keys)) throw new CallableError('permission-denied', 'You can only post to your own grades.');
-  const snap = await db.collection('guardians').where('audienceKeys', 'array-contains-any', keys).count().get();
-  return { count: snap.data().count };
+  const legacyAudience = keys.includes('all') ? { all: true } : { grades: keys.map(key => Number(key.slice(1))) };
+  const people = await announcementPeople(db);
+  return { count: [...people.values()].filter(person => matchesAnnouncementAudience(legacyAudience, person, 'family')).length };
 }

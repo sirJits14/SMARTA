@@ -2,13 +2,13 @@ import S from '../strings.js';
 import { T } from '../styles.js';
 import { Card, Spinner, EmptyState } from '../components/ui.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { useDoc } from '../hooks/useDoc.js';
+import { useAnnouncement } from '../hooks/useAnnouncements.js';
 import { isVisibleToParents } from '../../../shared/announcements.js';
 import { linkify, audienceText, postDateLabel } from '../lib/announcements.js';
 
-export default function AnnouncementDetail({ navigate, id }) {
-  const { data: post, error } = useDoc(`announcements/${id}`);
-  const back = () => navigate('/announcements');
+export default function AnnouncementDetail({ navigate, id, view = 'family' }) {
+  const { data: post, error } = useAnnouncement(id, view);
+  const back = () => navigate(`/announcements${view === 'school' ? '?view=school' : ''}`);
   if (post === undefined && !error) return <><PageHeader title={S.announcementsTitle} onBack={back} /><Spinner label={S.loading} /></>;
   // Denied (not theirs / unpublished) and missing look the same to a parent.
   if (!post || error || !isVisibleToParents(post, Date.now())) return <><PageHeader title={S.announcementsTitle} onBack={back} /><EmptyState hint={S.announcementGone} /></>;
@@ -17,7 +17,7 @@ export default function AnnouncementDetail({ navigate, id }) {
       <PageHeader title={post.title} onBack={back} />
       <Card>
         <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 12 }}>
-          {postDateLabel(post.publishedAt)} · {audienceText(post.audienceKeys)}{post.editedAt ? ` · ${S.announcementEdited}` : ''}
+          {postDateLabel(post.publishedAt)} · {audienceText(post.audienceKeys, post.audience)}{post.editedAt ? ` · ${S.announcementEdited}` : ''}
         </div>
         <p style={{ fontSize: 15, lineHeight: 1.6, color: T.ink, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
           {linkify(post.body).map((part, i) => (part.type === 'link'

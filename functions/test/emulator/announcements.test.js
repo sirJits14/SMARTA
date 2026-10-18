@@ -27,6 +27,10 @@ beforeEach(async () => {
   await db().doc('guardians/gD/devices/tD1').set({ token: 'tokD1', enabled: true, failureCount: 0 });
   await db().doc('guardians/gE').set({ email: 'e@x', notificationsEnabled: true, audienceKeys: ['all', 'g12'] });
   await db().doc('guardians/gE/devices/tE1').set({ token: 'tokE1', enabled: true, failureCount: 0 });
+  await db().doc('guardian_links/gD_S1').set({ guardianUid: 'gD', studentId: 'S1', status: 'active', schoolYear: '2026-2027', relationship: 'Guardian' });
+  await db().doc('sections/SEC12').set({ name: 'Twelve', gradeLevel: 12, schoolYear: '2026-2027' });
+  await db().doc('enrollments/S2_2026-2027').set({ studentId: 'S2', sectionId: 'SEC12', status: 'enrolled', schoolYear: '2026-2027' });
+  await db().doc('guardian_links/gE_S2').set({ guardianUid: 'gE', studentId: 'S2', status: 'active', schoolYear: '2026-2027', relationship: 'Guardian' });
 });
 
 describe('sendAnnouncementPush', () => {

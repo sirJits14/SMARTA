@@ -1,6 +1,7 @@
 import S from '../strings.js';
 import { toMillis, isVisibleToParents } from '../../../shared/announcements.js';
 import { manilaDate, manilaTime, formatScanTime } from '../../../shared/dates.js';
+import { ANNOUNCEMENT_ROLE_LABELS } from '../../../shared/announcementAudience.js';
 
 // Only http(s) URLs ever become links; everything else stays plain text
 // (no HTML is stored or rendered). Trailing sentence punctuation is left
@@ -20,7 +21,8 @@ export function linkify(text) {
   return parts;
 }
 
-export function audienceText(keys = []) {
+export function audienceText(keys = [], audience) {
+  if (audience?.roles) return `${audience.roles.map(role => ANNOUNCEMENT_ROLE_LABELS[role]).join(', ')} · ${keys.includes('all') ? 'All grades' : keys.map(key => `Grade ${key.slice(1)}`).join(', ')}${audience.sectionIds?.length ? ' · Selected sections' : ''}`;
   if (keys.includes('all')) return S.audienceAll;
   const grades = keys.map((k) => k.slice(1));
   if (grades.length === 1) return `${S.audienceGrade} ${grades[0]}`;

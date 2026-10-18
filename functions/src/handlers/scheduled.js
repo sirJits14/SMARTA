@@ -75,6 +75,10 @@ export async function expireLinks({ db, auth, now }) {
   let dormant = 0;
   const dormantSnap = await db.collection('guardians').where('lastActiveLinkAt', '<', ms(cut.dormantBeforeMs)).limit(200).get();
   for (const g of dormantSnap.docs) {
+    // Staff-only portal users may have no family links. Their active school
+    // assignment keeps the account in use; do not erase it as a dormant family.
+    const school = (await db.doc(`school_accounts/${g.id}`).get()).data();
+    if (school?.assignments?.some(a => a.schoolYear === sy)) continue;
     await deleteMatching(db, db.collection(`guardians/${g.id}/devices`));
     await deleteMatching(db, db.collection(`guardians/${g.id}/inbox`));
     await g.ref.delete();

@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import { useRoute } from './hooks/useRoute.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useDoc } from './hooks/useDoc.js';
@@ -6,9 +6,8 @@ import { callable } from './firebase.js';
 import Shell from './components/Shell.jsx';
 import { Spinner, EmptyState } from './components/ui.jsx';
 import S from './strings.js';
-import { onForegroundMessage } from './lib/notifications.js';
 import SignIn from './screens/SignIn.jsx';
-import Verify from './screens/Verify.jsx';
+import { portalView, notificationDestination } from './lib/nav.js';
 // Screens below are only needed once a route is resolved, so they're
 // route-split out of the sign-in/verify chunk to keep the initial load light.
 // Each can also be fetched ahead of time (preload); once it has loaded it
@@ -27,6 +26,7 @@ function routeScreen(load) {
   return Screen;
 }
 const Consent = routeScreen(() => import('./screens/Consent.jsx'));
+const Verify = routeScreen(() => import('./screens/Verify.jsx'));
 const Activate = routeScreen(() => import('./screens/Activate.jsx'));
 const Home = routeScreen(() => import('./screens/Home.jsx'));
 const History = routeScreen(() => import('./screens/History.jsx'));
@@ -36,12 +36,21 @@ const RequestAccess = routeScreen(() => import('./screens/RequestAccess.jsx'));
 const Settings = routeScreen(() => import('./screens/Settings.jsx'));
 const Announcements = routeScreen(() => import('./screens/Announcements.jsx'));
 const AnnouncementDetail = routeScreen(() => import('./screens/AnnouncementDetail.jsx'));
+const School = routeScreen(() => import('./screens/School.jsx'));
 const APP_SCREENS = [Home, History, Inbox, Report, Settings, Announcements, AnnouncementDetail];
 
 const CONSENT_KEY = 'bnhs-parent-consent';
 
 export default function App() {
   const { route, navigate } = useRoute();
+  const view = portalView(route);
+  const scopedNavigate = useCallback((to, options) => {
+    if (view === 'school' && /^\/settings(?:\/|\?|$)/.test(to)) {
+      const url = new URL(to, window.location.origin);
+      url.searchParams.set('view', 'school');
+      navigate(`${url.pathname}${url.search}`, options);
+    } else navigate(to, options);
+  }, [view, navigate]);
   const { user, profile } = useAuth();
   // Consent.jsx reads this doc itself before the account profile exists.
   // Profiles are created by linking a learner or choosing Skip for now.
@@ -72,17 +81,16 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    let off = () => {};
-    onForegroundMessage((payload) => {
-      const id = payload?.data?.announcementId;
-      navigate(id ? `/announcements/${encodeURIComponent(id)}` : '/inbox');
-    }).then((unsub) => { off = unsub; });
-    return () => off();
+    let alive = true; let off = () => {};
+    import('./lib/notifications.js').then(({ onForegroundMessage }) => onForegroundMessage((payload) => {
+      if (alive) navigate(notificationDestination(payload?.data));
+    })).then((unsub) => { if (alive) off = unsub; else unsub(); });
+    return () => { alive = false; off(); };
   }, [user, navigate]);
 
   if (user === undefined) return <Spinner label={S.loading} />;
   if (!user) return <SignIn />;
-  if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate} gate><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Shell>;
+  if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate} gate><Suspense fallback={<Spinner label={S.loading} />}><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Suspense></Shell>;
   if (profile === undefined) return <Spinner label={S.loading} />;
 
   // Re-consent gate: an admitted guardian (profile exists) whose
@@ -104,13 +112,14 @@ export default function App() {
   // returning accounts enter the app. Deep links to /activate?c= survive.
   let consented = false;
   try { consented = Boolean(profile) || localStorage.getItem(CONSENT_KEY) !== null; } catch { consented = Boolean(profile); }
-  const props = { user, profile, route, navigate };
+  const props = { user, profile, route, navigate: scopedNavigate, view };
   let screen;
   let gate = false; // first-run Consent / Activate have no PageHeader, so Shell adds the title row
   if (!profile && !consented && route.name !== 'requestAccess') { gate = true; screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate(route.name === 'activate' ? `/activate${window.location.search}` : '/activate', { replace: true }); }} />; }
-  else if (!profile && ['home', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'].includes(route.name)) { gate = true; screen = <Activate {...props} />; }
+  else if (!profile && ['home', 'school', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'].includes(route.name)) { gate = true; screen = <Activate {...props} />; }
   else switch (route.name) {
     case 'home': screen = <Home {...props} />; break;
+    case 'school': screen = <School {...props} />; break;
     case 'consent': screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate('/activate'); }} />; break;
     case 'activate': screen = <Activate {...props} />; break;
     case 'learner': screen = <History {...props} studentId={route.params.id} />; break;
@@ -122,5 +131,5 @@ export default function App() {
     case 'settings': screen = <Settings {...props} />; break;
     default: screen = <EmptyState title={S.notFound} />;
   }
-  return <Shell route={route} navigate={navigate} profile={profile} gate={gate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
+  return <Shell route={route} navigate={navigate} profile={profile} view={view} gate={gate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
 }

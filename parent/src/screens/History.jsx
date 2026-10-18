@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { collection, query, orderBy, limit, startAfter, getDocs } from 'firebase/firestore';
-import { db, callable } from '../firebase.js';
+import { db } from '../firebase.js';
 import S from '../strings.js';
 import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
 import { Bubble, DayDivider } from '../components/Bubble.jsx';
@@ -9,8 +9,7 @@ import { eventTitle, latestScanToday, nameCase } from '../lib/format.js';
 import { historyThread } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 import PageHeader from '../components/PageHeader.jsx';
-import RelationshipRow from '../components/RelationshipRow.jsx';
-import { isDepedEmail } from '../lib/relationships.js';
+import FamilySessionDetails from '../components/FamilySessionDetails.jsx';
 
 const PAGE = 30;
 
@@ -27,18 +26,6 @@ function eventMeta(ev) {
 
 export default function History({ user, studentId, navigate, route }) {
   const { data: learner, error } = useDoc(`learners/${studentId}`);
-  // Only DepEd accounts can change their relationship, so only they read
-  // their own link here; everyone else's screen is unchanged (spec 2026-10-17).
-  const deped = isDepedEmail(user?.email);
-  const { data: link } = useDoc(deped && user ? `guardian_links/${user.uid}_${studentId}` : null);
-  const [Sheet, setSheet] = useState(null);
-  const [sheetErr, setSheetErr] = useState(null);
-  const openSheet = () => {
-    setSheetErr(null);
-    import('../components/RelationshipSheet.jsx').then((m) => setSheet(() => m.default)).catch(() => setSheetErr(S.relChangeFailed));
-  };
-  const closeSheet = useCallback(() => setSheet(null), []);
-  const saveRelationship = (relationship) => callable('changeLinkRelationshipFn')({ studentId, relationship });
   const [rows, setRows] = useState([]); const [last, setLast] = useState(null); const [more, setMore] = useState(true); const [busy, setBusy] = useState(false);
 
   const load = async (cursor) => {
@@ -61,6 +48,7 @@ export default function History({ user, studentId, navigate, route }) {
     if (keepFromBottom.current !== null) { window.scrollTo(0, page.scrollHeight - keepFromBottom.current); keepFromBottom.current = null; return; }
     const target = route.query.event && document.getElementById(`ev-${route.query.event}`);
     if (target) target.scrollIntoView({ block: 'center' });
+    else if (route.query.date) document.getElementById('session-details')?.scrollIntoView({ block: 'start' });
     else window.scrollTo(0, page.scrollHeight);
   }, [rows, route.query.event, learner === undefined]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -69,9 +57,7 @@ export default function History({ user, studentId, navigate, route }) {
     <>
       <PageHeader title={nameCase(learner?.displayName)} avatarName={learner?.displayName} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
         status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')} />
-      {deped && learner && <RelationshipRow link={link} onChange={openSheet} />}
-      {sheetErr && <Banner tone="danger">{sheetErr}</Banner>}
-      {Sheet && link && <Sheet link={link} onSave={saveRelationship} onClose={closeSheet} />}
+      {learner && !error && <FamilySessionDetails key={studentId} studentId={studentId} requestedDate={route.query.date} requestedSession={route.query.session} />}
       {error === 'permission-denied' ? <Banner tone="warn">{S.accessEnded}</Banner>
         : learner === undefined ? <Spinner label={S.loading} />
           : <div className="learner-history">
