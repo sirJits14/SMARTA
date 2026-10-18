@@ -2,7 +2,7 @@ import { useAsyncAction } from '../../hooks/useAsyncAction.js';
 import { usePrintReadiness } from '../../hooks/usePrintReadiness.js';
 import { ActionFeedback } from '../../components/ui.jsx';
 import { ResourceState } from '../../components/ui.jsx';
-import { useDeferredValue, useMemo, useRef, useState } from 'react';
+import { Fragment, useDeferredValue, useMemo, useRef, useState } from 'react';
 import { collection, query, where, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useCollectionResource, useQueryResource, useDoc, useSchoolYearEnrollments } from '../../hooks/useCollection.js';
@@ -19,7 +19,7 @@ import GradePills from '../../components/GradePills.jsx';
 import ActivationSlipsPrintable from '../../components/ActivationSlipsPrintable.jsx';
 import SlipPrintControls, { useSlipPaper, PORTAL_URL } from '../../components/SlipPrintControls.jsx';
 import { Table, when } from './RequestsTab.jsx';
-import { relationshipChangeNote } from './linkRelationship.js';
+import { relationshipChangeNote, canCorrectRelationship, correctionOptions } from './linkRelationship.js';
 
 // The guardian's own profile wins (they can rename themselves in the portal);
 // the name/email copied onto the link at activation covers deleted profiles.
@@ -36,7 +36,8 @@ function GuardianCell({ link }) {
   );
 }
 
-// Shows when a DepEd account switched its own link between guardian and Adviser.
+// Shows when a link's relationship changed: a DepEd account switching its own
+// link between guardian and Adviser, or an administrator's correction.
 function RelationshipCell({ link }) {
   const note = relationshipChangeNote(link);
   return (
@@ -44,6 +45,26 @@ function RelationshipCell({ link }) {
       {link.relationship}
       {note && <><br /><span style={{ fontSize: 11, color: T.inkMuted }}>{note} · {when(link.relationshipChangedAt)}</span></>}
     </td>
+  );
+}
+
+// An administrator fixes a family link's relationship in place (no new slip).
+// The reason is required and goes to the audit log.
+function CorrectRelationshipRow({ link, busy, onSave, onCancel }) {
+  const options = correctionOptions(link);
+  const [relationship, setRelationship] = useState(options[0]);
+  const [reason, setReason] = useState('');
+  return (
+    <tr>
+      <td colSpan={7} style={S.td}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, auto 1fr auto auto)', gap: 12, alignItems: 'end' }}>
+          <Field label={`Correct ${link.relationship} to`}><Sel value={relationship} onChange={(e) => setRelationship(e.target.value)}>{options.map((r) => <option key={r} value={r}>{r}</option>)}</Sel></Field>
+          <Field label="Reason (recorded in the audit log)"><Inp value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} /></Field>
+          <Btn style={{ marginBottom: 14 }} disabled={busy || !reason.trim()} onClick={() => onSave({ linkId: link.id, relationship, reason: reason.trim() })}>Save</Btn>
+          <Btn variant="ghost" style={{ marginBottom: 14 }} disabled={busy} onClick={onCancel}>Cancel</Btn>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -78,6 +99,8 @@ export default function LinksTab({ schoolYear }) {
   const linksResource = useQueryResource(() => studentId && query(collection(db, 'guardian_links'), where('studentId', '==', studentId), limit(20)), [studentId]);
   const links = linksResource.data;
   const [reason, setReason] = useState('');
+  // The link whose relationship is being corrected; one at a time.
+  const [correcting, setCorrecting] = useState(null);
   const [manual, setManual] = useState({ kind: 'in', date: localDate(), time: '', reason: '' });
   // A reissued slip's raw code lives only here, for the learner it was
   // issued for; picking another learner drops it.
@@ -92,7 +115,7 @@ export default function LinksTab({ schoolYear }) {
   const studentIdRef = useRef(studentId);
   studentIdRef.current = studentId;
 
-  const pickLearner = (id) => { setStudentId(id); setQ(''); setReissued(null); setReissueErr(''); };
+  const pickLearner = (id) => { setStudentId(id); setQ(''); setReissued(null); setReissueErr(''); setCorrecting(null); };
   // Errors are caught here (not by action.run) so the server's own message,
   // e.g. "All guardian and adviser slots are linked", reaches staff.
   const reissue = async () => {
@@ -150,12 +173,23 @@ export default function LinksTab({ schoolYear }) {
           <ResourceState resources={[linksResource]}><Card className="slips-print-hide" style={{ marginBottom: 16 }}>
             {links.length === 0 ? <EmptyState title="No guardians linked" /> : (
               <Table head={['Guardian', 'Relationship', 'Status', 'Activated', 'Via', 'Revoked', '']} rows={links.map((l) => (
-                <tr key={l.id}>
-                  <GuardianCell link={l} /><RelationshipCell link={l} /><td style={S.td}>{l.status}</td>
-                  <td style={S.td}>{when(l.activatedAt)}</td><td style={S.td}>{l.activatedVia}</td>
-                  <td style={S.td}>{l.status === 'revoked' ? `${when(l.revokedAt)} — ${l.revokedReason || ''}` : '—'}</td>
-                  <td style={S.td}>{l.status === 'active' && <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', () => call.revokeLink({ linkId: l.id, reason }))}>Revoke</Btn>}</td>
-                </tr>
+                <Fragment key={l.id}>
+                  <tr>
+                    <GuardianCell link={l} /><RelationshipCell link={l} /><td style={S.td}>{l.status}</td>
+                    <td style={S.td}>{when(l.activatedAt)}</td><td style={S.td}>{l.activatedVia}</td>
+                    <td style={S.td}>{l.status === 'revoked' ? `${when(l.revokedAt)} — ${l.revokedReason || ''}` : '—'}</td>
+                    <td style={S.td}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {canCorrectRelationship(l) && <Btn variant="ghost" disabled={action.busy || correcting === l.id} onClick={() => setCorrecting(l.id)}>Correct relationship</Btn>}
+                        {l.status === 'active' && <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', () => call.revokeLink({ linkId: l.id, reason }))}>Revoke</Btn>}
+                      </div>
+                    </td>
+                  </tr>
+                  {correcting === l.id && canCorrectRelationship(l) && (
+                    <CorrectRelationshipRow link={l} busy={action.busy} onCancel={() => setCorrecting(null)}
+                      onSave={(input) => action.run('action', async () => { await call.correctLinkRelationship(input); setCorrecting(null); })} />
+                  )}
+                </Fragment>
               ))} />
             )}
           </Card></ResourceState>

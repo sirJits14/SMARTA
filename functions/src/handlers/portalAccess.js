@@ -7,6 +7,3 @@ export async function activateFamilyCode(deps, input) {
   if (input.relationship === 'Adviser') throw new CallableError('failed-precondition', 'Request adviser access from the School view. School approval is required.');
   return activateCode(deps, input);
 }
-export async function retiredRelationshipChange() {
-  throw new CallableError('failed-precondition', 'Family links and school roles are now separate. Request a School role, or ask the school to correct your family link.');
-}
