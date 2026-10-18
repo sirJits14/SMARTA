@@ -439,3 +439,11 @@ html[data-nav="fade"]::view-transition-new(root) { animation: nav-fade-in 240ms 
   html[data-nav]::view-transition-new(root) { animation: nav-fade-only 160ms ease-out both; }
 }
 @keyframes nav-fade-only { from { opacity: 0; } }
+
+/* iPhone Safari gives date fields a built-in minimum width, so they overflow
+   narrow cards. Let them shrink to the field and read like the other inputs. */
+input[type="date"] { min-width: 0; max-width: 100%; }
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] { -webkit-appearance: none; appearance: none; }
+  input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+}
