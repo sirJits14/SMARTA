@@ -116,9 +116,28 @@ turns that into the rows to render:
   deploy are both needed. Either order is safe: an old server returns no
   `schedule` key and the sheet falls back to AM/PM. An old client ignores the
   new key.
-- Follow the existing Parent App release flow (Parent build, then
-  `hosting:parent`) and the functions deploy rules in the release notes. This
-  change does not touch SIMS hosting.
+- **Functions: never deploy `getFamilyAttendanceFn` from the root `functions/`
+  on master.** The root `validAttendance` requires `attendance.gradeLevel`, and
+  the live `onScanEventCreated` never writes it, so every live attendance doc
+  would fail with "Attendance record requires administrator repair".
+- Production is on the compatible baseline described in
+  `docs/releases/2026-10-18-school-family/README.md` (read it first; do not
+  deploy the root `firebase.json`). Prepare the backend with
+  `node docs/releases/2026-10-18-school-family/prepareBackend.mjs --copy-dependencies`
+  (default output `.superpowers/releases/school-family/backend`, which must not
+  already exist). It applies `adaptSessionAttendance`, so a missing stored grade
+  falls back to the server-read section grade. Then deploy only
+  `getFamilyAttendanceFn`, from that prepared tree, with
+  `firebase.school-family-release.json` and project `bnhs-sims`:
+  `firebase deploy --config firebase.school-family-release.json --project bnhs-sims --only functions:getFamilyAttendanceFn`.
+  Use the usual deploy settings for this machine (IPv4-first DNS, longer
+  functions discovery timeout) and supply `PORTAL_URL` in the prepared
+  functions `.env.bnhs-sims` per that README. `--force` is only for the
+  correction trigger's first deployment and is not needed for this single
+  function.
+- **Parent:** ship per the Parent App release flow: build, `hosting:parent` only,
+  then byte-check the deployed files against the build. This change does not
+  touch SIMS hosting.
 
 ## Error handling
 

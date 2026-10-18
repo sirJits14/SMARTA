@@ -685,3 +685,10 @@ Confirm by reading `History.jsx`:
 - [ ] **Step 4: Release notes for the deploy**
 
 No commit needed unless the user asks. Report that the release needs **both** the `getFamilyAttendanceFn` functions deploy and the Parent `hosting:parent` deploy, in either order. Before the functions deploy, the sheet shows legacy AM/PM rows.
+
+Functions release path (read `docs/releases/2026-10-18-school-family/README.md` first):
+
+- Do **not** deploy `getFamilyAttendanceFn` from the root `functions/` on master. The root `validAttendance` requires `attendance.gradeLevel`, and live `onScanEventCreated` never writes it, so every live attendance doc would fail with "Attendance record requires administrator repair".
+- Prepare the backend: `node docs/releases/2026-10-18-school-family/prepareBackend.mjs --copy-dependencies`. It writes to `.superpowers/releases/school-family/backend` (must not already exist) and applies `adaptSessionAttendance`.
+- Deploy only that function from the prepared tree: `firebase deploy --config firebase.school-family-release.json --project bnhs-sims --only functions:getFamilyAttendanceFn`. Supply `PORTAL_URL` in the prepared `.env.bnhs-sims`, and use the IPv4-first and longer-discovery-timeout settings for this machine.
+- Parent side: Parent App release flow (`hosting:parent` only, then byte-check).
