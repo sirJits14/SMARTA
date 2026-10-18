@@ -3,15 +3,15 @@ import { createPortal } from 'react-dom';
 import S from '../strings.js';
 import { T } from '../styles.js';
 import { Btn, Banner } from './ui.jsx';
-import { ADVISER, relationshipOptions, changeErrorMessage } from '../lib/relationships.js';
+import { relationshipOptions, changeErrorMessage } from '../lib/relationships.js';
 
-// Lazy-loaded from History (keeps the eager bundle small). Portalled to
+// Lazy-loaded by useRelationshipSheet (keeps the eager bundle small). Portalled to
 // <body> so no .glass-card backdrop-filter traps the fixed overlay (see ScanSheet).
 export default function RelationshipSheet({ link, onSave, onClose }) {
   const [choice, setChoice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  const options = relationshipOptions(link.slot);
+  const options = relationshipOptions(link);
   const dialog = useRef(null);
   // Move focus into the dialog on open and give it back on close, so
   // keyboard and screen-reader users land on the choices (aria-modal).
@@ -44,7 +44,7 @@ export default function RelationshipSheet({ link, onSave, onClose }) {
           {options.map((r) => (
             <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: T.tap, fontSize: 16, cursor: 'pointer' }}>
               <input type="radio" name="relationship" value={r} checked={choice === r} disabled={busy} onChange={() => setChoice(r)} />
-              {r === ADVISER ? S.activateAdviserOption : r}
+              {r}
             </label>
           ))}
         </div>

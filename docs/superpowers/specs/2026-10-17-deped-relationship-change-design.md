@@ -207,3 +207,39 @@ sees no row; already-changed link shows "changed from…" with no button.
 Touches `functions` (new callable), the Parent app (`hosting:parent`) and SIMS
 (Links tab cell). Each follows its existing release flow. Deploy functions
 before the Parent app so the Change button never calls a missing callable.
+
+## Update 2026-10-18: family-only self-fix and administrator correction
+
+The School mode redesign (PR #44) made Adviser a school role that
+administrators assign in SIMS. An Adviser link now grants nothing: rules,
+gate-scan pushes and the School view all skip it. This changes the design
+above.
+
+- **DepEd self-fix (Parent app, `changeLinkRelationshipFn`).** The account
+  can move its own link to any *other family* relationship: same-side changes
+  (Guardian → Mother) are now in scope, and so is a legacy Adviser link → a
+  family relationship. Moving **to** Adviser is refused with "Family links and
+  school roles are now separate. An administrator assigns school roles in
+  SIMS and can correct your family link." Still once per link per school
+  year, DepEd only, rate-limited, and the year must be open. Leaving the
+  adviser slot moves one count on each open slip to the guardian slot, under
+  the 2-guardian cap. A legacy Adviser link with no `slot` already counts as a
+  guardian, so nothing moves.
+- **Where.** On the learner screen, the "Linked as … · Change" row is back for
+  DepEd accounts. Home leaves Adviser links out of the learner list, so it
+  shows a "Linked as Adviser" section (DepEd accounts only, lazy-loaded) with
+  a Change relationship button.
+- **Administrator correction (SIMS, `correctLinkRelationshipFn`).** Under
+  Guardians → Learner access, each active family link has a Correct
+  relationship action. It takes a family relationship (never Adviser) and a
+  required reason (1–500 characters). It refuses adviser links and inactive
+  links. The action has no yearly limit. It writes `previousRelationship`,
+  `relationshipChangedFor`, `relationshipChangedAt`, `relationshipChangedBy`
+  and `relationshipChangeReason`, plus a `link.relationshipCorrected` audit row
+  in the same transaction. Slots never move: every family relationship holds
+  a guardian slot. A correction counts as that year's change, so the account
+  cannot then self-fix again. SIMS shows "corrected from …" instead of
+  "changed from …".
+- A slip or staff approval that re-activates an ended link clears
+  `relationshipChangedBy` and `relationshipChangeReason` along with the
+  change note.

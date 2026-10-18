@@ -70,6 +70,12 @@ const S = {
   relOnceNote: 'You can change this once per school year. After that, ask the registrar.',
   relConfirm: 'Change relationship',
   relChangeFailed: 'Could not change your relationship right now. Please try again in a moment.',
+  // Home, DepEd accounts with a link from an old adviser slip.
+  legacyAdviserTitle: 'Linked as Adviser',
+  legacyAdviserHint: 'Adviser links no longer show gate scans. If this learner is your own child, change it to your family relationship.',
+  legacyAdviserChange: 'Change relationship',
+  legacyAdviserChanged: 'Already changed this school year. Ask the school to correct it.',
+  legacyAdviserUnnamed: 'Learner',
   scanButton: 'Scan the QR code on the slip',
   scanTitle: 'Scan activation slip',
   scanHelp: 'Point your camera at the QR code on the slip.',

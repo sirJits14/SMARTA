@@ -1,12 +1,12 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { MAX_OPEN_REQUESTS, LIMITS, enforceRateLimit } from '../callable.js';
-import { audit } from '../audit.js';
+import { audit, auditRow } from '../audit.js';
 import { logEvent, logWarn } from '../log.js';
 import { str, oneOf, bool, lrn } from '../lib/validators.js';
 import { RELATIONSHIPS } from './codes.js';
 import { learnerIdentity } from '../lib/format.js';
-import { ADVISER, isDepedEmail, isOpenStatus, slotFor, slotsFromLinks, moveSlot } from '../lib/codeSlots.js';
+import { ADVISER, isDepedEmail, isOpenStatus, slotsFromLinks, moveSlot } from '../lib/codeSlots.js';
 import { schoolYearRef, isEnded } from '../lib/schoolYears.js';
 import { refreshGuardianAudience } from './guardianAudience.js';
 
@@ -75,6 +75,7 @@ export async function resolveAccessRequest(ctx, data) {
         // Last year's relationship change is history once staff link them again;
         // relationshipChangedFor stays so the once-a-year limit still holds.
         previousRelationship: FieldValue.delete(), relationshipChangedAt: FieldValue.delete(),
+        relationshipChangedBy: FieldValue.delete(), relationshipChangeReason: FieldValue.delete(),
       }, { merge: true });
     });
     const profileRef = db.doc(`guardians/${request.guardianUid}`);
@@ -99,21 +100,25 @@ export async function resolveAccessRequest(ctx, data) {
   return { status: approve ? 'approved' : 'denied' };
 }
 
-const DEPED_ONLY = 'Only DepEd (@deped.gov.ph) accounts can change their relationship.';
+const DEPED_ONLY = 'Only DepEd (@deped.gov.ph) accounts can change their own relationship. Ask the school to correct it.';
 const LINK_ENDED = 'This link is no longer active.';
-const OTHER_SIDE = 'Choose Adviser, or the relationship you have to the learner.';
+// Also what older Parent app versions get when they ask to switch to Adviser.
+export const SCHOOL_ROLES_SEPARATE = 'Family links and school roles are now separate. An administrator assigns school roles in SIMS and can correct your family link.';
 
-// A DepEd account fixes an Adviser/guardian mix-up on its own link, once per
-// link per school year (spec 2026-10-17). Each of the learner's open slips
-// moves one count from the slot the caller left to the one they joined, so
-// the slot they left is free again. Revoked links keep their counts.
+// A DepEd account fixes the family relationship on its own link, once per link
+// per school year (spec 2026-10-17, narrowed after the School mode redesign):
+// Guardian to Mother, or a legacy Adviser link (which grants nothing now) to
+// the family relationship it should have been. Never to Adviser: school roles
+// are assigned in SIMS. Leaving the adviser slot moves one count on each of
+// the learner's open slips to the guardian slot. Revoked links keep their
+// counts. Administrators correct links any time with correctLinkRelationship.
 export async function changeLinkRelationship(ctx, data) {
   const { db, now, uid, email } = ctx;
   // Checked before anything is read, like activateCode's adviser check.
   if (!isDepedEmail(email)) throw new CallableError('permission-denied', DEPED_ONLY);
+  if (data.relationship === ADVISER) throw new CallableError('failed-precondition', SCHOOL_ROLES_SEPARATE);
   const studentId = str(data.studentId, { name: 'studentId', min: 1, max: 64 });
-  const relationship = oneOf(data.relationship, [...RELATIONSHIPS, ADVISER], 'relationship');
-  const toSlot = slotFor(relationship);
+  const relationship = oneOf(data.relationship, RELATIONSHIPS, 'relationship');
   await enforceRateLimit(db, uid, 'relationshipChange', LIMITS.relationshipChange, now().getTime());
 
   const refuse = (reason, code, message) => { logWarn('relationship_change_failed', { uid, studentId, reason }); return new CallableError(code, message); };
@@ -127,35 +132,70 @@ export async function changeLinkRelationship(ctx, data) {
     const [year, activeLinks, codes] = await Promise.all([yearRef && tx.get(yearRef), tx.get(activeLinksQuery), tx.get(codesQuery)]);
     if (isEnded(year)) throw refuse('year-ended', 'failed-precondition', LINK_ENDED);
     if (l.relationshipChangedFor === l.schoolYear) {
-      throw refuse('already-changed', 'failed-precondition', `You already changed your relationship for SY ${l.schoolYear}. Ask the registrar if it needs fixing again.`);
+      throw refuse('already-changed', 'failed-precondition', `Your relationship was already changed for SY ${l.schoolYear}. Ask the school if it needs fixing again.`);
     }
+    if (l.relationship === relationship) throw refuse('unchanged', 'invalid-argument', `You are already linked as ${relationship}.`);
+    // Links made before the adviser slot existed have no slot and count as
+    // guardians (slotsFromLinks), even a legacy Adviser one.
     const current = l.slot ?? 'guardian';
-    if (toSlot === current) throw refuse('same-side', 'invalid-argument', OTHER_SIDE);
-    // Same cap as activateCode and resolveAccessRequest (spec 2026-10-13):
-    // the caller's own link is not counted against them.
     const others = activeLinks.docs.filter((d) => d.id !== linkRef.id).map((d) => d.data());
-    const used = slotsFromLinks(others, l.schoolYear);
-    if (toSlot === 'adviser' && used.adviserRedemptions >= used.maxAdvisers) {
-      throw refuse('cap', 'failed-precondition', 'This learner already has an adviser linked. Ask the registrar to remove that link first.');
-    }
-    if (toSlot === 'guardian' && used.guardianRedemptions >= used.maxGuardians) {
-      throw refuse('cap', 'failed-precondition', `This learner already has ${used.maxGuardians} linked guardians. Ask the registrar to remove one first.`);
+    if (current !== 'guardian') {
+      // Same cap as activateCode and resolveAccessRequest (spec 2026-10-13):
+      // the caller's own link is not counted against them.
+      const used = slotsFromLinks(others, l.schoolYear);
+      if (used.guardianRedemptions >= used.maxGuardians) {
+        throw refuse('cap', 'failed-precondition', `This learner already has ${used.maxGuardians} linked guardians. Ask the school to remove one first.`);
+      }
     }
     tx.update(linkRef, {
-      relationship, slot: toSlot, previousRelationship: l.relationship ?? null,
+      relationship, slot: 'guardian', previousRelationship: l.relationship ?? null,
       relationshipChangedFor: l.schoolYear, relationshipChangedAt: FieldValue.serverTimestamp(),
+      relationshipChangedBy: FieldValue.delete(), relationshipChangeReason: FieldValue.delete(),
     });
-    // `after` is what the active links use once the caller's link holds toSlot;
-    // a slip's counters never drop below it.
-    const after = slotsFromLinks([...others, { status: 'active', schoolYear: l.schoolYear, slot: toSlot }], l.schoolYear);
-    for (const c of codes.docs) {
-      if (isOpenStatus(c.data().status)) tx.update(c.ref, { ...moveSlot(c.data(), current, toSlot, after), redemptions: FieldValue.delete(), maxRedemptions: FieldValue.delete() });
+    if (current !== 'guardian') {
+      // `after` is what the active links use once the caller's link holds a
+      // guardian slot; a slip's counters never drop below it.
+      const after = slotsFromLinks([...others, { status: 'active', schoolYear: l.schoolYear, slot: 'guardian' }], l.schoolYear);
+      for (const c of codes.docs) {
+        if (isOpenStatus(c.data().status)) tx.update(c.ref, { ...moveSlot(c.data(), current, 'guardian', after), redemptions: FieldValue.delete(), maxRedemptions: FieldValue.delete() });
+      }
     }
     return { from: l.relationship ?? null, fromSlot: current, schoolYear: l.schoolYear };
   });
-  await audit(db, { action: 'link.relationshipChanged', actorType: 'guardian', actorUid: uid, targetType: 'student', targetId: studentId, details: { from, to: relationship, fromSlot, toSlot, schoolYear } });
+  await audit(db, { action: 'link.relationshipChanged', actorType: 'guardian', actorUid: uid, targetType: 'student', targetId: studentId, details: { from, to: relationship, fromSlot, toSlot: 'guardian', schoolYear } });
   logEvent('relationship_changed', { uid, studentId });
-  return { relationship, slot: toSlot };
+  return { relationship, slot: 'guardian' };
+}
+
+// An administrator fixes the family relationship on a link (e.g. a parent who
+// picked Guardian instead of Mother) without revoking it and reissuing a slip.
+// Family relationships all hold the guardian slot, so slip counts never move.
+// School roles such as Adviser are assigned under Guardians > School access.
+export async function correctLinkRelationship(ctx, data) {
+  const { db, email } = ctx;
+  const linkId = str(data.linkId, { name: 'linkId', min: 3, max: 130 });
+  const relationship = oneOf(data.relationship, RELATIONSHIPS, 'relationship');
+  const reason = str(data.reason, { name: 'reason', min: 1, max: 500 });
+  const ref = db.doc(`guardian_links/${linkId}`);
+  return db.runTransaction(async (tx) => {
+    const l = (await tx.get(ref)).data();
+    if (!l) throw new CallableError('not-found', 'Link not found');
+    if (l.status !== 'active') throw new CallableError('failed-precondition', LINK_ENDED);
+    if (l.slot === 'adviser' || l.relationship === ADVISER) {
+      throw new CallableError('failed-precondition', 'This is an adviser link, not a family link. Assign school roles under Guardians > School access.');
+    }
+    if (l.relationship === relationship) throw new CallableError('invalid-argument', `This link is already ${relationship}.`);
+    tx.update(ref, {
+      relationship, previousRelationship: l.relationship ?? null,
+      relationshipChangedFor: l.schoolYear, relationshipChangedAt: FieldValue.serverTimestamp(),
+      relationshipChangedBy: email, relationshipChangeReason: reason,
+    });
+    tx.set(db.collection('audit_log').doc(), auditRow({
+      action: 'link.relationshipCorrected', actorType: 'staff', actorUid: email, targetType: 'guardian_link', targetId: linkId,
+      details: { from: l.relationship ?? null, to: relationship, studentId: l.studentId, schoolYear: l.schoolYear, reason },
+    }));
+    return { relationship };
+  });
 }
 
 async function revokeOne(db, linkRef, by, reason) {
