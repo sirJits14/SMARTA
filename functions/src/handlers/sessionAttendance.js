@@ -26,6 +26,10 @@ const projection = (attendance, studentId) => ({
   ...sessionAttendance(attendance, studentId, { unrecordedStatus: 'no_scan' }),
 });
 const nowDate = deps => manilaDate((deps.now || (() => new Date()))());
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Only the bell times leave the server; clients pick AM or PM from them.
+const bellTimes = (schedule) => schedule ? Object.fromEntries(['timeIn', 'timeOut', 'pmTimeIn', 'pmTimeOut']
+  .map(key => [key, HHMM.test(schedule[key] || '') ? schedule[key] : null])) : null;
 async function sectionFor(deps, reader, sectionId, actor) {
   const snap = await reader.get(deps.db.doc(`sections/${sectionId}`));
   if (!snap.exists) fail('not-found', 'Section not found.');
@@ -55,16 +59,17 @@ export async function getSchoolRoster(deps, input) {
     const actor = await loadSchoolActor(deps, tx);
     const section = await sectionFor(deps, tx, input.sectionId, actor);
     const canCorrect = await correctionAllowed(deps, tx, actor, section, input.date);
-    const [enrollments, snap] = await Promise.all([
+    const [enrollments, snap, scheduleSnap] = await Promise.all([
       tx.get(deps.db.collection('enrollments').where('sectionId', '==', section.id).where('schoolYear', '==', section.schoolYear).where('status', '==', 'enrolled')),
       tx.get(deps.db.doc(`student_attendance/${section.id}_${input.date}`)),
+      identifier(section.scheduleId) ? tx.get(deps.db.doc(`schedules/${section.scheduleId}`)) : null,
     ]);
     const attendance = snap.data(); validAttendance(attendance, section, input.date);
     historicalScope(actor, section, attendance);
     const students = await Promise.all(enrollments.docs.map(doc => tx.get(deps.db.doc(`students/${doc.data().studentId}`))));
     const rows = students.filter(s => s.exists).map(s => ({ ...projection(attendance, s.id), displayName: fullName(s.data()) }));
     rows.sort((a, b) => a.displayName.localeCompare(b.displayName));
-    return { section, date: input.date, rows, canCorrect };
+    return { section, date: input.date, rows, canCorrect, schedule: bellTimes(scheduleSnap?.data()) };
   });
 }
 

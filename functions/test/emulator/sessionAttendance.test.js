@@ -95,4 +95,12 @@ describe('session corrections', () => {
     await setSessionAbsence(deps('glc7'), input({ date: '2026-09-20' }));
     await expect(getSchoolRoster(deps('glc8'), { sectionId: 'SEC1', date: '2026-09-21' })).rejects.toMatchObject({ code: 'permission-denied' });
   });
+  it('returns the section bell schedule with the roster', async () => {
+    await db().doc('schedules/SPLIT').set({ timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:30', name: 'Split' });
+    await db().doc('sections/SEC1').update({ scheduleId: 'SPLIT' });
+    expect((await getSchoolRoster(deps(), { sectionId: 'SEC1', date: '2026-09-21' })).schedule)
+      .toEqual({ timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:30' });
+    await db().doc('sections/SEC1').update({ scheduleId: 'MISSING' });
+    expect((await getSchoolRoster(deps(), { sectionId: 'SEC1', date: '2026-09-21' })).schedule).toBeNull();
+  });
 });
