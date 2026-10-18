@@ -195,7 +195,7 @@ const S = {
   developerCandanoRole: 'Head of Operations and Logistics',
   developerAbellanaName: 'El Chamberlain Q. Abellana',
   developerAbellanaPosition: 'Teacher IV',
-  developerAbellanaRole: 'Director of Research and Trainings',
+  developerAbellanaRole: 'Director of Research and Development',
   settingsLearnersEmpty: 'No learners linked yet.',
   settingsReportsEmpty: 'No reports yet.',
   reportReviewed: 'Reviewed',
