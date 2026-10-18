@@ -1,0 +1,27 @@
+{
+  "project": "bnhs-sims",
+  "sourceCommit": "43d6379",
+  "change": "PR sirJits14/SMARTA#47: admins correct family link relationships in SIMS; DepEd accounts self-fix family links (family to family, or family to Adviser) once per school year; Adviser links cannot be changed",
+  "deployedAt": "2026-10-18",
+  "preChecks": {
+    "releaseRules": "85 passed, 4 held skipped",
+    "releaseFunctionsEmulator": "300 passed, 10 held skipped, 1 failed: sectionEditing 'two coordinators move sections concurrently' (known emulator contention flake; code unchanged and not deployed)",
+    "parentTests": "129/129",
+    "simsReleaseTests": "505/505; baseline rebuilt matched live 59/59"
+  },
+  "functions": {
+    "prepared": "docs/releases/2026-10-18-school-family/prepareBackend.mjs from 43d6379 (preserved live scanAttendance.js)",
+    "deployedByName": ["changeLinkRelationshipFn", "correctLinkRelationshipFn", "resolveAccessRequestFn", "activateCodeFn"],
+    "new": ["correctLinkRelationshipFn"],
+    "totalBefore": 50,
+    "totalAfter": 51,
+    "allActive": true,
+    "removed": [],
+    "changedOutsideList": []
+  },
+  "hosting": {
+    "parent": { "origin": "https://bnhs-parent.web.app", "builtFrom": "43d6379", "mainScript": "/assets/index-3g39qFQs.js", "files": 44, "allMatch": true, "initialLoadGzipKB": 259.9 },
+    "sims": { "origin": "https://bnhs-sims.web.app", "builtFrom": "docs/releases/2026-10-18-relationship-correction", "mainScript": "/assets/index-BrmqHMeI.js", "files": 59, "allMatch": true }
+  },
+  "notes": ["Parent initial load is 259.9 of 260 KB; the next Parent change needs budget freed first."]
+}
