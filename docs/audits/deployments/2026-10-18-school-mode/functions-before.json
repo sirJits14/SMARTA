@@ -1,0 +1,296 @@
+[
+  {
+    "name": "acceptConsentFn",
+    "state": "ACTIVE",
+    "revision": "acceptconsentfn-00016-wux",
+    "updateTime": "2026-10-13T01:44:14.048864941Z"
+  },
+  {
+    "name": "activateCodeFn",
+    "state": "ACTIVE",
+    "revision": "activatecodefn-00019-zug",
+    "updateTime": "2026-10-18T05:18:34.291505664Z"
+  },
+  {
+    "name": "addManualEventFn",
+    "state": "ACTIVE",
+    "revision": "addmanualeventfn-00015-sef",
+    "updateTime": "2026-10-12T00:33:27.328113416Z"
+  },
+  {
+    "name": "announcementAudienceCountFn",
+    "state": "ACTIVE",
+    "revision": "announcementaudiencecountfn-00007-few",
+    "updateTime": "2026-10-18T05:18:38.576195054Z"
+  },
+  {
+    "name": "assignSchoolRoleFn",
+    "state": "ACTIVE",
+    "revision": "assignschoolrolefn-00001-pup",
+    "updateTime": "2026-10-18T05:18:23.443806547Z"
+  },
+  {
+    "name": "changeLinkRelationshipFn",
+    "state": "ACTIVE",
+    "revision": "changelinkrelationshipfn-00002-jil",
+    "updateTime": "2026-10-18T05:18:34.527212303Z"
+  },
+  {
+    "name": "changeOwnPasswordFn",
+    "state": "ACTIVE",
+    "revision": "changeownpasswordfn-00007-rub",
+    "updateTime": "2026-10-12T00:33:34.931869715Z"
+  },
+  {
+    "name": "correctEventFn",
+    "state": "ACTIVE",
+    "revision": "correcteventfn-00015-vep",
+    "updateTime": "2026-10-12T00:33:27.230090607Z"
+  },
+  {
+    "name": "createStaffUserFn",
+    "state": "ACTIVE",
+    "revision": "createstaffuserfn-00007-pow",
+    "updateTime": "2026-10-12T00:33:42.587922336Z"
+  },
+  {
+    "name": "deactivateKioskFn",
+    "state": "ACTIVE",
+    "revision": "deactivatekioskfn-00015-nin",
+    "updateTime": "2026-10-12T00:33:28.036016328Z"
+  },
+  {
+    "name": "deleteGuardianAccountFn",
+    "state": "ACTIVE",
+    "revision": "deleteguardianaccountfn-00016-lap",
+    "updateTime": "2026-10-18T05:18:38.127675114Z"
+  },
+  {
+    "name": "deleteStaffUserFn",
+    "state": "ACTIVE",
+    "revision": "deletestaffuserfn-00007-hun",
+    "updateTime": "2026-10-12T00:33:26.030291585Z"
+  },
+  {
+    "name": "endSchoolYearFn",
+    "state": "ACTIVE",
+    "revision": "endschoolyearfn-00010-bov",
+    "updateTime": "2026-10-13T05:37:48.832840468Z"
+  },
+  {
+    "name": "expireLinksJob",
+    "state": "ACTIVE",
+    "revision": "expirelinksjob-00015-zot",
+    "updateTime": "2026-10-18T05:18:35.855422737Z"
+  },
+  {
+    "name": "getCoordinatorSectionOptionsFn",
+    "state": "ACTIVE",
+    "revision": "getcoordinatorsectionoptionsfn-00001-wub",
+    "updateTime": "2026-10-15T05:39:05.489236257Z"
+  },
+  {
+    "name": "getFamilyAttendanceFn",
+    "state": "ACTIVE",
+    "revision": "getfamilyattendancefn-00001-mex",
+    "updateTime": "2026-10-18T05:18:37.918915231Z"
+  },
+  {
+    "name": "getPortalAnnouncementFn",
+    "state": "ACTIVE",
+    "revision": "getportalannouncementfn-00001-giy",
+    "updateTime": "2026-10-18T05:18:35.156275438Z"
+  },
+  {
+    "name": "getPortalAnnouncementsFn",
+    "state": "ACTIVE",
+    "revision": "getportalannouncementsfn-00001-xav",
+    "updateTime": "2026-10-18T05:18:30.680268995Z"
+  },
+  {
+    "name": "getSchoolContextFn",
+    "state": "ACTIVE",
+    "revision": "getschoolcontextfn-00001-pew",
+    "updateTime": "2026-10-18T05:18:35.176978538Z"
+  },
+  {
+    "name": "getSchoolRosterFn",
+    "state": "ACTIVE",
+    "revision": "getschoolrosterfn-00001-xuh",
+    "updateTime": "2026-10-18T05:18:35.008647603Z"
+  },
+  {
+    "name": "issueActivationCodesFn",
+    "state": "ACTIVE",
+    "revision": "issueactivationcodesfn-00018-dit",
+    "updateTime": "2026-10-16T01:00:12.504190720Z"
+  },
+  {
+    "name": "onAnnouncementWritten",
+    "state": "ACTIVE",
+    "revision": "onannouncementwritten-00006-qib",
+    "updateTime": "2026-10-18T05:18:26.936642782Z"
+  },
+  {
+    "name": "onAttendanceCorrectionCreated",
+    "state": "ACTIVE",
+    "revision": "onattendancecorrectioncreated-00001-jeg",
+    "updateTime": "2026-10-18T05:18:56.881155162Z"
+  },
+  {
+    "name": "onGuardianLinkWritten",
+    "state": "ACTIVE",
+    "revision": "onguardianlinkwritten-00006-saf",
+    "updateTime": "2026-10-18T05:18:35.421468157Z"
+  },
+  {
+    "name": "onParentPortalSettingsChanged",
+    "state": "ACTIVE",
+    "revision": "onparentportalsettingschanged-00014-jof",
+    "updateTime": "2026-10-10T14:16:21.180509113Z"
+  },
+  {
+    "name": "onScanEventCreated",
+    "state": "ACTIVE",
+    "revision": "onscaneventcreated-00020-rih",
+    "updateTime": "2026-10-18T05:18:35.608139330Z"
+  },
+  {
+    "name": "provisionKioskFn",
+    "state": "ACTIVE",
+    "revision": "provisionkioskfn-00013-rex",
+    "updateTime": "2026-10-12T00:33:29.160881901Z"
+  },
+  {
+    "name": "pruneDevicesJob",
+    "state": "ACTIVE",
+    "revision": "prunedevicesjob-00014-lih",
+    "updateTime": "2026-10-10T14:16:16.431304161Z"
+  },
+  {
+    "name": "publishAnnouncementsJob",
+    "state": "ACTIVE",
+    "revision": "publishannouncementsjob-00006-jad",
+    "updateTime": "2026-10-18T05:18:34.942902669Z"
+  },
+  {
+    "name": "reconcileEventsJob",
+    "state": "ACTIVE",
+    "revision": "reconcileeventsjob-00016-qap",
+    "updateTime": "2026-10-18T05:18:34.797732504Z"
+  },
+  {
+    "name": "registerKioskFn",
+    "state": "ACTIVE",
+    "revision": "registerkioskfn-00015-puq",
+    "updateTime": "2026-10-12T00:33:35.464472947Z"
+  },
+  {
+    "name": "reissueActivationCodeFn",
+    "state": "ACTIVE",
+    "revision": "reissueactivationcodefn-00002-puf",
+    "updateTime": "2026-10-13T05:37:47.392234418Z"
+  },
+  {
+    "name": "requestAccessFn",
+    "state": "ACTIVE",
+    "revision": "requestaccessfn-00015-vov",
+    "updateTime": "2026-10-12T00:33:41.010639633Z"
+  },
+  {
+    "name": "requestSchoolRoleFn",
+    "state": "ACTIVE",
+    "revision": "requestschoolrolefn-00001-mat",
+    "updateTime": "2026-10-18T05:18:31.135827505Z"
+  },
+  {
+    "name": "resetKioskPasswordFn",
+    "state": "ACTIVE",
+    "revision": "resetkioskpasswordfn-00013-lek",
+    "updateTime": "2026-10-12T00:33:27.027360978Z"
+  },
+  {
+    "name": "resetStaffPasswordFn",
+    "state": "ACTIVE",
+    "revision": "resetstaffpasswordfn-00007-voh",
+    "updateTime": "2026-10-12T00:33:28.199086329Z"
+  },
+  {
+    "name": "resolveAccessRequestFn",
+    "state": "ACTIVE",
+    "revision": "resolveaccessrequestfn-00017-kup",
+    "updateTime": "2026-10-17T06:07:01.772232021Z"
+  },
+  {
+    "name": "resolveReportFn",
+    "state": "ACTIVE",
+    "revision": "resolvereportfn-00015-vap",
+    "updateTime": "2026-10-12T00:33:27.147619022Z"
+  },
+  {
+    "name": "resolveSchoolRoleFn",
+    "state": "ACTIVE",
+    "revision": "resolveschoolrolefn-00001-cil",
+    "updateTime": "2026-10-18T05:18:40.236093612Z"
+  },
+  {
+    "name": "revokeCodeFn",
+    "state": "ACTIVE",
+    "revision": "revokecodefn-00015-fes",
+    "updateTime": "2026-10-12T00:33:30.001680044Z"
+  },
+  {
+    "name": "revokeLinkFn",
+    "state": "ACTIVE",
+    "revision": "revokelinkfn-00015-nub",
+    "updateTime": "2026-10-12T00:33:34.707953891Z"
+  },
+  {
+    "name": "revokeSchoolRoleFn",
+    "state": "ACTIVE",
+    "revision": "revokeschoolrolefn-00001-lih",
+    "updateTime": "2026-10-18T05:18:31.576949951Z"
+  },
+  {
+    "name": "savePortalAnnouncementFn",
+    "state": "ACTIVE",
+    "revision": "saveportalannouncementfn-00001-zen",
+    "updateTime": "2026-10-18T05:18:34.593761677Z"
+  },
+  {
+    "name": "setActivationRestrictedFn",
+    "state": "ACTIVE",
+    "revision": "setactivationrestrictedfn-00015-ref",
+    "updateTime": "2026-10-12T00:33:29.812944880Z"
+  },
+  {
+    "name": "setSessionAbsenceFn",
+    "state": "ACTIVE",
+    "revision": "setsessionabsencefn-00001-puc",
+    "updateTime": "2026-10-18T05:18:39.176916087Z"
+  },
+  {
+    "name": "setStaffUserDisabledFn",
+    "state": "ACTIVE",
+    "revision": "setstaffuserdisabledfn-00007-hop",
+    "updateTime": "2026-10-12T00:33:33.776552397Z"
+  },
+  {
+    "name": "submitReportFn",
+    "state": "ACTIVE",
+    "revision": "submitreportfn-00016-nik",
+    "updateTime": "2026-10-18T05:18:34.797171615Z"
+  },
+  {
+    "name": "updateCoordinatorSectionFn",
+    "state": "ACTIVE",
+    "revision": "updatecoordinatorsectionfn-00001-ric",
+    "updateTime": "2026-10-15T05:39:08.674079256Z"
+  },
+  {
+    "name": "updateStaffUserFn",
+    "state": "ACTIVE",
+    "revision": "updatestaffuserfn-00007-muj",
+    "updateTime": "2026-10-12T00:33:40.576445007Z"
+  }
+]

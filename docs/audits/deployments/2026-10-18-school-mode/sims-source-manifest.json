@@ -1,0 +1,61 @@
+{
+  "baseline": "docs/releases/2026-10-18-school-family/prepareSims.mjs",
+  "productionMainScript": "/assets/index-C1ztdq4p.js",
+  "changes": [
+    {
+      "path": "parent/src/lib/classSession.js",
+      "before": null,
+      "after": "098358c52db657d8621161d29b22e045540ecccbf66b8cc7615234091c29de49"
+    },
+    {
+      "path": "src/App.jsx",
+      "before": "c7f609c4cddebd55b68cc25aa97e304410bc85a43c2537957b782a5f240e5994",
+      "after": "a9cf56b30385d334d50c96bbc4cd98bafe55d11b6739c06ee4918b7d72c7e823"
+    },
+    {
+      "path": "src/lib/schoolAssignments.js",
+      "before": null,
+      "after": "a50a118a81575de436f95afd68d09d0fb9135881d394f51984e0fe362c96cf8b"
+    },
+    {
+      "path": "src/lib/schoolAssignments.test.js",
+      "before": null,
+      "after": "14e09db25ee0848b98a4cb94afe4c8d45165fc8af04f2d6dc8b4a821942697d9"
+    },
+    {
+      "path": "src/lib/sessionReview.js",
+      "before": null,
+      "after": "e26ecd098b3e732284cae898e02fc9bdc17787776a45ba70429fe5df9c62ea58"
+    },
+    {
+      "path": "src/lib/sessionReview.test.js",
+      "before": null,
+      "after": "fe7cc925444657575820ebd19ed02c2716e13892ca146b887bad59b307782338"
+    },
+    {
+      "path": "src/pages/guardians/LegacyAdvisers.jsx",
+      "before": null,
+      "after": "d1abc4720bd55f09776f7993e829a2b8a4470c82307337167b5d225aa46ec79f"
+    },
+    {
+      "path": "src/pages/guardians/LegacyAdvisers.test.js",
+      "before": null,
+      "after": "b5146c3d32610a694d1392998368a6258c650a780307d54d7bfd28979d2a6fa7"
+    },
+    {
+      "path": "src/pages/guardians/SchoolAccessTab.jsx",
+      "before": "7283c6ac67d9619392f85b420d1a71c54593129f2b7e55b592fd896481bb9996",
+      "after": "d4612f8a9c5da785bfe2130be273d805c421be65029914b603e7853d1f1f078c"
+    },
+    {
+      "path": "src/pages/SessionReviewPage.jsx",
+      "before": null,
+      "after": "872348ff38d4190dbc4435b5bff14d54aa8115114065bf549c9fccfc2b9f825a"
+    },
+    {
+      "path": "src/pages/SessionReviewPage.test.js",
+      "before": null,
+      "after": "d502188828c14bf52c062356441b212ad8d3c3619b43528b451127a65549e7e5"
+    }
+  ]
+}
