@@ -23,7 +23,7 @@ The parent app has separate Family and School views on the same account. Approve
 | Curriculum Adviser | Assigned grades | Announcements, attendance review and corrections including earlier dates; no role approvals |
 | SIMS Administrator | School-wide | Approve, assign and revoke school roles; attendance review and corrections |
 
-Administrators manage assignments under **Guardians → School access** in SIMS. Teachers request a role from the parent app's **School** view after creating and verifying their account. Requests confer no access until approved.
+Administrators assign school roles directly under **Guardians → School access** in SIMS, using the teacher's verified app account email. Teachers no longer request roles in the parent app; the assignment adds an inbox note telling them to switch to School in Settings. SIMS JHS/SHS Academic Coordinators and Grade Level Coordinators review and correct session attendance for their grades in SIMS, with the same authority as a Curriculum Adviser.
 
 Only an administrator can approve a school role request. Teachers may request adviser access with any verified email, including a personal one; a `@deped.gov.ph` email does not grant adviser access or an alternative approval path. Curriculum Advisers review and correct attendance within their assigned grades but cannot approve adviser access. Subject Teacher and Curriculum Adviser assignments also require an administrator. Nobody approves their own request. Replace a section adviser by explicitly revoking the old assignment first.
 
@@ -34,6 +34,10 @@ Existing SIMS coordinator roles do not automatically become Curriculum Advisers.
 **My Advisory** shows an adviser's section; **Attendance Review** covers the grades or sections the reviewer may manage. Select a date and mark AM or PM absent with a required reason. Restore a flagged session to its underlying attendance status when correcting a mistake. Gate scans and underlying marks are retained, including lateness. Later kiosk taps do not clear an absence flag.
 
 Each correction is revision-checked and recorded in both the correction history and SIMS audit log. Family accounts receive a neutral inbox update; details are available after signing in. Push respects notification settings. Delivery uses an at-most-once claim, so a crash after claiming a push can leave an inbox item without a push; the persisted attendance and inbox remain authoritative.
+
+Family notifications wait two minutes after a correction. Undoing a flag inside that window sends nothing; a later reversal sends a second neutral update. A scheduled job (`sendAttendanceUpdatesJob`, every minute) drains the `attendance_notifications` outbox.
+
+Deploy `setSessionAbsenceFn`, `onAttendanceCorrectionCreated` and `sendAttendanceUpdatesJob` together: corrections made by the new `setSessionAbsenceFn` are only delivered by the scheduled job, so shipping one without the others either silences family updates or sends a stale backlog.
 
 AM and PM corrections are independent. Reports count one absent session as half a day absent; SF2 displays `½A` with AM/PM details in the cell note. Future dates and ended years cannot be corrected. Session details distinguish an unrecorded learner from a recorded present mark; existing report defaults remain compatible with prior reports.
 
