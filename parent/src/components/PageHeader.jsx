@@ -17,8 +17,8 @@ function Mark({ logo, avatarName, compact = false }) {
 // Large title that scrolls away with the page, plus a sticky bar that picks
 // the title up once it has scrolled under it (iOS "large title" pattern).
 // `logo` (an image src) or `avatarName` (initials) adds a mark beside the
-// title; `onBack` adds a back button.
-export default function PageHeader({ title, subtitle, status, logo, avatarName, onBack }) {
+// title; `onBack` adds a back button; `action` sits at the bar's right end.
+export default function PageHeader({ title, subtitle, status, logo, avatarName, onBack, action }) {
   const barRef = useRef(null);
   const titleRef = useRef(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -47,7 +47,7 @@ export default function PageHeader({ title, subtitle, status, logo, avatarName, 
   // page rather than scrolling away with the expanded header.
   return (
     <>
-      <div ref={barRef} className={`page-header-bar${collapsed ? ' page-header-bar--collapsed' : ''}`}>
+      <div ref={barRef} className={`page-header-bar${collapsed ? ' page-header-bar--collapsed' : ''}${action ? ' page-header-bar--action' : ''}`}>
         {onBack && (
           <button type="button" className="page-header-back" aria-label={S.back} onClick={onBack}>
             <Icon name="back" size={22} />
@@ -59,6 +59,7 @@ export default function PageHeader({ title, subtitle, status, logo, avatarName, 
             <span className="page-header-compact-title">{title}</span>
           </div>
         )}
+        {action && <div className="page-header-action">{action}</div>}
       </div>
       {title && (
         <div className="page-header-expanded">

@@ -5,6 +5,8 @@ import '../../src/glass.css';
 import '../../src/components/FamilySessionDetails.css';
 import SessionSheet from '../../src/components/SessionSheet.jsx';
 import SessionRows from '../../src/components/SessionRows.jsx';
+import PageHeader from '../../src/components/PageHeader.jsx';
+import Icon from '../../src/components/Icon.jsx';
 
 const mark = (status, extra = {}) => ({ status, absent: status === 'A', overrideActive: false, reason: '', actorName: '', changedAt: null, ...extra });
 const CASES = [
@@ -33,6 +35,11 @@ function Case({ c }) {
 }
 
 createRoot(document.getElementById('root')).render(<main style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
+  <div style={{ position: 'relative', padding: '14px 16px 0' }}>
+    <div aria-hidden="true" style={{ position: 'absolute', top: 14, right: 16, width: 44, height: 44, borderRadius: 999, border: '1px solid var(--t-glass-edge)' }} />
+    <PageHeader title="Ella Marie Austral Dela Cruz" avatarName="Ella Marie Austral Dela Cruz" subtitle="Grade 7 – AMIABLE · Gate scans" status="No entry recorded today"
+      onBack={() => {}} action={<button type="button" className="page-header-pill"><Icon name="calendar" size={18} />Sessions</button>} />
+  </div>
   <aside style={{ padding: 12, textAlign: 'center', fontSize: 12 }}>Synthetic attendance · no Firebase access</aside>
   {CASES.map((c) => <Case key={c.id} c={c} />)}
 </main>);

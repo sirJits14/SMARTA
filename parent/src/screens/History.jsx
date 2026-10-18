@@ -10,6 +10,8 @@ import { historyThread } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 import PageHeader from '../components/PageHeader.jsx';
 import FamilySessionDetails from '../components/FamilySessionDetails.jsx';
+import SessionSheet from '../components/SessionSheet.jsx';
+import Icon from '../components/Icon.jsx';
 
 const PAGE = 30;
 
@@ -26,6 +28,10 @@ function eventMeta(ev) {
 
 export default function History({ user, studentId, navigate, route }) {
   const { data: learner, error } = useDoc(`learners/${studentId}`);
+  // Session attendance opens on request, or straight away from an
+  // "Attendance updated" notification (?date=…&session=…).
+  const [sessionsOpen, setSessionsOpen] = useState(Boolean(route.query.date));
+  useEffect(() => { if (route.query.date) setSessionsOpen(true); }, [studentId, route.query.date]);
   const [rows, setRows] = useState([]); const [last, setLast] = useState(null); const [more, setMore] = useState(true); const [busy, setBusy] = useState(false);
 
   const load = async (cursor) => {
@@ -48,7 +54,6 @@ export default function History({ user, studentId, navigate, route }) {
     if (keepFromBottom.current !== null) { window.scrollTo(0, page.scrollHeight - keepFromBottom.current); keepFromBottom.current = null; return; }
     const target = route.query.event && document.getElementById(`ev-${route.query.event}`);
     if (target) target.scrollIntoView({ block: 'center' });
-    else if (route.query.date) document.getElementById('session-details')?.scrollIntoView({ block: 'start' });
     else window.scrollTo(0, page.scrollHeight);
   }, [rows, route.query.event, learner === undefined]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -56,8 +61,17 @@ export default function History({ user, studentId, navigate, route }) {
   return (
     <>
       <PageHeader title={nameCase(learner?.displayName)} avatarName={learner?.displayName} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
-        status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')} />
-      {learner && !error && <FamilySessionDetails key={studentId} studentId={studentId} requestedDate={route.query.date} requestedSession={route.query.session} />}
+        status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')}
+        action={learner && !error && (
+          <button type="button" className="page-header-pill" aria-haspopup="dialog" aria-expanded={sessionsOpen} onClick={() => setSessionsOpen(true)}>
+            <Icon name="calendar" size={18} />{S.sessionButton}
+          </button>
+        )} />
+      {sessionsOpen && learner && !error && (
+        <SessionSheet onClose={() => setSessionsOpen(false)}>
+          <FamilySessionDetails key={studentId} studentId={studentId} requestedDate={route.query.date} requestedSession={route.query.session} />
+        </SessionSheet>
+      )}
       {error === 'permission-denied' ? <Banner tone="warn">{S.accessEnded}</Banner>
         : learner === undefined ? <Spinner label={S.loading} />
           : <div className="learner-history">
