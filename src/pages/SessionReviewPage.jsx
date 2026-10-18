@@ -37,6 +37,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
   useEffect(() => {
     if (!activeSection) return undefined;
     const request = ++sequence.current;
+    setRoster((current) => (current && current.section?.id === activeSection && current.date === date ? current : null));
     setLoading(true); setError('');
     invoke('getSchoolRosterFn', { sectionId: activeSection, date })
       .then((data) => { if (request === sequence.current) { setRoster(data); setLoading(false); } })
@@ -58,10 +59,11 @@ export default function SessionReviewPage({ me, schoolYear }) {
         reason: reasonText(chosen, note), operationId: crypto.randomUUID() }));
       setNotice(`${edit.row.displayName} · ${edit.session.toUpperCase()} ${edit.absent ? 'marked not in class' : 'restored'}. Families get a neutral update in two minutes.`);
       setEdit(null); setReload((n) => n + 1);
-    } catch (e) { setError(schoolError(e)); } finally { setSaving(false); }
+    } catch (e) { setError(schoolError(e)); setEdit(null); setReload((n) => n + 1); } finally { setSaving(false); }
   };
 
   if (sectionsResource.loading && !sections.length) return <p role="status">Loading sections…</p>;
+  if (sectionsResource.error && !sections.length) return <p role="alert" className="sims-feedback">Could not load sections. Refresh the page and try again.</p>;
   if (!sections.length) return <Card style={{ padding: 20 }}><p>No sections in your grades for {schoolYear}.</p></Card>;
   const canCorrect = Boolean(roster?.canCorrect);
   return <div style={{ fontFamily: T.body }}>
@@ -88,7 +90,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
               return <td key={session} style={cellStyle}>
                 <strong style={{ color: cell.flagged ? 'var(--t-warn-text)' : T.ink }}>{cell.label}</strong>
                 <div style={{ fontSize: 12, color: T.inkMuted }}>{[cell.gate ? `Gate ${formatScanTime(cell.gate)}` : 'No gate entry', cell.reason, cell.by && `by ${cell.by}`].filter(Boolean).join(' · ')}</div>
-                {canChange && <Btn variant="ghost" style={{ marginTop: 8 }} disabled={saving} onClick={() => open(row, session, !cell.flagged)}>{cell.flagged ? 'Restore' : 'Not in class'}</Btn>}
+                {canChange && <Btn variant="ghost" style={{ marginTop: 8 }} disabled={saving || loading} onClick={() => open(row, session, !cell.flagged)}>{cell.flagged ? 'Restore' : 'Not in class'}</Btn>}
               </td>;
             })}
           </tr>)}</tbody>
