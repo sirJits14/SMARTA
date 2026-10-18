@@ -132,7 +132,7 @@ export default function ClassTab({ sections, ended }) {
       {roster && ended && <p className="class-note">This school year has ended. Attendance is view-only.</p>}
       {roster && (
         <>
-          <RowGroup title="In school" hint={groups.inSchool.length ? (canCorrect ? 'Tap a learner who isn’t in class.' : null) : 'No gate entries yet for this session.'}
+          <RowGroup title="In school" hint={groups.inSchool.length ? (canCorrect ? (selecting ? 'Tick each learner who isn’t in class, then Flag.' : 'Tap a learner who isn’t in class.') : null) : 'No gate entries yet for this session.'}
             rows={groups.inSchool} session={session} selecting={selecting} selected={selected} onPick={canCorrect ? (row) => pick(row, 'flag') : null} />
           <RowGroup title="Flagged" rows={groups.flagged} session={session} onPick={canCorrect ? (row) => pick(row, 'restore') : null} collapsible />
           <RowGroup title="Absent or no gate entry" rows={groups.noEntry} session={session} collapsible />
