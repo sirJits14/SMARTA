@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { staffIdentity, adminIdentity } from './callable.js';
+import { staffIdentity, adminIdentity, schoolIdentity } from './callable.js';
 
 // auth_time 1000s = 1970-01-01T00:16:40Z.
 const req = (email = 'a@bnhs.edu', authTime = 1000) => ({ app: {}, auth: { uid: 'u1', token: { email, auth_time: authTime } } });
@@ -9,6 +9,24 @@ const dbWith = (profile) => ({
 // tokensValidAfterTime as Firebase Auth reports it (UTC string), or undefined.
 const authWith = (tokensValidAfterTime) => ({ getUser: async () => ({ uid: 'u1', tokensValidAfterTime }) });
 const auth = authWith(undefined);
+
+describe('schoolIdentity', () => {
+  const verifiedRequest = () => ({ app: {}, auth: { uid: 'u1', token: { email: 'a@deped.gov.ph', email_verified: true, auth_time: 1000, firebase: { sign_in_provider: 'google.com' } } } });
+  const active = { uid: 'u1', email: 'a@deped.gov.ph', emailVerified: true };
+  it('requires current verified Auth identity for portal accounts', async () => {
+    await expect(schoolIdentity(dbWith(undefined), { getUser: async () => active }, verifiedRequest())).resolves.toMatchObject({ uid: 'u1', email: active.email });
+    for (const patch of [{ disabled: true }, { emailVerified: false }, { email: 'other@gmail.com' }, { tokensValidAfterTime: new Date(2000_000).toUTCString() }]) {
+      await expect(schoolIdentity(dbWith(undefined), { getUser: async () => ({ ...active, ...patch }) }, verifiedRequest())).rejects.toMatchObject({ code: 'unauthenticated' });
+    }
+  });
+  it('does not let school access bypass staff password restrictions', async () => {
+    await expect(schoolIdentity(dbWith({ role: 'admin', mustChangePassword: true }), auth, verifiedRequest())).rejects.toMatchObject({ code: 'failed-precondition' });
+    await expect(schoolIdentity(dbWith({ role: 'admin', disabled: true }), auth, verifiedRequest())).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+  it('keeps administrator-provisioned SIMS accounts eligible without portal email verification', async () => {
+    await expect(schoolIdentity(dbWith({ role: 'admin' }), auth, req())).resolves.toMatchObject({ profile: { role: 'admin' }, authTime: 1000 });
+  });
+});
 
 describe('staffIdentity', () => {
   it.each(['admin', 'registrar', 'jhs_coord', 'shs_coord', 'glc'])('refuses temporary-password %s accounts', async (role) => {

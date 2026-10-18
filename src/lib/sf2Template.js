@@ -1,4 +1,4 @@
-import { markFor } from './attendance.js';
+import { markFor, attendanceUnits, sessionAttendance } from './attendance.js';
 
 const MARK_CHAR = { P: '', A: 'X', L: 'L', E: 'E' };
 
@@ -18,10 +18,7 @@ export function splitByGender(roster) {
 }
 
 export function dailyPresentCount(students, date, docsByDate) {
-  return students.filter((s) => {
-    const m = markFor(docsByDate, date, s.id);
-    return m === 'P' || m === 'L';
-  }).length;
+  return students.reduce((sum, s) => sum + attendanceUnits(docsByDate[date], s.id).present, 0);
 }
 
 export function rowsFor(students, schoolDays, docsByDate) {
@@ -30,8 +27,13 @@ export function rowsFor(students, schoolDays, docsByDate) {
     let tardyTotal = 0;
     const marks = schoolDays.map((date) => {
       const m = markFor(docsByDate, date, student.id);
-      if (m === 'A') absentTotal++;
-      if (m === 'L') tardyTotal++;
+      const units = attendanceUnits(docsByDate[date], student.id);
+      absentTotal += units.absent;
+      tardyTotal += units.late;
+      if (m === 'H') {
+        const { am, pm } = sessionAttendance(docsByDate[date], student.id);
+        return `AM:${markChar(am.status) || 'P'} PM:${markChar(pm.status) || 'P'}`;
+      }
       return markChar(m);
     });
     return { student, marks, absentTotal, tardyTotal };

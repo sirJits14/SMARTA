@@ -6,8 +6,9 @@ export const PUSH_BODY = 'BNHS recorded a new attendance event. Tap to view secu
 // when; the guardian sees those details only inside the authenticated
 // portal). Falls back to the fixed, content-free sentence if no device
 // label is given.
-export function pushPayload({ tokens, inboxId, studentId, portalUrl, deviceLabel }) {
-  const body = deviceLabel ? `BNHS recorded a new attendance event at ${deviceLabel}. Tap to view securely.` : PUSH_BODY;
+export function pushPayload({ tokens, inboxId, studentId, portalUrl, deviceLabel, correction = false }) {
+  const body = correction ? 'An attendance update is available for your learner.'
+    : deviceLabel ? `BNHS recorded a new attendance event at ${deviceLabel}. Tap to view securely.` : PUSH_BODY;
   return {
     tokens,
     notification: { title: PUSH_TITLE, body },
@@ -24,15 +25,15 @@ export const ANNOUNCEMENT_PUSH_TITLE = 'BNHS announcement';
 
 // Announcements carry no learner information, so the post title is the
 // body. One tag per post: a re-delivered push replaces, not stacks.
-export function announcementPayload({ tokens, announcementId, title, portalUrl }) {
+export function announcementPayload({ tokens, announcementId, title, portalUrl, view = 'family' }) {
   return {
     tokens,
     notification: { title: ANNOUNCEMENT_PUSH_TITLE, body: title },
-    data: { announcementId },
+    data: { announcementId, ...(view === 'school' ? { view } : {}) },
     webpush: {
       headers: { TTL: '86400', Urgency: 'normal' },
       notification: { title: ANNOUNCEMENT_PUSH_TITLE, body: title, tag: `announcement-${announcementId}`, icon: '/icons/icon-192.png' },
-      fcmOptions: { link: `${portalUrl}/announcements/${announcementId}` },
+      fcmOptions: { link: `${portalUrl}/announcements/${announcementId}${view === 'school' ? '?view=school' : ''}` },
     },
   };
 }

@@ -5,13 +5,14 @@ import { audit } from '../audit.js';
 import { logEvent } from '../log.js';
 import { str, oneOf, hhmm, ymd } from '../lib/validators.js';
 import { systemInbox } from './links.js';
+import { isFamilyLink } from '../../shared/schoolAccess.js';
 
 export const REPORT_REASONS = ['wrong_time', 'not_this_learner', 'missing_event', 'other'];
 export const RESOLUTION_ACTIONS = ['none', 'voided', 'corrected'];
 
 async function assertActiveLink(db, uid, studentId) {
   const link = (await db.doc(`guardian_links/${uid}_${studentId}`).get()).data();
-  if (!link || link.status !== 'active') throw new CallableError('permission-denied', 'You are not linked to this learner');
+  if (!isFamilyLink(link)) throw new CallableError('permission-denied', 'You are not linked to this learner');
 }
 
 export async function submitReport(ctx, data) {

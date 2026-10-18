@@ -9,6 +9,7 @@ import PageHeader from '../components/PageHeader.jsx';
 import { useQuery } from '../hooks/useDoc.js';
 import { toFeed } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
+import { inboxDestination } from '../lib/school.js';
 
 const KIND = { in: S.eventIn, out: S.eventOut, void: S.eventVoided };
 const itemTone = (item) => (item.type !== 'attendance' ? 'school' : item.kind === 'in' ? 'in' : 'out');
@@ -38,7 +39,8 @@ export default function Inbox({ user, navigate, route }) {
   };
   const open = (item) => {
     markRead(item);
-    if (item.type === 'attendance') navigate(`/learner/${item.studentId}?event=${item.eventId}`);
+    const destination = inboxDestination(item);
+    if (destination) navigate(destination);
   };
 
   // Push deep link: /inbox?item=<inboxId>
@@ -75,7 +77,7 @@ export default function Inbox({ user, navigate, route }) {
                     body={item.type === 'attendance' ? null : item.body}
                     meta={item.type === 'attendance' ? item.deviceLabel : undefined}
                     time={formatScanTime(item.time)}
-                    onClick={item.type === 'attendance' ? () => open(item) : undefined}
+                    onClick={inboxDestination(item) ? () => open(item) : undefined}
                     actionLabel={S.homeViewHistory}
                   />
                 ))}

@@ -39,11 +39,11 @@ export async function applyVerdicts(db, devDocs, responses) {
 // (QueryDocumentSnapshot-shaped: .data()/.ref) -- the caller (scanEvent.js)
 // needs that same query for its own device-count gate right before this is
 // called, so this no longer re-queries Firestore for it.
-export async function sendToGuardian({ db, messaging, portalUrl }, { inboxId, studentId, devDocs, deviceLabel }) {
+export async function sendToGuardian({ db, messaging, portalUrl }, { inboxId, studentId, devDocs, deviceLabel, correction = false }) {
   if (devDocs.length === 0) return { status: 'skipped_no_device', pruned: 0 };
 
   const tokens = devDocs.map((d) => d.data().token);
-  const res = await messaging.sendEachForMulticast(pushPayload({ tokens, inboxId, studentId, portalUrl, deviceLabel }));
+  const res = await messaging.sendEachForMulticast(pushPayload({ tokens, inboxId, studentId, portalUrl, deviceLabel, correction }));
   const { sent, pruned } = await applyVerdicts(db, devDocs, res.responses);
   return { status: sent > 0 ? 'sent' : 'failed', pruned };
 }

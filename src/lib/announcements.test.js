@@ -37,6 +37,7 @@ describe('labels', () => {
   it('describes the audience', () => {
     expect(audienceLabel(['all'])).toBe('All parents');
     expect(audienceLabel(['g7', 'g8'])).toBe('Grade 7 · Grade 8');
+    expect(audienceLabel(['all'], { all: true, roles: ['adviser'] })).toBe('Advisers · All grades');
   });
   it('describes the push state', () => {
     expect(pushStatusText({ push: false })).toBe('No push');
@@ -51,6 +52,11 @@ describe('labels', () => {
 });
 
 describe('form', () => {
+  it('retains independent recipient roles and optional section narrowing', () => {
+    expect(audienceOf(form({ all: false, grades: [7], roles: ['family', 'subject_teacher'], sectionIds: ['SEC1'] }))).toEqual({ grades: [7], roles: ['family', 'subject_teacher'], sectionIds: ['SEC1'] });
+    expect(validateForm(form({ roles: [] }), { me: admin, nowMs: NOW, pinnedCount: 0 })).toBe('Choose at least one recipient role.');
+    expect(emptyForm(admin).roles).toEqual(['family']);
+  });
   it('starts empty; a single-grade coordinator gets their grade', () => {
     expect(emptyForm(admin)).toMatchObject({ all: false, grades: [], when: 'now', push: false });
     expect(emptyForm(glc8).grades).toEqual([8]);
@@ -61,7 +67,7 @@ describe('form', () => {
   });
   it('reads a post back into the form in Philippine time', () => {
     const f = formFromPost({ title: 'T', body: 'B', audience: { grades: [7] }, status: 'scheduled', publishAt: ms(Date.parse('2026-10-06T07:30:00+08:00')), expiresAt: ms(Date.parse('2026-10-09T23:59:59.999+08:00')), pinned: true, push: true });
-    expect(f).toEqual({ title: 'T', body: 'B', all: false, grades: [7], when: 'schedule', date: '2026-10-06', time: '07:30', expires: '2026-10-09', pinned: true, push: true });
+    expect(f).toEqual({ title: 'T', body: 'B', all: false, grades: [7], roles: ['family'], sectionIds: [], when: 'schedule', date: '2026-10-06', time: '07:30', expires: '2026-10-09', pinned: true, push: true });
   });
   it('validates content, scope, schedule, expiry and pins', () => {
     const v = (f, o = {}) => validateForm(f, { me: admin, nowMs: NOW, pinnedCount: 0, editing: null, ...o });

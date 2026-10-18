@@ -116,7 +116,11 @@ service cloud.firestore {
     function own(uid) { return signedIn() && request.auth.uid == uid; }
     function hasLink(studentId) {
       return isGuardian()
-        && get(/databases/$(database)/documents/guardian_links/$(request.auth.uid + '_' + studentId)).data.status == 'active';
+        && familyLink(get(/databases/$(database)/documents/guardian_links/$(request.auth.uid + '_' + studentId)).data);
+    }
+    function familyLink(link) {
+      return link.status == 'active' && link.get('slot', 'guardian') != 'adviser'
+        && link.get('relationship', '') != 'Adviser';
     }
     function bounded(n) { return request.query.limit <= n; }
     function affectedOnly(keys) {
@@ -168,8 +172,11 @@ service cloud.firestore {
     // Staff retain manual editing permissions.
     match /student_attendance/{id} {
       allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade();
-      allow create, update: if validAttendanceGrade() && (isAdmin() || coordinatorMayWriteAttendance());
-      allow delete: if isAdmin();
+      allow create: if !request.resource.data.keys().hasAny(['sessionOverrides'])
+        && validAttendanceGrade() && (isAdmin() || coordinatorMayWriteAttendance());
+      allow update: if !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sessionOverrides'])
+        && validAttendanceGrade() && (isAdmin() || coordinatorMayWriteAttendance());
+      allow delete: if isAdmin() && !resource.data.keys().hasAny(['sessionOverrides']);
     }
 
     // ---------- kiosks ----------
@@ -291,14 +298,12 @@ service cloud.firestore {
         && d.updatedBy.uid == request.auth.uid && d.updatedAt == request.time;
     }
     function postChanged() { return request.resource.data.diff(resource.data).affectedKeys(); }
-    function guardianSeesPost() {
-      return isGuardian() && resource.data.status == 'published'
-        && resource.data.audienceKeys.hasAny(get(/databases/$(database)/documents/guardians/$(request.auth.uid)).data.get('audienceKeys', []));
-    }
     match /announcements/{id} {
-      allow get: if isStaff() || guardianSeesPost();
-      allow list: if isStaff() || (guardianSeesPost() && bounded(50));
+      // Portal reads use callables that verify live family links and assignments.
+      // Cached audience keys cannot establish access, including for legacy posts.
+      allow get, list: if isStaff();
       allow create: if isStaff() && validPost(request.resource.data)
+        && !request.resource.data.audience.keys().hasAny(['roles', 'sectionIds'])
         && postKeysInScope(request.resource.data.audienceKeys)
         && request.resource.data.createdBy.uid == request.auth.uid
         && request.resource.data.createdAt == request.time
@@ -315,6 +320,8 @@ service cloud.firestore {
         && (
           // Scheduled: anything staff own, still in the future, never "edited".
           (resource.data.status == 'scheduled' && request.resource.data.status == 'scheduled'
+            && !resource.data.audience.keys().hasAny(['roles', 'sectionIds'])
+            && !request.resource.data.audience.keys().hasAny(['roles', 'sectionIds'])
             && request.resource.data.publishAt > request.time
             && !request.resource.data.keys().hasAny(['editedAt']))
           // Live: wording, pin and expiry only; editedAt only ever set to now.
@@ -335,6 +342,13 @@ service cloud.firestore {
     // Written by endSchoolYear; an ended year's slips can't be issued or redeemed.
     match /school_years/{id}     { allow read: if isAdmin(); allow write: if false; }
     match /rate_limits/{id}      { allow read, write: if false; }
+    // School access and session corrections are authorized by callables, not
+    // by client-provided roles or cached account metadata.
+    match /school_accounts/{id} { allow read, write: if false; }
+    match /school_role_requests/{id} { allow read, write: if false; }
+    match /school_adviser_locks/{id} { allow read, write: if false; }
+    match /attendance_corrections/{id} { allow read, write: if false; }
+    match /attendance_correction_audit/{id} { allow read, write: if false; }
 
     match /access_requests/{id} {
       allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);

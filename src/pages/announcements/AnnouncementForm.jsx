@@ -4,6 +4,8 @@ import { emptyForm, formFromPost, validateForm, pinnedCount, audienceOf, audienc
 import { TITLE_MAX, BODY_MAX, canPostToAll, postableGrades, postAudienceKeys } from '../../../shared/announcements.js';
 import { T } from '../../styles.js';
 import { Btn, Inp, Field, Modal, Confirm } from '../../components/ui.jsx';
+import { useStaffCollectionResource, useDocResource } from '../../hooks/useCollection.js';
+import { ANNOUNCEMENT_ROLES, ANNOUNCEMENT_ROLE_LABELS } from '../../../shared/announcementAudience.js';
 
 const hint = { fontFamily: T.body, fontSize: 12, color: T.inkMuted, margin: '-8px 0 14px' };
 const row = { display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14, fontFamily: T.body, fontSize: 13 };
@@ -20,8 +22,12 @@ export default function AnnouncementForm({ me, editing, posts, onClose }) {
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const live = editing?.status === 'published';
   const grades = postableGrades(me);
+  const settings = useDocResource('settings/app');
+  const sectionResource = useStaffCollectionResource('sections', { me, schoolYear: settings.data?.currentSchoolYear });
+  const sections = sectionResource.data.filter(section => section.schoolYear === settings.data?.currentSchoolYear && (f.all || f.grades.includes(Number(section.gradeLevel))));
+  const roles = f.roles || ['family'];
   const lockedGrade = grades.length === 1;
-  const toggleGrade = (g) => set('grades', f.grades.includes(g) ? f.grades.filter((x) => x !== g) : [...f.grades, g]);
+  const toggleGrade = (g) => { set('grades', f.grades.includes(g) ? f.grades.filter((x) => x !== g) : [...f.grades, g]); set('sectionIds', []); };
 
   const problem = () => validateForm(f, { me, nowMs: Date.now(), pinnedCount: pinnedCount(posts, editing?.id), editing });
   const save = async () => {
@@ -35,11 +41,11 @@ export default function AnnouncementForm({ me, editing, posts, onClose }) {
     setBusy(true); setErr('');
     const keys = postAudienceKeys(audienceOf(f));
     let count = null;
-    try { count = await announcements.audienceCount(keys); } catch { /* the count is a courtesy; still allow publishing */ }
+    try { count = await announcements.audienceCount(audienceOf(f)); } catch { /* the count is a courtesy; still allow publishing */ }
     setBusy(false);
-    const who = count == null ? 'the guardians' : `about ${count.toLocaleString('en-US')} guardian${count === 1 ? '' : 's'}`;
+    const who = count == null ? 'the selected recipients' : `about ${count.toLocaleString('en-US')} account${count === 1 ? '' : 's'}`;
     const verb = f.when === 'now' ? 'This will be visible to' : 'When it goes out, this will be visible to';
-    setConfirm({ message: `${verb} ${who} (${audienceLabel(keys)})${f.push ? ' and send them a notification' : ''}.` });
+    setConfirm({ message: `${verb} ${who} (${audienceLabel(keys, audienceOf(f))})${f.push ? ' and send them a notification' : ''}.` });
   };
 
   if (confirm) return (
@@ -62,11 +68,21 @@ export default function AnnouncementForm({ me, editing, posts, onClose }) {
       <fieldset disabled={live} style={{ border: 0, padding: 0, margin: 0 }}>
         <legend style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.inkMuted, marginBottom: 6 }}>Audience</legend>
         <div style={row}>
-          {canPostToAll(me) && <label style={check}><input type="checkbox" checked={f.all} onChange={(e) => set('all', e.target.checked)} /> All parents</label>}
+          {ANNOUNCEMENT_ROLES.map(role => <label key={role} style={check}><input type="checkbox" checked={roles.includes(role)} onChange={() => set('roles', roles.includes(role) ? roles.filter(value => value !== role) : [...roles, role])} />{ANNOUNCEMENT_ROLE_LABELS[role]}</label>)}
+        </div>
+        <div style={row}>
+          {canPostToAll(me) && <label style={check}><input type="checkbox" checked={f.all} onChange={(e) => { set('all', e.target.checked); set('sectionIds', []); }} /> All grades</label>}
           {!f.all && grades.map((g) => (
             <label key={g} style={check}><input type="checkbox" checked={f.grades.includes(g)} disabled={lockedGrade} onChange={() => toggleGrade(g)} /> Grade {g}</label>
           ))}
         </div>
+        <Field label="Sections (optional)">
+          <select className="sims-input" multiple aria-label="Narrow to sections" value={f.sectionIds || []} disabled={sectionResource.loading || !!sectionResource.error} onChange={event => set('sectionIds', [...event.target.selectedOptions].map(option => option.value))} style={{ width: '100%', minHeight: 90 }}>
+            {sections.map(section => <option key={section.id} value={section.id}>Grade {section.gradeLevel} · {section.name}</option>)}
+          </select>
+        </Field>
+        <p style={hint}>Leave sections unselected for every section in the selected grades. {sectionResource.error ? 'Section choices could not load.' : ''}</p>
+        {!!f.sectionIds?.length && <Btn variant="ghost" onClick={() => set('sectionIds', [])}>Clear sections</Btn>}
         <div style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.inkMuted, marginBottom: 6 }}>When</div>
         <div style={row}>
           <label style={check}><input type="radio" name="when" checked={f.when === 'now'} onChange={() => set('when', 'now')} disabled={!!editing} /> Publish now</label>

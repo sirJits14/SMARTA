@@ -5,7 +5,7 @@ import S from '../strings.js';
 import { nameCase } from '../lib/format.js';
 import { Btn, Card, Field, Inp, Sel, Banner } from '../components/ui.jsx';
 import { useDoc } from '../hooks/useDoc.js';
-import { RELATIONSHIPS, ADVISER } from '../lib/relationships.js';
+import { RELATIONSHIPS } from '../lib/relationships.js';
 
 const normalize = (v) => v.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 8);
 const pretty = (v) => (v.length > 4 ? `${v.slice(0, 4)}-${v.slice(4)}` : v);
@@ -46,7 +46,7 @@ export default function Activate({ user, profile, route, navigate }) {
       if (user && user.displayName !== name) updateProfile(user, { displayName: name }).catch(() => {});
       setDone(r.data);
     }
-    catch (e) { setErr(String(e?.code || '').endsWith('permission-denied') ? S.activateAdviserDeped : S.activateFailed); }
+    catch { setErr(S.activateFailed); }
     setBusy(false);
   };
 
@@ -88,14 +88,14 @@ export default function Activate({ user, profile, route, navigate }) {
       <Btn variant="ghost" onClick={openScan} disabled={loadingSheet || busy || skipping} style={{ width: '100%', marginBottom: 14 }}>{S.scanButton}</Btn>
       <Field label={S.activateCodeLabel}><Inp inputMode="text" autoCapitalize="characters" autoComplete="one-time-code" value={pretty(code)} onChange={(e) => setCode(normalize(e.target.value))} style={{ letterSpacing: '0.12em', fontSize: 20, textAlign: 'center' }} /></Field>
       <Field label={S.yourName} hint={S.yourNameHint}><Inp autoComplete="name" autoCapitalize="words" maxLength={120} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} /></Field>
-      <Field label={S.activateRelationship} hint={relationship === ADVISER ? S.activateAdviserHint : undefined}>
+      <Field label={S.activateRelationship}>
         <Sel value={relationship} onChange={(e) => setRelationship(e.target.value)}>
           {RELATIONSHIPS.map((r) => <option key={r}>{r}</option>)}
-          <option value={ADVISER}>{S.activateAdviserOption}</option>
         </Sel>
       </Field>
       <Btn onClick={submit} disabled={busy || skipping || code.length !== 8 || guardianName.trim().length < 2} style={{ width: '100%' }}>{S.activateButton}</Btn>
       <p style={{ textAlign: 'center' }}><a href="/request-access" onClick={(e) => { e.preventDefault(); navigate('/request-access'); }}>{S.activateNoSlip}</a></p>
+      {profile && <p style={{ textAlign: 'center' }}><a href="/school" onClick={e => { e.preventDefault(); navigate('/school'); }}>Request a school role</a></p>}
       {!profile && <Btn variant="ghost" onClick={skip} disabled={busy || skipping} style={{ width: '100%' }}>{skipping ? S.activateSkipping : S.activateSkip}</Btn>}
       {Sheet && <Sheet onCode={scanned} onClose={closeScan} />}
     </Card>

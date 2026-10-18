@@ -28,6 +28,11 @@ describe('pushPayload', () => {
 });
 
 describe('announcementPayload', () => {
+  it('opens school-only recipients in the School view', () => {
+    const notice = announcementPayload({ tokens: ['t'], announcementId: 'a', title: 'Staff notice', portalUrl: 'https://p.test', view: 'school' });
+    expect(notice.webpush.fcmOptions.link).toBe('https://p.test/announcements/a?view=school');
+    expect(notice.data.view).toBe('school');
+  });
   const p = announcementPayload({ tokens: ['t1'], announcementId: 'a1', title: 'No classes tomorrow', portalUrl: 'https://bnhs-parent.web.app' });
   it('names the announcement and links to it', () => {
     expect(ANNOUNCEMENT_PUSH_TITLE).toBe('BNHS announcement');

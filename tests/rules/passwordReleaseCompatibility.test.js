@@ -3,7 +3,7 @@ import { setup, seed, seedBaseline, as, ok, denied, STAFF, JHS, SHS, GLC8 } from
 
 // The separate release intentionally retains production's existing coordinator
 // read permissions. The normal root suite tests the held grade isolation instead.
-describe.runIf(process.env.SIMS_RULES_PATH?.endsWith('firestore.password-only.rules'))('password-only release compatibility', () => {
+describe.runIf(/firestore\.(password-only|school-family)\.rules$/.test(process.env.SIMS_RULES_PATH || ''))('production coordinator release compatibility', () => {
   let env;
   beforeAll(async () => { env = await setup(); });
   afterAll(async () => { await env.cleanup(); });
@@ -25,6 +25,10 @@ describe.runIf(process.env.SIMS_RULES_PATH?.endsWith('firestore.password-only.ru
     await seed(env, db => db.doc(`staff_profiles/${STAFF.uid}`).delete());
     await ok(as(env, STAFF).collection('students').get());
     await ok(as(env, STAFF).doc('students/S3').set({ firstName: 'Local test' }));
+  });
+  it.runIf(process.env.SIMS_RULES_PATH?.endsWith('firestore.school-family.rules'))('school year metadata remains callable-only in the Family/School release', async () => {
+    await denied(as(env, STAFF).collection('school_years').get());
+    await denied(as(env, STAFF).doc('school_years/2026-2027').set({ ended: true }));
   });
   for (const who of [JHS, SHS, GLC8]) {
     it(`${who.uid} retains production roster reads and own-profile GET only`, async () => {

@@ -17,31 +17,31 @@ function PostCard({ post, isNew, onOpen }) {
           {isNew && <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: T.onPrimary, background: T.primary, borderRadius: T.pill, padding: '2px 8px' }}>{S.announcementsNew}</span>}
         </span>
         <span style={{ display: '-webkit-box', fontSize: 14, color: T.ink, marginTop: 6, WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{post.body}</span>
-        <span style={{ display: 'block', fontSize: 12, color: T.inkMuted, marginTop: 8 }}>{postDateLabel(post.publishedAt)} · {audienceText(post.audienceKeys)}</span>
+        <span style={{ display: 'block', fontSize: 12, color: T.inkMuted, marginTop: 8 }}>{postDateLabel(post.publishedAt)} · {audienceText(post.audienceKeys, post.audience)}</span>
       </button>
     </Card>
   );
 }
 
-export default function Announcements({ user, profile, navigate }) {
-  const { rows, error } = useAnnouncements(profile, 50);
+export default function Announcements({ user, profile, navigate, view = 'family' }) {
+  const { rows, error } = useAnnouncements(profile, 50, view);
   // "New" compares against the last visit as it was when this screen
   // opened; the seen-at write below must not clear the markers mid-visit.
   const seenAtOpen = useRef(undefined);
   if (seenAtOpen.current === undefined && profile) seenAtOpen.current = profile.announcementsSeenAt ?? null;
   const marked = useRef(false);
   useEffect(() => {
-    if (!rows || error || marked.current) return;
+    if (!rows || error || marked.current || view === 'school') return;
     marked.current = true;
     updateDoc(doc(db, 'guardians', user.uid), { announcementsSeenAt: serverTimestamp() }).catch(() => {});
-  }, [rows, error, user.uid]);
+  }, [rows, error, user.uid, view]);
 
-  const header = <PageHeader title={S.announcementsTitle} />;
+  const header = <PageHeader title={view === 'school' ? 'School notices' : S.announcementsTitle} />;
   if (rows === undefined) return <>{header}<Spinner label={S.loading} /></>;
   if (error) return <>{header}<EmptyState hint={S.announcementsError} /></>;
   const { pinned, rest } = splitForList(rows, Date.now());
   if (!pinned.length && !rest.length) return <>{header}<EmptyState hint={S.announcementsEmpty} /></>;
-  const card = (p) => <PostCard key={p.id} post={p} isNew={isNewSince(p, seenAtOpen.current)} onOpen={() => navigate(`/announcements/${p.id}`)} />;
+  const card = (p) => <PostCard key={p.id} post={p} isNew={view === 'family' && isNewSince(p, seenAtOpen.current)} onOpen={() => navigate(`/announcements/${p.id}${view === 'school' ? '?view=school' : ''}`)} />;
   return (
     <>
       {header}

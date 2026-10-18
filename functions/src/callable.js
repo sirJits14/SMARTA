@@ -92,6 +92,25 @@ async function loadStaffIdentity(db, auth, req, allowPasswordChange) {
 }
 
 export const staffIdentity = (db, auth, req) => loadStaffIdentity(db, auth, req, false);
+// Both existing SIMS accounts and verified portal accounts use school tools.
+// Existing staff credentials retain the password/session gate even when their
+// email has not been verified (SIMS provisions those accounts administratively).
+export async function schoolIdentity(db, auth, req) {
+  if (!req.app) throw new CallableError('failed-precondition', 'App Check required');
+  if (!req.auth) throw new CallableError('unauthenticated', 'Sign in required');
+  const email = await staffProfileEmail(db, req);
+  const profile = email ? (await db.doc(`users/${email}`).get()).data() : null;
+  if (profile && (!profile.uid || profile.uid === req.auth.uid)) {
+    return { ...(await staffIdentity(db, auth, req)), authTime: req.auth.token.auth_time };
+  }
+  const identity = guardianIdentity(req);
+  const user = await auth.getUser(identity.uid);
+  if (user.disabled || !user.emailVerified || user.email?.toLowerCase() !== identity.email?.toLowerCase()
+    || user.tokensValidAfterTime && (!Number.isSafeInteger(req.auth.token.auth_time) || req.auth.token.auth_time * 1000 < Date.parse(user.tokensValidAfterTime))) {
+    throw new CallableError('unauthenticated', SESSION_ENDED);
+  }
+  return { ...identity, authTime: req.auth.token.auth_time };
+}
 // Used only by changeOwnPasswordFn, never selected through client data.
 export const passwordChangeIdentity = async (db, auth, req) => {
   const identity = await loadStaffIdentity(db, auth, req, true);

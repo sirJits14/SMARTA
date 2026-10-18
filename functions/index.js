@@ -5,7 +5,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineString } from 'firebase-functions/params';
 import { db, auth, messaging } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
-import { guardianIdentity, staffIdentity, passwordChangeIdentity, assertUnrestrictedSession, adminIdentity, toHttpsError } from './src/callable.js';
+import { guardianIdentity, staffIdentity, schoolIdentity, passwordChangeIdentity, assertUnrestrictedSession, adminIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, reissueActivationCode, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
 import { endSchoolYear } from './src/handlers/schoolYear.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted, changeLinkRelationship } from './src/handlers/links.js';
@@ -18,6 +18,10 @@ import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 import { handleGuardianLinkWrite } from './src/handlers/guardianAudience.js';
 import { handleAnnouncementWrite, publishDueAnnouncements, announcementAudienceCount } from './src/handlers/announcements.js';
 import { getCoordinatorSectionOptions, updateCoordinatorSection } from './src/handlers/sections.js';
+import { activateFamilyCode, retiredRelationshipChange } from './src/handlers/portalAccess.js';
+import { getSchoolContext, requestSchoolRole, resolveSchoolRole, assignSchoolRole, revokeSchoolRole } from './src/handlers/schoolAccess.js';
+import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection } from './src/handlers/sessionAttendance.js';
+import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -40,7 +44,11 @@ const guardianCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
   } catch (e) { throw toHttpsError(e); }
 });
 const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
-  try { return await fn({ ...callDeps(), ...(await staffIdentity(db, auth, req)) }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+  try { return await fn({ ...callDeps(), ...(await staffIdentity(db, auth, req)), authTime: req.auth.token.auth_time }, req.data || {}); } catch (e) { throw toHttpsError(e); }
+});
+const schoolCall = fn => onCall({ enforceAppCheck: true }, async req => {
+  try { return await fn({ ...callDeps(), ...(await schoolIdentity(db, auth, req)) }, req.data || {}); }
+  catch (e) { throw toHttpsError(e); }
 });
 // Account management and every page behind it (Guardians, Settings) is
 // administrator-only; coordinators reach none of these.
@@ -51,14 +59,14 @@ const adminCall = (fn) => onCall({ enforceAppCheck: true, timeoutSeconds: 60 }, 
 export const issueActivationCodesFn = adminCall(issueActivationCodes);
 export const reissueActivationCodeFn = adminCall(reissueActivationCode);
 export const revokeCodeFn = adminCall(revokeCode);
-export const activateCodeFn = guardianCall(activateCode);
+export const activateCodeFn = guardianCall(activateFamilyCode);
 export const acceptConsentFn = guardianCall(acceptConsent);
 export const endSchoolYearFn = adminCall(endSchoolYear);
 
 export const requestAccessFn = guardianCall(requestAccess);
 export const resolveAccessRequestFn = adminCall(resolveAccessRequest);
 export const revokeLinkFn = adminCall(revokeLink);
-export const changeLinkRelationshipFn = guardianCall(changeLinkRelationship);
+export const changeLinkRelationshipFn = guardianCall(retiredRelationshipChange);
 export const setActivationRestrictedFn = adminCall(setActivationRestricted);
 export const registerKioskFn = adminCall(registerKiosk);
 export const deactivateKioskFn = adminCall(deactivateKiosk);
@@ -87,6 +95,21 @@ export const changeOwnPasswordFn = onCall({ enforceAppCheck: true, timeoutSecond
 export const announcementAudienceCountFn = staffCall(announcementAudienceCount);
 export const getCoordinatorSectionOptionsFn = staffCall(getCoordinatorSectionOptions);
 export const updateCoordinatorSectionFn = staffCall(updateCoordinatorSection);
+
+export const getSchoolContextFn = schoolCall(getSchoolContext);
+export const requestSchoolRoleFn = schoolCall(requestSchoolRole);
+export const resolveSchoolRoleFn = schoolCall(resolveSchoolRole);
+export const assignSchoolRoleFn = schoolCall(assignSchoolRole);
+export const revokeSchoolRoleFn = schoolCall(revokeSchoolRole);
+export const getSchoolRosterFn = schoolCall(getSchoolRoster);
+export const setSessionAbsenceFn = schoolCall(setSessionAbsence);
+export const getFamilyAttendanceFn = guardianCall(getFamilyAttendance);
+export const getPortalAnnouncementsFn = schoolCall(getPortalAnnouncements);
+export const getPortalAnnouncementFn = schoolCall(getPortalAnnouncement);
+export const savePortalAnnouncementFn = staffCall(savePortalAnnouncement);
+export const onAttendanceCorrectionCreated = onDocumentCreated(
+  { document: 'attendance_corrections/{id}', retry: true }, event =>
+    handleAttendanceCorrection(deps(), { id: event.params.id, data: event.data?.data() }));
 
 const jobDeps = () => ({ db, auth, messaging, portalUrl: PORTAL_URL.value(), now: () => new Date() });
 const SCHED = { timeZone: 'Asia/Manila', retryCount: 1 };

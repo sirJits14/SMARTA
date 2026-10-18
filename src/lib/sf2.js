@@ -68,7 +68,13 @@ function writeRoster(ws, students, schoolDays, docsByDate, startRow, colOffset) 
     const r = ws.getRow(startRow + i);
     r.getCell(1).value = i + 1; // A: running count within each gender
     r.getCell(2).value = fullName(row.student); // B (anchor of the B:C merge)
-    row.marks.forEach((mark, dayIdx) => { r.getCell(4 + colOffset + dayIdx).value = mark; }); // D..AB, shifted by the Monday-alignment offset
+    row.marks.forEach((mark, dayIdx) => {
+      const cell = r.getCell(4 + colOffset + dayIdx);
+      // Preserve the narrow day columns. Session details stay in the cell note
+      // and fractional totals remain numeric for downstream calculations.
+      cell.value = mark.startsWith('AM:') ? '½A' : mark;
+      if (mark.startsWith('AM:')) cell.note = `Half-day absence. ${mark}`;
+    }); // D..AB, shifted by the Monday-alignment offset
     r.getCell(29).value = row.absentTotal; // AC
     r.getCell(30).value = row.tardyTotal; // AD
   });

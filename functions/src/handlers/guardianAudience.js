@@ -1,4 +1,5 @@
 import { audienceKeysFor } from '../../shared/announcements.js';
+import { isFamilyLink } from '../../shared/schoolAccess.js';
 
 // Rebuilds guardians/{uid}.audienceKeys from the grades of the guardian's
 // active links (announcements spec, "Guardian audience keys"). Never
@@ -12,6 +13,7 @@ export async function refreshGuardianAudience(db, uid) {
   if (!guardian.exists) return null;
   const grades = [];
   for (const l of links.docs) {
+    if (!isFamilyLink(l.data())) continue;
     const { studentId, schoolYear } = l.data();
     const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
     let grade = enrollment?.gradeLevel;
@@ -30,7 +32,8 @@ export function handleGuardianLinkWrite(db, { before, after }) {
   const uid = after?.guardianUid || before?.guardianUid;
   if (!uid) return null;
   const same = before && after && before.status === after.status
-    && before.studentId === after.studentId && before.schoolYear === after.schoolYear;
+    && before.studentId === after.studentId && before.schoolYear === after.schoolYear
+    && before.slot === after.slot && before.relationship === after.relationship;
   if (same) return null;
   return refreshGuardianAudience(db, uid);
 }

@@ -2,10 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const fs = vi.hoisted(() => {
   const records = new Map();
+  const deleted = Symbol('deleteField');
   const ref = (path) => ({ path, id: path.split('/').at(-1) });
   const snap = (r) => ({ id: r.id, exists: () => records.has(r.path), data: () => records.get(r.path) });
-  const set = (r, value, options) => records.set(r.path, options?.merge ? { ...records.get(r.path), ...value } : value);
+  const set = (r, value, options) => {
+    const next = options?.merge ? { ...records.get(r.path), ...value } : { ...value };
+    for (const key of Object.keys(next)) if (next[key] === deleted) delete next[key];
+    records.set(r.path, next);
+  };
   return { records, ref,
+    deleteField: () => deleted,
     collection: (_db, path) => ref(path),
     doc: (db, path, id) => id === undefined ? ref(`${db.path}/new`) : ref(`${path}/${id}`),
     setDoc: async (...args) => set(...args),

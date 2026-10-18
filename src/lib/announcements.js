@@ -1,5 +1,6 @@
 import { TITLE_MAX, BODY_MAX, MAX_PINNED, canPostToAll, postableGrades, coversPostKeys, postAudienceKeys, toMillis, manilaDateTime, endOfManilaDay } from '../../shared/announcements.js';
 import { manilaDate, manilaTime } from '../../shared/dates.js';
+import { ANNOUNCEMENT_ROLES, ANNOUNCEMENT_ROLE_LABELS } from '../../shared/announcementAudience.js';
 
 // Pure helpers behind the Announcements page (spec 2026-10-05).
 export const TABS = [['live', 'Live'], ['scheduled', 'Scheduled'], ['ended', 'Ended']];
@@ -13,7 +14,8 @@ export function postsForTab(posts, tab) {
   return rows.sort(by('updatedAt', -1));
 }
 
-export function audienceLabel(keys = []) {
+export function audienceLabel(keys = [], audience) {
+  if (audience?.roles) return `${audience.roles.map(role => ANNOUNCEMENT_ROLE_LABELS[role]).join(', ')} · ${keys.includes('all') ? 'All grades' : keys.map(key => `Grade ${key.slice(1)}`).join(' · ')}${audience.sectionIds?.length ? ` · ${audience.sectionIds.length} selected section${audience.sectionIds.length === 1 ? '' : 's'}` : ''}`;
   if (keys.includes('all')) return 'All parents';
   return keys.map((k) => `Grade ${k.slice(1)}`).join(' · ');
 }
@@ -31,17 +33,19 @@ export function pushStatusText(p) {
 export const pinnedCount = (posts, exceptId) =>
   posts.filter((p) => (p.status === 'published' || p.status === 'scheduled') && p.pinned && p.id !== exceptId).length;
 
-export const audienceOf = (f) => (f.all ? { all: true } : { grades: [...f.grades].map(Number).sort((a, b) => a - b) });
+export const audienceOf = (f) => ({ ...(f.all ? { all: true } : { grades: [...f.grades].map(Number).sort((a, b) => a - b) }),
+  ...(f.roles ? { roles: [...f.roles] } : {}), ...(f.sectionIds?.length ? { sectionIds: [...f.sectionIds] } : {}) });
 
 export function emptyForm(me) {
   const grades = postableGrades(me);
-  return { title: '', body: '', all: false, grades: grades.length === 1 ? [...grades] : [], when: 'now', date: '', time: '', expires: '', pinned: false, push: false };
+  return { title: '', body: '', all: false, grades: grades.length === 1 ? [...grades] : [], roles: ['family'], sectionIds: [], when: 'now', date: '', time: '', expires: '', pinned: false, push: false };
 }
 
 export function formFromPost(p) {
   const publish = toMillis(p.publishAt), expires = toMillis(p.expiresAt);
   return {
     title: p.title, body: p.body, all: !!p.audience?.all, grades: p.audience?.grades ? [...p.audience.grades] : [],
+    roles: [...(p.audience?.roles || ['family'])], sectionIds: [...(p.audience?.sectionIds || [])],
     when: p.status === 'scheduled' ? 'schedule' : 'now',
     date: publish == null ? '' : manilaDate(new Date(publish)), time: publish == null ? '' : manilaTime(new Date(publish)),
     expires: expires == null ? '' : manilaDate(new Date(expires)),
@@ -60,6 +64,7 @@ export function validateForm(f, { me, nowMs, pinnedCount: pins, editing }) {
   const live = editing?.status === 'published';
   let publishMs = nowMs;
   if (!live) {
+    if (f.roles && (!f.roles.length || f.roles.some(role => !ANNOUNCEMENT_ROLES.includes(role)))) return 'Choose at least one recipient role.';
     if (f.all && !canPostToAll(me)) return 'Only administrators can post to all parents.';
     const keys = postAudienceKeys(audienceOf(f));
     if (!keys.length) return 'Choose who the announcement is for.';

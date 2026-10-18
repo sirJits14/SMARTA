@@ -28,6 +28,18 @@ describe('SF2 workbook export', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it('keeps half-day absence totals and readable session detail after saving', async () => {
+    const docsByDate = { '2026-07-01': { marks: { M1: 'L' }, sessionOverrides: { M1: { am: { absent: true } } } } };
+    const workbook = await buildSF2Workbook({ ...options, roster: students('M', 1), docsByDate });
+    const saved = new ExcelJS.Workbook();
+    await saved.xlsx.load(await workbook.xlsx.writeBuffer());
+    const ws = saved.worksheets[0];
+    expect(ws.getCell('F14').value).toBe('½A');
+    expect(ws.getCell('F14').note).toContain('AM:X PM:L');
+    expect(ws.getCell('AC14').value).toBe(.5);
+    expect(ws.getCell('F35').value).toBe(.5);
+  });
+
   it.each([
     [21, 25, 35, 36, 61, 62, 70, 88],
     [22, 26, 36, 37, 63, 64, 72, 90],
