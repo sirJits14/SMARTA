@@ -7,6 +7,8 @@ import { SettingsGroup, SettingsRow } from '../components/SettingsList.jsx';
 import { useLinks } from '../hooks/useLinks.js';
 import { useQuery, useDoc } from '../hooks/useDoc.js';
 import { useTheme } from '../hooks/useTheme.js';
+import { useSchoolContext } from '../hooks/useSchoolContext.js';
+import { canUseSchool, hasClass, schoolHome } from '../lib/portalMode.js';
 import { THEME_LABEL } from '../lib/themeLabels.js';
 import { notificationState } from '../lib/notificationState.js';
 import { useDeviceStatus } from '../lib/notifications.js';
@@ -24,6 +26,7 @@ import InstallPage from './settings/InstallPage.jsx';
 import HelpPage from './settings/HelpPage.jsx';
 import AboutPage from './settings/AboutPage.jsx';
 import DevelopersPage from './settings/DevelopersPage.jsx';
+import SchoolModePage from './settings/SchoolModePage.jsx';
 import { BUILD } from '../lib/buildInfo.js';
 
 // Sub-pages by route segment (/settings/<key>). A main-list row with no page
@@ -31,32 +34,41 @@ import { BUILD } from '../lib/buildInfo.js';
 const PAGES = {
   profile: ProfilePage, notifications: NotificationsPage, appearance: AppearancePage, install: InstallPage,
   learners: LearnersPage, reports: ReportsPage, help: HelpPage, privacy: PrivacyPage, about: AboutPage,
-  developers: DevelopersPage,
+  developers: DevelopersPage, mode: SchoolModePage,
 };
 
 // One mounted screen for the list and every sub-page (same route name), so
 // the listeners below are set up once while the parent moves between them.
-export default function Settings({ user, profile, route, navigate }) {
+export default function Settings({ user, profile, route, navigate, mode, setMode }) {
   const { links } = useLinks(user.uid);
   const device = useDeviceStatus(user.uid);
   const portal = useDoc('settings/parent_portal').data;
   const { rows: reports } = useQuery(() => query(collection(db, 'reports'), where('guardianUid', '==', user.uid), limit(10)), [user.uid]);
   const accountEnabled = profile?.notificationsEnabled !== false;
+  const school = useSchoolContext(user.uid);
+  const allowed = canUseSchool(school.data);
+  useEffect(() => { if (school.data && !allowed && mode.view === 'school') setMode({ view: 'family', hasClass: false }); }, [school.data, allowed, mode.view, setMode]);
+  const chooseMode = (view) => {
+    const next = view === 'school' ? { view: 'school', hasClass: hasClass(school.data) } : { view: 'family', hasClass: false };
+    setMode(next);
+    navigate(view === 'school' ? schoolHome(next) : '/');
+  };
   const ctx = {
     user, profile, navigate, links, device, portal, reports, accountEnabled,
+    mode, chooseMode, schoolAllowed: allowed,
     announcementPush: profile?.announcementPushEnabled !== false,
     state: notificationState({ ...device, accountEnabled }),
     savedName: profile?.displayName || user.displayName || '',
   };
   const section = route.params.section;
-  const Page = section ? PAGES[section] : null;
-  useEffect(() => { if (section && !Page) navigate('/settings', { replace: true }); }, [section, Page, navigate]);
+  const Page = section && (section !== 'mode' || allowed) ? PAGES[section] : null;
+  useEffect(() => { if (section && !Page && !(section === 'mode' && school.loading)) navigate('/settings', { replace: true }); }, [section, Page, navigate]);
   if (Page) return <Page ctx={ctx} back={() => navigate('/settings')} />;
   return <SettingsHome ctx={ctx} />;
 }
 
 function SettingsHome({ ctx }) {
-  const { user, navigate, links, reports, state, savedName } = ctx;
+  const { user, navigate, links, reports, state, savedName, mode, schoolAllowed } = ctx;
   const { pref } = useTheme();
   const hidden = SECTIONS.filter((s) => !PAGES[s.key] || (s.key === 'install' && isStandalone())).map((s) => s.key);
   const values = {
@@ -73,6 +85,11 @@ function SettingsHome({ ctx }) {
         <SettingsRow variant="profile" leading={<span className="settings-avatar" aria-hidden="true">{initials(savedName || user.email)}</span>}
           label={nameCase(savedName) || user.email} subtitle={savedName ? user.email : undefined} onClick={() => navigate('/settings/profile')} />
       </SettingsGroup>
+      {schoolAllowed && (
+        <SettingsGroup>
+          <SettingsRow tile="teal" icon="class" label={S.modeTitle} value={mode.view === 'school' ? S.modeSchool : S.modeFamily} onClick={() => navigate('/settings/mode')} />
+        </SettingsGroup>
+      )}
       {sectionGroups(hidden).map((group) => (
         <SettingsGroup key={group[0].key}>
           {group.map((s) => <SettingsRow key={s.key} tile={s.tile} icon={s.icon} label={s.title} value={values[s.key]} onClick={() => navigate(`/settings/${s.key}`)} />)}

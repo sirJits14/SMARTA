@@ -9,7 +9,7 @@ export function useSchoolContext(uid, enabled = true) {
   const refresh = useCallback(async () => {
     const request = ++sequence.current;
     if (!uid || !enabled) { setState({ data: null, loading: false, error: '' }); return; }
-    setState({ data: null, loading: true, error: '' });
+    setState((current) => ({ data: current.data, loading: true, error: '' }));
     try {
       const result = await callable('getSchoolContextFn')({});
       if (request === sequence.current) setState({ data: result.data, loading: false, error: '' });

@@ -217,6 +217,14 @@ const S = {
   navInbox: 'Inbox',
   navNotices: 'Notices',
   navSettings: 'Settings',
+  navClass: 'Class',
+  modeTitle: 'Use the app as',
+  modeFamily: 'Family',
+  modeSchool: 'School',
+  modeFamilyHint: 'Your linked learners, their gate activity and notices.',
+  modeSchoolHint: 'Your class and school notices.',
+  modeInUse: 'In use',
+  modeSavedHere: 'Saved on this device.',
   notFound: 'That page does not exist.',
 };
 export default S;
