@@ -6,6 +6,7 @@ import { sessionAttendance } from '../../shared/sessionAttendance.js';
 import { manilaDate } from '../../shared/dates.js';
 import { fullName } from '../lib/format.js';
 import { sendToGuardian } from './push.js';
+import { nextNotice, NOTIFY_DELAY_MS } from '../lib/attendanceNotice.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
@@ -89,8 +90,10 @@ export async function setSessionAbsence(deps, input) {
     const id = `${actor.uid}_${operationId}`;
     const operationRef = deps.db.doc(`attendance_corrections/${id}`);
     const attendanceRef = deps.db.doc(`student_attendance/${sectionId}_${date}`);
-    const [operation, snap, enrollment, student] = await Promise.all([
+    const noticeRef = deps.db.doc(`attendance_notifications/${studentId}_${date}_${session}`);
+    const [operation, snap, enrollment, student, notice] = await Promise.all([
       tx.get(operationRef), tx.get(attendanceRef), tx.get(deps.db.doc(`enrollments/${studentId}_${section.schoolYear}`)), tx.get(deps.db.doc(`students/${studentId}`)),
+      tx.get(noticeRef),
     ]);
     if (!student.exists || enrollment.data()?.status !== 'enrolled' || enrollment.data()?.sectionId !== sectionId) fail('permission-denied', 'Learner is not enrolled in this section.');
     const attendance = snap.data(); validAttendance(attendance, section, date);
@@ -117,7 +120,12 @@ export async function setSessionAbsence(deps, input) {
       targetType: 'student_attendance', targetId: `${sectionId}_${date}`, at: FieldValue.serverTimestamp(),
       details: { studentId, sectionId, date, session, previous: current[session] || null, absent, reason, revision: override.revision },
     });
-    tx.create(operationRef, { ...audit, fingerprint, result, learnerName: fullName(student.data()), status: 'pending' });
+    const learnerName = fullName(student.data());
+    tx.set(noticeRef, { studentId, sectionId, schoolYear: section.schoolYear, date, session, absent, revision: override.revision, learnerName,
+      correctionId: id, ...nextNotice(notice.data(), { previousAbsent: current[session]?.absent === true, absent }),
+      notifyAfter: Timestamp.fromMillis(changedAt.toMillis() + NOTIFY_DELAY_MS), updatedAt: FieldValue.serverTimestamp() });
+    // Families hear about it from the outbox after the undo window, not from this record.
+    tx.create(operationRef, { ...audit, fingerprint, result, learnerName, status: 'done', deferred: true });
     return result;
   }, { maxAttempts: 10 });
 }
@@ -144,16 +152,12 @@ export async function getFamilyAttendance(deps, { studentId, date }) {
   });
 }
 
-// Durable outbox written atomically with the correction. Per-recipient claims
-// are at most once: a trigger retry never sends an already claimed push again.
-export async function handleAttendanceCorrection(deps, { id }) {
-  const ref = deps.db.doc(`attendance_corrections/${id}`);
-  const data = (await ref.get()).data();
-  if (!data || data.status === 'done') return { outcome: 'duplicate' };
+// Per-recipient claims are at most once: the inbox item is created in the
+// same transaction that decides to push, so a retry never pushes twice.
+async function notifyFamilies(deps, data, inboxId) {
   const links = await deps.db.collection('guardian_links').where('studentId', '==', data.studentId).where('status', '==', 'active').get();
   const recipients = new Map(links.docs.filter(l => activeFamily(l.data(), l.data().guardianUid, data.studentId, data.schoolYear)).map(l => [l.data().guardianUid, l]));
   for (const [uid, link] of recipients) {
-    const inboxId = `correction_${id}`;
     const inboxRef = deps.db.doc(`guardians/${uid}/inbox/${inboxId}`);
     const claim = await deps.db.runTransaction(async tx => {
       const [existing, liveLink, settings, portal, guardian, enrollment, devices] = await Promise.all([
@@ -177,6 +181,39 @@ export async function handleAttendanceCorrection(deps, { id }) {
       await inboxRef.update({ pushStatus: result.status, pushSentAt: FieldValue.serverTimestamp() });
     }
   }
+}
+
+// Corrections made before the outbox existed still notify from this trigger.
+// New corrections are created already done and are sent by the sweep below.
+export async function handleAttendanceCorrection(deps, { id }) {
+  const ref = deps.db.doc(`attendance_corrections/${id}`);
+  const data = (await ref.get()).data();
+  if (!data || data.status === 'done') return { outcome: 'duplicate' };
+  await notifyFamilies(deps, data, `correction_${id}`);
   await ref.update({ status: 'done', completedAt: FieldValue.serverTimestamp() });
   return { outcome: 'processed' };
+}
+
+// Runs every minute. 'sending' is retried because inbox claims are idempotent.
+export async function sendDueAttendanceUpdates(deps) {
+  const now = (deps.now || (() => new Date()))().getTime();
+  const due = await deps.db.collection('attendance_notifications').where('status', 'in', ['pending', 'sending']).limit(200).get();
+  let processed = 0;
+  for (const doc of due.docs) {
+    const claimed = await deps.db.runTransaction(async tx => {
+      const live = (await tx.get(doc.ref)).data();
+      if (!live || !['pending', 'sending'].includes(live.status) || live.notifyAfter.toMillis() > now) return null;
+      tx.update(doc.ref, { status: 'sending', claimedAt: FieldValue.serverTimestamp() });
+      return live;
+    });
+    if (!claimed) continue;
+    await notifyFamilies(deps, claimed, `correction_${claimed.correctionId}`);
+    await deps.db.runTransaction(async tx => {
+      const live = (await tx.get(doc.ref)).data();
+      // A newer correction may have re-queued this session while we were sending.
+      if (live?.status === 'sending' && live.correctionId === claimed.correctionId) tx.update(doc.ref, { status: 'done', completedAt: FieldValue.serverTimestamp() });
+    });
+    processed++;
+  }
+  return { processed };
 }

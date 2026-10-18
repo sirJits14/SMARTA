@@ -20,7 +20,7 @@ import { handleAnnouncementWrite, publishDueAnnouncements, announcementAudienceC
 import { getCoordinatorSectionOptions, updateCoordinatorSection } from './src/handlers/sections.js';
 import { activateFamilyCode, retiredRelationshipChange } from './src/handlers/portalAccess.js';
 import { getSchoolContext, requestSchoolRole, resolveSchoolRole, assignSchoolRole, revokeSchoolRole } from './src/handlers/schoolAccess.js';
-import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection } from './src/handlers/sessionAttendance.js';
+import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
@@ -118,6 +118,7 @@ export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED, tim
 export const pruneDevicesJob = onSchedule({ schedule: '40 1 * * *', ...SCHED }, () => pruneDevices(jobDeps()));
 export const reconcileEventsJob = onSchedule({ schedule: '20 2 * * *', ...SCHED }, () => reconcileEvents(jobDeps()));
 export const publishAnnouncementsJob = onSchedule({ schedule: '*/5 * * * *', ...SCHED }, () => publishDueAnnouncements(jobDeps()));
+export const sendAttendanceUpdatesJob = onSchedule({ schedule: '* * * * *', ...SCHED }, () => sendDueAttendanceUpdates(jobDeps()));
 
 export const onParentPortalSettingsChanged = onDocumentWritten('settings/parent_portal', (event) =>
   auditSettingsChange(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));
