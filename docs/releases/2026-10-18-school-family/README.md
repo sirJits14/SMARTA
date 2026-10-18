@@ -53,6 +53,16 @@ Use `firebase.school-family-release.json` with project `bnhs-sims`. Deploy index
 and wait for READY; deploy only the 23 names in the generated
 `backend/backend-source-manifest.json` `functionsToDeploy` array. Do not deploy
 all functions. Deploy the compatible rules, then both hosting targets together.
+The first deployment requires Firebase's `--force` flag to acknowledge the new
+correction trigger's retry policy. Its operation and recipient claims are
+idempotent and covered by emulator tests. Keep the explicit function selection;
+the flag is not authorization to delete or redeploy unrelated functions.
+
+For non-interactive Functions deployment, supply the existing production
+`PORTAL_URL` in the ignored prepared Functions `.env.bnhs-sims` file. The value
+for this release is `https://bnhs-parent.web.app`; verify it against the current
+deployment before reuse. Firebase requires the explicit parameter even though
+the source declares a default. Do not copy unrelated live environment values.
 
 The Parent app must be rebuilt after the integration commit so Settings → About
 identifies the published source. Users with older open clients need to refresh
