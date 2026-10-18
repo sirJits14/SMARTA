@@ -219,7 +219,7 @@ export async function sendDueAttendanceUpdates(deps) {
       });
       processed++;
     } catch (error) {
-      logWarn('attendance_update_failed', { id: doc.id, message: error.message });
+      logWarn('attendance_update_failed', { id: doc.id, message: error?.message });
     }
   }
   return { processed };
