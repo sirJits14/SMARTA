@@ -1,7 +1,7 @@
 # Parent Session Attendance Sheet — Design
 
 Date: 2026-10-18
-Status: Approved (design); spec pending user review
+Status: Approved
 Area: `parent/` (Learner History), `functions/` (`getFamilyAttendanceFn`)
 
 ## Problem
@@ -49,15 +49,18 @@ single-session data is stored in the `am` slot.
 
 ### 2. Session attendance bottom sheet
 
-- New `parent/src/components/SessionSheet.jsx`, lazy-loaded from History
-  (keeps it out of the eager bundle, like `FlagSheet`). It is portalled to
-  `<body>`, with a dimmed backdrop and a bottom-anchored panel up to 480 px wide,
-  following `RelationshipSheet`.
+- New `parent/src/components/SessionSheet.jsx`: a generic bottom-sheet shell
+  (title, Close, children), imported by History. History is already a
+  route-split chunk, so the sheet stays out of the eager bundle without
+  `lazy()`. It is portalled to `<body>`, with a dimmed backdrop and a
+  bottom-anchored panel up to 480 px wide, following `RelationshipSheet`.
 - Contents: title "Session attendance", the existing date field
   ("School day · Manila", max = today), then the session rows. The fetch,
   retry, error and loading behavior of `FamilySessionDetails` is reused as is.
   `FamilySessionDetails` becomes the sheet's body: it drops its outer `Card`
-  and `h2`, and the sheet provides the title.
+  and `h2`, and the sheet provides the title. The row rendering moves into a
+  Firebase-free `SessionRows.jsx`, so the browser preview can render it with
+  synthetic data.
 - Closes on: Close button, backdrop tap, Escape. Focus moves into the dialog on
   open and returns to the Sessions pill on close. The bubble scroll position is
   untouched because the sheet is an overlay.
