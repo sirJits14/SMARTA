@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import S from '../strings.js';
 import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
 import Icon from '../components/Icon.jsx';
@@ -9,6 +10,10 @@ import { orderLearners, listName } from '../lib/learnerOrder.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
 import { notificationState } from '../lib/notificationState.js';
 import { useDeviceStatus } from '../lib/notifications.js';
+import { isDepedEmail } from '../lib/relationships.js';
+
+// Only DepEd accounts with a link from an old adviser slip ever load this.
+const LegacyAdviserLinks = lazy(() => import('../components/LegacyAdviserLinks.jsx'));
 
 // A Messages-style row: name and today's latest scan time on top, then what
 // happened and the learner's section as the muted preview. The icon in the
@@ -48,8 +53,8 @@ function LearnerRow({ link, data, error, navigate }) {
   );
 }
 
-export default function Home({ user, profile, navigate }) {
-  const { links } = useLinks(user.uid);
+export default function Home({ user, profile, route, navigate }) {
+  const { links, adviserLinks } = useLinks(user.uid);
   const docs = useDocs((links || []).map((l) => `learners/${l.studentId}`));
   const device = useDeviceStatus(user.uid);
   const notif = notificationState({ ...device, accountEnabled: profile?.notificationsEnabled !== false });
@@ -60,6 +65,7 @@ export default function Home({ user, profile, navigate }) {
   return (
     <>
       {header}
+      {route?.query.changed === 'adviser' && <Banner tone="info">{S.relMovedToAdviser}</Banner>}
       {entries.length > 0 && notif === 'off' && <Banner action={<Btn onClick={() => navigate('/settings')} style={{ padding: '6px 12px', minHeight: 36 }}>{S.notifBannerButton}</Btn>}>{S.notifBannerTitle}</Banner>}
       {entries.length === 0 && <EmptyState title={S.homeNoLinks} hint={S.homeLinkHint} />}
       {entries.length === 0 && <Btn onClick={() => navigate('/activate')} style={{ width: '100%' }}>{S.homeLinkLearners}</Btn>}
@@ -68,6 +74,7 @@ export default function Home({ user, profile, navigate }) {
           {orderLearners(entries).map((e) => <LearnerRow key={e.link.id} {...e} navigate={navigate} />)}
         </ul>
       )}
+      {isDepedEmail(user.email) && adviserLinks?.length > 0 && <Suspense fallback={null}><LegacyAdviserLinks links={adviserLinks} /></Suspense>}
     </>
   );
 }

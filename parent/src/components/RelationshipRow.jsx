@@ -1,10 +1,12 @@
 import S from '../strings.js';
 import { T } from '../styles.js';
+import { isFamilyLink } from '../../../shared/schoolAccess.js';
 
 // Under the learner's header, for DepEd accounts only (spec 2026-10-17 §2).
-// Hidden unless the link is active; the screen's own banner covers ended access.
+// Hidden unless the link is an active family link: the screen's own banner
+// covers ended access, and old adviser links can never be changed.
 export default function RelationshipRow({ link, onChange }) {
-  if (!link || link.status !== 'active') return null;
+  if (!isFamilyLink(link)) return null;
   const changed = link.relationshipChangedFor === link.schoolYear;
   return (
     <p className="relationship-row" style={{ margin: '0 0 12px', fontSize: 14, color: T.inkMuted, textAlign: 'center' }}>

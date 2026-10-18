@@ -13,6 +13,7 @@ export const call = {
   endSchoolYear: fn('endSchoolYearFn'),
   resolveAccessRequest: fn('resolveAccessRequestFn'),
   revokeLink: fn('revokeLinkFn'),
+  correctLinkRelationship: fn('correctLinkRelationshipFn'),
   setActivationRestricted: fn('setActivationRestrictedFn'),
   registerKiosk: fn('registerKioskFn'),
   deactivateKiosk: fn('deactivateKioskFn'),

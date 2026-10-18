@@ -189,7 +189,7 @@ export async function activateCode(ctx, data) {
       expiredAt: FieldValue.delete(), expiredReason: FieldValue.delete(),
       // A link that was not active starts clean: last year's (or staff-fixed)
       // change note goes, relationshipChangedFor stays for the yearly limit.
-      ...(alreadyActive ? {} : { previousRelationship: FieldValue.delete(), relationshipChangedAt: FieldValue.delete() }),
+      ...(alreadyActive ? {} : { previousRelationship: FieldValue.delete(), relationshipChangedAt: FieldValue.delete(), relationshipChangedBy: FieldValue.delete(), relationshipChangeReason: FieldValue.delete() }),
     }, { merge: true });
     if (!profile.exists) {
       tx.set(profileRef, { email, displayName: guardianName, consentAcceptedAt: FieldValue.serverTimestamp(), consentVersion, notificationsEnabled: true, createdAt: FieldValue.serverTimestamp() });

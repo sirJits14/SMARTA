@@ -15,10 +15,10 @@ describe('relationships', () => {
     expect(isDepedEmail('juan@notdeped.gov.ph')).toBe(false);
     expect(isDepedEmail(undefined)).toBe(false);
   });
-  it('offers only the other side of the guardian/Adviser line', () => {
-    expect(relationshipOptions('guardian')).toEqual([ADVISER]);
-    expect(relationshipOptions(undefined)).toEqual([ADVISER]); // links made before slots existed
-    expect(relationshipOptions('adviser')).toEqual(RELATIONSHIPS);
+  it('offers the other family relationships, then Adviser', () => {
+    expect(relationshipOptions({ relationship: 'Guardian', slot: 'guardian' })).toEqual(['Mother', 'Father', 'Grandparent', 'Sibling', 'Other', ADVISER]);
+    expect(relationshipOptions({ relationship: 'Mother' })).not.toContain('Mother'); // links made before slots existed
+    for (const r of RELATIONSHIPS) expect(relationshipOptions({ relationship: r }).at(-1)).toBe(ADVISER);
   });
   it('shows the server message for refusals a parent can act on, else the generic one', () => {
     expect(changeErrorMessage({ code: 'functions/failed-precondition', message: 'This learner already has an adviser linked.' })).toBe('This learner already has an adviser linked.');

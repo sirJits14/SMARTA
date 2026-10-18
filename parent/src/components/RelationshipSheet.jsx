@@ -5,13 +5,13 @@ import { T } from '../styles.js';
 import { Btn, Banner } from './ui.jsx';
 import { ADVISER, relationshipOptions, changeErrorMessage } from '../lib/relationships.js';
 
-// Lazy-loaded from History (keeps the eager bundle small). Portalled to
+// Lazy-loaded by useRelationshipSheet (keeps the eager bundle small). Portalled to
 // <body> so no .glass-card backdrop-filter traps the fixed overlay (see ScanSheet).
 export default function RelationshipSheet({ link, onSave, onClose }) {
   const [choice, setChoice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  const options = relationshipOptions(link.slot);
+  const options = relationshipOptions(link);
   const dialog = useRef(null);
   // Move focus into the dialog on open and give it back on close, so
   // keyboard and screen-reader users land on the choices (aria-modal).
@@ -48,6 +48,7 @@ export default function RelationshipSheet({ link, onSave, onClose }) {
             </label>
           ))}
         </div>
+        {choice === ADVISER && <Banner tone="warn">{S.relAdviserWarning}</Banner>}
         <p style={{ fontSize: 13, color: T.inkMuted, margin: '12px 0' }}>{S.relOnceNote}</p>
         <div style={{ display: 'grid', gap: 10 }}>
           <Btn onClick={save} disabled={!choice || busy}>{S.relConfirm}</Btn>
