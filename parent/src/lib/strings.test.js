@@ -33,4 +33,9 @@ describe('strings', () => {
       'installIosStep3', 'installOther', 'helpPhone', 'helpEmail', 'helpFacebook', 'helpHours', 'helpEmpty', 'aboutVersion'])
       expect(typeof S[k], k).toBe('string');
   });
+  it('has the session attendance strings', () => {
+    for (const k of ['sessionButton', 'sessionTitle', 'sessionClose', 'sessionAm', 'sessionPm', 'sessionMorningShift', 'sessionAfternoonShift',
+      'sessionWholeDay', 'sessionNoMark', 'sessionSplitNote', 'sessionSingleNote'])
+      expect(typeof S[k], k).toBe('string');
+  });
 });
