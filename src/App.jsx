@@ -24,6 +24,7 @@ const SchedulesPage = lazy(() => import('./pages/SchedulesPage.jsx'));
 const EnrollPage = lazy(() => import('./pages/EnrollPage.jsx'));
 const AttendanceTakePage = lazy(() => import('./pages/AttendanceTakePage.jsx'));
 const AttendanceSummaryPage = lazy(() => import('./pages/AttendanceSummaryPage.jsx'));
+const SessionReviewPage = lazy(() => import('./pages/SessionReviewPage.jsx'));
 const IDCardsPage = lazy(() => import('./pages/IDCardsPage.jsx'));
 const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
@@ -53,7 +54,7 @@ function AttendanceArea({ me, schoolYear, entry }) {
   return (
     <div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-        {[['take', 'Take Attendance'], ['summary', 'Monthly Summary']].map(([key, label]) => {
+        {[['take', 'Take Attendance'], ['summary', 'Monthly Summary'], ['review', 'Session Review']].map(([key, label]) => {
           const active = tab === key;
           return (
             <button
@@ -74,9 +75,9 @@ function AttendanceArea({ me, schoolYear, entry }) {
       </div>
       <Suspense fallback={<PageFallback />}>
         <div key={tab} className="sims-page-transition">
-          {tab === 'take'
-            ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
-            : <AttendanceSummaryPage me={me} schoolYear={schoolYear} />}
+          {tab === 'take' ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
+            : tab === 'summary' ? <AttendanceSummaryPage me={me} schoolYear={schoolYear} />
+              : <SessionReviewPage me={me} schoolYear={schoolYear} />}
         </div>
       </Suspense>
     </div>
