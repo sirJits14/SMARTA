@@ -32,6 +32,7 @@ export default function ClassTab({ sections, ended }) {
   const [toast, setToast] = useState(null); // { message, undo }
   const [reload, setReload] = useState(0);
   const sequence = useRef(0);
+  const saveLock = useRef(false);
   const validSection = sections.some((s) => s.id === sectionId) ? sectionId : sections[0]?.id || '';
 
   useEffect(() => {
@@ -50,8 +51,13 @@ export default function ClassTab({ sections, ended }) {
   const twoSessions = hasTwoSessions(schedule);
   const session = twoSessions ? (pickedSession || (isToday ? sessionNow(schedule, manilaTime()) : 'am')) : 'am';
   const groups = useMemo(() => groupRoster(roster?.rows || [], session), [roster, session]);
-  const canCorrect = Boolean(roster?.canCorrect) && !ended;
+  const canCorrect = Boolean(roster?.canCorrect) && !ended && isToday;
   const refresh = () => setReload((n) => n + 1);
+
+  useEffect(() => { import('./FlagSheet.jsx').catch(() => {}); }, []);
+  useEffect(() => {
+    if (!canCorrect || !groups.inSchool.length) { setSelecting(false); setSelected(new Set()); }
+  }, [validSection, date, canCorrect, groups.inSchool.length]);
 
   const save = useCallback(async (rows, absent, reason) => {
     const results = await runLimited(rows, 3, (row) => callable('setSessionAbsenceFn')(
@@ -63,21 +69,24 @@ export default function ClassTab({ sections, ended }) {
   const undo = useCallback(async (done) => {
     setToast(null);
     const { failures } = await save(done.map(({ row, revision }) => ({ ...row, revision })), false, UNDO_REASON);
-    setToast({ message: failures.length ? schoolError(failures[0]) : 'Flag undone. Families were not notified.', undo: null });
+    setToast({ id: Date.now(), message: failures.length ? schoolError(failures[0]) : 'Flag undone. Families were not notified.', undo: null });
     refresh();
   }, [save]);
 
   const confirm = async (reason) => {
-    if (!sheet || saving) return;
+    if (!sheet || saveLock.current) return;
+    saveLock.current = true;
     setSaving(true); setSheetError('');
     const absent = sheet.mode === 'flag';
-    const { done, failures } = await save(sheet.rows, absent, reason);
-    setSaving(false);
+    let outcome;
+    try { outcome = await save(sheet.rows, absent, reason); }
+    finally { saveLock.current = false; setSaving(false); }
+    const { done, failures } = outcome;
     // Nothing saved (often a stale revision): close, explain, and reload fresh rows.
-    if (!done.length) { setSheet(null); setToast({ message: schoolError(failures[0]), undo: null }); refresh(); return; }
+    if (!done.length) { setSheet(null); setToast({ id: Date.now(), message: schoolError(failures[0]), undo: null }); refresh(); return; }
     setSheet(null); setSelecting(false); setSelected(new Set());
     const count = done.length === 1 ? (absent ? 'Flagged' : 'Restored') : `${done.length} ${absent ? 'flagged' : 'restored'}`;
-    setToast({ message: failures.length ? `${count} · ${failures.length} not saved. Refresh and try again.` : count, undo: absent ? () => undo(done) : null });
+    setToast({ id: Date.now(), message: failures.length ? `${count} · ${failures.length} not saved. Refresh and try again.` : count, undo: absent ? () => undo(done) : null });
     refresh();
   };
 
@@ -140,7 +149,7 @@ export default function ClassTab({ sections, ended }) {
           <FlagSheet rows={sheet.rows} session={session} mode={sheet.mode} busy={saving} error={sheetError} onConfirm={confirm} onClose={() => { if (!saving) setSheet(null); }} />
         </Suspense>
       )}
-      {toast && <UndoToast message={toast.message} onUndo={toast.undo} onDone={() => setToast(null)} />}
+      {toast && <UndoToast key={toast.id} message={toast.message} onUndo={toast.undo} onDone={() => setToast(null)} />}
     </div>
   );
 }
@@ -168,7 +177,7 @@ function ClassRow({ row, session, selecting, checked, onPick }) {
   const status = row[session] || {};
   const entered = enteredFor(row, session);
   const preview = status.overrideActive
-    ? ['Not in class', status.reason, status.actorName && `by ${status.actorName}`].filter(Boolean).join(' · ')
+    ? ['Not in class', status.reason !== 'Not in class' && status.reason, status.actorName && `by ${status.actorName}`].filter(Boolean).join(' · ')
     : entered ? (STATUS[status.status] || 'Present') : (status.status && status.status !== 'P' ? STATUS[status.status] : 'No gate entry');
   const lead = selecting && onPick
     ? <span className={`class-check${checked ? ' class-check--on' : ''}`} aria-hidden="true">{checked && <Icon name="check" size={18} strokeWidth={2.6} />}</span>

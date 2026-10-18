@@ -7,7 +7,7 @@
 .class-summary-line { margin: 6px 0 0; color: var(--t-muted); font-size: 15px; font-variant-numeric: tabular-nums; }
 .class-summary-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin-top: 10px; }
 .class-session-switch { display: inline-flex; flex: 0 0 auto; padding: 3px; border-radius: 999px; background: var(--t-tint); }
-.class-session-switch button { min-width: 52px; min-height: 38px; border: 0; border-radius: 999px; background: transparent; color: var(--t-ink); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; transition: background-color 0.15s ease-out, color 0.15s ease-out; }
+.class-session-switch button { min-width: 52px; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--t-ink); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; transition: background-color 0.15s ease-out, color 0.15s ease-out; }
 .class-session-switch button[aria-pressed="true"] { background: var(--t-primary); color: var(--t-on-primary); }
 .class-link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--t-primary); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
 .class-link[aria-pressed="true"] { color: var(--t-ink); }

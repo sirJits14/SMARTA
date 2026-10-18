@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSchoolContext } from '../hooks/useSchoolContext.js';
 import { canUseSchool, hasClass, advisorySections } from '../lib/portalMode.js';
 import { sectionLabel } from '../lib/school.js';
-import { Banner, Btn, Spinner } from '../components/ui.jsx';
+import { Banner, Btn, EmptyState, Spinner } from '../components/ui.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import ClassTab from './school/ClassTab.jsx';
 
@@ -13,7 +13,7 @@ export default function School({ user, navigate, mode, setMode }) {
   const context = resource.data;
   useEffect(() => {
     if (!context) return;
-    if (!canUseSchool(context)) { setMode({ view: 'family', hasClass: false }); navigate('/', { replace: true }); return; }
+    if (!canUseSchool(context)) { if (mode.view !== 'family') setMode({ view: 'family', hasClass: false }); navigate('/', { replace: true }); return; }
     const next = { view: 'school', hasClass: hasClass(context) };
     if (mode.view !== 'school' || mode.hasClass !== next.hasClass) setMode(next);
     if (!next.hasClass) navigate('/announcements?view=school', { replace: true });
@@ -24,6 +24,7 @@ export default function School({ user, navigate, mode, setMode }) {
       <PageHeader title="Class" subtitle={sections.length === 1 ? sectionLabel(sections[0]) : context ? `School year ${context.schoolYear}` : undefined} />
       {resource.loading && !context && <Spinner label="Loading your class" />}
       {resource.error && <Banner tone="danger" action={<Btn variant="ghost" onClick={resource.refresh}>Try again</Btn>}>{resource.error}</Banner>}
+      {context && hasClass(context) && sections.length === 0 && <EmptyState title="No advisory class yet" hint="An administrator assigns your class in SIMS." />}
       {context && sections.length > 0 && <ClassTab key={context.schoolYear} sections={sections} ended={context.ended} />}
     </>
   );
