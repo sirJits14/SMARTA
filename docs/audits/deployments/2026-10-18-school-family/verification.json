@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "42136098661f7a09f8c330eec2a4db73772ea53e",
+  "featureCommit": "3afdd2b",
+  "date": "2026-10-18",
+  "rootUnit": 574,
+  "simsReleaseUnit": 489,
+  "functionsReleaseUnit": 161,
+  "parentUnit": 112,
+  "backendAdapterUnit": 7,
+  "releaseRules": {
+    "passed": 85,
+    "heldSkipped": 4
+  },
+  "releaseFunctions": {
+    "passed": 285,
+    "heldSkipped": 10
+  },
+  "parentInitialGzipKB": 259.3,
+  "parentBudgetKB": 260,
+  "builds": [
+    "SIMS compatible production tree",
+    "Parent with merge commit in About"
+  ],
+  "review": "Independent adapter review: no actionable P1/P2. Follow-up index field overrides and notification lazy import checked by primary agent.",
+  "productionAccountFlowCheck": false
+}
