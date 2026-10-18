@@ -32,13 +32,17 @@ export default function SessionReviewPage({ me, schoolYear }) {
   const [saving, setSaving] = useState(false);
   const [reload, setReload] = useState(0);
   const sequence = useRef(0);
+  const loadedKey = useRef('');
   const activeSection = sections.some((s) => s.id === sectionId) ? sectionId : sections[0]?.id || '';
 
   useEffect(() => {
     if (!activeSection) return undefined;
     const request = ++sequence.current;
     setRoster((current) => (current && current.section?.id === activeSection && current.date === date ? current : null));
-    setLoading(true); setError('');
+    // A reload after a failed save keeps its message; a new section or day clears it.
+    const key = `${activeSection}|${date}`;
+    if (loadedKey.current !== key) { loadedKey.current = key; setError(''); }
+    setLoading(true);
     invoke('getSchoolRosterFn', { sectionId: activeSection, date })
       .then((data) => { if (request === sequence.current) { setRoster(data); setLoading(false); } })
       .catch((e) => { if (request === sequence.current) { setRoster(null); setError(schoolError(e)); setLoading(false); } });
