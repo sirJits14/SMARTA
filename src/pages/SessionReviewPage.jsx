@@ -33,6 +33,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
   const [reload, setReload] = useState(0);
   const sequence = useRef(0);
   const loadedKey = useRef('');
+  const formCard = useRef(null);
   const activeSection = sections.some((s) => s.id === sectionId) ? sectionId : sections[0]?.id || '';
 
   useEffect(() => {
@@ -48,6 +49,14 @@ export default function SessionReviewPage({ me, schoolYear }) {
       .catch((e) => { if (request === sequence.current) { setRoster(null); setError(schoolError(e)); setLoading(false); } });
     return () => { ++sequence.current; };
   }, [activeSection, date, reload]);
+
+  // The form opens below a long table: bring it into view and start at its first field.
+  useEffect(() => {
+    if (!edit || !formCard.current) return;
+    const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    formCard.current.scrollIntoView({ block: 'nearest', ...(calm ? {} : { behavior: 'smooth' }) });
+    formCard.current.querySelector('select')?.focus({ preventScroll: true });
+  }, [edit]);
 
   const open = (row, session, absent) => {
     setEdit({ row, session, absent }); setReason(absent ? FLAG_REASONS[0] : RESTORE_REASONS[0]);
@@ -94,14 +103,14 @@ export default function SessionReviewPage({ me, schoolYear }) {
               return <td key={session} style={cellStyle}>
                 <strong style={{ color: cell.flagged ? 'var(--t-warn-text)' : T.ink }}>{cell.label}</strong>
                 <div style={{ fontSize: 12, color: T.inkMuted }}>{[cell.gate ? `Gate ${formatScanTime(cell.gate)}` : 'No gate entry', cell.reason, cell.by && `by ${cell.by}`].filter(Boolean).join(' · ')}</div>
-                {canChange && <Btn variant="ghost" style={{ marginTop: 8 }} disabled={saving || loading} onClick={() => open(row, session, !cell.flagged)}>{cell.flagged ? 'Restore' : 'Not in class'}</Btn>}
+                {canChange && <Btn variant="ghost" style={{ marginTop: 8, whiteSpace: 'nowrap' }} disabled={saving || loading} onClick={() => open(row, session, !cell.flagged)}>{cell.flagged ? 'Restore' : 'Not in class'}</Btn>}
               </td>;
             })}
           </tr>)}</tbody>
         </table>
       </div>
     </Card>}
-    {edit && <Card style={{ padding: 20, marginTop: 18 }}>
+    {edit && <Card ref={formCard} style={{ padding: 20, marginTop: 18 }}>
       <form onSubmit={submit} aria-labelledby="session-edit-title">
         <h3 id="session-edit-title" style={{ margin: '0 0 12px' }}>{edit.row.displayName} · {edit.session.toUpperCase()} · {edit.absent ? 'Not in class' : 'Restore'}</h3>
         <Field label="Reason"><Sel value={reason} onChange={(e) => setReason(e.target.value)}>{(edit.absent ? FLAG_REASONS : RESTORE_REASONS).map((r) => <option key={r} value={r}>{r}</option>)}<option value="other">Other reason…</option></Sel></Field>
