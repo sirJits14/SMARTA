@@ -7,10 +7,10 @@ import { functions } from '../firebase.js';
 import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { Btn, Card, Field, Inp, Sel } from '../components/ui.jsx';
 import { T, S } from '../styles.js';
-import { manilaDate, formatScanTime } from '../../shared/dates.js';
+import { manilaDate, formatScanTime, schoolYearStartDate } from '../../shared/dates.js';
 import { sectionLabel, schoolError } from '../../parent/src/lib/school.js';
 import { FLAG_REASONS, RESTORE_REASONS, reasonText, correctionInput } from '../../parent/src/lib/classSession.js';
-import { reviewSections, sessionCell } from '../lib/sessionReview.js';
+import { reasonDetail, reviewSections, reviewSessions, sessionCell, sessionName } from '../lib/sessionReview.js';
 
 const invoke = async (name, data) => (await httpsCallable(functions, name)(data)).data;
 const cellStyle = { padding: '12px 16px', verticalAlign: 'top', borderBottom: `1px solid ${T.border}` };
@@ -58,6 +58,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
     formCard.current.querySelector('select')?.focus({ preventScroll: true });
   }, [edit]);
 
+  const sessions = reviewSessions(roster?.schedule);
   const open = (row, session, absent) => {
     setEdit({ row, session, absent }); setReason(absent ? FLAG_REASONS[0] : RESTORE_REASONS[0]);
     setOther(''); setNote(''); setNotice(''); setError('');
@@ -70,7 +71,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
     try {
       await invoke('setSessionAbsenceFn', correctionInput({ sectionId: activeSection, date, session: edit.session, row: edit.row, absent: edit.absent,
         reason: reasonText(chosen, note), operationId: crypto.randomUUID() }));
-      setNotice(`${edit.row.displayName} · ${edit.session.toUpperCase()} ${edit.absent ? 'marked not in class' : 'restored'}. Families get a neutral update in two minutes.`);
+      setNotice(`${edit.row.displayName} · ${sessionName(edit.session, sessions)} ${edit.absent ? 'marked not in class' : 'restored'}. If the change stands, families get a neutral update after two minutes.`);
       setEdit(null); setReload((n) => n + 1);
     } catch (e) { setError(schoolError(e)); setEdit(null); setReload((n) => n + 1); } finally { setSaving(false); }
   };
@@ -84,8 +85,8 @@ export default function SessionReviewPage({ me, schoolYear }) {
       <h2 style={S.h2}>Session review</h2>
       <p style={{ fontSize: 13, color: T.inkMuted, margin: '0 0 14px' }}>Review AM and PM attendance by section, including earlier days. Gate scans stay as evidence; each change is audited, and families get a neutral update.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 230px), 1fr))', gap: '0 18px' }}>
-        <Field label="Section"><Sel value={activeSection} onChange={(e) => { setSectionId(e.target.value); setEdit(null); }}>{sections.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}</Sel></Field>
-        <Field label="School day"><Inp type="date" value={date} max={today} onChange={(e) => { if (e.target.value) { setDate(e.target.value); setEdit(null); } }} /></Field>
+        <Field label="Section"><Sel value={activeSection} onChange={(e) => { setSectionId(e.target.value); setEdit(null); setNotice(''); }}>{sections.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}</Sel></Field>
+        <Field label="School day"><Inp type="date" value={date} min={schoolYearStartDate(schoolYear)} max={today} onChange={(e) => { if (e.target.value) { setDate(e.target.value); setEdit(null); setNotice(''); } }} /></Field>
       </div>
     </Card>
     {error && <p role="alert" className="sims-feedback">{error}</p>}
@@ -94,15 +95,15 @@ export default function SessionReviewPage({ me, schoolYear }) {
     {roster && <Card style={{ padding: 0, overflow: 'hidden' }}>
       <div role="region" aria-label="Session attendance" tabIndex={0} style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-          <thead><tr>{['Learner', 'AM', 'PM'].map((label) => <th key={label} scope="col" style={{ ...cellStyle, textAlign: 'left', fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: T.inkMuted }}>{label}</th>)}</tr></thead>
+          <thead><tr>{['Learner', ...sessions.map((session) => sessionName(session, sessions))].map((label) => <th key={label} scope="col" style={{ ...cellStyle, textAlign: 'left', fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: T.inkMuted }}>{label}</th>)}</tr></thead>
           <tbody>{roster.rows.map((row) => <tr key={row.studentId}>
             <th scope="row" style={{ ...cellStyle, textAlign: 'left', fontWeight: 600 }}>{row.displayName}</th>
-            {['am', 'pm'].map((session) => {
+            {sessions.map((session) => {
               const cell = sessionCell(row, session);
               const canChange = canCorrect && (cell.flagged || row[session]?.status !== 'A');
               return <td key={session} style={cellStyle}>
                 <strong style={{ color: cell.flagged ? 'var(--t-warn-text)' : T.ink }}>{cell.label}</strong>
-                <div style={{ fontSize: 12, color: T.inkMuted }}>{[cell.gate ? `Gate ${formatScanTime(cell.gate)}` : 'No gate entry', cell.reason, cell.by && `by ${cell.by}`].filter(Boolean).join(' · ')}</div>
+                <div style={{ fontSize: 12, color: T.inkMuted }}>{[cell.gate ? `Gate ${formatScanTime(cell.gate)}` : 'No gate entry', reasonDetail(cell.reason), cell.by && `by ${cell.by}`].filter(Boolean).join(' · ')}</div>
                 {canChange && <Btn variant="ghost" style={{ marginTop: 8, whiteSpace: 'nowrap' }} disabled={saving || loading} onClick={() => open(row, session, !cell.flagged)}>{cell.flagged ? 'Restore' : 'Not in class'}</Btn>}
               </td>;
             })}
@@ -112,7 +113,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
     </Card>}
     {edit && <Card ref={formCard} style={{ padding: 20, marginTop: 18 }}>
       <form onSubmit={submit} aria-labelledby="session-edit-title">
-        <h3 id="session-edit-title" style={{ margin: '0 0 12px' }}>{edit.row.displayName} · {edit.session.toUpperCase()} · {edit.absent ? 'Not in class' : 'Restore'}</h3>
+        <h3 id="session-edit-title" style={{ margin: '0 0 12px' }}>{edit.row.displayName} · {sessionName(edit.session, sessions)} · {edit.absent ? 'Not in class' : 'Restore'}</h3>
         <Field label="Reason"><Sel value={reason} onChange={(e) => setReason(e.target.value)}>{(edit.absent ? FLAG_REASONS : RESTORE_REASONS).map((r) => <option key={r} value={r}>{r}</option>)}<option value="other">Other reason…</option></Sel></Field>
         {reason === 'other' && <Field label="Other reason"><Inp autoFocus required maxLength={200} value={other} onChange={(e) => setOther(e.target.value)} /></Field>}
         <Field label="Note (optional)"><Inp maxLength={250} value={note} onChange={(e) => setNote(e.target.value)} /></Field>

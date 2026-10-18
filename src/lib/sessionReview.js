@@ -1,5 +1,5 @@
 import { grades } from './access.js';
-import { enteredFor } from '../../parent/src/lib/classSession.js';
+import { enteredFor, hasTwoSessions } from '../../parent/src/lib/classSession.js';
 
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 
@@ -9,6 +9,17 @@ export function reviewSections(sections, me, schoolYear) {
   return (sections || [])
     .filter((s) => s.schoolYear === schoolYear && (scope === null || scope.includes(Number(s.gradeLevel))))
     .sort((a, b) => a.gradeLevel - b.gradeLevel || String(a.name || '').localeCompare(String(b.name || '')));
+}
+
+// Whole-day sections have a single session, counted as AM and shown as "Day".
+export const reviewSessions = (schedule) => (hasTwoSessions(schedule) ? ['am', 'pm'] : ['am']);
+export const sessionName = (session, sessions) => (sessions.length === 1 ? 'Day' : session.toUpperCase());
+
+// The cell already says "Not in class"; show only what the reason adds.
+export function reasonDetail(reason) {
+  const text = String(reason || '').trim();
+  if (text === 'Not in class') return '';
+  return text.startsWith('Not in class: ') ? text.slice('Not in class: '.length) : text;
 }
 
 export function sessionCell(row, session) {

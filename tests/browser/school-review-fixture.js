@@ -10,6 +10,8 @@ const sections = [
   { id: 'g8-bonifacio', name: 'Bonifacio', gradeLevel: 8, schoolYear: YEAR },
 ];
 const SCHEDULE = { timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:30' };
+const WHOLE_DAY = { timeIn: '07:30', timeOut: '16:00', pmTimeIn: null, pmTimeOut: null };
+const scheduleFor = (sectionId) => (sectionId === 'g8-bonifacio' ? { ...WHOLE_DAY } : { ...SCHEDULE });
 const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
 const fail = (code, message) => Object.assign(new Error(message), { code: `functions/${code}` });
 
@@ -64,7 +66,7 @@ function getSchoolRoster({ sectionId, date }) {
   const section = sections.find((item) => item.id === sectionId);
   if (!section) throw fail('not-found', 'That section was not found.');
   return {
-    section, date, schedule: { ...SCHEDULE }, canCorrect: date <= manilaDate(),
+    section, date, schedule: scheduleFor(sectionId), canCorrect: date <= manilaDate(),
     rows: structuredClone(rosterFor(sectionId, date)),
   };
 }

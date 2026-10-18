@@ -53,7 +53,7 @@ function AttendanceArea({ me, schoolYear, entry }) {
   const [tab, setTab] = useState('take');
   return (
     <div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
         {[['take', 'Take Attendance'], ['summary', 'Monthly Summary'], ['review', 'Session Review']].map(([key, label]) => {
           const active = tab === key;
           return (

@@ -21,6 +21,7 @@ export default function SchoolAccessTab() {
   const lock = useRef(false);
   const sequence = useRef(0);
   const formRef = useRef(null);
+  const sectionRef = useRef(null);
   const [assignment, setAssignment] = useState(EMPTY);
   const [revoking, setRevoking] = useState(null);
   const [reason, setReason] = useState('');
@@ -43,7 +44,9 @@ export default function SchoolAccessTab() {
   const prefillFromLegacy = (row) => {
     setAssignment(assignmentFromLegacy(row));
     setNotice(`Confirm ${row.name || row.email}'s class, then assign.`);
-    formRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    formRef.current?.scrollIntoView?.({ block: 'start', ...(calm ? {} : { behavior: 'smooth' }) });
+    sectionRef.current?.focus({ preventScroll: true });
   };
   return <div style={{ fontFamily: T.body }}>
     {error && <p role="alert" className="sims-feedback">{error}</p>}
@@ -63,7 +66,7 @@ export default function SchoolAccessTab() {
             <Field label="Responsibility"><Sel value={assignment.role} onChange={(event) => setAssignment({ ...assignment, role: event.target.value })}>{Object.entries(ROLE_LABELS).map(([role, label]) => <option key={role} value={role}>{label}</option>)}</Sel></Field>
             {assignment.role === 'curriculum_adviser'
               ? <Field label="Grade"><Sel required value={assignment.gradeLevel} onChange={(event) => setAssignment({ ...assignment, gradeLevel: event.target.value })}><option value="">Choose grade</option>{[...new Set((context.sections || []).map((section) => Number(section.gradeLevel)))].sort((a, b) => a - b).map((grade) => <option key={grade} value={grade}>Grade {grade}</option>)}</Sel></Field>
-              : <Field label="Section"><Sel required value={assignment.sectionId} onChange={(event) => setAssignment({ ...assignment, sectionId: event.target.value })}><option value="">Choose section</option>{(context.sections || []).map((section) => <option key={section.id} value={section.id}>{sectionLabel(section)}</option>)}</Sel></Field>}
+              : <Field label="Section"><Sel ref={sectionRef} required value={assignment.sectionId} onChange={(event) => setAssignment({ ...assignment, sectionId: event.target.value })}><option value="">Choose section</option>{(context.sections || []).map((section) => <option key={section.id} value={section.id}>{sectionLabel(section)}</option>)}</Sel></Field>}
           </div>
           <Btn type="submit" disabled={pending || context.ended}>{pending ? 'Working…' : 'Assign role'}</Btn>
         </fieldset></form>
