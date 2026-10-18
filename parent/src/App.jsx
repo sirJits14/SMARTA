@@ -8,7 +8,8 @@ import { Spinner, EmptyState } from './components/ui.jsx';
 import S from './strings.js';
 import SignIn from './screens/SignIn.jsx';
 import { portalView, notificationDestination } from './lib/nav.js';
-import { readMode, writeMode, schoolHome } from './lib/portalMode.js';
+import { readMode, writeMode, reconcileMode, schoolHome } from './lib/portalMode.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
 // Screens below are only needed once a route is resolved, so they're
 // route-split out of the sign-in/verify chunk to keep the initial load light.
 // Each can also be fetched ahead of time (preload); once it has loaded it
@@ -53,8 +54,19 @@ export default function App() {
     } else navigate(to, options);
   }, [view, navigate]);
   const { user, profile } = useAuth();
-  const [mode, setModeState] = useState(readMode);
-  const setMode = useCallback((next) => { writeMode(next); setModeState(next); }, []);
+  const uid = user?.uid;
+  const [mode, setModeState] = useState(() => readMode());
+  // The saved choice belongs to the signed-in account.
+  useEffect(() => { setModeState(readMode(uid)); }, [uid]);
+  const setMode = useCallback((next) => { writeMode(uid, next); setModeState(next); }, [uid]);
+  // Access is re-checked on every refresh: revoked, year-end and promotion all land here.
+  const school = useSchoolContext(uid, Boolean(profile) && mode.view === 'school');
+  useEffect(() => {
+    const { mode: next, changed } = reconcileMode(mode, school.data);
+    if (!changed) return;
+    setMode(next);
+    if (next.view === 'family' && view === 'school') navigate('/', { replace: true });
+  }, [school.data, mode, view, setMode, navigate]);
   // School mode opens on the teacher's School home instead of the family list.
   useEffect(() => {
     if (profile && mode.view === 'school' && route.name === 'home') navigate(schoolHome(mode), { replace: true });

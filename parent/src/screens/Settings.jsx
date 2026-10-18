@@ -47,11 +47,10 @@ export default function Settings({ user, profile, route, navigate, mode, setMode
   const accountEnabled = profile?.notificationsEnabled !== false;
   const school = useSchoolContext(user.uid);
   const allowed = canUseSchool(school.data);
-  useEffect(() => { if (school.data && !allowed && mode.view === 'school') setMode({ view: 'family', hasClass: false }); }, [school.data, allowed, mode.view, setMode]);
   const chooseMode = (view) => {
     const next = view === 'school' ? { view: 'school', hasClass: hasClass(school.data) } : { view: 'family', hasClass: false };
     setMode(next);
-    navigate(view === 'school' ? schoolHome(next) : '/');
+    navigate(view === 'school' ? schoolHome(next) : '/', { replace: true });
   };
   const ctx = {
     user, profile, navigate, links, device, portal, reports, accountEnabled,

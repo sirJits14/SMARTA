@@ -33,6 +33,8 @@ export default function ClassTab({ sections, ended }) {
   const [reload, setReload] = useState(0);
   const sequence = useRef(0);
   const saveLock = useRef(false);
+  const sheetOpen = useRef(false);
+  sheetOpen.current = Boolean(sheet);
   const validSection = sections.some((s) => s.id === sectionId) ? sectionId : sections[0]?.id || '';
 
   useEffect(() => {
@@ -45,6 +47,14 @@ export default function ClassTab({ sections, ended }) {
     }).catch((e) => { if (request === sequence.current) { setError(schoolError(e)); setLoading(false); } });
     return () => { ++sequence.current; };
   }, [validSection, date, reload]);
+
+  // Coming back to the app (focus or tab visible) picks up changes made elsewhere, unless a save or sheet is in progress.
+  useEffect(() => {
+    const onReturn = () => { if (document.visibilityState === 'visible' && !saveLock.current && !sheetOpen.current) setReload((n) => n + 1); };
+    window.addEventListener('focus', onReturn);
+    document.addEventListener('visibilitychange', onReturn);
+    return () => { window.removeEventListener('focus', onReturn); document.removeEventListener('visibilitychange', onReturn); };
+  }, []);
 
   const isToday = date === today;
   const schedule = roster?.schedule || null;
@@ -86,7 +96,7 @@ export default function ClassTab({ sections, ended }) {
     if (!done.length) { setSheet(null); setToast({ id: Date.now(), message: schoolError(failures[0]), undo: null }); refresh(); return; }
     setSheet(null); setSelecting(false); setSelected(new Set());
     const count = done.length === 1 ? (absent ? 'Flagged' : 'Restored') : `${done.length} ${absent ? 'flagged' : 'restored'}`;
-    setToast({ id: Date.now(), message: failures.length ? `${count} · ${failures.length} not saved. Refresh and try again.` : count, undo: absent ? () => undo(done) : null });
+    setToast({ id: Date.now(), message: failures.length ? `${count} · ${failures.length} not saved. Try those again.` : count, undo: absent ? () => undo(done) : null });
     refresh();
   };
 
@@ -173,11 +183,13 @@ function RowGroup({ title, hint, rows, session, selecting = false, selected, onP
   );
 }
 
+const flagReason = (reason) => (reason || '').replace(/^Not in class(?::\s*|$)/, '');
+
 function ClassRow({ row, session, selecting, checked, onPick }) {
   const status = row[session] || {};
   const entered = enteredFor(row, session);
   const preview = status.overrideActive
-    ? ['Not in class', status.reason !== 'Not in class' && status.reason, status.actorName && `by ${status.actorName}`].filter(Boolean).join(' · ')
+    ? ['Not in class', flagReason(status.reason), status.actorName && `by ${status.actorName}`].filter(Boolean).join(' · ')
     : entered ? (STATUS[status.status] || 'Present') : (status.status && status.status !== 'P' ? STATUS[status.status] : 'No gate entry');
   const lead = selecting && onPick
     ? <span className={`class-check${checked ? ' class-check--on' : ''}`} aria-hidden="true">{checked && <Icon name="check" size={18} strokeWidth={2.6} />}</span>

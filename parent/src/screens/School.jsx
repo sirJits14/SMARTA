@@ -2,22 +2,18 @@
 // assigns them in SIMS and they choose School in Settings.
 import { useEffect } from 'react';
 import { useSchoolContext } from '../hooks/useSchoolContext.js';
-import { canUseSchool, hasClass, advisorySections } from '../lib/portalMode.js';
+import { hasClass, advisorySections } from '../lib/portalMode.js';
 import { sectionLabel } from '../lib/school.js';
 import { Banner, Btn, EmptyState, Spinner } from '../components/ui.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import ClassTab from './school/ClassTab.jsx';
 
-export default function School({ user, navigate, mode, setMode }) {
+export default function School({ user, navigate }) {
   const resource = useSchoolContext(user.uid);
   const context = resource.data;
-  useEffect(() => {
-    if (!context) return;
-    if (!canUseSchool(context)) { if (mode.view !== 'family') setMode({ view: 'family', hasClass: false }); navigate('/', { replace: true }); return; }
-    const next = { view: 'school', hasClass: hasClass(context) };
-    if (mode.view !== 'school' || mode.hasClass !== next.hasClass) setMode(next);
-    if (!next.hasClass) navigate('/announcements?view=school', { replace: true });
-  }, [context, mode, setMode, navigate]);
+  const noClass = Boolean(context) && !hasClass(context);
+  // Subject teachers have no Class tab; App.jsx handles revoked access.
+  useEffect(() => { if (noClass) navigate('/announcements?view=school', { replace: true }); }, [noClass, navigate]);
   const sections = advisorySections(context);
   return (
     <>
