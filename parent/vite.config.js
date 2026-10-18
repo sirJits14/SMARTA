@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -11,6 +12,8 @@ function buildInfo() {
 
 export default defineConfig({
   plugins: [react()],
+  // Keeps Firestore's Pipeline-only regex engine out of the bundle; see src/lib/re2jsStub.js.
+  resolve: { alias: [{ find: /^re2js$/, replacement: fileURLToPath(new URL('./src/lib/re2jsStub.js', import.meta.url)) }] },
   define: { __APP_BUILD__: JSON.stringify(buildInfo()) },
   server: { port: 5174 },
   build: { target: 'es2020', sourcemap: false },
