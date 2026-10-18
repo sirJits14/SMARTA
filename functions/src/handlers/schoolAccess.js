@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
-import { roleOf } from '../../shared/staffRoles.js';
+import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
 import { SCHOOL_ROLES, assignmentKey, canApproveRoleRequest } from '../../shared/schoolAccess.js';
-import { enforceRateLimit } from '../callable.js';
+import { groupLegacyAdvisers, sampleStudentIds } from '../lib/legacyAdvisers.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
 const read = (db, reader, ref) => reader === db ? ref.get() : reader.get(ref);
@@ -15,7 +15,6 @@ const reasonValue = value => {
   return reason;
 };
 const fingerprint = value => createHash('sha256').update(value).digest('hex');
-const requestKey = (uid, assignment) => fingerprint(JSON.stringify([uid, assignmentKey(assignment)]));
 const lockRef = (db, a) => a.role === 'adviser' ? db.doc(`school_adviser_locks/${a.schoolYear}_${a.sectionId}`) : null;
 const auditRow = (actor, action, targetId, details) => ({ action, actorType: 'staff', actorUid: actor.email,
   targetType: 'school_assignment', targetId, details, at: FieldValue.serverTimestamp() });
@@ -42,8 +41,11 @@ export async function loadSchoolActor(deps, reader = deps.db) {
   }
   const assignments = ended || account.data()?.disabled ? [] : (account.data()?.assignments || [])
     .filter(a => a.schoolYear === schoolYear && SCHOOL_ROLES.includes(a.role));
+  const role = bound ? roleOf(profile) : null;
+  // SIMS coordinators review their grades' sessions without a separate school assignment.
+  const simsGrades = !ended && role && role !== 'admin' ? (scopedGrades(profile) || []) : [];
   return { uid, email: email.toLowerCase(), displayName: deps.displayName || account.data()?.displayName || profile?.name || email,
-    isAdmin: Boolean(bound && roleOf(profile) === 'admin'), schoolYear, ended: Boolean(ended), assignments };
+    isAdmin: role === 'admin', schoolYear, ended: Boolean(ended), assignments, simsGrades };
 }
 
 async function assignmentFrom(deps, reader, actor, input) {
@@ -69,25 +71,9 @@ async function liveUser(auth, uid) {
   return user;
 }
 
-export async function requestSchoolRole(deps, input) {
-  if (!['adviser', 'subject_teacher'].includes(input.role)) fail('permission-denied', 'An administrator assigns Curriculum Adviser access.');
-  const user = await liveUser(deps.auth, deps.uid);
-  await enforceRateLimit(deps.db, deps.uid, 'schoolRoleRequest', { windowMs: 3600000, max: 30 }, (deps.now || (() => new Date()))().getTime());
-  return deps.db.runTransaction(async tx => {
-    const actor = await loadSchoolActor(deps, tx);
-    const assignment = await assignmentFrom(deps, tx, actor, input);
-    if (actor.assignments.some(a => assignmentKey(a) === assignmentKey(assignment))) fail('already-exists', 'This assignment is already active.');
-    const key = requestKey(deps.uid, assignment);
-    const ref = deps.db.doc(`school_role_requests/${key}`);
-    const existing = await tx.get(ref);
-    const pending = await tx.get(deps.db.collection('school_role_requests').where('uid', '==', deps.uid).where('status', '==', 'pending'));
-    if (existing.data()?.status === 'pending') return { id: key, status: 'pending' };
-    if (pending.size >= 20) fail('resource-exhausted', 'Wait for your pending requests to be reviewed.');
-    tx.set(ref, { ...assignment, uid: deps.uid, email: user.email.toLowerCase(), emailVerified: true,
-      displayName: user.displayName || actor.displayName, status: 'pending', createdAt: FieldValue.serverTimestamp() });
-    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.requested', deps.uid, assignment));
-    return { id: key, status: 'pending' };
-  });
+// School roles are assigned by an administrator in SIMS; the app no longer asks.
+export async function requestSchoolRole() {
+  fail('permission-denied', 'An administrator assigns school roles in SIMS.');
 }
 
 // Reads must precede the mutation below. The section lock serializes different
@@ -106,6 +92,9 @@ function writeGrant(tx, prepared, actor, user, assignment) {
     assignments: [...prepared.assignments, assignment], updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   if (prepared.lock) tx.set(prepared.lock, { uid: user.uid, ...assignment });
   tx.set(prepared.accountRef.firestore.collection('audit_log').doc(), auditRow(actor, 'school.assigned', user.uid, assignment));
+  tx.set(prepared.accountRef.firestore.doc(`guardians/${user.uid}/inbox/school_${fingerprint(assignmentKey(assignment)).slice(0, 32)}`), {
+    type: 'school_access', title: 'School access approved',
+    body: 'You can now use the app for school work. Switch to School in Settings.', createdAt: FieldValue.serverTimestamp() });
 }
 
 export async function resolveSchoolRole(deps, input) {
@@ -191,17 +180,10 @@ export async function deleteSchoolAccess(db, uid) {
 export async function getSchoolContext(deps) {
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
-    const [sections, ownRequests, allPending] = await Promise.all([
-      tx.get(deps.db.collection('sections').where('schoolYear', '==', actor.schoolYear)),
-      tx.get(deps.db.collection('school_role_requests').where('uid', '==', actor.uid)),
-      actor.isAdmin
-        ? tx.get(deps.db.collection('school_role_requests').where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear)) : null,
-    ]);
+    const sections = await tx.get(deps.db.collection('sections').where('schoolYear', '==', actor.schoolYear));
     const result = { schoolYear: actor.schoolYear, ended: actor.ended, isAdmin: actor.isAdmin, assignments: actor.assignments,
       sections: sections.docs.map(s => ({ id: s.id, name: s.data().name || '', gradeLevel: s.data().gradeLevel, schoolYear: s.data().schoolYear }))
-        .sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
-      requests: ownRequests.docs.map(row).filter(r => r.schoolYear === actor.schoolYear),
-      reviewRequests: (allPending?.docs || []).map(row).filter(r => canApproveRoleRequest(actor, r)) };
+        .sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)) };
     if (actor.isAdmin) {
       const [accounts, legacy] = await Promise.all([
         tx.get(deps.db.collection('school_accounts')),
@@ -209,7 +191,11 @@ export async function getSchoolContext(deps) {
       ]);
       result.managedAssignments = accounts.docs.flatMap(s => (s.data().assignments || []).filter(a => a.schoolYear === actor.schoolYear)
         .map(a => ({ uid: s.id, email: s.data().email || '', displayName: s.data().displayName || '', ...a })));
-      result.migrationCandidates = legacy.docs.map(row).filter(l => l.schoolYear === actor.schoolYear && (l.slot === 'adviser' || l.relationship === 'Adviser'));
+      const candidates = legacy.docs.map(row).filter(l => l.schoolYear === actor.schoolYear && (l.slot === 'adviser' || l.relationship === 'Adviser'));
+      result.migrationCandidates = candidates;
+      const enrollments = await Promise.all(sampleStudentIds(candidates).filter(id).map(studentId => tx.get(deps.db.doc(`enrollments/${studentId}_${actor.schoolYear}`))));
+      const sectionByStudent = Object.fromEntries(enrollments.filter(s => s.data()?.status === 'enrolled').map(s => [s.data().studentId, s.data().sectionId]));
+      result.legacyAdvisers = groupLegacyAdvisers(candidates, sectionByStudent);
     }
     return result;
   });

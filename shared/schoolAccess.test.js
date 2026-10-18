@@ -42,3 +42,18 @@ describe('school access boundaries', () => {
     expect(assignmentKey({ role: 'adviser', schoolYear: year, sectionId: 'S7' })).not.toBe(assignmentKey({ role: 'subject_teacher', schoolYear: year, sectionId: 'S7' }));
   });
 });
+
+describe('SIMS coordinator grades', () => {
+  const coordinator = { uid: 'c1', schoolYear: '2026-2027', isAdmin: false, assignments: [], simsGrades: [7, 8] };
+  const g7 = { id: 'S7', gradeLevel: 7, schoolYear: '2026-2027' };
+  const g9 = { id: 'S9', gradeLevel: 9, schoolYear: '2026-2027' };
+  it('reviews and corrects earlier days within coordinator grades only', () => {
+    expect(canReviewSection(coordinator, g7)).toBe(true);
+    expect(canCorrectSession(coordinator, g7, '2026-09-20', '2026-09-21')).toBe(true);
+    expect(canReviewSection(coordinator, g9)).toBe(false);
+    expect(canCorrectSession(coordinator, g7, '2026-09-22', '2026-09-21')).toBe(false);
+  });
+  it('ignores coordinator grades from another school year', () => {
+    expect(canReviewSection(coordinator, { ...g7, schoolYear: '2025-2026' })).toBe(false);
+  });
+});

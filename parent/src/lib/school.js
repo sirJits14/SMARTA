@@ -3,11 +3,6 @@ export function attendanceSections(context = {}) {
   return (context.sections || []).filter(section => context.isAdmin || (context.assignments || []).some(a =>
     (a.role === 'adviser' && a.sectionId === section.id) || (a.role === 'curriculum_adviser' && Number(a.gradeLevel) === Number(section.gradeLevel))));
 }
-export function roleRequestError({ role, sectionId }, sections = []) {
-  if (!['adviser', 'subject_teacher'].includes(role)) return 'Choose Adviser or Subject Teacher.';
-  if (!sections.some(section => section.id === sectionId)) return 'Choose a current school section.';
-  return '';
-}
 export function correctionError({ session, reason }) {
   if (!['am', 'pm'].includes(session)) return 'Choose AM or PM.';
   if (!reason?.trim()) return 'Enter a reason for this attendance change.';
@@ -15,6 +10,7 @@ export function correctionError({ session, reason }) {
   return '';
 }
 export function inboxDestination(item) {
+  if (item.type === 'school_access') return '/settings';
   if (!item.studentId) return null;
   const path = `/learner/${encodeURIComponent(item.studentId)}`;
   if (item.type === 'attendance_correction') return `${path}?${new URLSearchParams({ date: item.date || '', session: item.session || '' })}`;

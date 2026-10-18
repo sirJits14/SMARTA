@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, auth, clearAll, clearAllAuthUsers, seedSchool, fakeMessaging, scanDoc } from './helpers.js';
-import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection } from '../../src/handlers/sessionAttendance.js';
+import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from '../../src/handlers/sessionAttendance.js';
 import { applyScanAttendance } from '../../src/handlers/scanAttendance.js';
 
 const now = () => new Date('2026-09-21T10:00:00+08:00');
@@ -73,17 +73,82 @@ describe('session corrections', () => {
     expect((await getSchoolRoster(deps(), { sectionId: 'SEC1', date: '2026-09-21' })).rows[0].am.status).toBe('A');
     expect((await db().doc('scan_events/later').get()).data().attendanceResult.status).toBe('applied');
   });
-  it('only active current-year family links can read correction details and receive neutral notifications once', async () => {
-    const d = deps(); await setSessionAbsence(d, input());
+  it('only active current-year family links get one neutral notification after the undo window', async () => {
+    let clock = now();
+    const d = { ...deps(), now: () => clock };
+    await setSessionAbsence(d, input());
     const out = (await db().collection('attendance_corrections').get()).docs[0];
-    await handleAttendanceCorrection(d, { id: out.id, data: out.data() });
-    await handleAttendanceCorrection(d, { id: out.id, data: out.data() });
+    expect((await handleAttendanceCorrection(d, { id: out.id, data: out.data() })).outcome).toBe('duplicate');
+    await sendDueAttendanceUpdates(d);
+    expect(d.messaging.sent).toHaveLength(0);
+    clock = new Date(now().getTime() + 121000);
+    await sendDueAttendanceUpdates(d);
+    await sendDueAttendanceUpdates(d);
     expect(d.messaging.sent).toHaveLength(1);
-    expect(d.messaging.sent[0].notification.body).not.toContain('Left class');
+    expect(d.messaging.sent[0].notification.body).toBe('An attendance update is available for your learner.');
     expect((await db().collection('guardians/gA/inbox').get()).size).toBe(1);
     expect((await db().collection('guardians/gC/inbox').get()).size).toBe(0);
     expect(await getFamilyAttendance(deps('gA'), { studentId: 'S1', date: '2026-09-21' })).toMatchObject({ am: { status: 'A', reason: 'Left class after arrival' } });
     await db().doc('guardian_links/gA_S1').update({ relationship: 'Adviser' });
     await expect(getFamilyAttendance(deps('gA'), { studentId: 'S1', date: '2026-09-21' })).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+  it('keeps sending when one outbox document is broken', async () => {
+    let clock = now();
+    const d = { ...deps(), now: () => clock };
+    await db().doc('attendance_notifications/0_broken').set({ status: 'pending' });
+    await setSessionAbsence(d, input());
+    clock = new Date(now().getTime() + 121000);
+    expect(await sendDueAttendanceUpdates(d)).toEqual({ processed: 1 });
+    expect(d.messaging.sent).toHaveLength(1);
+    expect((await db().doc('attendance_notifications/S1_2026-09-21_am').get()).data().status).toBe('done');
+    expect((await db().doc('attendance_notifications/0_broken').get()).data().status).toBe('sending');
+  });
+  it('sends nothing when a flag is undone inside the window', async () => {
+    let clock = now();
+    const d = { ...deps(), now: () => clock };
+    await setSessionAbsence(d, input());
+    clock = new Date(now().getTime() + 30000);
+    await setSessionAbsence(d, input({ absent: false, expectedRevision: 1, operationId: 'undo1', reason: 'Undone right after flagging' }));
+    clock = new Date(now().getTime() + 300000);
+    await sendDueAttendanceUpdates(d);
+    expect(d.messaging.sent).toHaveLength(0);
+    expect((await db().collection('guardians/gA/inbox').get()).size).toBe(0);
+    expect((await db().doc('attendance_notifications/S1_2026-09-21_am').get()).data().status).toBe('cancelled');
+  });
+  it('sends a second update when a sent flag is reversed later', async () => {
+    let clock = now();
+    const d = { ...deps(), now: () => clock };
+    await setSessionAbsence(d, input());
+    clock = new Date(now().getTime() + 121000);
+    await sendDueAttendanceUpdates(d);
+    await setSessionAbsence(d, input({ absent: false, expectedRevision: 1, operationId: 'restore1', reason: 'Was in class' }));
+    clock = new Date(now().getTime() + 242000);
+    await sendDueAttendanceUpdates(d);
+    expect(d.messaging.sent).toHaveLength(2);
+    expect((await db().collection('guardians/gA/inbox').get()).size).toBe(2);
+  });
+  it('still notifies corrections created before the outbox existed', async () => {
+    const d = deps();
+    await db().doc('attendance_corrections/legacy1').set({ studentId: 'S1', schoolYear: '2026-2027', date: '2026-09-21', session: 'am',
+      absent: true, revision: 1, learnerName: 'Cruz, Ana', status: 'pending' });
+    await handleAttendanceCorrection(d, { id: 'legacy1' });
+    expect(d.messaging.sent).toHaveLength(1);
+  });
+  it('lets SIMS coordinators review and correct earlier days within their grades only', async () => {
+    await auth().createUser({ uid: 'glc7', email: 'glc7@example.com' });
+    await db().doc('users/glc7@example.com').set({ uid: 'glc7', role: 'glc', gradeLevel: 7 });
+    await auth().createUser({ uid: 'glc8', email: 'glc8@example.com' });
+    await db().doc('users/glc8@example.com').set({ uid: 'glc8', role: 'glc', gradeLevel: 8 });
+    expect((await getSchoolRoster(deps('glc7'), { sectionId: 'SEC1', date: '2026-09-20' })).canCorrect).toBe(true);
+    await setSessionAbsence(deps('glc7'), input({ date: '2026-09-20' }));
+    await expect(getSchoolRoster(deps('glc8'), { sectionId: 'SEC1', date: '2026-09-21' })).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+  it('returns the section bell schedule with the roster', async () => {
+    await db().doc('schedules/SPLIT').set({ timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:30', name: 'Split' });
+    await db().doc('sections/SEC1').update({ scheduleId: 'SPLIT' });
+    expect((await getSchoolRoster(deps(), { sectionId: 'SEC1', date: '2026-09-21' })).schedule)
+      .toEqual({ timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:30' });
+    await db().doc('sections/SEC1').update({ scheduleId: 'MISSING' });
+    expect((await getSchoolRoster(deps(), { sectionId: 'SEC1', date: '2026-09-21' })).schedule).toBeNull();
   });
 });

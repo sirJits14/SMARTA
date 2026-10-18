@@ -8,14 +8,13 @@ import { useDoc } from '../hooks/useDoc.js';
 import { navTabs, activeTab, showsAppTitle } from '../lib/nav.js';
 import { useAnnouncements } from '../hooks/useAnnouncements.js';
 import { hasUnread } from '../lib/announcements.js';
-import '../screens/School.css';
 
-const LABEL = { home: S.navHome, notices: S.navNotices, inbox: S.navInbox, settings: S.navSettings };
+const LABEL = { home: S.navHome, class: S.navClass, notices: S.navNotices, inbox: S.navInbox, settings: S.navSettings };
 
 // Frosted floating pill. One chip slides behind the active tab; its target is
 // measured from the active button after layout (the layout itself switches
 // instantly, only the chip and label animate).
-function GlassNav({ route, navigate, unread, view }) {
+function GlassNav({ route, navigate, unread, view, hasClass }) {
   const active = activeTab(route.name);
   const navRef = useRef(null);
   const btnRefs = useRef({});
@@ -37,7 +36,7 @@ function GlassNav({ route, navigate, unread, view }) {
     ro.observe(navRef.current);
     if (activeEl) ro.observe(activeEl);
     return () => ro.disconnect();
-  }, [active, view]);
+  }, [active, view, hasClass]);
 
   // Turn transitions on only after the first placement so the chip doesn't
   // fly in from the left edge on page load.
@@ -50,13 +49,13 @@ function GlassNav({ route, navigate, unread, view }) {
   return (
     <nav ref={navRef} aria-label="Main" className="gnav">
       {chip && <span aria-hidden="true" className={`gnav-chip${animate ? ' gnav-chip--anim' : ''}`} style={{ width: chip.w, transform: `translateX(${chip.x}px)` }} />}
-      {navTabs(view).map(({ key, path }) => {
+      {navTabs(view, hasClass).map(({ key, path }) => {
         const on = key === active;
         return (
           <button key={key} ref={(el) => { btnRefs.current[key] = el; }} type="button" className="gnav-btn"
             onClick={() => navigate(path)} aria-current={on ? 'page' : undefined}>
             <span className="gnav-icon"><Icon name={key} filled={on} size={22} />{key === 'notices' && unread && <span className="gnav-dot" />}</span>
-            <span className="gnav-label">{key === 'home' && view === 'school' ? 'School' : LABEL[key]}{key === 'notices' && unread && <span className="sr-only">, {S.announcementsUnread}</span>}</span>
+            <span className="gnav-label">{LABEL[key]}{key === 'notices' && unread && <span className="sr-only">, {S.announcementsUnread}</span>}</span>
           </button>
         );
       })}
@@ -64,7 +63,7 @@ function GlassNav({ route, navigate, unread, view }) {
   );
 }
 
-export default function Shell({ route, navigate, profile, view = 'family', gate = false, children }) {
+export default function Shell({ route, navigate, profile, view = 'family', hasClass = false, gate = false, children }) {
   const portal = useDoc('settings/parent_portal').data;
   // One read per app open: just the newest post this guardian can see.
   const { rows: newest } = useAnnouncements(profile, 1, view);
@@ -82,7 +81,6 @@ export default function Shell({ route, navigate, profile, view = 'family', gate 
     <div style={{ fontFamily: T.font, color: T.ink, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <header style={{ position: 'relative', padding: '14px 16px 0', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 11 }}><ThemeMenuButton /></div>
-        {!gate && profile && <div className="portal-view-switch" role="group" aria-label="Portal view"><button type="button" aria-pressed={view === 'family'} onClick={() => navigate('/')}>Family</button><button type="button" aria-pressed={view === 'school'} onClick={() => navigate('/school')}>School</button></div>}
         {titleRow && <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10, minHeight: 44, display: 'flex', alignItems: 'center', paddingRight: 56 }}>{S.appName}</div>}
         {!titleRow && hasBanner && <div aria-hidden="true" style={{ minHeight: 44, marginBottom: 10 }} />}
         {!online && <Banner tone="warn">{S.offlineBanner}</Banner>}
@@ -90,7 +88,7 @@ export default function Shell({ route, navigate, profile, view = 'family', gate 
         {portal?.announcement && <Banner>{portal.announcement}</Banner>}
       </header>
       <main style={{ flex: 1, padding: '0 16px calc(96px + env(safe-area-inset-bottom))', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>{children}</main>
-      <GlassNav route={route} navigate={navigate} unread={unread} view={view} />
+      <GlassNav route={route} navigate={navigate} unread={unread} view={view} hasClass={hasClass} />
     </div>
   );
 }

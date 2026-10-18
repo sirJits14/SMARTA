@@ -8,6 +8,8 @@ import { Spinner, EmptyState } from './components/ui.jsx';
 import S from './strings.js';
 import SignIn from './screens/SignIn.jsx';
 import { portalView, notificationDestination } from './lib/nav.js';
+import { readMode, writeMode, reconcileMode, schoolHome } from './lib/portalMode.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
 // Screens below are only needed once a route is resolved, so they're
 // route-split out of the sign-in/verify chunk to keep the initial load light.
 // Each can also be fetched ahead of time (preload); once it has loaded it
@@ -52,6 +54,23 @@ export default function App() {
     } else navigate(to, options);
   }, [view, navigate]);
   const { user, profile } = useAuth();
+  const uid = user?.uid;
+  const [mode, setModeState] = useState(() => readMode());
+  // The saved choice belongs to the signed-in account.
+  useEffect(() => { setModeState(readMode(uid)); }, [uid]);
+  const setMode = useCallback((next) => { writeMode(uid, next); setModeState(next); }, [uid]);
+  // Access is re-checked on every refresh: revoked, year-end and promotion all land here.
+  const school = useSchoolContext(uid, Boolean(profile) && mode.view === 'school');
+  useEffect(() => {
+    const { mode: next, changed } = reconcileMode(mode, school.data);
+    if (!changed) return;
+    setMode(next);
+    if (next.view === 'family' && view === 'school') navigate('/', { replace: true });
+  }, [school.data, mode, view, setMode, navigate]);
+  // School mode opens on the teacher's School home instead of the family list.
+  useEffect(() => {
+    if (profile && mode.view === 'school' && route.name === 'home') navigate(schoolHome(mode), { replace: true });
+  }, [profile, mode, route.name, navigate]);
   // Consent.jsx reads this doc itself before the account profile exists.
   // Profiles are created by linking a learner or choosing Skip for now.
   const portal = useDoc(profile ? 'settings/parent_portal' : null).data;
@@ -112,7 +131,7 @@ export default function App() {
   // returning accounts enter the app. Deep links to /activate?c= survive.
   let consented = false;
   try { consented = Boolean(profile) || localStorage.getItem(CONSENT_KEY) !== null; } catch { consented = Boolean(profile); }
-  const props = { user, profile, route, navigate: scopedNavigate, view };
+  const props = { user, profile, route, navigate: scopedNavigate, view, mode, setMode };
   let screen;
   let gate = false; // first-run Consent / Activate have no PageHeader, so Shell adds the title row
   if (!profile && !consented && route.name !== 'requestAccess') { gate = true; screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate(route.name === 'activate' ? `/activate${window.location.search}` : '/activate', { replace: true }); }} />; }
@@ -131,5 +150,5 @@ export default function App() {
     case 'settings': screen = <Settings {...props} />; break;
     default: screen = <EmptyState title={S.notFound} />;
   }
-  return <Shell route={route} navigate={navigate} profile={profile} view={view} gate={gate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
+  return <Shell route={route} navigate={navigate} profile={profile} view={view} hasClass={mode.hasClass} gate={gate}><Suspense fallback={<Spinner label={S.loading} />}>{screen}</Suspense></Shell>;
 }

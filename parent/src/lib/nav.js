@@ -6,8 +6,8 @@ export const NAV_TABS = [
   { key: 'inbox', path: '/inbox' },
   { key: 'settings', path: '/settings' },
 ];
-export const navTabs = (view) => view === 'school' ? [
-  { key: 'home', path: '/school' },
+export const navTabs = (view, hasClass = true) => view === 'school' ? [
+  ...(hasClass ? [{ key: 'class', path: '/school' }] : []),
   { key: 'notices', path: '/announcements?view=school' },
   { key: 'settings', path: '/settings?view=school' },
 ] : NAV_TABS;
@@ -15,7 +15,7 @@ export const portalView = (route) => route.name === 'school' || (['announcements
 export const notificationDestination = (data) => data?.announcementId ? `/announcements/${encodeURIComponent(data.announcementId)}${data.view === 'school' ? '?view=school' : ''}` : '/inbox';
 
 const ROUTE_TAB = {
-  home: 'home', school: 'home', learner: 'home', report: 'home', // a report is opened from a learner's history
+  home: 'home', school: 'class', learner: 'home', report: 'home', // a report is opened from a learner's history
   announcements: 'notices', announcement: 'notices',
   inbox: 'inbox',
   settings: 'settings',

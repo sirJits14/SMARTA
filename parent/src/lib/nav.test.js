@@ -14,13 +14,17 @@ describe('NAV_TABS', () => {
 });
 
 describe('activeTab', () => {
-  it('uses School navigation with its own notices and no family inbox', () => {
+  it('uses School navigation with Class for advisers and no family inbox', () => {
     expect(navTabs('school')).toEqual([
-      { key: 'home', path: '/school' },
+      { key: 'class', path: '/school' },
       { key: 'notices', path: '/announcements?view=school' },
       { key: 'settings', path: '/settings?view=school' },
     ]);
-    expect(activeTab('school')).toBe('home');
+    expect(navTabs('school', false)).toEqual([
+      { key: 'notices', path: '/announcements?view=school' },
+      { key: 'settings', path: '/settings?view=school' },
+    ]);
+    expect(activeTab('school')).toBe('class');
     expect(showsAppTitle('school')).toBe(false);
   });
   it('lights Home for the home screen and a learner page', () => {
