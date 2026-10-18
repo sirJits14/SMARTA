@@ -192,7 +192,7 @@ const S = {
   developerVillaRole: 'Lead Software Engineer & Database Administrator',
   developerCandanoName: 'Emmanuel Candano',
   developerCandanoPosition: 'Teacher II',
-  developerCandanoRole: 'Head of Logistics & Documentation',
+  developerCandanoRole: 'Head of Operations and Logistics',
   developerAbellanaName: 'El Chamberlain Q. Abellana',
   developerAbellanaPosition: 'Teacher IV',
   developerAbellanaRole: 'Lead Researcher & Spokesperson',
