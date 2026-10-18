@@ -39,3 +39,11 @@ npm exec vite -- --config tests/browser/settings.config.mjs
 ```
 
 Open http://127.0.0.1:5189/tests/browser/settings-preview.html. It renders the real Settings screen and sub-pages with synthetic data: the hooks, account writes, device checks and Firebase are swapped out by `parent/tests/browser/settings.config.mjs`, so it never calls production services. Use "Preview controls" to switch scenarios (no contact details, no learners, iPhone, installed, blocked, notifications off), fire a fake install prompt, and read the write log.
+
+## School access and session review preview
+
+```powershell
+npm exec vite -- --config tests/browser/school-review.config.mjs
+```
+
+Open http://127.0.0.1:5191/tests/browser/school-review.html for the Session review page (administrator), or add `?view=access` for the Guardians School access tab. Add `&me=glc` for a Grade 8 Grade Level Coordinator and `&theme=dark` for dark mode. The real pages run against an in-memory backend (`school-review-fixture.js`) with a short delay: ten learners per section with late and missing gate entries, one AM session already flagged, and assignments, revokes and corrections that persist until the page reloads. It never calls production services.
