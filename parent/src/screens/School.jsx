@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { callable } from '../firebase.js';
 import { useSchoolContext } from '../hooks/useSchoolContext.js';
-import { attendanceSections, correctionError, roleRequestError, ROLE_LABELS, schoolError, sectionLabel, sessionAction, correctionTime } from '../lib/school.js';
+import { attendanceSections, correctionError, ROLE_LABELS, schoolError, sectionLabel, sessionAction, correctionTime } from '../lib/school.js';
 import { manilaDate, formatScanTime } from '../../../shared/dates.js';
 import { nameCase } from '../lib/format.js';
 import { Btn, Card, Field, Inp, Sel, Banner, Spinner, EmptyState } from '../components/ui.jsx';
@@ -32,7 +32,7 @@ export default function School({ user, navigate }) {
   };
   const submit = (event) => {
     event.preventDefault();
-    const problem = roleRequestError(request, context.sections);
+    const problem = request.sectionId ? '' : 'Choose a current school section.';
     if (problem) { setError(problem); return; }
     run(() => callable('requestSchoolRoleFn')(request), 'Request sent. School access starts after approval.');
   };
