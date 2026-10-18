@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
-import { roleOf } from '../../shared/staffRoles.js';
+import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
 import { SCHOOL_ROLES, assignmentKey, canApproveRoleRequest } from '../../shared/schoolAccess.js';
 import { enforceRateLimit } from '../callable.js';
 
@@ -42,8 +42,11 @@ export async function loadSchoolActor(deps, reader = deps.db) {
   }
   const assignments = ended || account.data()?.disabled ? [] : (account.data()?.assignments || [])
     .filter(a => a.schoolYear === schoolYear && SCHOOL_ROLES.includes(a.role));
+  const role = bound ? roleOf(profile) : null;
+  // SIMS coordinators review their grades' sessions without a separate school assignment.
+  const simsGrades = !ended && role && role !== 'admin' ? (scopedGrades(profile) || []) : [];
   return { uid, email: email.toLowerCase(), displayName: deps.displayName || account.data()?.displayName || profile?.name || email,
-    isAdmin: Boolean(bound && roleOf(profile) === 'admin'), schoolYear, ended: Boolean(ended), assignments };
+    isAdmin: role === 'admin', schoolYear, ended: Boolean(ended), assignments, simsGrades };
 }
 
 async function assignmentFrom(deps, reader, actor, input) {

@@ -86,4 +86,13 @@ describe('session corrections', () => {
     await db().doc('guardian_links/gA_S1').update({ relationship: 'Adviser' });
     await expect(getFamilyAttendance(deps('gA'), { studentId: 'S1', date: '2026-09-21' })).rejects.toMatchObject({ code: 'permission-denied' });
   });
+  it('lets SIMS coordinators review and correct earlier days within their grades only', async () => {
+    await auth().createUser({ uid: 'glc7', email: 'glc7@example.com' });
+    await db().doc('users/glc7@example.com').set({ uid: 'glc7', role: 'glc', gradeLevel: 7 });
+    await auth().createUser({ uid: 'glc8', email: 'glc8@example.com' });
+    await db().doc('users/glc8@example.com').set({ uid: 'glc8', role: 'glc', gradeLevel: 8 });
+    expect((await getSchoolRoster(deps('glc7'), { sectionId: 'SEC1', date: '2026-09-20' })).canCorrect).toBe(true);
+    await setSessionAbsence(deps('glc7'), input({ date: '2026-09-20' }));
+    await expect(getSchoolRoster(deps('glc8'), { sectionId: 'SEC1', date: '2026-09-21' })).rejects.toMatchObject({ code: 'permission-denied' });
+  });
 });
