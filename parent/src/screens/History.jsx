@@ -11,7 +11,7 @@ import { formatScanTime, localDate } from '../../../shared/dates.js';
 import PageHeader from '../components/PageHeader.jsx';
 import FamilySessionDetails from '../components/FamilySessionDetails.jsx';
 import RelationshipRow from '../components/RelationshipRow.jsx';
-import { isDepedEmail } from '../lib/relationships.js';
+import { ADVISER, isDepedEmail } from '../lib/relationships.js';
 import { useRelationshipSheet } from '../hooks/useRelationshipSheet.jsx';
 
 const PAGE = 30;
@@ -33,7 +33,9 @@ export default function History({ user, studentId, navigate, route }) {
   // their own link here; everyone else's screen is unchanged (spec 2026-10-17).
   const deped = isDepedEmail(user?.email);
   const { data: link } = useDoc(deped && user ? `guardian_links/${user.uid}_${studentId}` : null);
-  const relationship = useRelationshipSheet();
+  // An Adviser link is not a family link, so this screen stops working for
+  // it: go Home and say why.
+  const relationship = useRelationshipSheet({ onSaved: (r) => { if (r === ADVISER) navigate('/?changed=adviser', { replace: true }); } });
   const [rows, setRows] = useState([]); const [last, setLast] = useState(null); const [more, setMore] = useState(true); const [busy, setBusy] = useState(false);
 
   const load = async (cursor) => {

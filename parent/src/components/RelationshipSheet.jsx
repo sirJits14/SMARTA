@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import S from '../strings.js';
 import { T } from '../styles.js';
 import { Btn, Banner } from './ui.jsx';
-import { relationshipOptions, changeErrorMessage } from '../lib/relationships.js';
+import { ADVISER, relationshipOptions, changeErrorMessage } from '../lib/relationships.js';
 
 // Lazy-loaded by useRelationshipSheet (keeps the eager bundle small). Portalled to
 // <body> so no .glass-card backdrop-filter traps the fixed overlay (see ScanSheet).
@@ -44,10 +44,11 @@ export default function RelationshipSheet({ link, onSave, onClose }) {
           {options.map((r) => (
             <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: T.tap, fontSize: 16, cursor: 'pointer' }}>
               <input type="radio" name="relationship" value={r} checked={choice === r} disabled={busy} onChange={() => setChoice(r)} />
-              {r}
+              {r === ADVISER ? S.activateAdviserOption : r}
             </label>
           ))}
         </div>
+        {choice === ADVISER && <Banner tone="warn">{S.relAdviserWarning}</Banner>}
         <p style={{ fontSize: 13, color: T.inkMuted, margin: '12px 0' }}>{S.relOnceNote}</p>
         <div style={{ display: 'grid', gap: 10 }}>
           <Btn onClick={save} disabled={!choice || busy}>{S.relConfirm}</Btn>

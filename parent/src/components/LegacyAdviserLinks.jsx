@@ -2,10 +2,11 @@ import S from '../strings.js';
 import { T } from '../styles.js';
 import { initials, nameCase } from '../lib/format.js';
 
-// Home, DepEd accounts only: links made with an old adviser slip grant
-// nothing since school roles moved to SIMS, so Home leaves them out of the
-// learner list. They cannot be changed into family links here (that would be
-// family access without approval); this says what to do instead.
+// Home, DepEd accounts only: Adviser links (from an old adviser slip, or a
+// family link the account moved to Adviser) grant nothing since school roles
+// moved to SIMS, so Home leaves them out of the learner list. They cannot be
+// changed back into family links (that would be family access without
+// approval); this says what to do instead.
 export default function LegacyAdviserLinks({ links }) {
   if (!links?.length) return null;
   return (

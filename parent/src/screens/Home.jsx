@@ -53,7 +53,7 @@ function LearnerRow({ link, data, error, navigate }) {
   );
 }
 
-export default function Home({ user, profile, navigate }) {
+export default function Home({ user, profile, route, navigate }) {
   const { links, adviserLinks } = useLinks(user.uid);
   const docs = useDocs((links || []).map((l) => `learners/${l.studentId}`));
   const device = useDeviceStatus(user.uid);
@@ -65,6 +65,7 @@ export default function Home({ user, profile, navigate }) {
   return (
     <>
       {header}
+      {route?.query.changed === 'adviser' && <Banner tone="info">{S.relMovedToAdviser}</Banner>}
       {entries.length > 0 && notif === 'off' && <Banner action={<Btn onClick={() => navigate('/settings')} style={{ padding: '6px 12px', minHeight: 36 }}>{S.notifBannerButton}</Btn>}>{S.notifBannerTitle}</Banner>}
       {entries.length === 0 && <EmptyState title={S.homeNoLinks} hint={S.homeLinkHint} />}
       {entries.length === 0 && <Btn onClick={() => navigate('/activate')} style={{ width: '100%' }}>{S.homeLinkLearners}</Btn>}
