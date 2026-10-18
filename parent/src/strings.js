@@ -70,11 +70,11 @@ const S = {
   relOnceNote: 'You can change this once per school year. After that, ask the registrar.',
   relConfirm: 'Change relationship',
   relChangeFailed: 'Could not change your relationship right now. Please try again in a moment.',
-  // Home, DepEd accounts with a link from an old adviser slip.
-  legacyAdviserTitle: 'Linked as Adviser',
-  legacyAdviserHint: 'Adviser links no longer show gate scans. If this learner is your own child, change it to your family relationship.',
-  legacyAdviserChange: 'Change relationship',
-  legacyAdviserChanged: 'Already changed this school year. Ask the school to correct it.',
+  // Home, DepEd accounts with a link from an old adviser slip. Mirrors
+  // OLD_ADVISER_LINK in functions/src/handlers/links.js.
+  legacyAdviserTitle: 'Old adviser links',
+  legacyAdviserHint: 'These old adviser links no longer give access. An administrator assigns class advisers in SIMS. If you are a learner\'s parent or guardian, link with a family slip.',
+  legacyAdviserRow: 'Old adviser link · no access',
   legacyAdviserUnnamed: 'Learner',
   scanButton: 'Scan the QR code on the slip',
   scanTitle: 'Scan activation slip',

@@ -9,9 +9,10 @@ const DEPED_DOMAIN = '@deped.gov.ph';
 // Display only: the server checks the verified token itself.
 export const isDepedEmail = (email) => typeof email === 'string' && email.trim().toLowerCase().endsWith(DEPED_DOMAIN);
 
-// A DepEd account can move its own link to any other family relationship,
-// including a legacy Adviser link, but never to Adviser: school roles are
-// assigned in SIMS (changeLinkRelationship in functions/src/handlers/links.js).
+// A DepEd account can move its own family link to any other family
+// relationship, never to Adviser: school roles are assigned in SIMS. Old
+// adviser links are never offered (changeLinkRelationship in
+// functions/src/handlers/links.js).
 export const relationshipOptions = (link) => RELATIONSHIPS.filter((r) => r !== link?.relationship);
 
 // changeLinkRelationshipFn's refusals are written for the parent; anything

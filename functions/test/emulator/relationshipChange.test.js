@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { db, clearAll, seedSchool } from './helpers.js';
-import { changeLinkRelationship, correctLinkRelationship, SCHOOL_ROLES_SEPARATE } from '../../src/handlers/links.js';
+import { changeLinkRelationship, correctLinkRelationship, SCHOOL_ROLES_SEPARATE, OLD_ADVISER_LINK } from '../../src/handlers/links.js';
 import { issueActivationCodes, reissueActivationCode, activateCode } from '../../src/handlers/codes.js';
 import { hashCode } from '../../src/lib/activationCode.js';
 import { LIMITS } from '../../src/callable.js';
@@ -16,7 +16,6 @@ const link = async (id) => (await db().doc(`guardian_links/${id}`).get()).data()
 const seedLink = (uid, over = {}) => db().doc(`guardian_links/${uid}_S1`).set({
   guardianUid: uid, studentId: 'S1', status: 'active', schoolYear: SY, relationship: 'Mother', slot: 'guardian', ...over,
 });
-const seedAdviserLink = (uid = 'tAdv', over = {}) => seedLink(uid, { relationship: 'Adviser', slot: 'adviser', ...over });
 const issueSlip = async () => (await issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: SY })).slips.find((s) => s.studentId === 'S1').code;
 const redeem = (who, code, relationship) => activateCode(who, { code, relationship, consentVersion: 1, guardianName: 'Name' });
 const slip = async (code) => (await db().doc(`activation_codes/${hashCode(code)}`).get()).data();
@@ -36,7 +35,7 @@ describe('changeLinkRelationship', () => {
     await redeem(deped('tMom'), code, 'Guardian');
     const before = await slip(code);
 
-    await expect(change(deped('tMom'), 'Mother')).resolves.toEqual({ relationship: 'Mother', slot: 'guardian' });
+    await expect(change(deped('tMom'), 'Mother')).resolves.toEqual({ relationship: 'Mother' });
     const changed = await link('tMom_S1');
     expect(changed).toMatchObject({ status: 'active', relationship: 'Mother', slot: 'guardian', previousRelationship: 'Guardian', relationshipChangedFor: SY });
     expect(changed.relationshipChangedAt).toBeTruthy();
@@ -44,29 +43,39 @@ describe('changeLinkRelationship', () => {
     expect(await slip(code)).toEqual(before);
     expect(await audits()).toEqual([expect.objectContaining({
       actorType: 'guardian', actorUid: 'tMom', targetType: 'student', targetId: 'S1',
-      details: { from: 'Guardian', to: 'Mother', fromSlot: 'guardian', toSlot: 'guardian', schoolYear: SY },
+      details: { from: 'Guardian', to: 'Mother', schoolYear: SY },
     })]);
   });
 
-  it('moves a legacy Adviser link into a family relationship and frees the slip\'s adviser slot', async () => {
-    // Slips no longer take Adviser (activateFamilyCode), so this is an old link.
-    const code = await issueSlip();
-    await redeem(deped('tMom'), code, 'Adviser');
-    expect(await slip(code)).toMatchObject({ guardianRedemptions: 0, adviserRedemptions: 1 });
-
-    await expect(change(deped('tMom'), 'Father')).resolves.toEqual({ relationship: 'Father', slot: 'guardian' });
-    expect(await link('tMom_S1')).toMatchObject({ relationship: 'Father', slot: 'guardian', previousRelationship: 'Adviser' });
-    expect(await slip(code)).toMatchObject({ guardianRedemptions: 1, adviserRedemptions: 0, status: 'issued' });
-    expect((await audits())[0].details).toMatchObject({ from: 'Adviser', fromSlot: 'adviser', toSlot: 'guardian' });
+  it('fixes a family link made before slots existed', async () => {
+    await db().doc('guardian_links/tMom_S1').set({ guardianUid: 'tMom', studentId: 'S1', status: 'active', schoolYear: SY, relationship: 'Guardian' });
+    await expect(change(deped('tMom'), 'Father')).resolves.toEqual({ relationship: 'Father' });
+    const l = await link('tMom_S1');
+    expect(l).toMatchObject({ relationship: 'Father', previousRelationship: 'Guardian' });
+    expect(l.slot).toBeUndefined();
   });
 
-  it('moves a legacy Adviser link that has no slot, which already counts as a guardian', async () => {
-    await db().doc('guardian_links/tAdv_S1').set({ guardianUid: 'tAdv', studentId: 'S1', status: 'active', schoolYear: SY, relationship: 'Adviser' });
-    await seedLink('gA');
-    await seedLink('gB', { relationship: 'Father' });
-    // Two other guardians do not block it: this link already held a guardian count.
-    await expect(change(deped(), 'Mother')).resolves.toEqual({ relationship: 'Mother', slot: 'guardian' });
-    expect(await link('tAdv_S1')).toMatchObject({ relationship: 'Mother', slot: 'guardian', previousRelationship: 'Adviser' });
+  it('refuses an old adviser link, which would otherwise become family access without approval', async () => {
+    const code = await issueSlip();
+    await redeem(deped('tAdv'), code, 'Adviser');
+    const before = await slip(code);
+    await db().doc('guardian_links/tOld_S1').set({ guardianUid: 'tOld', studentId: 'S1', status: 'active', schoolYear: SY, relationship: 'Adviser' });
+    for (const uid of ['tAdv', 'tOld']) {
+      await expect(change(deped(uid), 'Mother')).rejects.toMatchObject({ code: 'failed-precondition', message: OLD_ADVISER_LINK });
+      const l = await link(`${uid}_S1`);
+      expect(l.relationship).toBe('Adviser');
+      expect(l.relationshipChangedFor).toBeUndefined();
+    }
+    expect(OLD_ADVISER_LINK).toBe('This is an old adviser link, which no longer gives access. An administrator assigns class advisers in SIMS. If you are this learner\'s parent or guardian, link with a family slip.');
+    expect(await slip(code)).toEqual(before);
+    expect(await audits()).toEqual([]);
+  });
+
+  it('administrators cannot convert an old adviser link either', async () => {
+    await seedLink('tAdv', { relationship: 'Adviser', slot: 'adviser' });
+    await expect(correctLinkRelationship({ db: db(), email: 'admin@deped.gov.ph' }, { linkId: 'tAdv_S1', relationship: 'Mother', reason: 'Is the mother' }))
+      .rejects.toMatchObject({ code: 'failed-precondition' });
+    expect(await link('tAdv_S1')).toMatchObject({ relationship: 'Adviser', slot: 'adviser' });
   });
 
   it('never switches to Adviser: school roles are assigned in SIMS', async () => {
@@ -109,35 +118,8 @@ describe('changeLinkRelationship', () => {
   it('gives a link re-activated with next year\'s slip one more change', async () => {
     // activateCode merges into the old link, so last year's fields stay.
     await seedLink('tAdv', { relationship: 'Guardian', previousRelationship: 'Mother', relationshipChangedFor: '2025-2026' });
-    await expect(change(deped(), 'Mother')).resolves.toEqual({ relationship: 'Mother', slot: 'guardian' });
+    await expect(change(deped(), 'Mother')).resolves.toEqual({ relationship: 'Mother' });
     expect(await link('tAdv_S1')).toMatchObject({ previousRelationship: 'Guardian', relationshipChangedFor: SY });
-  });
-
-  it('leaves counts held by revoked links alone, moving one count only', async () => {
-    const code = await issueSlip();
-    await redeem(gmail('gX'), code, 'Father');
-    await redeem(deped(), code, 'Adviser');
-    expect(await slip(code)).toMatchObject({ guardianRedemptions: 1, adviserRedemptions: 1, status: 'issued' });
-    // What revokeLink does to the link; it never lowers the slip's counters.
-    await db().doc('guardian_links/gX_S1').update({ status: 'revoked' });
-
-    await change(deped(), 'Mother');
-    expect(await slip(code)).toMatchObject({ guardianRedemptions: 2, adviserRedemptions: 0 });
-
-    const generic = { code: 'failed-precondition', message: 'That code could not be used. Ask the registrar to reissue your slip.' };
-    await expect(redeem(gmail('gB'), code, 'Father')).rejects.toMatchObject(generic);
-  });
-
-  it('leaves a revoked slip, and a slip from another school year, alone', async () => {
-    const code = await issueSlip();
-    await redeem(deped(), code, 'Adviser');
-    await db().doc(`activation_codes/${hashCode(code)}`).update({ status: 'revoked' });
-    const before = await slip(code);
-    const old = { studentId: 'S1', schoolYear: '2025-2026', status: 'issued', guardianRedemptions: 0, maxGuardians: 2, adviserRedemptions: 1, maxAdvisers: 1 };
-    await db().doc('activation_codes/oldslip').set(old);
-    await change(deped(), 'Mother');
-    expect(await slip(code)).toEqual(before);
-    expect((await db().doc('activation_codes/oldslip').get()).data()).toEqual(old);
   });
 
   it('clears the change note when staff revoke the link and the account links again', async () => {
@@ -154,25 +136,6 @@ describe('changeLinkRelationship', () => {
     expect(l.previousRelationship).toBeUndefined();
     expect(l.relationshipChangedAt).toBeUndefined();
     await expect(change(deped(), 'Mother')).rejects.toMatchObject({ code: 'failed-precondition', message: expect.stringContaining('already changed') });
-  });
-
-  it('refuses Adviser to family when both guardian slots are taken', async () => {
-    await seedAdviserLink();
-    await seedLink('gA');
-    await seedLink('gB', { relationship: 'Father' });
-    await expect(change(deped(), 'Mother')).rejects.toMatchObject({
-      code: 'failed-precondition', message: 'This learner already has 2 linked guardians. Ask the school to remove one first.',
-    });
-    expect(await link('tAdv_S1')).toMatchObject({ relationship: 'Adviser', slot: 'adviser' });
-  });
-
-  it('ignores revoked, expired and other-year links when counting', async () => {
-    await seedAdviserLink();
-    await seedLink('gA');
-    await seedLink('gOld', { status: 'revoked' });
-    await seedLink('gExp', { status: 'expired' });
-    await seedLink('gPrev', { schoolYear: '2025-2026' });
-    await expect(change(deped(), 'Mother')).resolves.toEqual({ relationship: 'Mother', slot: 'guardian' });
   });
 
   it('refuses a missing, revoked or expired link, or one whose school year has ended', async () => {

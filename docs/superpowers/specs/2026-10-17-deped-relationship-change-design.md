@@ -216,19 +216,26 @@ gate-scan pushes and the School view all skip it. This changes the design
 above.
 
 - **DepEd self-fix (Parent app, `changeLinkRelationshipFn`).** The account
-  can move its own link to any *other family* relationship: same-side changes
-  (Guardian → Mother) are now in scope, and so is a legacy Adviser link → a
-  family relationship. Moving **to** Adviser is refused with "Family links and
-  school roles are now separate. An administrator assigns school roles in
-  SIMS and can correct your family link." Still once per link per school
-  year, DepEd only, rate-limited, and the year must be open. Leaving the
-  adviser slot moves one count on each open slip to the guardian slot, under
-  the 2-guardian cap. A legacy Adviser link with no `slot` already counts as a
-  guardian, so nothing moves.
-- **Where.** On the learner screen, the "Linked as … · Change" row is back for
-  DepEd accounts. Home leaves Adviser links out of the learner list, so it
-  shows a "Linked as Adviser" section (DepEd accounts only, lazy-loaded) with
-  a Change relationship button.
+  can move its own *family* link to any other family relationship, so
+  same-side changes (Guardian → Mother) are now in scope. Every family
+  relationship holds the guardian slot, so slips never change, and the old
+  slot-moving code (`moveSlot`) is gone.
+  - Moving **to** Adviser is refused with "Family links and school roles are
+    now separate. An administrator assigns school roles in SIMS and can
+    correct your family link."
+  - An old adviser link (`slot: 'adviser'`, or relationship Adviser with no
+    slot) is refused with "This is an old adviser link, which no longer gives
+    access. An administrator assigns class advisers in SIMS. If you are this
+    learner's parent or guardian, link with a family slip." Converting it
+    would give family access (gate scans, attendance, notifications) with no
+    approval, and an unapproved teacher could convert a whole class. Legacy
+    adviser links never become family access.
+  - Still once per link per school year, DepEd only, rate-limited, and the
+    year must be open.
+- **Where.** The "Linked as … · Change" row is back on the learner screen for
+  DepEd accounts, on family links only. Home leaves adviser links out of the
+  learner list. For DepEd accounts that have any, Home shows an "Old adviser
+  links" section (lazy-loaded) with the same guidance and no change action.
 - **Administrator correction (SIMS, `correctLinkRelationshipFn`).** Under
   Guardians → Learner access, each active family link has a Correct
   relationship action. It takes a family relationship (never Adviser) and a

@@ -19,7 +19,7 @@ describe('strings', () => {
     expect(S.activateAdviserDeped).toContain('@deped.gov.ph');
   });
   it('has the relationship change strings', () => {
-    for (const k of ['relLinkedAs', 'relChange', 'relChangedFrom', 'relSheetTitle', 'relOnceNote', 'relConfirm', 'relChangeFailed', 'legacyAdviserTitle', 'legacyAdviserHint', 'legacyAdviserChange', 'legacyAdviserChanged', 'legacyAdviserUnnamed'])
+    for (const k of ['relLinkedAs', 'relChange', 'relChangedFrom', 'relSheetTitle', 'relOnceNote', 'relConfirm', 'relChangeFailed', 'legacyAdviserTitle', 'legacyAdviserHint', 'legacyAdviserRow', 'legacyAdviserUnnamed'])
       expect(typeof S[k], k).toBe('string');
   });
   it('has the appearance strings', () => {

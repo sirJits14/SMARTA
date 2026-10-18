@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isDepedEmail, isOpenStatus, slotFor, readSlots, claimSlot, moveSlot, newCodeSlots, slotsFromLinks, ADVISER } from './codeSlots.js';
+import { isDepedEmail, isOpenStatus, slotFor, readSlots, claimSlot, newCodeSlots, slotsFromLinks, ADVISER } from './codeSlots.js';
 
 describe('isDepedEmail', () => {
   it('accepts @deped.gov.ph in any case, rejects others', () => {
@@ -57,32 +57,6 @@ describe('claimSlot', () => {
   it('lets a legacy exhausted code take an adviser', () => {
     expect(claimSlot({ redemptions: 2, maxRedemptions: 2, status: 'exhausted' }, 'adviser'))
       .toEqual({ guardianRedemptions: 2, maxGuardians: 2, adviserRedemptions: 1, maxAdvisers: 1, status: 'exhausted' });
-  });
-});
-
-describe('moveSlot', () => {
-  const inUse = (g, a) => ({ guardianRedemptions: g, adviserRedemptions: a });
-  const fields = (g, a, status = 'issued') => ({ guardianRedemptions: g, maxGuardians: 2, adviserRedemptions: a, maxAdvisers: 1, status });
-  it('moves one count from the side left to the side joined', () => {
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 1 }, 'guardian', 'adviser', inUse(0, 1))).toEqual(fields(0, 1));
-  });
-  it('never lowers the side left below what active links still use', () => {
-    // The slip counted 1 guardian, but two active guardian links remain (e.g. approved by staff).
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 1 }, 'guardian', 'adviser', inUse(2, 1)).guardianRedemptions).toBe(2);
-    // A revoked guardian is still counted: 2 used, 1 active, one leaves -> 1 active floor, 1 stays counted.
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 2 }, 'guardian', 'adviser', inUse(1, 1)).guardianRedemptions).toBe(1);
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 2, adviserRedemptions: 0 }, 'guardian', 'adviser', inUse(0, 1))).toEqual(fields(1, 1));
-  });
-  it('keeps the side joined at its max', () => {
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 1, adviserRedemptions: 1 }, 'guardian', 'adviser', inUse(0, 1))).toEqual(fields(0, 1));
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 2, adviserRedemptions: 1 }, 'adviser', 'guardian', inUse(2, 0))).toEqual(fields(2, 0, 'issued'));
-  });
-  it('reads a legacy code (redemptions, no guardianRedemptions)', () => {
-    expect(moveSlot({ redemptions: 2, maxRedemptions: 2, status: 'exhausted' }, 'guardian', 'adviser', inUse(1, 1))).toEqual(fields(1, 1));
-  });
-  it('is exhausted only when both sides are full', () => {
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 2, adviserRedemptions: 0 }, 'guardian', 'adviser', inUse(2, 1)).status).toBe('exhausted');
-    expect(moveSlot({ ...newCodeSlots(), guardianRedemptions: 2, adviserRedemptions: 1 }, 'adviser', 'guardian', inUse(1, 0)).status).toBe('issued');
   });
 });
 
