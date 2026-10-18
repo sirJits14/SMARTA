@@ -61,7 +61,9 @@ node docs/releases/2026-10-18-school-family/verifyHosting.mjs <out>/school-famil
 The evidence from 2026-10-18 is in `preparation/`:
 
 - `sims-baseline-verification.json`: the baseline matched live 56/56 files.
-- `sims-source-manifest.json`: the source changes (the hashes refer to the prepared tree's line endings).
+- `sims-source-manifest.json`: the source changes. The hashes are for a normal
+  checkout, where git writes CRLF. An LF-only overlay gives different source
+  hashes, but the build output is byte-identical.
 - `sims-release-vs-live.json`: the release build against the verified live build.
   - 59 files, compared with 56 live.
   - 27 unchanged.
