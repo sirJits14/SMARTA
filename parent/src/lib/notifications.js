@@ -58,11 +58,14 @@ export async function refreshTokenIfRegistered(uid) {
   try { await enableOnThisDevice(uid); } catch {}
 }
 
+// Whether this browser supports push never changes during a visit, so Settings
+// reopens with the answer instead of flashing "not supported" first.
+let supportedHere;
 export function useDeviceStatus(uid) {
-  const [s, setS] = useState({ supported: false, registered: Boolean(local.get()), ...env() });
+  const [s, setS] = useState(() => ({ supported: supportedHere ?? false, registered: Boolean(local.get()), ...env() }));
   useEffect(() => {
     let alive = true;
-    messagingModule().then(({ isSupported }) => isSupported()).then((ok) => alive && setS((p) => ({ ...p, supported: ok })));
+    messagingModule().then(({ isSupported }) => isSupported()).then((ok) => { supportedHere = ok; if (alive) setS((p) => ({ ...p, supported: ok })); });
     if (uid) refreshTokenIfRegistered(uid).then(() => alive && setS((p) => ({ ...p, registered: Boolean(local.get()), ...env() })));
     return () => { alive = false; };
   }, [uid]);

@@ -2,7 +2,8 @@
 // but aren't in class, and flag them in two taps. Earlier days belong to
 // coordinators in SIMS, so past days are view-only here.
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { callable } from '../../firebase.js';
+import { auth, callable } from '../../firebase.js';
+import { recall, remember } from '../../hooks/useDoc.js';
 import { manilaDate, manilaTime, formatScanTime, formatDateLabel } from '../../../../shared/dates.js';
 import { schoolError, sectionLabel } from '../../lib/school.js';
 import { groupRoster, enteredFor, sessionNow, hasTwoSessions, rosterSummary, runLimited, correctionInput, UNDO_REASON } from '../../lib/classSession.js';
@@ -15,6 +16,7 @@ import './ClassTab.css';
 const FlagSheet = lazy(() => import('./FlagSheet.jsx'));
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
+const rosterKey = (sectionId, date) => `roster:${auth.currentUser?.uid || ''}:${sectionId}:${date}`;
 
 export default function ClassTab({ sections, ended }) {
   const today = manilaDate();
@@ -41,8 +43,11 @@ export default function ClassTab({ sections, ended }) {
     if (!validSection) return undefined;
     const request = ++sequence.current;
     setLoading(true); setError('');
-    setRoster((current) => (current && current.date === date && current.section?.id === validSection ? current : null));
+    // The last roster for this section and day (this sign-in) shows while the server refreshes it.
+    const key = rosterKey(validSection, date);
+    setRoster((current) => (current && current.date === date && current.section?.id === validSection ? current : recall(key) || null));
     callable('getSchoolRosterFn')({ sectionId: validSection, date }).then((result) => {
+      remember(key, result.data);
       if (request === sequence.current) { setRoster(result.data); setLoading(false); }
     }).catch((e) => { if (request === sequence.current) { setError(schoolError(e)); setLoading(false); } });
     return () => { ++sequence.current; };

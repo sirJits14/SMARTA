@@ -15,6 +15,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const db = {};
 export const auth = {};
+export const appCheckReady = Promise.resolve();
 export function callable(name) {
   return async (input) => {
     await wait(250);
