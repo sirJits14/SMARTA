@@ -2,7 +2,7 @@
 // assigns them in SIMS and they choose School in Settings.
 import { useEffect } from 'react';
 import { useSchoolContext } from '../hooks/useSchoolContext.js';
-import { hasClass, advisorySections } from '../lib/portalMode.js';
+import { canUseSchool, hasClass, advisorySections } from '../lib/portalMode.js';
 import { sectionLabel } from '../lib/school.js';
 import { Banner, Btn, EmptyState, Spinner } from '../components/ui.jsx';
 import PageHeader from '../components/PageHeader.jsx';
@@ -11,9 +11,13 @@ import ClassTab from './school/ClassTab.jsx';
 export default function School({ user, navigate }) {
   const resource = useSchoolContext(user.uid);
   const context = resource.data;
-  const noClass = Boolean(context) && !hasClass(context);
-  // Subject teachers have no Class tab; App.jsx handles revoked access.
-  useEffect(() => { if (noClass) navigate('/announcements?view=school', { replace: true }); }, [noClass, navigate]);
+  const noAccess = Boolean(context) && !canUseSchool(context);
+  const noClass = Boolean(context) && !noAccess && !hasClass(context);
+  // No school access goes Home; subject teachers have no Class tab. App.jsx owns the saved mode.
+  useEffect(() => {
+    if (noAccess) navigate('/', { replace: true });
+    else if (noClass) navigate('/announcements?view=school', { replace: true });
+  }, [noAccess, noClass, navigate]);
   const sections = advisorySections(context);
   return (
     <>
