@@ -20,6 +20,12 @@ describe('sessionRows', () => {
     expect(sessionRows(null)).toEqual([{ key: 'am', label: 'Attendance' }]);
     expect(sessionRows({ timeIn: null, timeOut: '12:00', ...none })).toEqual([{ key: 'am', label: 'Attendance' }]);
   });
+  it('shows one Attendance row for an empty schedule object', () => {
+    expect(sessionRows({})).toEqual([{ key: 'am', label: 'Attendance' }]);
+  });
+  it('treats a half-filled PM as a single session, like hasPmSession', () => {
+    expect(sessionRows({ timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: null })).toEqual([{ key: 'am', label: 'Morning shift · 07:30 AM–12:00 PM' }]);
+  });
   it('drops the times when an end is missing', () => {
     expect(sessionRows({ timeIn: '06:00', timeOut: null, ...none })).toEqual([{ key: 'am', label: 'Morning shift' }]);
   });

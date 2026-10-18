@@ -16,7 +16,7 @@ export default function SessionRows({ data, requestedSession }) {
     {rows.map(({ key, label }) => {
       const session = data[key];
       const [inKey, outKey] = GATE[key];
-      return <div key={key} aria-label={`${label} attendance`} style={{ padding: '12px 0', borderTop: '1px solid var(--t-border)', fontWeight: highlight === key ? 600 : 400 }}>
+      return <div key={key} role="group" aria-label={label} style={{ padding: '12px 0', borderTop: '1px solid var(--t-border)', fontWeight: highlight === key ? 600 : 400 }}>
         <strong style={{ display: 'block' }}>{label}</strong>
         <p style={{ margin: '4px 0 0', fontSize: 15 }}>{MARKS[session?.status] || S.sessionNoMark}</p>
         {session?.reason && <p style={{ margin: '8px 0', fontSize: 14 }}>{session.reason}</p>}
