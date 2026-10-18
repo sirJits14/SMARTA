@@ -59,7 +59,11 @@ const functionsToDeploy = [
   'activateCodeFn', 'changeLinkRelationshipFn', 'submitReportFn', 'deleteGuardianAccountFn',
   'announcementAudienceCountFn', 'onAnnouncementWritten', 'onGuardianLinkWritten',
   'onScanEventCreated', 'expireLinksJob', 'reconcileEventsJob', 'publishAnnouncementsJob',
+  'sendAttendanceUpdatesJob',
 ];
+if (functionsToDeploy.includes('setSessionAbsenceFn') && !functionsToDeploy.includes('sendAttendanceUpdatesJob')) {
+  throw new Error('setSessionAbsenceFn needs sendAttendanceUpdatesJob in the same release.');
+}
 put('backend-source-manifest.json', JSON.stringify({
   liveScanRevision: 'onscaneventcreated-00019-pol',
   preservedScanSha256: digest(liveScan),

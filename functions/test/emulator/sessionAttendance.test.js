@@ -92,6 +92,17 @@ describe('session corrections', () => {
     await db().doc('guardian_links/gA_S1').update({ relationship: 'Adviser' });
     await expect(getFamilyAttendance(deps('gA'), { studentId: 'S1', date: '2026-09-21' })).rejects.toMatchObject({ code: 'permission-denied' });
   });
+  it('keeps sending when one outbox document is broken', async () => {
+    let clock = now();
+    const d = { ...deps(), now: () => clock };
+    await db().doc('attendance_notifications/0_broken').set({ status: 'pending' });
+    await setSessionAbsence(d, input());
+    clock = new Date(now().getTime() + 121000);
+    expect(await sendDueAttendanceUpdates(d)).toEqual({ processed: 1 });
+    expect(d.messaging.sent).toHaveLength(1);
+    expect((await db().doc('attendance_notifications/S1_2026-09-21_am').get()).data().status).toBe('done');
+    expect((await db().doc('attendance_notifications/0_broken').get()).data().status).toBe('sending');
+  });
   it('sends nothing when a flag is undone inside the window', async () => {
     let clock = now();
     const d = { ...deps(), now: () => clock };

@@ -193,7 +193,7 @@ export async function getSchoolContext(deps) {
         .map(a => ({ uid: s.id, email: s.data().email || '', displayName: s.data().displayName || '', ...a })));
       const candidates = legacy.docs.map(row).filter(l => l.schoolYear === actor.schoolYear && (l.slot === 'adviser' || l.relationship === 'Adviser'));
       result.migrationCandidates = candidates;
-      const enrollments = await Promise.all(sampleStudentIds(candidates).map(id => tx.get(deps.db.doc(`enrollments/${id}_${actor.schoolYear}`))));
+      const enrollments = await Promise.all(sampleStudentIds(candidates).filter(id).map(studentId => tx.get(deps.db.doc(`enrollments/${studentId}_${actor.schoolYear}`))));
       const sectionByStudent = Object.fromEntries(enrollments.filter(s => s.data()?.status === 'enrolled').map(s => [s.data().studentId, s.data().sectionId]));
       result.legacyAdvisers = groupLegacyAdvisers(candidates, sectionByStudent);
     }

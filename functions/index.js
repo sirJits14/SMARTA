@@ -118,7 +118,7 @@ export const expireLinksJob = onSchedule({ schedule: '10 1 * * *', ...SCHED, tim
 export const pruneDevicesJob = onSchedule({ schedule: '40 1 * * *', ...SCHED }, () => pruneDevices(jobDeps()));
 export const reconcileEventsJob = onSchedule({ schedule: '20 2 * * *', ...SCHED }, () => reconcileEvents(jobDeps()));
 export const publishAnnouncementsJob = onSchedule({ schedule: '*/5 * * * *', ...SCHED }, () => publishDueAnnouncements(jobDeps()));
-export const sendAttendanceUpdatesJob = onSchedule({ schedule: '* * * * *', ...SCHED }, () => sendDueAttendanceUpdates(jobDeps()));
+export const sendAttendanceUpdatesJob = onSchedule({ schedule: '* * * * *', ...SCHED, timeoutSeconds: 300 }, () => sendDueAttendanceUpdates(jobDeps()));
 
 export const onParentPortalSettingsChanged = onDocumentWritten('settings/parent_portal', (event) =>
   auditSettingsChange(db, { before: event.data?.before?.data() || null, after: event.data?.after?.data() || null }));

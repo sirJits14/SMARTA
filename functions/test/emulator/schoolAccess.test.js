@@ -65,7 +65,7 @@ describe('school request lifecycle', () => {
     expect((await loadSchoolActor(deps(winner))).assignments).toEqual([]);
     expect((await db().collection('audit_log').get()).size).toBe(3);
   });
-  it('does not allow self-approval or client-supplied email proof', async () => {
+  it('does not allow self-approval', async () => {
     const r = await seedRequest('curriculum', 'adviser', 'SEC1');
     await expect(resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true, reason: 'Self' })).rejects.toMatchObject({ code: 'permission-denied' });
   });
@@ -93,5 +93,9 @@ describe('school request lifecycle', () => {
     expect(context).not.toHaveProperty('reviewRequests');
     expect(context.legacyAdvisers).toEqual([{ guardianUid: 'tLegacy', email: 'legacy@example.com', name: 'Legacy Teacher', learnerCount: 1, suggestedSectionId: 'SEC1' }]);
     expect((await getSchoolContext(deps('teacher')))).not.toHaveProperty('legacyAdvisers');
+    const curriculum = await getSchoolContext(deps('curriculum'));
+    expect(curriculum).not.toHaveProperty('managedAssignments');
+    expect(curriculum).not.toHaveProperty('legacyAdvisers');
+    expect(curriculum).not.toHaveProperty('migrationCandidates');
   });
 });

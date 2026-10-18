@@ -6,6 +6,7 @@ import { sessionAttendance } from '../../shared/sessionAttendance.js';
 import { manilaDate } from '../../shared/dates.js';
 import { fullName } from '../lib/format.js';
 import { sendToGuardian } from './push.js';
+import { logWarn } from '../log.js';
 import { nextNotice, NOTIFY_DELAY_MS } from '../lib/attendanceNotice.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
@@ -200,20 +201,26 @@ export async function sendDueAttendanceUpdates(deps) {
   const due = await deps.db.collection('attendance_notifications').where('status', 'in', ['pending', 'sending']).limit(200).get();
   let processed = 0;
   for (const doc of due.docs) {
-    const claimed = await deps.db.runTransaction(async tx => {
-      const live = (await tx.get(doc.ref)).data();
-      if (!live || !['pending', 'sending'].includes(live.status) || live.notifyAfter.toMillis() > now) return null;
-      tx.update(doc.ref, { status: 'sending', claimedAt: FieldValue.serverTimestamp() });
-      return live;
-    });
-    if (!claimed) continue;
-    await notifyFamilies(deps, claimed, `correction_${claimed.correctionId}`);
-    await deps.db.runTransaction(async tx => {
-      const live = (await tx.get(doc.ref)).data();
-      // A newer correction may have re-queued this session while we were sending.
-      if (live?.status === 'sending' && live.correctionId === claimed.correctionId) tx.update(doc.ref, { status: 'done', completedAt: FieldValue.serverTimestamp() });
-    });
-    processed++;
+    try {
+      const claimed = await deps.db.runTransaction(async tx => {
+        const live = (await tx.get(doc.ref)).data();
+        if (!live || !['pending', 'sending'].includes(live.status)) return null;
+        const ready = typeof live.notifyAfter?.toMillis === 'function' ? live.notifyAfter.toMillis() <= now : true;
+        if (!ready) return null;
+        tx.update(doc.ref, { status: 'sending', claimedAt: FieldValue.serverTimestamp() });
+        return live;
+      });
+      if (!claimed) continue;
+      await notifyFamilies(deps, claimed, `correction_${claimed.correctionId}`);
+      await deps.db.runTransaction(async tx => {
+        const live = (await tx.get(doc.ref)).data();
+        // A newer correction may have re-queued this session while we were sending.
+        if (live?.status === 'sending' && live.correctionId === claimed.correctionId) tx.update(doc.ref, { status: 'done', completedAt: FieldValue.serverTimestamp() });
+      });
+      processed++;
+    } catch (error) {
+      logWarn('attendance_update_failed', { id: doc.id, message: error.message });
+    }
   }
   return { processed };
 }
