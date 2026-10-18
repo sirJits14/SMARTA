@@ -234,5 +234,16 @@ const S = {
   modeInUse: 'In use',
   modeSavedHere: 'Saved on this device.',
   notFound: 'That page does not exist.',
+  sessionButton: 'Sessions',
+  sessionTitle: 'Session attendance',
+  sessionClose: 'Close',
+  sessionAm: 'AM',
+  sessionPm: 'PM',
+  sessionMorningShift: 'Morning shift',
+  sessionAfternoonShift: 'Afternoon shift',
+  sessionWholeDay: 'Attendance',
+  sessionNoMark: 'No attendance mark',
+  sessionSplitNote: 'AM and PM attendance are recorded separately. Original gate scans are in the history.',
+  sessionSingleNote: 'Original gate scans are in the history.',
 };
 export default S;

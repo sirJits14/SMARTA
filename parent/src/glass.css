@@ -139,6 +139,27 @@ body::before {
   -webkit-tap-highlight-color: transparent;
 }
 .page-header-back:focus-visible { outline: 2px solid var(--t-focus); outline-offset: 2px; }
+/* The Shell's theme button sits at the top right (right: 16px, 44px wide), so a
+   bar with an action keeps that corner clear: 16 + 44 + 8px gap. */
+.page-header-bar--action { padding-right: 68px; }
+.page-header-action { margin-left: auto; flex: 0 0 auto; }
+.page-header-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--t-glass-edge);
+  border-radius: 999px;
+  background: rgba(var(--t-glass-rgb), 0.72);
+  color: var(--t-primary);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.page-header-pill:focus-visible { outline: 2px solid var(--t-focus); outline-offset: 2px; }
 .page-header-compact {
   min-width: 0;
   flex: 1;

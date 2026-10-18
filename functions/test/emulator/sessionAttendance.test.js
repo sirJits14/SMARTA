@@ -33,6 +33,15 @@ describe('session corrections', () => {
     await expect(setSessionAbsence(deps(), input({ reason: ' ' }))).rejects.toMatchObject({ code: 'invalid-argument' });
     await setSessionAbsence(deps('curriculum'), input({ date: '2026-09-20' }));
   });
+  it('gives families only the bell times of the section schedule', async () => {
+    const family = () => getFamilyAttendance(deps('gA'), { studentId: 'S1', date: '2026-09-21' });
+    expect((await family()).schedule).toBeNull();
+    await db().doc('schedules/SCH1').set({ name: 'Afternoon Shift', timeIn: '12:30', timeOut: '18:00', gradeLevels: [7] });
+    await db().doc('sections/SEC1').update({ scheduleId: 'SCH1' });
+    expect((await family()).schedule).toEqual({ timeIn: '12:30', timeOut: '18:00', pmTimeIn: null, pmTimeOut: null });
+    await db().doc('sections/SEC1').update({ scheduleId: 'GONE' });
+    expect((await family()).schedule).toBeNull();
+  });
   it('is operation-idempotent and rejects a stale concurrent revision', async () => {
     const first = await setSessionAbsence(deps(), input());
     expect(await setSessionAbsence(deps(), input())).toEqual(first);
