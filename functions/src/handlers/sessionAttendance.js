@@ -147,9 +147,14 @@ export async function getFamilyAttendance(deps, { studentId, date }) {
     const sectionSnap = await tx.get(deps.db.doc(`sections/${sectionId}`));
     const section = { ...sectionSnap.data(), id: sectionId };
     if (!sectionSnap.exists || section.schoolYear !== schoolYear) fail('permission-denied', 'Learner section is unavailable.');
-    const attendance = (await tx.get(deps.db.doc(`student_attendance/${sectionId}_${date}`))).data();
+    const [attendanceSnap, scheduleSnap] = await Promise.all([
+      tx.get(deps.db.doc(`student_attendance/${sectionId}_${date}`)),
+      identifier(section.scheduleId) ? tx.get(deps.db.doc(`schedules/${section.scheduleId}`)) : null,
+    ]);
+    const attendance = attendanceSnap.data();
     validAttendance(attendance, section, date);
-    return { ...projection(attendance, studentId), date, sectionId, schoolYear };
+    // Families get the bell times so the Parent app can label AM/PM or the shift.
+    return { ...projection(attendance, studentId), date, sectionId, schoolYear, schedule: bellTimes(scheduleSnap?.data()) };
   });
 }
 
