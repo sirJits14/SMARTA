@@ -24,7 +24,7 @@ const TEXT = [
   ...['present', 'late', 'absent', 'excused'].flatMap((fg) => ['surface', 'dialog'].map((bg) => [fg, bg])),
   ['on-primary', 'primary'], ['on-primary', 'absent'],
   ...['present', 'late', 'absent', 'excused'].map((bg) => ['on-status', bg]),
-  ['feedback-ink', 'feedback-bg'], ['primary-deep', 'tint'], ['primary-deep', 'tint-strong'], ['nav-ink', 'tint'],
+  ['feedback-ink', 'feedback-bg'], ['success-ink', 'success-bg'], ['primary-deep', 'tint'], ['primary-deep', 'tint-strong'], ['nav-ink', 'tint'],
   ['tooltip-ink', 'tooltip-bg'], ['primary-deep', 'bevel-top'], ['primary-deep', 'bevel-bottom'],
 ];
 const NON_TEXT = [['control-border', 'surface'], ['control-border', 'dialog'], ['focus', 'bg'], ['focus', 'surface'], ['focus', 'dialog']];

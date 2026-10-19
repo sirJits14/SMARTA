@@ -55,6 +55,18 @@
   .sims-ui .sims-table-scroll tbody tr:hover { background:rgba(var(--t-primary-rgb),.035); }
   .sims-ui .sims-page-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:start; }
   .sims-ui .sims-feedback { padding:14px 16px; border-radius:12px; background:var(--t-feedback-bg); color:var(--t-feedback-ink); font-size:14px; line-height:1.5; }
+  .sims-ui .sims-feedback.is-success { background:var(--t-success-bg); color:var(--t-success-ink); }
+  .sims-ui .sims-sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  .sims-ui .sims-count-badge { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; margin-left:8px; border-radius:999px; background:var(--t-absent); color:var(--t-on-primary); font-size:11px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+  .sims-ui .sims-nav-item .sims-count-badge { margin-left:auto; }
+  .sims-ui.is-collapsed .sims-nav-item .sims-count-badge { position:absolute; top:4px; right:4px; min-width:16px; height:16px; padding:0 4px; font-size:10px; }
+  .sims-ui .sims-flag { display:inline-flex; align-items:center; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:600; background:var(--t-tint); color:var(--t-primary-deep); }
+  .sims-ui .sims-flag--conflict, .sims-ui .sims-flag--stale { background:var(--t-feedback-bg); color:var(--t-feedback-ink); }
+  .sims-ui .sims-flag--ok { background:var(--t-success-bg); color:var(--t-success-ink); }
+  .sims-ui .school-bulk-bar { position:sticky; bottom:12px; z-index:2; display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:18px; padding:12px 16px; border-radius:14px; background:var(--t-surface); border:1px solid var(--t-border); box-shadow:0 8px 24px rgba(var(--t-ink-rgb),.16); }
+  .sims-ui .school-coverage-row { display:grid; grid-template-columns:minmax(120px,1fr) minmax(180px,2fr) auto auto; gap:8px 16px; align-items:center; padding:10px 0; border-top:1px solid var(--t-border); }
+  .sims-ui .school-gap { font-weight:700; color:var(--t-danger-text); }
+  @media (max-width:720px) { .sims-ui .school-coverage-row { grid-template-columns:1fr; } }
   .sims-ui .sims-loading { padding:40px; color:var(--t-muted); min-height:160px; display:grid; place-items:center; }
   .sims-ui .sims-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:24px; }
   .sims-ui .sims-tab { border:0; background:transparent; border-radius:999px; padding:10px 16px; min-height:44px; font:inherit; color:var(--t-nav-ink); cursor:pointer; transition:background 160ms ease-out,color 160ms ease-out,box-shadow 160ms ease-out,transform 160ms ease-out; }
