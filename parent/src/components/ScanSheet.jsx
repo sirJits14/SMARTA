@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import S from '../strings.js';
 import { Btn } from './ui.jsx';
-import { createDetector, extractCode } from '../lib/qrScan.js';
+import { createDetector, readSlip } from '../lib/qrScan.js';
 
 const FRAME_MS = 125; // ~8 decodes a second is plenty and spares the battery
 
-// Full-screen camera view that fills in the activation code from the slip's
-// QR. It never activates anything itself; Activate still needs the parent's
-// name, relationship and a tap on "Link learner".
-export default function ScanSheet({ onCode, onClose }) {
+// Full-screen camera view that fills in the code from a learner or advisory
+// slip's QR, reporting which kind it was. It never submits anything itself;
+// the screen that opened it still decides what happens next.
+export default function ScanSheet({ onCode, onClose, kind = 'learner', title = S.scanTitle }) {
   const video = useRef(null);
   const detector = useRef(null);
   const onCodeRef = useRef(onCode); onCodeRef.current = onCode;
@@ -21,11 +21,11 @@ export default function ScanSheet({ onCode, onClose }) {
     let stream = null, raf = 0, stopped = false, last = 0;
     const stop = () => { stopped = true; cancelAnimationFrame(raf); stream?.getTracks().forEach((t) => t.stop()); };
     const found = (text) => {
-      const code = extractCode(text);
-      if (!code) { setNotSlip(true); return false; }
+      const slip = readSlip(text, kind);
+      if (!slip) { setNotSlip(true); return false; }
       navigator.vibrate?.(60);
       stop();
-      onCodeRef.current(code);
+      onCodeRef.current(slip.code, slip.kind);
       return true;
     };
     const tick = async (t) => {
@@ -56,7 +56,7 @@ export default function ScanSheet({ onCode, onClose }) {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => { stop(); window.removeEventListener('keydown', onKey); };
-  }, [onClose]);
+  }, [onClose, kind]);
 
   const onPhoto = async (e) => {
     const file = e.target.files?.[0];
@@ -66,9 +66,9 @@ export default function ScanSheet({ onCode, onClose }) {
     try {
       if (!detector.current) detector.current = await createDetector();
       const bitmap = await createImageBitmap(file);
-      const code = extractCode(await detector.current.detect(bitmap));
+      const slip = readSlip(await detector.current.detect(bitmap), kind);
       bitmap.close?.();
-      if (code) { onCodeRef.current(code); return; }
+      if (slip) { onCodeRef.current(slip.code, slip.kind); return; }
     } catch { /* reported below */ }
     setPhotoFailed(true);
   };
@@ -77,10 +77,10 @@ export default function ScanSheet({ onCode, onClose }) {
   // backdrop-filter would otherwise trap this position:fixed overlay inside
   // the card instead of covering the screen.
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={S.scanTitle}
+    <div role="dialog" aria-modal="true" aria-label={title}
       style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#061518', color: '#fff', display: 'grid', gridTemplateRows: 'auto 1fr auto', fontFamily: 'inherit' }}>
       <div style={{ padding: '16px 16px 8px' }}>
-        <h1 style={{ fontSize: 18, margin: 0 }}>{S.scanTitle}</h1>
+        <h1 style={{ fontSize: 18, margin: 0 }}>{title}</h1>
         <p style={{ margin: '4px 0 0', fontSize: 14, opacity: 0.85 }}>{status === 'denied' ? S.scanDenied : S.scanHelp}</p>
       </div>
       <div style={{ position: 'relative', overflow: 'hidden' }}>
