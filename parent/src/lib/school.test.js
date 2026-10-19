@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime } from './school.js';
+import { attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened } from './school.js';
 import { portalView, notificationDestination } from './nav.js';
 import { matchRoute } from './router.js';
 describe('school access presentation', () => {
@@ -22,8 +22,27 @@ describe('school access presentation', () => {
   it('routes correction inbox entries to authenticated day/session details', () => {
     expect(inboxDestination({ type: 'attendance_correction', studentId: 'a b', date: '2026-10-17', session: 'pm' })).toBe('/learner/a%20b?date=2026-10-17&session=pm');
   });
-  it('sends a school access note to Settings', () => {
+  it('sends a school access note to Settings, and a rejection to the request page', () => {
     expect(inboxDestination({ type: 'school_access' })).toBe('/settings');
+    expect(inboxDestination({ type: 'school_access', rejected: true })).toBe('/settings/school-access');
+  });
+  it('offers requestable roles and sections grouped by grade', () => {
+    expect(REQUESTABLE_ROLES).toEqual(['adviser', 'subject_teacher']);
+    expect(REQUEST_STATUS.rejected).toBe('Not approved');
+    expect(sectionsByGrade([{ id: 'b', gradeLevel: 8 }, { id: 'a', gradeLevel: 7 }, { id: 'c', gradeLevel: 8 }]))
+      .toEqual([{ grade: 7, sections: [{ id: 'a', gradeLevel: 7 }] }, { grade: 8, sections: [{ id: 'b', gradeLevel: 8 }, { id: 'c', gradeLevel: 8 }] }]);
+  });
+  it('reports School opened at most once a Manila day per account', () => {
+    const store = new Map();
+    const storage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+    expect(manilaDay(new Date('2026-10-18T17:30:00Z'))).toBe('2026-10-19');
+    expect(openedToday('u1', '2026-10-19', storage)).toBe(false);
+    rememberOpened('u1', '2026-10-19', storage);
+    expect(openedToday('u1', '2026-10-19', storage)).toBe(true);
+    expect(openedToday('u2', '2026-10-19', storage)).toBe(false);
+    expect(openedToday('u1', '2026-10-20', storage)).toBe(false);
+    expect(openedToday('u3', '2026-10-20', { getItem: () => { throw new Error('blocked'); } })).toBe(false);
+    expect(() => rememberOpened('u3', '2026-10-20', { setItem: () => { throw new Error('blocked'); } })).not.toThrow();
   });
   it('only restores an active override and keeps base absences unchanged', () => {
     expect(sessionAction({ absent: true, overrideActive: false })).toBeNull();

@@ -35,6 +35,8 @@
   --t-tint-hover: #f0f7f6;
   --t-feedback-bg: #fff4f3;
   --t-feedback-ink: #982525;
+  --t-success-bg: #ebf7ef;
+  --t-success-ink: #14532d;
   --t-tooltip-bg: #12313a;
   --t-tooltip-ink: #FFFFFF;
   --t-stat-icon: #3f8a84;
@@ -111,6 +113,8 @@
     --t-tint-hover: #1a3236;
     --t-feedback-bg: #3a1d1f;
     --t-feedback-ink: #f5a3a3;
+    --t-success-bg: #13301f;
+    --t-success-ink: #9fe0b8;
     --t-tooltip-bg: #e2eeec;
     --t-tooltip-ink: #0e1c1f;
     --t-stat-icon: #5fc2b8;

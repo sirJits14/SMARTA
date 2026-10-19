@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useRoute } from './hooks/useRoute.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useDoc } from './hooks/useDoc.js';
@@ -8,7 +8,8 @@ import { Spinner, EmptyState } from './components/ui.jsx';
 import S from './strings.js';
 import SignIn from './screens/SignIn.jsx';
 import { portalView, notificationDestination } from './lib/nav.js';
-import { readMode, writeMode, reconcileMode, schoolHome } from './lib/portalMode.js';
+import { readMode, writeMode, reconcileMode, schoolHome, canUseSchool } from './lib/portalMode.js';
+import { openedToday, rememberOpened } from './lib/school.js';
 import { useSchoolContext } from './hooks/useSchoolContext.js';
 import { preloadAnnouncements } from './hooks/useAnnouncements.js';
 // Screens below are only needed once a route is resolved, so they're
@@ -69,6 +70,13 @@ export default function App() {
     setMode(next);
     if (next.view === 'family' && view === 'school') navigate('/', { replace: true });
   }, [school.data, mode, view, setMode, navigate]);
+  // Lets SIMS show which assigned teachers have opened School mode (once a day at most).
+  const openingRef = useRef(false);
+  useEffect(() => {
+    if (!uid || mode.view !== 'school' || !canUseSchool(school.data) || openingRef.current || openedToday(uid)) return;
+    openingRef.current = true;
+    callable('markSchoolOpenedFn')({}).then(() => rememberOpened(uid)).catch(() => {}).finally(() => { openingRef.current = false; });
+  }, [uid, mode.view, school.data]);
   // School mode opens on the teacher's School home instead of the family list.
   useEffect(() => {
     if (profile && mode.view === 'school' && route.name === 'home') navigate(schoolHome(mode), { replace: true });

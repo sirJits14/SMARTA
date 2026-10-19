@@ -27,6 +27,8 @@ import HelpPage from './settings/HelpPage.jsx';
 import AboutPage from './settings/AboutPage.jsx';
 import DevelopersPage from './settings/DevelopersPage.jsx';
 import SchoolModePage from './settings/SchoolModePage.jsx';
+import SchoolAccessPage from './settings/SchoolAccessPage.jsx';
+import SchoolRequestsPage from './settings/SchoolRequestsPage.jsx';
 import { BUILD } from '../lib/buildInfo.js';
 
 // Sub-pages by route segment (/settings/<key>). A main-list row with no page
@@ -34,7 +36,7 @@ import { BUILD } from '../lib/buildInfo.js';
 const PAGES = {
   profile: ProfilePage, notifications: NotificationsPage, appearance: AppearancePage, install: InstallPage,
   learners: LearnersPage, reports: ReportsPage, help: HelpPage, privacy: PrivacyPage, about: AboutPage,
-  developers: DevelopersPage, mode: SchoolModePage,
+  developers: DevelopersPage, mode: SchoolModePage, 'school-access': SchoolAccessPage, 'school-requests': SchoolRequestsPage,
 };
 
 // One mounted screen for the list and every sub-page (same route name), so
@@ -54,20 +56,22 @@ export default function Settings({ user, profile, route, navigate, mode, setMode
   };
   const ctx = {
     user, profile, navigate, links, device, portal, reports, accountEnabled,
-    mode, chooseMode, schoolAllowed: allowed,
+    mode, chooseMode, schoolAllowed: allowed, schoolContext: school.data,
     announcementPush: profile?.announcementPushEnabled !== false,
     state: notificationState({ ...device, accountEnabled }),
     savedName: profile?.displayName || user.displayName || '',
   };
   const section = route.params.section;
-  const Page = section && (section !== 'mode' || allowed) ? PAGES[section] : null;
-  useEffect(() => { if (section && !Page && !(section === 'mode' && school.loading)) navigate('/settings', { replace: true }); }, [section, Page, school.loading, navigate]);
+  // School-only pages wait for the school answer before deciding.
+  const gated = { mode: allowed, 'school-requests': Array.isArray(school.data?.reviewQueue) };
+  const Page = section && gated[section] !== false ? PAGES[section] : null;
+  useEffect(() => { if (section && !Page && !(section in gated && school.loading)) navigate('/settings', { replace: true }); }, [section, Page, school.loading, navigate]);
   if (Page) return <Page ctx={ctx} back={() => navigate('/settings')} />;
   return <SettingsHome ctx={ctx} />;
 }
 
 function SettingsHome({ ctx }) {
-  const { user, navigate, links, reports, state, savedName, mode, schoolAllowed } = ctx;
+  const { user, navigate, links, reports, state, savedName, mode, schoolAllowed, schoolContext } = ctx;
   const { pref } = useTheme();
   const hidden = SECTIONS.filter((s) => !PAGES[s.key] || (s.key === 'install' && isStandalone())).map((s) => s.key);
   const values = {
@@ -84,11 +88,13 @@ function SettingsHome({ ctx }) {
         <SettingsRow variant="profile" leading={<span className="settings-avatar" aria-hidden="true">{initials(savedName || user.email)}</span>}
           label={nameCase(savedName) || user.email} subtitle={savedName ? user.email : undefined} onClick={() => navigate('/settings/profile')} />
       </SettingsGroup>
-      {schoolAllowed && (
-        <SettingsGroup>
-          <SettingsRow tile="teal" icon="class" label={S.modeTitle} value={mode.view === 'school' ? S.modeSchool : S.modeFamily} onClick={() => navigate('/settings/mode')} />
-        </SettingsGroup>
-      )}
+      <SettingsGroup>
+        {schoolAllowed && <SettingsRow tile="teal" icon="class" label={S.modeTitle} value={mode.view === 'school' ? S.modeSchool : S.modeFamily} onClick={() => navigate('/settings/mode')} />}
+        {Array.isArray(schoolContext?.reviewQueue) && <SettingsRow tile="teal" icon="class" label={S.schoolRequestsTitle}
+          value={schoolContext.reviewQueue.length ? String(schoolContext.reviewQueue.length) : ''} onClick={() => navigate('/settings/school-requests')} />}
+        <SettingsRow tile="teal" icon="class" label={S.schoolAccessRow} subtitle={S.schoolAccessRowHint}
+          value={schoolContext?.myRequests?.some((r) => r.status === 'pending') ? S.requestPending : undefined} onClick={() => navigate('/settings/school-access')} />
+      </SettingsGroup>
       {sectionGroups(hidden).map((group) => (
         <SettingsGroup key={group[0].key}>
           {group.map((s) => <SettingsRow key={s.key} tile={s.tile} icon={s.icon} label={s.title} value={values[s.key]} onClick={() => navigate(`/settings/${s.key}`)} />)}

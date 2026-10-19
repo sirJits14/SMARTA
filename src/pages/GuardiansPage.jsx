@@ -1,6 +1,8 @@
 import { useState, lazy, Suspense } from 'react';
 import { T, S } from '../styles.js';
 import loadingGif from '../assets/loading.gif';
+import { CountBadge } from '../components/ui.jsx';
+import { useSchoolPendingCount } from '../hooks/useSchoolPendingCount.js';
 
 // Same reasoning as App.jsx's page split, one level down: each tab (and, for
 // CodesTab, the qrcode-based activation-slip printing it pulls in) loads
@@ -13,7 +15,7 @@ const LinksTab = lazy(() => import('./guardians/LinksTab.jsx'));
 const ScanLogTab = lazy(() => import('./guardians/ScanLogTab.jsx'));
 const AuditTab = lazy(() => import('./guardians/AuditTab.jsx'));
 const PortalSettingsTab = lazy(() => import('./guardians/PortalSettingsTab.jsx'));
-const SchoolAccessTab = lazy(() => import('./guardians/SchoolAccessTab.jsx'));
+const SchoolAccessTab = lazy(() => import('./guardians/school/SchoolAccessTab.jsx'));
 
 const TabFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
@@ -29,6 +31,7 @@ const TABS = [
 
 export default function GuardiansPage({ schoolYear, me }) {
   const [tab, setTab] = useState('codes');
+  const pendingSchool = useSchoolPendingCount(true);
   return (
     <div>
       <div className="guardians-heading" style={S.plate}><h1 style={S.h1}>Guardians</h1></div>
@@ -45,7 +48,7 @@ export default function GuardiansPage({ schoolYear, me }) {
               if (next === null) return;
               event.preventDefault(); setTab(TABS[next][0]);
               document.getElementById(`guardian-tab-${TABS[next][0]}`)?.focus();
-            }}>{label}</button>;
+            }}>{label}{k === 'school' && pendingSchool > 0 && <CountBadge count={pendingSchool} label="pending school access requests" />}</button>;
         })}
       </div>
       <div key={tab} role="tabpanel" id={`guardian-panel-${tab}`} aria-labelledby={`guardian-tab-${tab}`} className="sims-page-transition">

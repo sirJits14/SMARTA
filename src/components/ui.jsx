@@ -100,6 +100,11 @@ export const EmptyState = ({ title, hint }) => (
   </div>
 );
 
+// A count that reads as a number on screen and as a phrase to screen readers.
+export const CountBadge = ({ count, label }) => (
+  <span className="sims-count-badge"><span aria-hidden="true">{count}</span><span className="sims-sr-only">{`${count} ${label}`}</span></span>
+);
+
 // --- Signature components -------------------------------------------------
 
 export const Card = ({ as: Tag = 'div', surface = 'working', className = '', style, children, ...p }) => (

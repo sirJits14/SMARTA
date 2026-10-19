@@ -38,4 +38,13 @@ describe('strings', () => {
       'sessionWholeDay', 'sessionNoMark', 'sessionSplitNote', 'sessionSingleNote'])
       expect(typeof S[k], k).toBe('string');
   });
+  it('has the school access request strings', () => {
+    for (const k of ['schoolAccessTitle', 'schoolAccessRow', 'schoolAccessRowHint', 'schoolAccessIntro', 'schoolAccessRole', 'schoolAccessSection',
+      'schoolAccessChooseSection', 'schoolAccessGrade', 'schoolAccessSubmit', 'schoolAccessSent', 'schoolAccessMine', 'schoolAccessNone', 'schoolAccessWithdraw',
+      'schoolAccessWithdrawn', 'schoolAccessEnded', 'requestPending', 'requestApproved', 'requestRejected', 'requestWithdrawn',
+      'schoolRequestsTitle', 'schoolRequestsIntro', 'schoolRequestsEmpty', 'schoolRequestsApprove', 'schoolRequestsReject',
+      'schoolRequestsReason', 'schoolRequestsConfirmReject', 'schoolRequestsCancel', 'schoolRequestsNeedsAdmin',
+      'schoolRequestsApproved', 'schoolRequestsRejected'])
+      expect(typeof S[k], k).toBe('string');
+  });
 });
