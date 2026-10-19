@@ -54,6 +54,7 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const files = Object.fromEntries(tree(functions).map(path => [path, digest(readFileSync(join(functions, path)))]));
 const functionsToDeploy = [
   'getSchoolContextFn', 'requestSchoolRoleFn', 'resolveSchoolRoleFn', 'assignSchoolRoleFn', 'revokeSchoolRoleFn',
+  'withdrawSchoolRequestFn', 'resolveSchoolRolesFn', 'replaceAdviserFn', 'markSchoolOpenedFn', 'getSchoolPendingCountFn',
   'getSchoolRosterFn', 'setSessionAbsenceFn', 'getFamilyAttendanceFn', 'onAttendanceCorrectionCreated',
   'getPortalAnnouncementsFn', 'getPortalAnnouncementFn', 'savePortalAnnouncementFn',
   'activateCodeFn', 'changeLinkRelationshipFn', 'submitReportFn', 'deleteGuardianAccountFn',

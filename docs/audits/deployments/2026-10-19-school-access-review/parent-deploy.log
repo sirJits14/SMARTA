@@ -1,0 +1,18 @@
+
+[1m[37m===[39m Deploying to 'bnhs-sims'...[22m
+
+[36m[1mi [22m[39m deploying [1mhosting[22m
+[36m[1mi  hosting[bnhs-parent]:[22m[39m beginning deploy...
+[36m[1mi  hosting[bnhs-parent]:[22m[39m found 49 files in [1mparent/dist[22m
+[36m[1mi  hosting:[22m[39m uploading new files [0/25] ([1m[32m0%[39m[22m)
+[36m[1mi  hosting:[22m[39m upload complete
+[32m[1m+  hosting[bnhs-parent]:[22m[39m file upload complete
+[36m[1mi  hosting[bnhs-parent]:[22m[39m finalizing version...
+[32m[1m+  hosting[bnhs-parent]:[22m[39m version finalized
+[36m[1mi  hosting[bnhs-parent]:[22m[39m releasing new version...
+[32m[1m+  hosting[bnhs-parent]:[22m[39m release complete
+
+[32m[1m+ [22m[39m [1m[4mDeploy complete![24m[22m
+
+[1mProject Console:[22m https://console.firebase.google.com/project/bnhs-sims/overview
+[1mHosting URL:[22m https://bnhs-parent.web.app
