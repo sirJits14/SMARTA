@@ -285,20 +285,22 @@ const plainAssignment = a => ({ ...a, assignedAt: millis(a.assignedAt) });
 // Each adviser request names whoever already holds its section, so reviewers see conflicts first.
 async function requestRows(tx, db, snaps) {
   const requests = snaps.map(row).sort((a, b) => (millis(a.createdAt) ?? 0) - (millis(b.createdAt) ?? 0));
-  const locks = {};
-  for (const r of requests) if (r.role === 'adviser') locks[r.sectionId] ??= tx.get(lockRef(db, r)).then(s => s.data() || null);
-  const holders = {};
+  // Await each batch together so one failed read cannot leave another unhandled.
+  const advisers = new Map(requests.filter(r => r.role === 'adviser').map(r => [r.sectionId, r]));
+  const locks = new Map(await Promise.all([...advisers].map(async ([sectionId, r]) => [sectionId, (await tx.get(lockRef(db, r))).data() || null])));
+  const holderUids = new Set();
   for (const r of requests) {
-    const lock = r.role === 'adviser' ? await locks[r.sectionId] : null;
-    if (lock && lock.uid !== r.uid) holders[lock.uid] ??= tx.get(db.doc(`school_accounts/${lock.uid}`)).then(s => s.data() || {});
+    const lock = r.role === 'adviser' ? locks.get(r.sectionId) : null;
+    if (lock && lock.uid !== r.uid) holderUids.add(lock.uid);
   }
-  return Promise.all(requests.map(async r => {
-    const lock = r.role === 'adviser' ? await locks[r.sectionId] : null;
-    const holder = lock && lock.uid !== r.uid ? await holders[lock.uid] : null;
+  const holders = new Map(await Promise.all([...holderUids].map(async uid => [uid, (await tx.get(db.doc(`school_accounts/${uid}`))).data() || {}])));
+  return requests.map(r => {
+    const lock = r.role === 'adviser' ? locks.get(r.sectionId) : null;
+    const holder = lock && lock.uid !== r.uid ? holders.get(lock.uid) : null;
     return { id: r.id, uid: r.uid, email: r.email || '', displayName: r.displayName || '', emailVerified: r.emailVerified === true,
       role: r.role, sectionId: r.sectionId || '', gradeLevel: r.gradeLevel, createdAt: millis(r.createdAt),
       conflict: holder ? { uid: lock.uid, email: holder.email || '', displayName: holder.displayName || holder.email || '' } : null };
-  }));
+  });
 }
 
 export async function markSchoolOpened(deps) {
