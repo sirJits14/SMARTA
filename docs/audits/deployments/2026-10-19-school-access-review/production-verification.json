@@ -1,0 +1,41 @@
+{
+  "project": "bnhs-sims",
+  "sourceCommit": "e90f9ad",
+  "releaseCommit": "8c755bc",
+  "change": "PR sirJits14/SMARTA#59: School access review queue. Teachers request Adviser/Subject Teacher roles in the Parent App; admins review in SIMS Guardians → School access (Pending, Coverage, Assignments, History, sidebar badge, CSV export); Curriculum Advisers approve in-grade DepEd adviser requests in the app.",
+  "deployedAt": "2026-10-19",
+  "order": ["firestore:indexes", "functions (10 by name)", "hosting:sims (release tree)", "hosting:parent"],
+  "indexes": {
+    "config": "firebase.school-family-release.json → docs/releases/2026-10-18-school-family/firestore.indexes.json",
+    "composites": 28,
+    "added": "audit_log (targetType ASC, at DESC)",
+    "state": "READY before the SIMS deploy",
+    "log": "indexes-deploy.log"
+  },
+  "functions": {
+    "config": "firebase.school-family-release.json (prepared backend from prepareBackend.mjs at 8c755bc; schoolAccess.js and shared/schoolAccess.js identical to e90f9ad)",
+    "deployedByName": ["getSchoolContextFn", "requestSchoolRoleFn", "resolveSchoolRoleFn", "assignSchoolRoleFn", "revokeSchoolRoleFn", "withdrawSchoolRequestFn", "resolveSchoolRolesFn", "replaceAdviserFn", "markSchoolOpenedFn", "getSchoolPendingCountFn"],
+    "before": 51,
+    "after": 56,
+    "removed": [],
+    "liveScanSha256": "49ee1a2ecfdf370852b38332a0636979c3ada9cba314dcefc2f69edd8ecf575f (onScanEventCreated untouched)",
+    "logs": ["functions-before.json", "functions-deploy.log", "functions-after.json"]
+  },
+  "sims": {
+    "preparer": "docs/releases/2026-10-19-school-access-review/prepareSims.mjs (run via a subst drive to stay under MAX_PATH)",
+    "baseline": "relationship-correction tree built index-BrmqHMeI.js and matched live 59/59 (sims-baseline-verification.json)",
+    "releaseTests": "520/520",
+    "liveAfter": "/assets/index-ComX5WGQ.js, 59/59 files match the release build (sims-hosting-verification.json)",
+    "log": "sims-deploy.log"
+  },
+  "parent": {
+    "baseline": "live index-BgqSfisl.js (release 9b89ebe60219f36d, 2026-10-18T14:49:57Z) matched a clean build of pre-merge master fa9c2cf 48/48 after normalizing content hashes and the build date",
+    "build": "e90f9ad with the main checkout's full parent/node_modules and parent/.env; initial load 219.9 KB gz / 260 KB",
+    "liveAfter": "/assets/index-NXoslati.js, 49/49 files match (parent-hosting-verification.json)",
+    "log": "parent-deploy.log"
+  },
+  "notVerified": [
+    "Signed-in end-to-end check (teacher request → SIMS Pending → approve → History) needs a real device; App Check blocks the built-in browser.",
+    "Full functions emulator suite on e90f9ad: 310/311, sectionEditing concurrency test timed out (untouched code; passed in an earlier full run)."
+  ]
+}
