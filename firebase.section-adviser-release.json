@@ -1,0 +1,65 @@
+{
+  "hosting": [
+    {
+      "target": "sims",
+      "public": ".superpowers/releases/section-adviser-sync/release/sims/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "DENY"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "geolocation=(), camera=(), microphone=()"
+            }
+          ]
+        },
+        {
+          "source": "/assets/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": ".superpowers/releases/section-adviser-sync/release/firestore.rules",
+    "indexes": "docs/releases/2026-10-18-school-family/firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": ".superpowers/releases/section-adviser-sync/release/backend/functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "predeploy": [
+        "node .superpowers/releases/section-adviser-sync/release/backend/scripts/syncShared.mjs"
+      ]
+    }
+  ]
+}
