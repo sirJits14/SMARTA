@@ -92,8 +92,9 @@ function SettingsHome({ ctx }) {
         {schoolAllowed && <SettingsRow tile="teal" icon="class" label={S.modeTitle} value={mode.view === 'school' ? S.modeSchool : S.modeFamily} onClick={() => navigate('/settings/mode')} />}
         {Array.isArray(schoolContext?.reviewQueue) && <SettingsRow tile="teal" icon="class" label={S.schoolRequestsTitle}
           value={schoolContext.reviewQueue.length ? String(schoolContext.reviewQueue.length) : ''} onClick={() => navigate('/settings/school-requests')} />}
-        <SettingsRow tile="teal" icon="class" label={S.schoolAccessRow} subtitle={S.schoolAccessRowHint}
-          value={schoolContext?.myRequests?.some((r) => r.status === 'pending') ? S.requestPending : undefined} onClick={() => navigate('/settings/school-access')} />
+        <SettingsRow tile="teal" icon="class" label={S.addRoleRow} subtitle={S.addRoleRowHint} onClick={() => navigate('/join')} />
+        {schoolContext?.myRequests?.length > 0 && <SettingsRow tile="teal" icon="class" label={S.schoolRequestsRow}
+          value={schoolContext.myRequests.some((r) => r.status === 'pending') ? S.requestPending : undefined} onClick={() => navigate('/settings/school-access')} />}
       </SettingsGroup>
       {sectionGroups(hidden).map((group) => (
         <SettingsGroup key={group[0].key}>

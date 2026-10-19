@@ -10,10 +10,11 @@ it('school assignments confer no raw roster reads or direct mutation privileges'
   });
   await denied(as(env, GUARDIAN_A).doc('students/S1').get());
   for (const who of [STAFF, GUARDIAN_A]) {
-    for (const path of ['school_accounts/gA', 'school_role_requests/r', 'school_adviser_locks/s', 'attendance_corrections/op', 'attendance_correction_audit/op']) {
+    for (const path of ['school_accounts/gA', 'school_role_requests/r', 'school_adviser_locks/s', 'advisory_slips/x', 'attendance_corrections/op', 'attendance_correction_audit/op']) {
       await denied(as(env, who).doc(path).set({ role: 'admin' }));
     }
   }
+  for (const who of [STAFF, GUARDIAN_A]) await denied(as(env, who).doc('advisory_slips/x').get());
 });
 it('staff preserve session overrides when editing base marks and cannot erase the audit by deleting attendance', async () => {
   await seed(env, db => db.doc('student_attendance/SEC1_2026-10-17').set({ sectionId: 'SEC1', schoolYear: '2026-2027', gradeLevel: 7,

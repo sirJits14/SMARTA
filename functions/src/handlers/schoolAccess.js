@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
-import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, isDepedEmail } from '../../shared/schoolAccess.js';
+import { SCHOOL_ROLES, SCHOOL_ROLE_LABELS, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, conflictingRole, isDepedEmail, isGradeRole } from '../../shared/schoolAccess.js';
 import { enforceRateLimit } from '../callable.js';
 import { groupLegacyAdvisers, sampleStudentIds } from '../lib/legacyAdvisers.js';
 
@@ -16,16 +16,28 @@ const reasonValue = value => {
   return reason;
 };
 const fingerprint = value => createHash('sha256').update(value).digest('hex');
-const requestKey = (uid, assignment) => fingerprint(JSON.stringify([uid, assignmentKey(assignment)]));
+export const requestKey = (uid, assignment) => fingerprint(JSON.stringify([uid, assignmentKey(assignment)]));
 // Audit rows carry the teacher's name so History reads without another lookup.
-const teacherOf = person => ({ teacherEmail: (person?.email || '').toLowerCase(), teacherName: person?.displayName || person?.email || '' });
+export const teacherOf = person => ({ teacherEmail: (person?.email || '').toLowerCase(), teacherName: person?.displayName || person?.email || '' });
 const millis = value => (value?.toMillis ? value.toMillis() : null);
 // Approvals may omit a reason; rejections must tell the teacher why.
 const decisionReason = (approve, value) => (approve && !(typeof value === 'string' && value.trim()) ? 'Approved' : reasonValue(value));
-const inboxRef = (db, uid, key) => db.doc(`guardians/${uid}/inbox/school_${fingerprint(key).slice(0, 32)}`);
+export const inboxRef = (db, uid, key) => db.doc(`guardians/${uid}/inbox/school_${fingerprint(key).slice(0, 32)}`);
 const lockRef = (db, a) => a.role === 'adviser' ? db.doc(`school_adviser_locks/${a.schoolYear}_${a.sectionId}`) : null;
-const auditRow = (actor, action, targetId, details) => ({ action, actorType: 'staff', actorUid: actor.email,
+export const auditRow = (actor, action, targetId, details) => ({ action, actorType: 'staff', actorUid: actor.email,
   targetType: 'school_assignment', targetId, details, at: FieldValue.serverTimestamp() });
+
+// Roles an account holds or has asked for in this school year; the
+// Adviser/Subject Teacher exclusion counts both.
+export const rolesHeld = (assignments, pendingDocs, schoolYear) => [
+  ...assignments.filter(a => a.schoolYear === schoolYear).map(a => a.role),
+  ...pendingDocs.map(d => d.data()).filter(r => r.schoolYear === schoolYear).map(r => r.role),
+];
+export function assertCanHold(roles, role) {
+  const other = conflictingRole(roles, role);
+  if (other) fail('failed-precondition', `This account already has the ${SCHOOL_ROLE_LABELS[other]} role this school year. Class Adviser and Subject Teacher can't be combined.`);
+}
+const gradeValue = value => Number.isInteger(value) && value >= 7 && value <= 12;
 
 // Callables validate Auth/App Check first. Transactional callers re-read scope
 // here so a concurrent assignment removal conflicts with their write.
@@ -59,18 +71,20 @@ export async function loadSchoolActor(deps, reader = deps.db) {
 async function assignmentFrom(deps, reader, actor, input) {
   if (actor.ended) fail('failed-precondition', 'This school year has ended.');
   if (!SCHOOL_ROLES.includes(input.role)) fail('invalid-argument', 'Choose a school role.');
-  if (input.role === 'curriculum_adviser') {
-    if (!Number.isInteger(input.gradeLevel) || input.gradeLevel < 7 || input.gradeLevel > 12) fail('invalid-argument', 'Choose a grade from 7 to 12.');
+  if (isGradeRole(input.role) && input.sectionId === undefined) {
+    if (!gradeValue(input.gradeLevel)) fail('invalid-argument', 'Choose a grade from 7 to 12.');
     return { role: input.role, schoolYear: actor.schoolYear, gradeLevel: input.gradeLevel };
   }
+  if (input.role === 'curriculum_adviser') fail('invalid-argument', 'Choose a grade from 7 to 12.');
   if (!id(input.sectionId)) fail('invalid-argument', 'Choose a section.');
   const section = (await read(deps.db, reader, deps.db.doc(`sections/${input.sectionId}`))).data();
-  if (!section || section.schoolYear !== actor.schoolYear || !Number.isInteger(section.gradeLevel)
-      || section.gradeLevel < 7 || section.gradeLevel > 12) fail('failed-precondition', 'This section is unavailable for the current school year.');
+  if (!section || section.schoolYear !== actor.schoolYear || !gradeValue(section.gradeLevel)) fail('failed-precondition', 'This section is unavailable for the current school year.');
+  // Older clients name a section for Subject Teacher; the role is held for that section's grade.
+  if (input.role === 'subject_teacher') return { role: input.role, schoolYear: actor.schoolYear, gradeLevel: section.gradeLevel };
   return { role: input.role, schoolYear: actor.schoolYear, sectionId: input.sectionId, gradeLevel: section.gradeLevel };
 }
 
-async function liveUser(auth, uid) {
+export async function liveUser(auth, uid) {
   const user = await auth.getUser(uid).catch(e => {
     if (e.code === 'auth/user-not-found') fail('failed-precondition', 'The requesting account no longer exists.');
     throw e;
@@ -79,25 +93,43 @@ async function liveUser(auth, uid) {
   return user;
 }
 
-// Teachers ask from the Parent App; a request confers nothing until approved.
+// Teachers ask from the Parent App. A DepEd Subject Teacher is granted at once;
+// every other request confers nothing until approved.
 export async function requestSchoolRole(deps, input) {
   if (!REQUESTABLE_ROLES.includes(input.role)) fail('permission-denied', 'An administrator assigns Curriculum Adviser access.');
+  const byGrade = input.role === 'subject_teacher' && input.gradeLevels !== undefined;
+  if (byGrade && (!Array.isArray(input.gradeLevels) || !input.gradeLevels.length || !input.gradeLevels.every(gradeValue))) fail('invalid-argument', 'Choose one or more grades from 7 to 12.');
+  const inputs = byGrade ? [...new Set(input.gradeLevels)].map(gradeLevel => ({ role: 'subject_teacher', gradeLevel })) : [input];
   const user = await liveUser(deps.auth, deps.uid);
   await enforceRateLimit(deps.db, deps.uid, 'schoolRoleRequest', { windowMs: 3600000, max: 30 }, (deps.now || (() => new Date()))().getTime());
+  const instant = input.role === 'subject_teacher' && isDepedEmail(user.email);
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
-    const assignment = await assignmentFrom(deps, tx, actor, input);
-    if (actor.assignments.some(a => assignmentKey(a) === assignmentKey(assignment))) fail('already-exists', 'This assignment is already active.');
-    const key = requestKey(deps.uid, assignment);
-    const ref = deps.db.doc(`school_role_requests/${key}`);
-    const existing = await tx.get(ref);
-    const pending = await tx.get(deps.db.collection('school_role_requests').where('uid', '==', deps.uid).where('status', '==', 'pending'));
-    if (existing.data()?.status === 'pending') return { id: key, status: 'pending' };
-    if (pending.size >= 20) fail('resource-exhausted', 'Wait for your pending requests to be reviewed.');
-    tx.set(ref, { ...assignment, uid: deps.uid, email: user.email.toLowerCase(), emailVerified: true,
-      displayName: user.displayName || actor.displayName, status: 'pending', createdAt: FieldValue.serverTimestamp() });
-    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.requested', deps.uid, { ...assignment, ...teacherOf(user) }));
-    return { id: key, status: 'pending' };
+    const wanted = [];
+    for (const one of inputs) wanted.push(await assignmentFrom(deps, tx, actor, one));
+    const requests = deps.db.collection('school_role_requests');
+    const pending = await tx.get(requests.where('uid', '==', deps.uid).where('status', '==', 'pending'));
+    assertCanHold(rolesHeld(actor.assignments, pending.docs, actor.schoolYear), input.role);
+    const fresh = wanted.filter(a => !actor.assignments.some(h => assignmentKey(h) === assignmentKey(a)));
+    if (!fresh.length) fail('already-exists', 'This assignment is already active.');
+    if (instant) {
+      const prepared = await prepareGrant(deps.db, tx, deps.uid, fresh[0]);
+      let assignments = prepared.assignments;
+      for (const assignment of fresh) {
+        assignments = writeGrant(tx, { ...prepared, assignments, exists: assignments.some(a => assignmentKey(a) === assignmentKey(assignment)) }, actor, user, assignment, 'self');
+      }
+      return { status: 'granted', count: fresh.length };
+    }
+    const refs = fresh.map(a => requests.doc(requestKey(deps.uid, a)));
+    const existing = await Promise.all(refs.map(ref => tx.get(ref)));
+    const toCreate = fresh.filter((_, i) => existing[i].data()?.status !== 'pending');
+    if (pending.size + toCreate.length > 20) fail('resource-exhausted', 'Wait for your pending requests to be reviewed.');
+    for (const assignment of toCreate) {
+      tx.set(requests.doc(requestKey(deps.uid, assignment)), { ...assignment, uid: deps.uid, email: user.email.toLowerCase(), emailVerified: true,
+        displayName: user.displayName || actor.displayName, status: 'pending', createdAt: FieldValue.serverTimestamp() });
+      tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.requested', deps.uid, { ...assignment, ...teacherOf(user) }));
+    }
+    return { status: 'pending', id: refs[0].id, ids: refs.map(ref => ref.id) };
   });
 }
 
@@ -130,7 +162,7 @@ async function adviserSections(db, tx, uid, assignments, schoolYear) {
   return rows.filter(Boolean);
 }
 
-async function prepareGrant(db, tx, uid, assignment) {
+export async function prepareGrant(db, tx, uid, assignment) {
   const accountRef = db.doc(`school_accounts/${uid}`);
   const lock = lockRef(db, assignment);
   const [account, locked] = await Promise.all([tx.get(accountRef), lock ? tx.get(lock) : null]);
@@ -140,10 +172,11 @@ async function prepareGrant(db, tx, uid, assignment) {
   return { accountRef, lock, assignments, sections, exists: assignments.some(a => assignmentKey(a) === assignmentKey(assignment)) };
 }
 // serverTimestamp cannot sit inside an array, so assignedAt uses the function's clock.
-function writeGrant(tx, prepared, actor, user, assignment, source) {
+// Returns the account's assignments after the grant, so callers can grant several in one transaction.
+export function writeGrant(tx, prepared, actor, user, assignment, source) {
   const db = prepared.accountRef.firestore;
   const displayName = user.displayName?.trim() || user.email;
-  for (const section of prepared.sections) {
+  for (const section of prepared.sections || []) {
     if (assignment.role !== 'adviser' || section.id !== assignment.sectionId) {
       tx.update(section.ref, { adviserName: displayName, schoolAdviserUid: user.uid });
     }
@@ -153,16 +186,18 @@ function writeGrant(tx, prepared, actor, user, assignment, source) {
   if (assignment.role === 'adviser') tx.update(db.doc(`sections/${assignment.sectionId}`), {
     adviserName: displayName, schoolAdviserUid: user.uid,
   });
+  const assignments = prepared.exists ? prepared.assignments
+    : [...prepared.assignments, { ...assignment, assignedAt: Timestamp.now(), assignedBy: actor.email, source }];
   tx.set(prepared.accountRef, { uid: user.uid, email: user.email.toLowerCase(), displayName,
-    assignments: prepared.exists ? prepared.assignments : [...prepared.assignments, { ...assignment, assignedAt: Timestamp.now(), assignedBy: actor.email, source }],
-    updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    assignments, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   if (prepared.lock) tx.set(prepared.lock, { uid: user.uid, ...assignment });
-  if (prepared.exists) return;
-  // Approvals and replacements write their own audit row.
-  if (source === 'direct' || source === 'legacy') tx.set(db.collection('audit_log').doc(), auditRow(actor, 'school.assigned', user.uid, { ...assignment, source, ...teacherOf(user) }));
+  if (prepared.exists) return assignments;
+  // Approvals, replacements and slips write their own audit row.
+  if (['direct', 'legacy', 'self'].includes(source)) tx.set(db.collection('audit_log').doc(), auditRow(actor, 'school.assigned', user.uid, { ...assignment, source, ...teacherOf(user) }));
   tx.set(inboxRef(db, user.uid, assignmentKey(assignment)), {
     type: 'school_access', title: 'School access approved',
     body: 'You can now use the app for school work. Switch to School in Settings.', createdAt: FieldValue.serverTimestamp() });
+  return assignments;
 }
 
 export async function resolveSchoolRole(deps, input) {
@@ -185,7 +220,9 @@ export async function resolveSchoolRole(deps, input) {
     if (user) {
       const assignment = await assignmentFrom(deps, tx, actor, request);
       if (assignment.gradeLevel !== request.gradeLevel) fail('failed-precondition', 'The section changed grades. Ask for a new request.');
-      writeGrant(tx, await prepareGrant(deps.db, tx, user.uid, assignment), actor, user, assignment, 'request');
+      const prepared = await prepareGrant(deps.db, tx, user.uid, assignment);
+      assertCanHold(rolesHeld(prepared.assignments, [], actor.schoolYear), assignment.role);
+      writeGrant(tx, prepared, actor, user, assignment, 'request');
       scope = assignment;
     } else {
       tx.set(inboxRef(deps.db, request.uid, `rejected:${ref.id}`), { type: 'school_access', rejected: true,
@@ -224,6 +261,7 @@ export async function replaceAdviser(deps, input) {
     const [previous, account] = await Promise.all([tx.get(previousRef), tx.get(accountRef)]);
     const key = assignmentKey(assignment);
     const assignments = account.data()?.assignments || [];
+    assertCanHold(rolesHeld(assignments, [], actor.schoolYear), 'adviser');
     const sections = await adviserSections(deps.db, tx, user.uid, assignments, assignment.schoolYear);
     if (previous.exists) tx.update(previousRef, { assignments: (previous.data().assignments || []).filter(a => assignmentKey(a) !== key), updatedAt: FieldValue.serverTimestamp() });
     writeGrant(tx, { accountRef, lock, assignments, sections, exists: assignments.some(a => assignmentKey(a) === key) }, actor, user, assignment, 'replace');
@@ -262,6 +300,7 @@ export async function assignSchoolRole(deps, input) {
     if (!current.isAdmin) fail('permission-denied', 'Administrators only.');
     const assignment = await assignmentFrom(deps, tx, current, input);
     const prepared = await prepareGrant(deps.db, tx, user.uid, assignment);
+    assertCanHold(rolesHeld(prepared.assignments, [], current.schoolYear), assignment.role);
     writeGrant(tx, prepared, current, user, assignment, input.source === 'legacy' ? 'legacy' : 'direct');
     return { ok: true };
   });
@@ -277,7 +316,7 @@ export async function revokeSchoolRole(deps, input) {
     const account = (await tx.get(ref)).data();
     const assignments = account?.assignments || [];
     const target = assignments.find(a => a.role === input.role && a.schoolYear === actor.schoolYear
-      && (a.role === 'curriculum_adviser' ? a.gradeLevel === input.gradeLevel : a.sectionId === input.sectionId));
+      && (a.sectionId ? a.sectionId === input.sectionId : a.gradeLevel === input.gradeLevel));
     if (!target) fail('not-found', 'This assignment is no longer active.');
     const lock = lockRef(deps.db, target);
     const locked = lock ? await tx.get(lock) : null;
@@ -384,9 +423,9 @@ export async function getSchoolContext(deps) {
     } else {
       const grades = actor.assignments.filter(a => a.role === 'curriculum_adviser').map(a => a.gradeLevel);
       if (grades.length) {
-        const pending = await pendingOf(requests.where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear).where('role', '==', 'adviser'));
-        result.reviewQueue = await requestRows(tx, deps.db, pending.docs.filter(s => grades.includes(s.data().gradeLevel)
-          && s.data().uid !== deps.uid && s.data().emailVerified === true && isDepedEmail(s.data().email)));
+        const pending = await pendingOf(requests.where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear));
+        result.reviewQueue = await requestRows(tx, deps.db, pending.docs.filter(s => REQUESTABLE_ROLES.includes(s.data().role)
+          && grades.includes(s.data().gradeLevel) && s.data().uid !== deps.uid && s.data().emailVerified === true));
       }
     }
     return result;

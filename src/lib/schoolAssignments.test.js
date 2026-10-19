@@ -45,8 +45,8 @@ describe('school access tracking', () => {
   });
   it('groups coverage by grade with gaps, subject teachers and pending adviser requests', () => {
     const [g7, g8] = coverageByGrade(sections, [ana, ben, cara], [dan]);
-    expect(g7).toMatchObject({ grade: 7, covered: 1, curriculumAdvisers: [] });
-    expect(g7.rows.map(r => [r.section.id, r.adviser?.uid ?? null, r.subjectTeachers, r.pending?.id ?? null])).toEqual([['A', 'u1', 1, null], ['B', null, 0, 'r1']]);
+    expect(g7).toMatchObject({ grade: 7, covered: 1, curriculumAdvisers: [], subjectTeachers: [ben] });
+    expect(g7.rows.map(r => [r.section.id, r.adviser?.uid ?? null, r.pending?.id ?? null])).toEqual([['A', 'u1', null], ['B', null, 'r1']]);
     expect(g8).toMatchObject({ grade: 8, covered: 0, curriculumAdvisers: [cara] });
   });
   it('filters and sorts assignments', () => {
@@ -65,8 +65,8 @@ describe('school access tracking', () => {
     expect(rows[0]).toEqual(['Name', 'Email', 'Responsibility', 'Grade', 'Section', 'Assigned on', 'Assigned by', 'Source', 'Status']);
     expect(rows[1]).toEqual(['Ana Cruz', 'ana@deped.gov.ph', 'Adviser', 7, 'Rizal', shortDate(now - DAY_MS), 'admin@school.test', 'direct', 'Opened']);
     const coverage = coverageCsvRows(coverageByGrade(sections, [ana, ben], [dan]));
-    expect(coverage[0]).toEqual(['Grade', 'Section', 'Adviser', 'Adviser email', 'Opened', 'Subject teachers', 'Pending request']);
-    expect(coverage.slice(1, 3)).toEqual([[7, 'Rizal', 'Ana Cruz', 'ana@deped.gov.ph', 'Yes', 1, ''], [7, 'Bonifacio', '', '', '', 0, 'Dan']]);
+    expect(coverage[0]).toEqual(['Grade', 'Section', 'Adviser', 'Adviser email', 'Opened', 'Grade subject teachers', 'Pending request']);
+    expect(coverage.slice(1, 3)).toEqual([[7, 'Rizal', 'Ana Cruz', 'ana@deped.gov.ph', 'Yes', 1, ''], [7, 'Bonifacio', '', '', '', 1, 'Dan']]);
   });
   it('turns audit rows into readable history', () => {
     const at = { toDate: () => new Date(now) };
@@ -82,5 +82,19 @@ describe('school access tracking', () => {
     expect(historyLine({ action: 'school.replaced', actorUid: 'admin@school.test', targetId: 'u9', at: null,
       details: { role: 'adviser', sectionId: 'A', teacherName: 'Eve Tan', previousEmail: 'ana@deped.gov.ph', reason: 'Moved' } }, sections).text)
       .toBe('admin@school.test replaced ana@deped.gov.ph with Eve Tan · Adviser · Grade 7 · Rizal');
+  });
+});
+
+describe('historyLine for advisory slips', () => {
+  const sections = [{ id: 'A', gradeLevel: 7, name: 'Rizal' }];
+  const at = { toDate: () => new Date('2026-10-19T00:00:00Z') };
+  it('describes issue, revoke and redeem', () => {
+    expect(historyLine({ action: 'school.slipIssued', actorUid: 'admin@x', at, details: { sectionId: 'A', gradeLevel: 7 } }, sections).text)
+      .toBe('admin@x issued an advisory slip · Grade 7 · Rizal');
+    expect(historyLine({ action: 'school.slipRevoked', actorUid: 'admin@x', at, details: { sectionId: 'A', gradeLevel: 7 } }, sections).text)
+      .toBe('admin@x revoked the advisory slip · Grade 7 · Rizal');
+    expect(historyLine({ action: 'school.slipRedeemed', actorUid: 'ana@deped.gov.ph', at,
+      details: { role: 'adviser', sectionId: 'A', gradeLevel: 7, issuedBy: 'admin@x', teacherName: 'Ana' } }, sections).text)
+      .toBe('Ana became Class Adviser with a slip from admin@x · Adviser · Grade 7 · Rizal');
   });
 });

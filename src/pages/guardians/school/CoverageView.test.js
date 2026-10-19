@@ -6,7 +6,8 @@ import CoverageView from './CoverageView.jsx';
 const context = {
   schoolYear: '2026-2027', ended: false,
   sections: [{ id: 'A', name: 'Rizal', gradeLevel: 7 }, { id: 'B', name: 'Bonifacio', gradeLevel: 7 }],
-  managedAssignments: [{ uid: 'u1', displayName: 'Ana Cruz', email: 'ana@deped.gov.ph', role: 'adviser', sectionId: 'A', gradeLevel: 7, assignedAt: 1, lastSchoolOpenAt: null }],
+  managedAssignments: [{ uid: 'u1', displayName: 'Ana Cruz', email: 'ana@deped.gov.ph', role: 'adviser', sectionId: 'A', gradeLevel: 7, assignedAt: 1, lastSchoolOpenAt: null },
+    { uid: 'u2', displayName: 'Eve Tan', email: 'eve@deped.gov.ph', role: 'subject_teacher', gradeLevel: 7, assignedAt: 1, lastSchoolOpenAt: null }],
   pendingRequests: [{ id: 'r1', role: 'adviser', sectionId: 'B', displayName: 'Dan' }],
 };
 
@@ -18,5 +19,6 @@ describe('CoverageView', () => {
     expect(html).toContain('Not opened yet');
     expect(html).toContain('No adviser');
     expect(html).toContain('Review Dan');
+    expect(html).toContain('Subject Teachers: 1');
   });
 });

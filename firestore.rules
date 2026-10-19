@@ -356,6 +356,7 @@ service cloud.firestore {
     match /school_accounts/{id} { allow read, write: if false; }
     match /school_role_requests/{id} { allow read, write: if false; }
     match /school_adviser_locks/{id} { allow read, write: if false; }
+    match /advisory_slips/{id} { allow read, write: if false; }
     match /attendance_corrections/{id} { allow read, write: if false; }
     match /attendance_correction_audit/{id} { allow read, write: if false; }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isAdmin, allowedPages, canOpen, gradeOptions, singleGrade, profileRefusal, ownProfile, scopeRoster } from './access.js';
+import { isAdmin, allowedPages, canOpen, gradeOptions, singleGrade, profileRefusal, ownProfile, scopeRoster, canIssueAdvisorySlip } from './access.js';
 import * as access from './access.js';
 
 const admin = { role: 'registrar' }, jhs = { role: 'jhs_coord' }, glc8 = { role: 'glc', gradeLevel: 8 };
@@ -126,5 +126,16 @@ describe('scopeRoster', () => {
   });
   it('defaults missing collections to empty', () => {
     expect(scopeRoster({ sections: data.sections }, [11], SY)).toEqual({ sections: [data.sections[1]], enrollments: [], students: [], attendance: [] });
+  });
+});
+
+describe('canIssueAdvisorySlip', () => {
+  it('lets administrators issue for any grade and coordinators for their own', () => {
+    expect(canIssueAdvisorySlip({ role: 'admin' }, { gradeLevel: 12 })).toBe(true);
+    expect(canIssueAdvisorySlip({ role: 'glc', gradeLevel: 8 }, { gradeLevel: 8 })).toBe(true);
+    expect(canIssueAdvisorySlip({ role: 'glc', gradeLevel: 8 }, { gradeLevel: 7 })).toBe(false);
+    expect(canIssueAdvisorySlip({ role: 'jhs_coord' }, { gradeLevel: 10 })).toBe(true);
+    expect(canIssueAdvisorySlip({ role: 'shs_coord' }, { gradeLevel: 10 })).toBe(false);
+    expect(canIssueAdvisorySlip({ role: 'bogus' }, { gradeLevel: 7 })).toBe(false);
   });
 });

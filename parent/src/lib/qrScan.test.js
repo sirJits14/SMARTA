@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { extractCode, normalizeCode, createDetector } from './qrScan.js';
+import { extractCode, normalizeCode, createDetector, readSlip } from './qrScan.js';
 
 describe('extractCode', () => {
   it('reads the code from the printed slip URL on any host', () => {
@@ -65,5 +65,20 @@ describe('createDetector', () => {
     const d = await createDetector({ win, loadJsQR: async () => jsQR });
     expect(await d.detect({ videoWidth: 0, videoHeight: 0 })).toBeNull();
     expect(await d.detect({ width: 100, height: 100 })).toBeNull();
+  });
+});
+
+describe('readSlip', () => {
+  it('tells learner and advisory slip links apart', () => {
+    expect(readSlip('https://bnhs-parent.web.app/activate?c=ABCD2345', 'advisory')).toEqual({ kind: 'learner', code: 'ABCD2345' });
+    expect(readSlip('https://bnhs-parent.web.app/activate?a=abcd2345', 'learner')).toEqual({ kind: 'advisory', code: 'ABCD2345' });
+  });
+  it('uses the step kind for a bare code and rejects anything else', () => {
+    expect(readSlip('ABCD-2345', 'advisory')).toEqual({ kind: 'advisory', code: 'ABCD2345' });
+    expect(readSlip('https://example.com/pay?a=ABCD2345', 'learner')).toBeNull();
+    expect(readSlip('', 'learner')).toBeNull();
+  });
+  it('keeps extractCode learner-only', () => {
+    expect(extractCode('https://x/activate?a=ABCD2345')).toBeNull();
   });
 });

@@ -17,6 +17,8 @@ export const LIMITS = {
   // lock per learner is the real limit; an adviser may be fixing a whole
   // section in one sitting, so this only stops scripted calls.
   relationshipChange: { windowMs: 60 * 60 * 1000, max: 60 },
+  // Preview and redeem of advisory slips share one budget per account.
+  advisorySlip: { windowMs: 60 * 60 * 1000, max: 10 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 

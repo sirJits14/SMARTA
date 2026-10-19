@@ -25,4 +25,12 @@ describe('announcement recipient matching', () => {
   it('does not turn school roles into family rights', () => {
     expect(matchesAnnouncementAudience({ roles: ['family'], all: true }, { ...person, family: [] }, 'family')).toBe(false);
   });
+  it('reaches grade-level subject teachers for their grade and for sections in it', () => {
+    const teacher = { ...person, assignments: [{ role: 'subject_teacher', schoolYear: year, gradeLevel: 7 }] };
+    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], grades: [7] }, teacher, 'school')).toBe(true);
+    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], grades: [8] }, teacher, 'school')).toBe(false);
+    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], all: true, sectionIds: ['s7'] }, teacher, 'school')).toBe(true);
+    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], all: true, sectionIds: ['s8'] }, teacher, 'school')).toBe(false);
+    expect(matchesAnnouncementAudience({ roles: ['adviser'], grades: [7] }, teacher, 'school')).toBe(false);
+  });
 });

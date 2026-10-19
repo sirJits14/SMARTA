@@ -43,11 +43,11 @@ export function coverageByGrade(sections = [], assignments = [], pending = []) {
     const rows = sections.filter(s => Number(s.gradeLevel) === grade).map(section => ({
       section,
       adviser: assignments.find(a => a.role === 'adviser' && a.sectionId === section.id) || null,
-      subjectTeachers: assignments.filter(a => a.role === 'subject_teacher' && a.sectionId === section.id).length,
       pending: pending.find(r => r.role === 'adviser' && r.sectionId === section.id) || null,
     }));
     return { grade, rows, covered: rows.filter(r => r.adviser).length,
-      curriculumAdvisers: assignments.filter(a => a.role === 'curriculum_adviser' && Number(a.gradeLevel) === grade) };
+      curriculumAdvisers: assignments.filter(a => a.role === 'curriculum_adviser' && Number(a.gradeLevel) === grade),
+      subjectTeachers: assignments.filter(a => a.role === 'subject_teacher' && Number(a.gradeLevel) === grade) };
   });
 }
 
@@ -79,9 +79,9 @@ export function assignmentCsvRows(items, sections = []) {
 }
 
 export function coverageCsvRows(groups) {
-  return [['Grade', 'Section', 'Adviser', 'Adviser email', 'Opened', 'Subject teachers', 'Pending request'],
+  return [['Grade', 'Section', 'Adviser', 'Adviser email', 'Opened', 'Grade subject teachers', 'Pending request'],
     ...groups.flatMap(g => g.rows.map(r => [g.grade, r.section.name || r.section.id, who(r.adviser), r.adviser?.email || '',
-      r.adviser ? (openedStatus(r.adviser).opened ? 'Yes' : 'No') : '', r.subjectTeachers, who(r.pending)]))];
+      r.adviser ? (openedStatus(r.adviser).opened ? 'Yes' : 'No') : '', g.subjectTeachers.length, who(r.pending)]))];
 }
 
 const VERBS = { 'school.requestApproved': 'approved', 'school.requestRejected': 'rejected the request from', 'school.assigned': 'assigned', 'school.revoked': 'revoked' };
@@ -95,6 +95,9 @@ export function historyLine(row, sections = []) {
   const text = row.action === 'school.requested' ? `${teacher} requested ${what}`
     : row.action === 'school.requestWithdrawn' ? `${teacher} withdrew a request for ${what}`
     : row.action === 'school.replaced' ? `${row.actorUid} replaced ${d.previousEmail || 'the adviser'} with ${teacher} · ${what}`
+    : row.action === 'school.slipIssued' ? `${row.actorUid} issued an advisory slip · ${scope}`
+    : row.action === 'school.slipRevoked' ? `${row.actorUid} revoked the advisory slip · ${scope}`
+    : row.action === 'school.slipRedeemed' ? `${teacher} became Class Adviser with a slip from ${d.issuedBy} · ${what}`
     : `${row.actorUid} ${VERBS[row.action] || row.action} ${teacher} · ${what}`;
   return { when, text, reason: d.reason && d.reason !== 'Approved' ? d.reason : '' };
 }

@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { coversPostKeys, postAudienceKeys, isVisibleToParents, toMillis, TITLE_MAX, BODY_MAX, MAX_PINNED, manilaDateTime, endOfManilaDay } from '../../shared/announcements.js';
 import { ANNOUNCEMENT_ROLES, matchesAnnouncementAudience } from '../../shared/announcementAudience.js';
-import { isFamilyLink } from '../../shared/schoolAccess.js';
+import { isFamilyLink, isGradeRole } from '../../shared/schoolAccess.js';
 import { loadSchoolActor } from './schoolAccess.js';
 
 const rows = snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -41,7 +41,8 @@ export async function announcementPeople(db, uid = null, targetSectionIds = []) 
     if (account.disabled === true || ended) continue;
     person(account.id).assignments = (account.assignments || []).filter(assignment => {
       if (assignment.schoolYear !== schoolYear || !ANNOUNCEMENT_ROLES.includes(assignment.role) || assignment.role === 'family') return false;
-      if (assignment.role === 'curriculum_adviser') return Number.isInteger(assignment.gradeLevel) && assignment.gradeLevel >= 7 && assignment.gradeLevel <= 12;
+      // Grade roles (Curriculum Adviser, grade-level Subject Teacher) carry no section; a section-bound legacy row still needs its section check.
+      if (assignment.role === 'curriculum_adviser' || (isGradeRole(assignment.role) && !assignment.sectionId)) return Number.isInteger(assignment.gradeLevel) && assignment.gradeLevel >= 7 && assignment.gradeLevel <= 12;
       return Number(sectionById.get(assignment.sectionId)?.gradeLevel) === assignment.gradeLevel;
     });
   }

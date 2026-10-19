@@ -31,7 +31,7 @@ function routeScreen(load) {
 }
 const Consent = routeScreen(() => import('./screens/Consent.jsx'));
 const Verify = routeScreen(() => import('./screens/Verify.jsx'));
-const Activate = routeScreen(() => import('./screens/Activate.jsx'));
+const Join = routeScreen(() => import('./screens/Join.jsx'));
 const Home = routeScreen(() => import('./screens/Home.jsx'));
 const History = routeScreen(() => import('./screens/History.jsx'));
 const Inbox = routeScreen(() => import('./screens/Inbox.jsx'));
@@ -44,6 +44,9 @@ const School = routeScreen(() => import('./screens/School.jsx'));
 const APP_SCREENS = [Home, History, Inbox, Report, Settings, Announcements, AnnouncementDetail];
 
 const CONSENT_KEY = 'bnhs-parent-consent';
+const hasLocalConsent = () => { try { return localStorage.getItem(CONSENT_KEY) !== null; } catch { return false; } };
+// App routes an account without a profile cannot open yet; it registers through /join first.
+const GATED = ['home', 'school', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'];
 
 export default function App() {
   const { route, navigate } = useRoute();
@@ -82,8 +85,9 @@ export default function App() {
     if (profile && mode.view === 'school' && route.name === 'home') navigate(schoolHome(mode), { replace: true });
   }, [profile, mode, route.name, navigate]);
   // Consent.jsx reads this doc itself before the account profile exists.
-  // Profiles are created by linking a learner or choosing Skip for now.
-  const portal = useDoc(profile ? 'settings/parent_portal' : null).data;
+  // Read for every signed-in account (rules allow it), so the profile created
+  // during /join never flashes a loading screen that would reset the flow.
+  const portal = useDoc(user ? 'settings/parent_portal' : null).data;
   // Verify.jsx confirms email verification client-side (user.reload() +
   // a forced getIdToken(true)) without a page reload -- a hard navigation
   // here would race the SDK's async write of the refreshed token to
@@ -120,6 +124,10 @@ export default function App() {
     return () => { alive = false; off(); };
   }, [user, navigate]);
 
+  // Registration happens on /join, so the profile appearing mid-flow never swaps the screen underneath it.
+  const mustJoin = profile === null && GATED.includes(route.name) && hasLocalConsent();
+  useEffect(() => { if (mustJoin) navigate('/join', { replace: true }); }, [mustJoin, navigate]);
+
   if (user === undefined) return <Spinner label={S.loading} />;
   if (!user) return <SignIn />;
   if (!user.emailVerified && !verifiedOverride) return <Shell route={route} navigate={navigate} gate><Suspense fallback={<Spinner label={S.loading} />}><Verify user={user} onVerified={() => setVerifiedOverride(true)} /></Suspense></Shell>;
@@ -139,21 +147,20 @@ export default function App() {
     if (profile.consentVersion !== liveConsentVersion) return <Shell route={route} navigate={navigate} gate><Suspense fallback={<Spinner label={S.loading} />}><Consent user={user} profile={profile} route={route} navigate={navigate} onAccepted={() => { callable('acceptConsentFn')({}).catch(() => {}); }} /></Suspense></Shell>;
   }
 
-  // First-time flow: consent → learner linking, with an option to skip.
-  // Linking or skipping records consent in the server-side profile, so
-  // returning accounts enter the app. Deep links to /activate?c= survive.
-  let consented = false;
-  try { consented = Boolean(profile) || localStorage.getItem(CONSENT_KEY) !== null; } catch { consented = Boolean(profile); }
+  // First-time flow: consent → /join (who are you?) → role steps. Deep links to /activate?c= and ?a= survive.
+  // Registration records consent in the server-side profile, so returning accounts enter the app.
+  const consented = Boolean(profile) || hasLocalConsent();
   const props = { user, profile, route, navigate: scopedNavigate, view, mode, setMode };
   let screen;
-  let gate = false; // first-run Consent / Activate have no PageHeader, so Shell adds the title row
-  if (!profile && !consented && route.name !== 'requestAccess') { gate = true; screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate(route.name === 'activate' ? `/activate${window.location.search}` : '/activate', { replace: true }); }} />; }
-  else if (!profile && ['home', 'school', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'].includes(route.name)) { gate = true; screen = <Activate {...props} />; }
+  let gate = false; // first-run Consent / Join have no PageHeader, so Shell adds the title row
+  const toJoin = (v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate(['activate', 'join'].includes(route.name) ? `/join${window.location.search}` : '/join', { replace: true }); };
+  if (!profile && !consented && route.name !== 'requestAccess') { gate = true; screen = <Consent {...props} onAccepted={toJoin} />; }
+  else if (!profile && GATED.includes(route.name)) { gate = true; screen = <Spinner label={S.loading} />; }
   else switch (route.name) {
     case 'home': screen = <Home {...props} />; break;
     case 'school': screen = <School {...props} />; break;
-    case 'consent': screen = <Consent {...props} onAccepted={(v) => { try { localStorage.setItem(CONSENT_KEY, String(v)); } catch {} navigate('/activate'); }} />; break;
-    case 'activate': screen = <Activate {...props} />; break;
+    case 'consent': screen = <Consent {...props} onAccepted={toJoin} />; break;
+    case 'join': case 'activate': screen = <Join {...props} />; break;
     case 'learner': screen = <History {...props} studentId={route.params.id} />; break;
     case 'inbox': screen = <Inbox {...props} />; break;
     case 'announcements': screen = <Announcements {...props} />; break;

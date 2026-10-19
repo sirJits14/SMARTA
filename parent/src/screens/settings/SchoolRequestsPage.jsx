@@ -5,7 +5,7 @@ import PageHeader from '../../components/PageHeader.jsx';
 import { Banner, Btn, Card, EmptyState, Field, Inp, Spinner } from '../../components/ui.jsx';
 import { useSchoolContext } from '../../hooks/useSchoolContext.js';
 import { useSchoolAction } from '../../hooks/useSchoolAction.js';
-import { ROLE_LABELS, sectionLabel } from '../../lib/school.js';
+import { ROLE_LABELS, scopeLabel } from '../../lib/school.js';
 
 // Curriculum Advisers review adviser requests from DepEd accounts in their grades.
 export default function SchoolRequestsPage({ ctx, back }) {
@@ -34,7 +34,7 @@ export default function SchoolRequestsPage({ ctx, back }) {
             <li key={r.id} style={{ padding: '12px 0', borderTop: `1px solid ${T.border}` }}>
               <div style={{ fontWeight: 600 }}>{r.displayName || r.email}</div>
               <div style={{ fontSize: 13, color: T.inkMuted, overflowWrap: 'anywhere' }}>{r.email}</div>
-              <div style={{ fontSize: 14, margin: '4px 0 8px' }}>{ROLE_LABELS[r.role]} · {sectionLabel(sections.find((s) => s.id === r.sectionId))}</div>
+              <div style={{ fontSize: 14, margin: '4px 0 8px' }}>{ROLE_LABELS[r.role]} · {scopeLabel(r, sections)}</div>
               {r.conflict ? <Banner tone="warn">{S.schoolRequestsNeedsAdmin}</Banner>
                 : rejecting === r.id ? (
                   <form onSubmit={(e) => reject(e, r)}>

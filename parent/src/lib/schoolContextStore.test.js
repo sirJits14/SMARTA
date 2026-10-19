@@ -70,6 +70,20 @@ describe('school context store', () => {
     expect(storage.map.size).toBe(0);
   });
 
+  it.each([['older first', true], ['newer first', false]])('a forced refresh wins over one already in flight (%s)', async (_label, olderFirst) => {
+    const stale = { assignments: [] };
+    const resolvers = [];
+    const store = createSchoolContextStore({ fetch: () => new Promise((resolve) => { resolvers.push(resolve); }), storage: memory() });
+    const first = store.refresh('u1');
+    await Promise.resolve(); await Promise.resolve();
+    const second = store.refresh('u1', { force: true });
+    await Promise.resolve(); await Promise.resolve();
+    expect(resolvers).toHaveLength(2);
+    if (olderFirst) { resolvers[0](stale); resolvers[1](access); } else { resolvers[1](access); resolvers[0](stale); }
+    await Promise.all([first, second]);
+    expect(store.get('u1')).toMatchObject({ data: access, loading: false });
+  });
+
   it('tells subscribers when an answer arrives', async () => {
     const store = createSchoolContextStore({ fetch: async () => access, storage: memory() });
     let seen = 0;

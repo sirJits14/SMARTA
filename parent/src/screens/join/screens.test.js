@@ -1,0 +1,78 @@
+import { describe, expect, it, vi } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import S from '../../strings.js';
+import { roleOptions } from '../../lib/join.js';
+
+// Smoke test: nothing imports these screens until the /join route is wired, so
+// this catches syntax and import-path errors and checks the chooser's copy.
+vi.mock('../../firebase.js', () => ({
+  app: {},
+  db: {},
+  auth: { currentUser: null },
+  googleProvider: {},
+  appCheckReady: Promise.resolve(),
+  callable: () => async () => ({ data: {} }),
+}));
+
+const load = {
+  Join: () => import('../Join.jsx'),
+  RoleChooser: () => import('./RoleChooser.jsx'),
+  FamilyStep: () => import('./FamilyStep.jsx'),
+  AdviserStep: () => import('./AdviserStep.jsx'),
+  SubjectTeacherStep: () => import('./SubjectTeacherStep.jsx'),
+  JoinSummary: () => import('./JoinSummary.jsx'),
+  StepHeader: () => import('./StepHeader.jsx'),
+};
+
+describe('Join screens', () => {
+  for (const [name, importer] of Object.entries(load)) {
+    it(`${name} loads and exports a component`, async () => {
+      const mod = await importer();
+      expect(typeof mod.default).toBe('function');
+    });
+  }
+
+  it('exports the step label helper and role text', async () => {
+    const { stepLabel } = await load.StepHeader();
+    const { ROLE_TEXT } = await load.RoleChooser();
+    expect(typeof stepLabel).toBe('function');
+    expect(stepLabel(0, 2, 'Family Member')).toContain('1');
+    expect(Object.keys(ROLE_TEXT)).toEqual(['family', 'adviser', 'subject_teacher']);
+    expect(ROLE_TEXT.family[0]).toBe(S.joinFamily);
+  });
+
+  const render = async (props) => {
+    const { default: RoleChooser } = await load.RoleChooser();
+    return renderToStaticMarkup(createElement(RoleChooser, { name: 'Ana Reyes', setName() {}, setSelected() {}, onContinue() {}, selected: [], ...props }));
+  };
+
+  it('shows the three role titles and no approval tag for a DepEd email', async () => {
+    const options = roleOptions({ email: 'ana@deped.gov.ph' });
+    const html = await render({ options });
+    for (const title of [S.joinFamily, S.joinAdviser, S.joinSubject]) expect(html).toContain(title);
+    expect(html).not.toContain(S.joinNeedsApproval);
+  });
+
+  it('tags school roles as needing approval for a personal email', async () => {
+    const options = roleOptions({ email: 'ana@gmail.com', selected: ['adviser'] });
+    const html = await render({ options, selected: ['adviser'] });
+    expect(html).toContain(S.joinNeedsApproval);
+    // The note itself contains an apostrophe, which renderToStaticMarkup escapes.
+    expect(html).toContain('approves school roles');
+  });
+
+  it('explains a blocked card', async () => {
+    const options = roleOptions({ email: 'ana@deped.gov.ph', selected: ['adviser'] });
+    expect(options.find((o) => o.key === 'subject_teacher').state).toBe('blocked');
+    const html = await render({ options, selected: ['adviser'] });
+    expect(html).toContain('Choose Adviser or Subject Teacher, not both.');
+    expect(html).toContain(S.joinChooseOne);
+  });
+
+  it('marks a held role as active', async () => {
+    const options = roleOptions({ email: 'ana@deped.gov.ph', held: ['adviser'] });
+    const html = await render({ options });
+    expect(html).toContain(S.joinActive);
+  });
+});

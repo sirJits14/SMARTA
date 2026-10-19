@@ -40,7 +40,7 @@ export default function Announcements({ user, profile, navigate, view = 'family'
   if (rows === undefined) return <>{header}<Spinner label={S.loading} /></>;
   if (error) return <>{header}<EmptyState hint={S.announcementsError} /></>;
   const { pinned, rest } = splitForList(rows, Date.now());
-  if (!pinned.length && !rest.length) return <>{header}<EmptyState hint={S.announcementsEmpty} /></>;
+  if (!pinned.length && !rest.length) return <>{header}<EmptyState hint={view === 'school' ? S.announcementsEmptySchool : S.announcementsEmpty} /></>;
   const card = (p) => <PostCard key={p.id} post={p} isNew={view === 'family' && isNewSince(p, seenAtOpen.current)} onOpen={() => navigate(`/announcements/${p.id}${view === 'school' ? '?view=school' : ''}`)} />;
   return (
     <>

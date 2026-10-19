@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened } from './school.js';
+import { callableMessage, schoolError, attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened, scopeLabel } from './school.js';
 import { portalView, notificationDestination } from './nav.js';
 import { matchRoute } from './router.js';
 describe('school access presentation', () => {
@@ -58,5 +58,28 @@ describe('school access presentation', () => {
     expect(notificationDestination({ announcementId: 'staff notice', view: 'school' })).toBe('/announcements/staff%20notice?view=school');
     expect(notificationDestination({ announcementId: 'family' })).toBe('/announcements/family');
     expect(notificationDestination({})).toBe('/inbox');
+  });
+});
+
+describe('scopeLabel', () => {
+  it('names a section, or the grade for grade-level roles', () => {
+    const sections = [{ id: 'a', gradeLevel: 7, name: 'Rizal' }];
+    expect(scopeLabel({ sectionId: 'a', gradeLevel: 7 }, sections)).toBe('Grade 7 · Rizal');
+    expect(scopeLabel({ sectionId: '', gradeLevel: 8 }, sections)).toBe('Grade 8');
+    expect(REQUEST_STATUS.fulfilled).toBeTruthy();
+    expect(REQUEST_STATUS.superseded).toBeTruthy();
+  });
+});
+
+describe('callableMessage', () => {
+  it('strips the status the SDK appends to callable errors', () => {
+    expect(callableMessage({ message: 'That advisory slip could not be used. [404]' })).toBe('That advisory slip could not be used.');
+    expect(schoolError({ code: 'functions/not-found', message: 'Not allowed. [403]' })).toBe('Not allowed.');
+  });
+  it('leaves other messages alone and handles a missing message', () => {
+    expect(callableMessage({ message: 'Plain message.' })).toBe('Plain message.');
+    expect(callableMessage({ message: 'Grade [7] only' })).toBe('Grade [7] only');
+    expect(callableMessage({})).toBe('');
+    expect(callableMessage(undefined)).toBe('');
   });
 });

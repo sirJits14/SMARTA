@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Btn, Card, EmptyState, Field, Inp } from '../../../components/ui.jsx';
 import { T, S } from '../../../styles.js';
-import { ROLE_LABELS, sectionLabel } from '../../../../parent/src/lib/school.js';
+import { ROLE_LABELS, scopeLabel, sectionLabel } from '../../../../parent/src/lib/school.js';
 import { assignmentFromLegacy, legacyAdviserRows, relativeAge, requestFlags } from '../../../lib/schoolAssignments.js';
 import LegacyAdvisers from '../LegacyAdvisers.jsx';
 
@@ -60,7 +60,7 @@ export default function PendingView({ school, onUseLegacy, focusId }) {
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 10px' }}>
                 <strong>{who(r)}</strong><span style={{ ...muted, overflowWrap: 'anywhere' }}>{r.email}</span><span style={muted}>{relativeAge(r.createdAt)}</span>
               </div>
-              <div style={{ marginTop: 4 }}>{ROLE_LABELS[r.role]} · {sectionLabel(section)}</div>
+              <div style={{ marginTop: 4 }}>{ROLE_LABELS[r.role]} · {scopeLabel(r, context.sections || [])}</div>
               {flags.length > 0 && <ul style={{ display: 'flex', flexWrap: 'wrap', gap: 6, listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
                 {flags.map(f => <li key={f.key} className={`sims-flag sims-flag--${f.key}`}>{f.label}</li>)}</ul>}
               {failures[r.id] && <p role="alert" className="sims-feedback" style={{ marginTop: 10 }}>{failures[r.id]}</p>}

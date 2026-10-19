@@ -18,8 +18,10 @@ import { auditSettingsChange } from './src/handlers/settingsAudit.js';
 import { handleGuardianLinkWrite } from './src/handlers/guardianAudience.js';
 import { handleAnnouncementWrite, publishDueAnnouncements, announcementAudienceCount } from './src/handlers/announcements.js';
 import { getCoordinatorSectionOptions, updateCoordinatorSection } from './src/handlers/sections.js';
+import { issueAdvisorySlips, revokeAdvisorySlip, listAdvisoryStatus, previewAdvisorySlip, redeemAdvisorySlip } from './src/handlers/advisorySlips.js';
 import { activateFamilyCode } from './src/handlers/portalAccess.js';
 import { getSchoolContext, requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, markSchoolOpened, getSchoolPendingCount } from './src/handlers/schoolAccess.js';
+import { migrateSubjectTeachers } from './src/handlers/schoolMigration.js';
 import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
 
@@ -43,7 +45,7 @@ const guardianCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
     return await fn({ ...callDeps(), ...identity }, req.data || {});
   } catch (e) { throw toHttpsError(e); }
 });
-const staffCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
+const staffCall = (fn, options = {}) => onCall({ enforceAppCheck: true, ...options }, async (req) => {
   try { return await fn({ ...callDeps(), ...(await staffIdentity(db, auth, req)), authTime: req.auth.token.auth_time }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
 const schoolCall = fn => onCall({ enforceAppCheck: true }, async req => {
@@ -96,6 +98,10 @@ export const changeOwnPasswordFn = onCall({ enforceAppCheck: true, timeoutSecond
 export const announcementAudienceCountFn = staffCall(announcementAudienceCount);
 export const getCoordinatorSectionOptionsFn = staffCall(getCoordinatorSectionOptions);
 export const updateCoordinatorSectionFn = staffCall(updateCoordinatorSection);
+// Administrators for every grade, coordinators for their own (spec 2026-10-19).
+export const issueAdvisorySlipsFn = staffCall(issueAdvisorySlips, { timeoutSeconds: 300 });
+export const revokeAdvisorySlipFn = staffCall(revokeAdvisorySlip);
+export const listAdvisoryStatusFn = staffCall(listAdvisoryStatus);
 
 export const getSchoolContextFn = schoolCall(getSchoolContext);
 export const requestSchoolRoleFn = schoolCall(requestSchoolRole);
@@ -107,6 +113,8 @@ export const resolveSchoolRolesFn = schoolCall(resolveSchoolRoles);
 export const replaceAdviserFn = schoolCall(replaceAdviser);
 export const markSchoolOpenedFn = schoolCall(markSchoolOpened);
 export const getSchoolPendingCountFn = schoolCall(getSchoolPendingCount);
+export const previewAdvisorySlipFn = schoolCall(previewAdvisorySlip);
+export const redeemAdvisorySlipFn = schoolCall(redeemAdvisorySlip);
 export const getSchoolRosterFn = schoolCall(getSchoolRoster);
 export const setSessionAbsenceFn = schoolCall(setSessionAbsence);
 export const getFamilyAttendanceFn = guardianCall(getFamilyAttendance);
@@ -142,3 +150,8 @@ export const onAnnouncementWritten = onDocumentWrittenWithAuthContext(
     id: event.params.id, eventId: event.id, authId: event.authId, authType: event.authType,
     before: event.data?.before?.data() || null, after: event.data?.after?.data() || null,
   }));
+
+export const migrateSubjectTeachersFn = onCall({ enforceAppCheck: true, timeoutSeconds: 540 }, async req => {
+  try { return await migrateSubjectTeachers({ ...callDeps(), ...(await schoolIdentity(db, auth, req)) }); }
+  catch (e) { throw toHttpsError(e); }
+});

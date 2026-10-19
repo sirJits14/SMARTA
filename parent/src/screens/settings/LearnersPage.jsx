@@ -14,7 +14,7 @@ export default function LearnersPage({ ctx, back }) {
           <SettingsRow key={l.id} leading={<span className="settings-avatar settings-avatar--small" aria-hidden="true">{initials(l.learnerName || l.relationship)}</span>}
             label={nameCase(l.learnerName) || l.relationship} subtitle={l.learnerName ? l.relationship : undefined} onClick={() => navigate(`/learner/${l.studentId}`)} />
         ))}
-        <SettingsRow label={S.activateAnother} tone="primary" onClick={() => navigate('/activate')} />
+        <SettingsRow label={S.activateAnother} tone="primary" onClick={() => navigate('/join?role=family')} />
       </SettingsGroup>
     </>
   );

@@ -16,7 +16,12 @@ import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
 import { useIdCardPrintConfirm } from '../components/IdCardPrintConfirm.jsx';
 import GradePills from '../components/GradePills.jsx';
-import { isAdmin, grades, singleGrade, scopeRoster, canEditSection, sectionEditSchoolYears } from '../lib/access.js';
+import { isAdmin, grades, singleGrade, scopeRoster, canEditSection, sectionEditSchoolYears, canIssueAdvisorySlip } from '../lib/access.js';
+import { callableMessage } from '../../parent/src/lib/school.js';
+import { useAdvisoryStatus } from '../hooks/useAdvisoryStatus.js';
+import { issueAdvisorySlips, revokeAdvisorySlip } from '../data/advisorySlips.js';
+import { adviserStatusText, slipCandidates, slipConfirmMessage, showAdvisoryPanel, withoutRevokedSlip } from '../lib/advisoryStatus.js';
+import AdvisorySlipsPanel from './sections/AdvisorySlipsPanel.jsx';
 
 export function SectionForm({ editing, schoolYear, schedules, onClose, restricted = false }) {
   const action = useAsyncAction();
@@ -143,11 +148,27 @@ export default function SectionsPage({ me, schoolYear }) {
   const [detailSection, setDetailSection] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
   const [sectionQuery, setSectionQuery] = useState('');
+  // Advisory slips belong to the current school year only.
+  const advisory = useAdvisoryStatus(canViewRoster);
+  const [advisorySlips, setAdvisorySlips] = useState(null);
+  const [slipConfirm, setSlipConfirm] = useState(null);
+  const [slipError, setSlipError] = useState('');
+  const runSlips = async ({ kind, sections: targets }) => {
+    setSlipError('');
+    try {
+      if (kind === 'revoke') {
+        await revokeAdvisorySlip({ sectionId: targets[0].id });
+        setAdvisorySlips((current) => withoutRevokedSlip(current, targets[0].id));
+      } else setAdvisorySlips(await issueAdvisorySlips({ sectionIds: targets.map((s) => s.id) }));
+    } catch (e) { setSlipError(callableMessage(e) || 'Could not update advisory slips.'); }
+    finally { setSlipConfirm(null); advisory.reload(); }
+  };
   const rows = useMemo(() =>
     sections
       .filter((s) => s.schoolYear === selectedYear)
       .sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
     [sections, selectedYear]);
+  const slipTargets = useMemo(() => (canViewRoster ? slipCandidates(rows, advisory.bySection, me) : []), [canViewRoster, rows, advisory.bySection, me]);
   const groups = useMemo(() => {
     const m = new Map();
     rows.forEach((s) => { if (!m.has(s.gradeLevel)) m.set(s.gradeLevel, []); m.get(s.gradeLevel).push(s); });
@@ -181,11 +202,15 @@ export default function SectionsPage({ me, schoolYear }) {
   return (
     <EditorResources resources={resources}><div>
       <ResourceState resources={resources}>
+      {showAdvisoryPanel(advisorySlips, detailSection) && <AdvisorySlipsPanel result={advisorySlips} onClose={() => setAdvisorySlips(null)} />}
       <div className="sections-page-chrome">
         <div className="sims-heading" style={S.plate}>
           <h1 style={S.h1}>{oneGrade ? `Grade ${oneGrade} Sections` : 'Sections'}</h1>
           {admin && <Btn onClick={() => setForm({ schoolYear: selectedYear })}>Add section</Btn>}
+          {slipTargets.length > 0 && <Btn variant="ghost" onClick={() => setSlipConfirm({ kind: 'issue', sections: slipTargets })}>Print slips for sections without an adviser</Btn>}
         </div>
+        {slipError && <p role="alert" className="sims-feedback">{slipError}</p>}
+        {advisory.error && <p role="alert" className="sims-feedback">{advisory.error}</p>}
         {yearOptions.length > 1 && <div style={{ maxWidth: 300 }}>
           <Field label="School year">
             <Sel value={selectedYear} onChange={event => {
@@ -235,10 +260,17 @@ export default function SectionsPage({ me, schoolYear }) {
                   <tr key={s.id} onClick={canViewRoster ? () => setDetailSection(s) : undefined} style={{ cursor: canViewRoster ? 'pointer' : undefined }}>
                     <td style={{ ...S.td, fontWeight: 600 }}>{canViewRoster ? <button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}><span>{s.name}</span><span aria-hidden="true">›</span></button> : s.name}</td>
                     <td style={S.td}>{s.strand || '—'}</td>
-                    <td style={S.td}>{s.adviserName || '—'}</td>
+                    <td style={S.td}>
+                      <div>{s.adviserName || '—'}</div>
+                      {canViewRoster && <div style={{ fontSize: 12, color: T.inkMuted }}>{adviserStatusText(advisory.bySection.get(s.id))}</div>}
+                    </td>
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
                     {canViewRoster && <td style={{ ...S.td, ...T.num }}>{enrolledCountBySection.get(s.id) || 0}</td>}
                     <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {canViewRoster && canIssueAdvisorySlip(me, s) && advisory.bySection.has(s.id) && !advisory.bySection.get(s.id).adviser &&
+                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setSlipConfirm({ kind: 'issue', sections: [s] }); }} style={{ marginRight: 6 }}>Advisory slip</Btn>}
+                      {canViewRoster && canIssueAdvisorySlip(me, s) && advisory.bySection.get(s.id)?.slip &&
+                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setSlipConfirm({ kind: 'revoke', sections: [s] }); }} style={{ marginRight: 6 }}>Revoke slip</Btn>}
                       {canEditSection(me, s, schoolYear) &&
                         <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setForm(s); }} style={{ marginRight: 6 }}>Edit</Btn>
                       }
@@ -257,6 +289,9 @@ export default function SectionsPage({ me, schoolYear }) {
       {form && form.schoolYear === selectedYear && (form.id ? canEditSection(me, form, schoolYear) : admin)
         && <SectionForm key={`${form.id || 'new'}:${selectedYear}:${me?.role}:${oneGrade}`} editing={form.id ? sections.find(section => section.id === form.id) || form : null} restricted={!admin} schoolYear={selectedYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
+      {slipConfirm && <Confirm title="Advisory slip" label={slipConfirm.kind === 'revoke' ? 'Revoke' : 'Issue'} danger={slipConfirm.kind === 'revoke'}
+        message={slipConfirmMessage(slipConfirm.kind, slipConfirm.sections, advisory.bySection)}
+        onYes={() => runSlips(slipConfirm)} onNo={() => setSlipConfirm(null)} />}
       {detailSection && (
         <SectionDetailModal printReady={printReady} onPrint={admin ? () => printAndConfirm(detailRosterDeped) : undefined}
           section={sections.find(section => section.id === detailSection.id) || detailSection}
