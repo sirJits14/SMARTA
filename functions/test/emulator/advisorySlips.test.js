@@ -101,6 +101,8 @@ describe('redeeming advisory slips', () => {
     expect(await redeemAdvisorySlip(tdeps('t1'), { code })).toEqual({ sectionId: 'SEC1', sectionLabel: 'Grade 7 – Rizal', gradeLevel: 7 });
     expect((await loadSchoolActor(tdeps('t1'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1', source: 'slip', assignedBy: 'admin@school.test' }]);
     expect((await db().doc(`school_adviser_locks/${year}_SEC1`).get()).data().uid).toBe('t1');
+    // The SIMS section shows the slip's adviser, the same as any other grant.
+    expect((await db().doc('sections/SEC1').get()).data()).toMatchObject({ adviserName: 'Ana Cruz', schoolAdviserUid: 't1' });
     expect((await db().doc(`advisory_slips/${hashCode(code)}`).get()).data()).toMatchObject({ status: 'redeemed', redeemedBy: 't1' });
     const audit = (await db().collection('audit_log').where('action', '==', 'school.slipRedeemed').get()).docs.map(d => d.data().details);
     expect(audit).toEqual([expect.objectContaining({ sectionId: 'SEC1', issuedBy: 'admin@school.test', teacherEmail: 't1@deped.gov.ph' })]);
