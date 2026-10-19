@@ -35,14 +35,33 @@ describe('school request lifecycle', () => {
     expect((await db().doc(`school_role_requests/${request.id}`).get()).data().status).toBe('withdrawn');
     await assignSchoolRole(deps('admin'), { email: users.personal.email, role: 'adviser', sectionId: 'SEC1' });
   });
-  it('a request gives no access; a Curriculum Adviser cannot approve a DepEd request in their grade, an administrator can', async () => {
+  it('a request gives no access; a Curriculum Adviser approves an in-grade DepEd adviser request without a reason', async () => {
     const r = await seedRequest('teacher', 'adviser', 'SEC1');
     expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
-    await expect(resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true, reason: 'Verified teaching assignment' })).rejects.toMatchObject({ code: 'permission-denied' });
-    expect((await db().doc(`school_role_requests/${r.id}`).get()).data().status).toBe('pending');
-    expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
-    await resolveSchoolRole(deps('admin'), { requestId: r.id, approve: true, reason: 'Verified teaching assignment' });
-    expect((await loadSchoolActor(deps('teacher'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1', schoolYear: year }]);
+    await resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true });
+    const [entry] = (await loadSchoolActor(deps('teacher'))).assignments;
+    expect(entry).toMatchObject({ role: 'adviser', sectionId: 'SEC1', schoolYear: year, source: 'request', assignedBy: 'ca@deped.gov.ph' });
+    expect(entry.assignedAt.toMillis()).toBeGreaterThan(0);
+    expect((await db().doc(`school_role_requests/${r.id}`).get()).data()).toMatchObject({ status: 'approved', reason: 'Approved', reviewedBy: 'curriculum' });
+  });
+  it('keeps subject-teacher requests with administrators', async () => {
+    const r = await seedRequest('teacher', 'subject_teacher', 'SEC1');
+    await expect(resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true })).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+  it('a rejection needs a reason and tells the teacher why', async () => {
+    const r = await seedRequest('teacher', 'adviser', 'SEC1');
+    await expect(resolveSchoolRole(deps('admin'), { requestId: r.id, approve: false })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await db().doc('sections/SEC1').delete();
+    await resolveSchoolRole(deps('admin'), { requestId: r.id, approve: false, reason: 'Not your section this year' });
+    const inbox = (await db().collection('guardians/teacher/inbox').get()).docs.map(d => d.data());
+    expect(inbox).toEqual([expect.objectContaining({ type: 'school_access', rejected: true, body: 'Reason: Not your section this year' })]);
+    expect((await db().doc(`school_role_requests/${r.id}`).get()).data().status).toBe('rejected');
+  });
+  it('stamps direct and legacy assignments with who and how', async () => {
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1', source: 'legacy' });
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'subject_teacher', sectionId: 'SEC8' });
+    expect((await loadSchoolActor(deps('teacher'))).assignments).toMatchObject([
+      { source: 'legacy', assignedBy: 'admin@school.test' }, { source: 'direct', assignedBy: 'admin@school.test' }]);
   });
   it('requires an administrator for personal-email requests', async () => {
     const r = await seedRequest('personal', 'adviser', 'SEC1');

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
 import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest } from '../../shared/schoolAccess.js';
@@ -20,6 +20,9 @@ const requestKey = (uid, assignment) => fingerprint(JSON.stringify([uid, assignm
 // Audit rows carry the teacher's name so History reads without another lookup.
 const teacherOf = person => ({ teacherEmail: (person?.email || '').toLowerCase(), teacherName: person?.displayName || person?.email || '' });
 const millis = value => (value?.toMillis ? value.toMillis() : null);
+// Approvals may omit a reason; rejections must tell the teacher why.
+const decisionReason = (approve, value) => (approve && !(typeof value === 'string' && value.trim()) ? 'Approved' : reasonValue(value));
+const inboxRef = (db, uid, key) => db.doc(`guardians/${uid}/inbox/school_${fingerprint(key).slice(0, 32)}`);
 const lockRef = (db, a) => a.role === 'adviser' ? db.doc(`school_adviser_locks/${a.schoolYear}_${a.sectionId}`) : null;
 const auditRow = (actor, action, targetId, details) => ({ action, actorType: 'staff', actorUid: actor.email,
   targetType: 'school_assignment', targetId, details, at: FieldValue.serverTimestamp() });
@@ -123,36 +126,48 @@ async function prepareGrant(db, tx, uid, assignment) {
   const assignments = account.data()?.assignments || [];
   return { accountRef, lock, assignments, exists: assignments.some(a => assignmentKey(a) === assignmentKey(assignment)) };
 }
-function writeGrant(tx, prepared, actor, user, assignment) {
+// serverTimestamp cannot sit inside an array, so assignedAt uses the function's clock.
+function writeGrant(tx, prepared, actor, user, assignment, source) {
   if (prepared.exists) return;
+  const db = prepared.accountRef.firestore;
   tx.set(prepared.accountRef, { uid: user.uid, email: user.email.toLowerCase(), displayName: user.displayName || user.email,
-    assignments: [...prepared.assignments, assignment], updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    assignments: [...prepared.assignments, { ...assignment, assignedAt: Timestamp.now(), assignedBy: actor.email, source }],
+    updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   if (prepared.lock) tx.set(prepared.lock, { uid: user.uid, ...assignment });
-  tx.set(prepared.accountRef.firestore.collection('audit_log').doc(), auditRow(actor, 'school.assigned', user.uid, assignment));
-  tx.set(prepared.accountRef.firestore.doc(`guardians/${user.uid}/inbox/school_${fingerprint(assignmentKey(assignment)).slice(0, 32)}`), {
+  // Approvals and replacements write their own audit row.
+  if (source === 'direct' || source === 'legacy') tx.set(db.collection('audit_log').doc(), auditRow(actor, 'school.assigned', user.uid, { ...assignment, source, ...teacherOf(user) }));
+  tx.set(inboxRef(db, user.uid, assignmentKey(assignment)), {
     type: 'school_access', title: 'School access approved',
     body: 'You can now use the app for school work. Switch to School in Settings.', createdAt: FieldValue.serverTimestamp() });
 }
 
 export async function resolveSchoolRole(deps, input) {
   if (!id(input.requestId) || typeof input.approve !== 'boolean') fail('invalid-argument', 'Choose a request and a decision.');
-  const reason = reasonValue(input.reason);
+  const reason = decisionReason(input.approve, input.reason);
   const ref = deps.db.doc(`school_role_requests/${input.requestId}`);
   const first = (await ref.get()).data();
   if (!first) fail('not-found', 'Request not found.');
   const user = await liveUser(deps.auth, first.uid);
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
+    if (actor.ended) fail('failed-precondition', 'This school year has ended.');
     const request = (await tx.get(ref)).data();
     if (!request || request.uid !== user.uid || request.email !== user.email.toLowerCase()) fail('failed-precondition', 'The requesting account changed. Ask the teacher to submit a new request.');
     // Live Auth verification is authoritative, never a caller-supplied field.
     if (!canApproveRoleRequest(actor, { ...request, email: user.email, emailVerified: user.emailVerified })) fail('permission-denied', 'You cannot review this request.');
-    const assignment = await assignmentFrom(deps, tx, actor, request);
-    if (assignment.gradeLevel !== request.gradeLevel) fail('failed-precondition', 'The section changed grades. Ask for a new request.');
-    const prepared = input.approve ? await prepareGrant(deps.db, tx, user.uid, assignment) : null;
-    if (prepared) writeGrant(tx, prepared, actor, user, assignment);
+    let scope = { role: request.role, sectionId: request.sectionId || '', gradeLevel: request.gradeLevel };
+    if (input.approve) {
+      const assignment = await assignmentFrom(deps, tx, actor, request);
+      if (assignment.gradeLevel !== request.gradeLevel) fail('failed-precondition', 'The section changed grades. Ask for a new request.');
+      writeGrant(tx, await prepareGrant(deps.db, tx, user.uid, assignment), actor, user, assignment, 'request');
+      scope = assignment;
+    } else {
+      tx.set(inboxRef(deps.db, user.uid, `rejected:${ref.id}`), { type: 'school_access', rejected: true,
+        title: 'School access request not approved', body: `Reason: ${reason}`, createdAt: FieldValue.serverTimestamp() });
+    }
     tx.update(ref, { status: input.approve ? 'approved' : 'rejected', reviewedBy: actor.uid, reviewedAt: FieldValue.serverTimestamp(), reason });
-    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, input.approve ? 'school.requestApproved' : 'school.requestRejected', user.uid, { requestId: ref.id, reason, ...assignment }));
+    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, input.approve ? 'school.requestApproved' : 'school.requestRejected', user.uid,
+      { requestId: ref.id, reason, ...scope, ...teacherOf(user) }));
     return { ok: true };
   });
 }
@@ -172,7 +187,7 @@ export async function assignSchoolRole(deps, input) {
     if (!current.isAdmin) fail('permission-denied', 'Administrators only.');
     const assignment = await assignmentFrom(deps, tx, current, input);
     const prepared = await prepareGrant(deps.db, tx, user.uid, assignment);
-    writeGrant(tx, prepared, current, user, assignment);
+    writeGrant(tx, prepared, current, user, assignment, input.source === 'legacy' ? 'legacy' : 'direct');
     return { ok: true };
   });
 }
@@ -193,7 +208,7 @@ export async function revokeSchoolRole(deps, input) {
     const locked = lock ? await tx.get(lock) : null;
     tx.update(ref, { assignments: assignments.filter(a => assignmentKey(a) !== assignmentKey(target)), updatedAt: FieldValue.serverTimestamp() });
     if (locked?.data()?.uid === input.uid) tx.delete(lock);
-    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.revoked', input.uid, { ...target, reason }));
+    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.revoked', input.uid, { ...target, reason, ...teacherOf(account) }));
     return { ok: true };
   });
 }
