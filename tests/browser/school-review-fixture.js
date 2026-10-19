@@ -85,7 +85,7 @@ function setSessionAbsence({ sectionId, studentId, date, session, absent, reason
 // ---- School access ----------------------------------------------------------
 let managedAssignments = [
   { uid: 'uid-reyes', email: 'maria.reyes@deped.example', displayName: 'Maria Reyes', role: 'adviser', sectionId: 'g8-luna' },
-  { uid: 'uid-tan', email: 'ramon.tan@deped.example', displayName: 'Ramon Tan', role: 'subject_teacher', sectionId: 'g7-rizal' },
+  { uid: 'uid-tan', email: 'ramon.tan@deped.example', displayName: 'Ramon Tan', role: 'subject_teacher', gradeLevel: 7 },
 ];
 const legacyAdvisers = [
   { guardianUid: 'uid-reyes', name: 'Maria Reyes', email: 'maria.reyes@deped.example', learnerCount: 38, suggestedSectionId: 'g8-luna' },

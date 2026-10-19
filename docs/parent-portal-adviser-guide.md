@@ -15,20 +15,9 @@
    They see details only inside the app. The Inbox in the app is the
    complete record; a phone may miss a notification.
 
-6. **You can link too.** Each slip has one extra place reserved for the
-   class adviser. Sign in to the parent portal with your **@deped.gov.ph**
-   Google account, scan or type the slip's code, and choose **Adviser (class
-   adviser)** as the relationship. You then see that learner's gate IN/OUT
-   like a parent. With a whole section linked you can turn notifications
-   off in Settings and check the Inbox instead.
-7. **Picked the wrong relationship?** If you chose Mother (or another
-   parent relationship) instead of **Adviser**, open the learner in the
-   app and tap **Change** next to "Linked as …". Pick **Adviser (class
-   adviser)** and confirm. This works only with your **@deped.gov.ph**
-   account, and only once per learner per school year. A DepEd teacher who
-   is really the learner's parent and chose Adviser can switch the other
-   way the same way. If it says the learner already has an adviser, or that
-   you already changed it, ask the registrar.
+6. **Class advisers no longer link through learners' activation slips.**
+   Slips are for parents and guardians only. To become a class adviser, see
+   *Becoming a class adviser* below.
 
 ## Becoming a class adviser
 
