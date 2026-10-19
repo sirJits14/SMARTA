@@ -21,6 +21,7 @@ import { getCoordinatorSectionOptions, updateCoordinatorSection } from './src/ha
 import { issueAdvisorySlips, revokeAdvisorySlip, listAdvisoryStatus, previewAdvisorySlip, redeemAdvisorySlip } from './src/handlers/advisorySlips.js';
 import { activateFamilyCode } from './src/handlers/portalAccess.js';
 import { getSchoolContext, requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, markSchoolOpened, getSchoolPendingCount } from './src/handlers/schoolAccess.js';
+import { migrateSubjectTeachers } from './src/handlers/schoolMigration.js';
 import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
 
@@ -149,3 +150,8 @@ export const onAnnouncementWritten = onDocumentWrittenWithAuthContext(
     id: event.params.id, eventId: event.id, authId: event.authId, authType: event.authType,
     before: event.data?.before?.data() || null, after: event.data?.after?.data() || null,
   }));
+
+export const migrateSubjectTeachersFn = onCall({ enforceAppCheck: true, timeoutSeconds: 540 }, async req => {
+  try { return await migrateSubjectTeachers({ ...callDeps(), ...(await schoolIdentity(db, auth, req)) }); }
+  catch (e) { throw toHttpsError(e); }
+});
