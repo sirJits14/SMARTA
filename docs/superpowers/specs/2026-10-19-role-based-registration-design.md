@@ -108,7 +108,10 @@ One row per chosen role: *Linked to {learner}*, *Adviser of {section}*, *Subject
 when the account has an active school assignment and no family link; otherwise Family mode.
 
 An account that finishes with only pending requests still gets a profile and enters the app, so it
-can see request status in Settings.
+can see request status in Settings. Before the first role step, an account without a profile calls
+the existing `acceptConsentFn` (as Skip does today), so every role callable runs for an account
+that already has `guardians/{uid}`. A failed role step therefore still leaves the account able to
+enter the app and retry from Settings.
 
 ### Settings → Add a role
 
@@ -158,16 +161,16 @@ revoked (generic message); offline; partial success on Summary.
   [{ sectionId, reason }] }`. Audit row `school.slipIssued` per slip.
 - **`revokeAdvisorySlipFn({ sectionId })`** — same scope rules. Revokes the section's `issued`
   slip. Audit row `school.slipRevoked`.
-- **`listAdvisoryStatusFn({ schoolYear })`** — same scope rules. Returns, per section in scope:
+- **`listAdvisoryStatusFn()`** — current school year, same scope rules. Returns, per section in scope:
   adviser name and email if assigned, and the outstanding slip's `issuedAt` and `issuedBy`.
-- **`previewAdvisorySlipFn({ code })`** — signed-in, verified account. Rate-limited with the
-  activation limiter. Returns `{ sectionLabel, gradeLevel }` for an `issued` slip of the current
+- **`previewAdvisorySlipFn({ code })`** — signed-in, verified `@deped.gov.ph` account (the same
+  DepEd refusal as redeem). Rate-limited with the advisory-slip limiter, shared with redeem. Returns `{ sectionLabel, gradeLevel }` for an `issued` slip of the current
   year; otherwise the generic failure. Consumes nothing.
-- **`redeemAdvisorySlipFn({ code, displayName, consentVersion })`**:
+- **`redeemAdvisorySlipFn({ code })`**:
   1. Live, verified account with an `@deped.gov.ph` email. Otherwise fails `permission-denied`
      with "Advisory slips need a DepEd email. Request the role instead." This describes only the
      caller's own account, so it is safe to reveal.
-  2. Rate-limited with the activation limiter.
+  2. Rate-limited with the advisory-slip limiter (`LIMITS.advisorySlip`, 10 per hour).
   3. One transaction:
      - Slip is `issued`, its `schoolYear` is current, and the year is not ended.
      - `canHold` allows an adviser role for this account.
@@ -175,7 +178,6 @@ revoked (generic message); offline; partial success on Summary.
      - `writeGrant` with `source: 'slip'`, `assignedBy` = the slip's `issuedBy`.
      - Slip → `redeemed`, with `redeemedBy` and `redeemedAt`.
      - Audit row `school.slipRedeemed`.
-     - Creates `guardians/{uid}` if missing, with the same fields `acceptConsent` writes.
      - Pending adviser requests for the section: the caller's own becomes `fulfilled`; others
        become `superseded` with reason "Section adviser assigned by slip", each with an inbox
        note to the requester.
@@ -189,13 +191,15 @@ revoked (generic message); offline; partial success on Summary.
     create one pending request per grade.
   - Adviser keeps `sectionId` and always creates a request.
   - Checks `canHold` against active assignments and pending requests.
-  - Creates `guardians/{uid}` if missing, so a teacher-only account enters the app.
-  - Until the migration has run, a `subject_teacher` call with `sectionId` is accepted and stored
-    as that section's grade.
+  - A `subject_teacher` call with `sectionId` (older clients, and anything sent before the
+    migration) is accepted and stored as that section's grade.
 - **`shared/schoolAccess.js`**
-  - New `canHold(heldRoles, role)`: within one school year, `adviser` and `subject_teacher`
-    exclude each other; `curriculum_adviser` and family links are unaffected.
-  - New `pickableRoles(held, selected)` for the chooser, built on `canHold`.
+  - New `conflictingRole(roles, role)` and `canHold(roles, role)`: within one school year,
+    `adviser` and `subject_teacher` exclude each other; `curriculum_adviser` and family links are
+    unaffected.
+  - New `GRADE_ROLES` / `isGradeRole`: Curriculum Adviser and Subject Teacher are per grade.
+  - The chooser's rules live in `parent/src/lib/join.js` (`roleOptions`, `toggleRole`), built on
+    `conflictingRole`.
   - `canApproveRoleRequest`: a Curriculum Adviser approves `adviser` and `subject_teacher` requests
     from any email whose `gradeLevel` is one of their assigned grades. Admins approve all. Nobody
     approves their own.
@@ -230,7 +234,7 @@ revoked (generic message); offline; partial success on Summary.
     confirm dialog says "A new code will be printed. The old slip stops working."
   - **Revoke slip** — while a slip is outstanding.
 - Toolbar: **Print slips for sections without an adviser**, limited to the caller's grades.
-- School access → Coverage also shows outstanding slips per section for administrators.
+- Outstanding slips are shown only on the Sections page; School access → History lists slip issue, revoke and redemption.
 
 ### Printed advisory slip
 
