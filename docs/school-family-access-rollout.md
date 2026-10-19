@@ -59,6 +59,13 @@ The new app reads all notices through authenticated callables. The new rules den
 8. In SIMS, inspect **Legacy adviser links to verify**. Independently verify each teacher and section, then explicitly assign school roles. Old adviser slips/links grant neither family learner access nor School access. Preserve genuine family relationships and do not convert legacy adviser links into family access as a migration shortcut.
 9. In the release environment, with designated test accounts, verify: an administrator assigning an adviser to a personal-email account; a subject-teacher notice; an AM correction and restoration, including that undoing within two minutes sends families nothing; and that an unrelated teacher cannot read the roster.
 
+## Registration rollout order
+
+1. Deploy the Functions and Firestore rules.
+2. Call `migrateSubjectTeachersFn` once as an administrator. It converts section-based Subject Teacher assignments to grade levels. Resolve every conflict it reports (accounts holding or requesting both Class Adviser and Subject Teacher).
+3. Deploy SIMS, respecting the current release-tree hold.
+4. Deploy the Parent App.
+
 ## Recovery
 
 Keep access-denying rules in place if an application release needs to be rolled back. Restore the compatible app and Functions release together; rolling back only the callable feed breaks notices, and restoring old rules can expose role-targeted notices. Preserve school assignments, section locks and correction audit records. Correct assignments through the admin interface and attendance through the correction workflow rather than deleting audit or gate data.

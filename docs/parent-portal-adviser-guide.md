@@ -29,3 +29,19 @@
    is really the learner's parent and chose Adviser can switch the other
    way the same way. If it says the learner already has an adviser, or that
    you already changed it, ask the registrar.
+
+## Becoming a class adviser
+
+1. Sign in to the parent portal with your **@deped.gov.ph** Google account
+   and agree to the notice.
+2. On **Who are you?**, enter your name and tick **Class Adviser**. You can
+   also tick **Family Member** if you have a learner to link.
+3. Ask the Administrator, or the JHS/SHS Academic Coordinator or Grade Level
+   Coordinator for your grade, for your section's advisory slip. Scan its QR
+   code or type its code.
+4. Check the section name on the confirm screen, then confirm. You become the
+   adviser at once; no approval is needed. The slip works once.
+5. **No DepEd email, or no slip yet?** Request your section instead, with your
+   grade and section. An Administrator or your grade's Curriculum Adviser
+   approves it, and the request shows as *Waiting for approval* until then.
+6. Already using the app? Open **Settings → Add a role**.
