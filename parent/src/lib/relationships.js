@@ -1,4 +1,5 @@
 import S from '../strings.js';
+import { callableMessage } from './school.js';
 
 // Relationships offered when linking a learner. Must match RELATIONSHIPS and
 // ADVISER in functions/src/handlers/codes.js and functions/src/lib/codeSlots.js.
@@ -20,5 +21,5 @@ export const relationshipOptions = (link) => [...RELATIONSHIPS.filter((r) => r !
 const SHOWN = ['permission-denied', 'invalid-argument', 'failed-precondition', 'resource-exhausted'];
 export function changeErrorMessage(e) {
   const code = String(e?.code || '');
-  return SHOWN.some((c) => code.endsWith(c)) && e?.message ? e.message : S.relChangeFailed;
+  return SHOWN.some((c) => code.endsWith(c)) && e?.message ? callableMessage(e) : S.relChangeFailed;
 }

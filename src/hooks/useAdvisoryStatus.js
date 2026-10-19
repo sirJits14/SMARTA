@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { callableMessage } from '../../parent/src/lib/school.js';
 import { listAdvisoryStatus } from '../data/advisorySlips.js';
 
 // Adviser and outstanding slip per section, current school year only.
@@ -11,7 +12,7 @@ export function useAdvisoryStatus(enabled) {
       const { sections } = await listAdvisoryStatus();
       setState({ bySection: new Map(sections.map((s) => [s.sectionId, s])), loading: false, error: '' });
     } catch (e) {
-      setState((s) => ({ ...s, loading: false, error: e.message || 'Could not load advisers.' }));
+      setState((s) => ({ ...s, loading: false, error: callableMessage(e) || 'Could not load advisers.' }));
     }
   }, [enabled]);
   useEffect(() => { reload(); }, [reload]);

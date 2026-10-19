@@ -17,6 +17,7 @@ import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
 import { useIdCardPrintConfirm } from '../components/IdCardPrintConfirm.jsx';
 import GradePills from '../components/GradePills.jsx';
 import { isAdmin, grades, singleGrade, scopeRoster, canEditSection, sectionEditSchoolYears, canIssueAdvisorySlip } from '../lib/access.js';
+import { callableMessage } from '../../parent/src/lib/school.js';
 import { useAdvisoryStatus } from '../hooks/useAdvisoryStatus.js';
 import { issueAdvisorySlips, revokeAdvisorySlip } from '../data/advisorySlips.js';
 import { adviserStatusText, slipCandidates, slipConfirmMessage, showAdvisoryPanel, withoutRevokedSlip } from '../lib/advisoryStatus.js';
@@ -152,7 +153,7 @@ export default function SectionsPage({ me, schoolYear }) {
         await revokeAdvisorySlip({ sectionId: targets[0].id });
         setAdvisorySlips((current) => withoutRevokedSlip(current, targets[0].id));
       } else setAdvisorySlips(await issueAdvisorySlips({ sectionIds: targets.map((s) => s.id) }));
-    } catch (e) { setSlipError(e.message || 'Could not update advisory slips.'); }
+    } catch (e) { setSlipError(callableMessage(e) || 'Could not update advisory slips.'); }
     finally { setSlipConfirm(null); advisory.reload(); }
   };
   const rows = useMemo(() =>

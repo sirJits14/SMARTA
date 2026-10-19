@@ -37,8 +37,10 @@ export function inboxDestination(item) {
   if (item.type === 'attendance_correction') return `${path}?${new URLSearchParams({ date: item.date || '', session: item.session || '' })}`;
   return item.type === 'attendance' ? `${path}?event=${encodeURIComponent(item.eventId || '')}` : null;
 }
+// The Firebase SDK appends " [<httpStatus>]" to every callable error message.
+export const callableMessage = (error) => String(error?.message ?? '').replace(/\s*\[\d{3}\]$/, '');
 export const schoolError = (error) => /(?:permission-denied|failed-precondition|already-exists|aborted|invalid-argument|not-found|resource-exhausted)$/.test(error?.code || '') && error.message
-  ? error.message : 'Could not complete this action. Check your connection and try again.';
+  ? callableMessage(error) : 'Could not complete this action. Check your connection and try again.';
 export const sectionLabel = (section) => section ? `Grade ${section.gradeLevel} · ${section.name || section.sectionName || section.label || section.id}` : 'Section unavailable';
 // Requests and assignments name a section, or only a grade for grade-level roles.
 export const scopeLabel = (item, sections = []) => (item?.sectionId ? sectionLabel(sections.find((s) => s.id === item.sectionId)) : `Grade ${item?.gradeLevel}`);
