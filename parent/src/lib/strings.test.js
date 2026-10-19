@@ -47,4 +47,14 @@ describe('strings', () => {
       'schoolRequestsApproved', 'schoolRequestsRejected'])
       expect(typeof S[k], k).toBe('string');
   });
+  it('has the join strings', () => {
+    for (const k of ['joinTitle', 'joinIntro', 'joinNameLabel', 'joinNameHint', 'joinRolesLabel', 'joinFamily', 'joinFamilyHint', 'joinAdviser', 'joinAdviserHint',
+      'joinSubject', 'joinSubjectHint', 'joinNeedsApproval', 'joinNeedsApprovalNote', 'joinActive', 'joinChooseOne', 'joinContinue', 'joinStep', 'joinSteps',
+      'joinStepOf', 'joinOf', 'joinPreparing', 'joinPrepareFailed', 'joinSkipStep', 'adviserSlipTitle', 'adviserSlipBody', 'adviserScan', 'adviserScanTitle',
+      'adviserCodeLabel', 'adviserCheck', 'adviserConfirmTitle', 'adviserConfirm', 'adviserNotMine', 'adviserNoSlip', 'adviserUseSlip', 'adviserRequestTitle',
+      'adviserRequestBody', 'adviserWrongKind', 'familyWrongKind', 'adviserRequestInstead', 'subjectTitle', 'subjectBody', 'subjectBodyApproval', 'subjectSubmit',
+      'summaryTitle', 'summaryLinked', 'summaryAdviser', 'summarySubject', 'summaryPending', 'summaryRetry', 'summaryContinue', 'summarySkipped',
+      'addRoleRow', 'addRoleRowHint', 'schoolRequestsRow', 'requestFulfilled', 'requestSuperseded'])
+      expect(typeof S[k], k).toBe('string');
+  });
 });
