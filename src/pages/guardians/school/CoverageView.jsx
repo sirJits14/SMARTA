@@ -25,6 +25,7 @@ export default function CoverageView({ context, onAssign, onOpenRequest }) {
           <h3 style={{ ...S.h2, margin: 0 }}>Grade {g.grade}</h3>
           <span style={{ fontSize: 13, fontWeight: 600 }}>{`${g.covered} of ${g.rows.length} sections have an adviser`}</span>
           <span style={{ fontSize: 13, color: T.inkMuted }}>{`Curriculum Adviser: ${g.curriculumAdvisers.map(who).join(', ') || 'None'}`}</span>
+          <span style={{ fontSize: 13, color: T.inkMuted }}>{`Subject Teachers: ${g.subjectTeachers.length}`}</span>
         </div>
         {rows.length === 0
           ? <p style={{ fontSize: 13, color: T.inkMuted, margin: '12px 0 0' }}>Every Grade {g.grade} section has an adviser.</p>
@@ -33,7 +34,6 @@ export default function CoverageView({ context, onAssign, onOpenRequest }) {
             {row.adviser
               ? <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>{who(row.adviser)}<OpenedTag item={row.adviser} /></span>
               : <span className="school-gap">No adviser</span>}
-            <span style={{ fontSize: 13, color: T.inkMuted }}>{row.subjectTeachers} subject teacher{row.subjectTeachers === 1 ? '' : 's'}</span>
             <span>{!row.adviser && (row.pending
               ? <Btn variant="ghost" onClick={() => onOpenRequest(row.pending.id)}>{`Review ${who(row.pending)}'s request`}</Btn>
               : <Btn variant="ghost" disabled={context.ended} onClick={() => onAssign({ role: 'adviser', sectionId: row.section.id })}>Assign</Btn>)}</span>

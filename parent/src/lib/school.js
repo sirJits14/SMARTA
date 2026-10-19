@@ -1,7 +1,8 @@
 import S from '../strings.js';
 export const ROLE_LABELS = { adviser: 'Adviser', subject_teacher: 'Subject Teacher', curriculum_adviser: 'Curriculum Adviser' };
 export const REQUESTABLE_ROLES = ['adviser', 'subject_teacher'];
-export const REQUEST_STATUS = { pending: S.requestPending, approved: S.requestApproved, rejected: S.requestRejected, withdrawn: S.requestWithdrawn };
+export const REQUEST_STATUS = { pending: S.requestPending, approved: S.requestApproved, rejected: S.requestRejected, withdrawn: S.requestWithdrawn,
+  fulfilled: S.requestFulfilled, superseded: S.requestSuperseded };
 export function sectionsByGrade(sections = []) {
   const grades = [...new Set(sections.map((s) => Number(s.gradeLevel)))].sort((a, b) => a - b);
   return grades.map((grade) => ({ grade, sections: sections.filter((s) => Number(s.gradeLevel) === grade) }));
@@ -39,6 +40,8 @@ export function inboxDestination(item) {
 export const schoolError = (error) => /(?:permission-denied|failed-precondition|already-exists|aborted|invalid-argument|not-found|resource-exhausted)$/.test(error?.code || '') && error.message
   ? error.message : 'Could not complete this action. Check your connection and try again.';
 export const sectionLabel = (section) => section ? `Grade ${section.gradeLevel} · ${section.name || section.sectionName || section.label || section.id}` : 'Section unavailable';
+// Requests and assignments name a section, or only a grade for grade-level roles.
+export const scopeLabel = (item, sections = []) => (item?.sectionId ? sectionLabel(sections.find((s) => s.id === item.sectionId)) : `Grade ${item?.gradeLevel}`);
 export const sessionAction = (session) => session?.overrideActive ? 'restore' : session?.absent ? null : 'absent';
 export function correctionTime(value) {
   if (!value) return '';

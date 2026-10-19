@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Btn, Card, Field, Inp, Sel } from '../../../components/ui.jsx';
 import { T, S } from '../../../styles.js';
 import { ROLE_LABELS, sectionLabel } from '../../../../parent/src/lib/school.js';
+import { isGradeRole } from '../../../../shared/schoolAccess.js';
 
 const EMPTY = { email: '', role: 'adviser', sectionId: '', gradeLevel: '', source: 'direct', name: '' };
 
@@ -23,7 +24,7 @@ export default function AssignRoleForm({ school, prefill, onClose }) {
   const submit = event => {
     event.preventDefault();
     const payload = { email: assignment.email.trim(), role: assignment.role, source: assignment.source,
-      ...(assignment.role === 'curriculum_adviser' ? { gradeLevel: Number(assignment.gradeLevel) } : { sectionId: assignment.sectionId }) };
+      ...(isGradeRole(assignment.role) ? { gradeLevel: Number(assignment.gradeLevel) } : { sectionId: assignment.sectionId }) };
     run('assignSchoolRoleFn', payload, 'School role assigned. The teacher gets an inbox note in the app.', onClose);
   };
   return <Card style={{ padding: 20, marginBottom: 18 }}>
@@ -38,7 +39,7 @@ export default function AssignRoleForm({ school, prefill, onClose }) {
         <Field label="Account email"><Inp ref={emailRef} type="email" autoComplete="email" required value={assignment.email} onChange={e => set('email', e.target.value)} /></Field>
         <Field label="Responsibility"><Sel value={assignment.role} onChange={e => set('role', e.target.value)}>
           {Object.entries(ROLE_LABELS).map(([role, label]) => <option key={role} value={role}>{label}</option>)}</Sel></Field>
-        {assignment.role === 'curriculum_adviser'
+        {isGradeRole(assignment.role)
           ? <Field label="Grade"><Sel required value={assignment.gradeLevel} onChange={e => set('gradeLevel', e.target.value)}>
             <option value="">Choose grade</option>{grades.map(g => <option key={g} value={g}>Grade {g}</option>)}</Sel></Field>
           : <Field label="Section"><Sel ref={sectionRef} required value={assignment.sectionId} onChange={e => set('sectionId', e.target.value)}>

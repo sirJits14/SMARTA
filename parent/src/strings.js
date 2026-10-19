@@ -252,6 +252,8 @@ const S = {
   requestApproved: 'Approved',
   requestRejected: 'Not approved',
   requestWithdrawn: 'Withdrawn',
+  requestFulfilled: 'Assigned by advisory slip',
+  requestSuperseded: 'Closed: the section has an adviser',
   schoolRequestsTitle: 'Teacher requests',
   schoolRequestsIntro: 'Adviser requests from DepEd accounts in your grades. Approving gives the teacher their class right away.',
   schoolRequestsEmpty: 'No requests waiting.',
