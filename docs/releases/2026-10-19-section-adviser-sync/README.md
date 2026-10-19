@@ -72,3 +72,17 @@ that would allow manual edits to assigned advisers. Preserve section names and
 remove ownership markers only as part of an explicitly coordinated rollback
 of the assignment Functions and rules. The previous ruleset and Function
 hashes are recorded in deployment evidence.
+
+## Production result
+
+Merged in [PR #61](https://github.com/sirJits14/SMARTA/pull/61) at
+`f08efb6adf84ad7f901595a399be1d7c2a184f8b` after GitHub CI passed.
+Deployed on 2026-10-19 to https://bnhs-sims.web.app. All seven selected
+Functions are active with release hash `19e5eb229672d065cf2e569ce9c835d73b7ba18c`;
+the Function inventory and all unrelated Function hashes are unchanged.
+All 59 hosted files match the tested build, and the deployed Firestore rules
+match the prepared release exactly.
+
+The current-year backfill synchronized 47 sections for 2026-2027 without
+warnings. A subsequent live dry run found no remaining changes or warnings.
+Reports and deployment logs are in the corresponding deployment audit folder.
