@@ -21,7 +21,7 @@ beforeEach(async () => {
 describe('endSchoolYear', () => {
   it('revokes the year\'s slips, expires its links, notifies each account once, audits', async () => {
     const r = await endSchoolYear(staff(), { schoolYear: SY, confirmText: ` ${SY} ` });
-    expect(r).toEqual({ codesRevoked: 2, linksExpired: 3, accountsNotified: 2 });
+    expect(r).toEqual({ codesRevoked: 2, advisorySlipsRevoked: 0, linksExpired: 3, accountsNotified: 2 });
     for (const id of ['c1', 'c2']) expect((await db().doc(`activation_codes/${id}`).get()).data()).toMatchObject({ status: 'revoked', revokedReason: 'school-year-ended', revokedBy: 'registrar@bnhs.edu' });
     expect((await db().doc('activation_codes/c3').get()).data().revokedReason).toBe('reissued');
     expect((await db().doc('activation_codes/cNext').get()).data().status).toBe('issued');
@@ -46,7 +46,7 @@ describe('endSchoolYear', () => {
   it('is safe to run twice', async () => {
     await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
     const r = await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
-    expect(r).toEqual({ codesRevoked: 0, linksExpired: 0, accountsNotified: 0 });
+    expect(r).toEqual({ codesRevoked: 0, advisorySlipsRevoked: 0, linksExpired: 0, accountsNotified: 0 });
     expect((await db().collection('guardians/gA/inbox').get()).size).toBe(1);
   });
   it('rejects a confirmation that does not match and a malformed school year', async () => {

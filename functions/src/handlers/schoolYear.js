@@ -44,6 +44,10 @@ export async function endSchoolYear(ctx, data) {
     db.collection('activation_codes').where('schoolYear', '==', schoolYear).where('status', 'in', ['issued', 'exhausted']),
     (docs, b) => docs.forEach((d) => b.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'school-year-ended' })));
 
+  const advisorySlipsRevoked = await drain(db,
+    db.collection('advisory_slips').where('schoolYear', '==', schoolYear).where('status', '==', 'issued'),
+    (docs, b) => docs.forEach((d) => b.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'school-year-ended' })));
+
   const notified = new Set();
   const linksExpired = await drain(db,
     db.collection('guardian_links').where('schoolYear', '==', schoolYear).where('status', '==', 'active'),
@@ -62,7 +66,7 @@ export async function endSchoolYear(ctx, data) {
       b.update(d.ref, { status: 'expired', expiredAt: FieldValue.serverTimestamp(), expiredReason: 'school-year-ended' });
     }));
 
-  const result = { codesRevoked, linksExpired, accountsNotified: notified.size };
+  const result = { codesRevoked, advisorySlipsRevoked, linksExpired, accountsNotified: notified.size };
   await audit(db, { action: 'schoolyear.ended', actorType: 'staff', actorUid: email, targetType: 'school_year', targetId: schoolYear, details: result });
   logEvent('school_year_ended', { schoolYear, ...result });
   return result;
