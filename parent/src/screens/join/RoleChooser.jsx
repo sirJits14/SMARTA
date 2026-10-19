@@ -14,17 +14,19 @@ function RoleCard({ option, onToggle }) {
   const checked = option.state === 'selected' || option.state === 'held';
   const locked = option.state === 'held' || option.state === 'blocked';
   const [title, hint] = ROLE_TEXT[option.key];
+  // Only the box and title fade on a blocked card; the explanation keeps full contrast.
+  const dim = option.state === 'blocked' ? 0.62 : 1;
   return (
     <button type="button" role="checkbox" aria-checked={checked} aria-disabled={locked} onClick={locked ? undefined : onToggle}
       style={{ display: 'grid', gridTemplateColumns: '28px 1fr', gap: 12, alignItems: 'start', width: '100%', minHeight: 64, textAlign: 'left',
         padding: '12px 14px', borderRadius: T.radius, font: 'inherit', color: T.ink, cursor: locked ? 'default' : 'pointer',
         background: checked ? 'rgba(var(--t-primary-rgb),0.10)' : T.surface,
-        border: `1.5px solid ${checked ? T.primary : T.border}`, opacity: option.state === 'blocked' ? 0.62 : 1 }}>
+        border: `1.5px solid ${checked ? T.primary : T.border}` }}>
       <span aria-hidden="true" style={{ width: 24, height: 24, marginTop: 2, borderRadius: 7, display: 'grid', placeItems: 'center', fontWeight: 800,
-        border: `2px solid ${checked ? T.primary : T.border}`, background: checked ? T.primary : 'transparent', color: T.onPrimary }}>{checked ? '✓' : ''}</span>
+        border: `2px solid ${checked ? T.primary : T.border}`, background: checked ? T.primary : 'transparent', color: T.onPrimary, opacity: dim }}>{checked ? '✓' : ''}</span>
       <span>
         <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-          <strong style={{ fontSize: 16 }}>{title}</strong>
+          <strong style={{ fontSize: 16, opacity: dim }}>{title}</strong>
           {option.active && <span style={tag}>{S.joinActive}</span>}
           {!option.active && option.needsApproval && <span style={tag}>{S.joinNeedsApproval}</span>}
         </span>

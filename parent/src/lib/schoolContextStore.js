@@ -32,10 +32,14 @@ export function createSchoolContextStore({ fetch, storage, describe = String, no
 
   // Several screens asking at once share one request. `maxAge` skips the call when the
   // server answered that recently (tab switches); a focus or retry always asks again.
-  function refresh(uid, { maxAge = 0 } = {}) {
+  // `force` always starts a new request, even over one already on its way: that one may
+  // have begun before a role was saved, and its answer is ignored once this one replaces it.
+  function refresh(uid, { maxAge = 0, force = false } = {}) {
     if (!uid) return Promise.resolve();
-    if (inflight.has(uid)) return inflight.get(uid);
-    if (maxAge && now() - get(uid).at < maxAge) return Promise.resolve();
+    if (!force) {
+      if (inflight.has(uid)) return inflight.get(uid);
+      if (maxAge && now() - get(uid).at < maxAge) return Promise.resolve();
+    }
     set(uid, { loading: true, error: '' });
     const request = Promise.resolve().then(() => fetch()).then(
       (data) => { if (inflight.get(uid) !== request) return; save(uid, data); set(uid, { data, loading: false, error: '', at: now() }); },

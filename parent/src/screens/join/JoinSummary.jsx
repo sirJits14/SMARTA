@@ -24,7 +24,7 @@ export default function JoinSummary({ steps, results, onRetry, onOpen }) {
           return (
             <li key={role} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 0', borderTop: `1px solid ${T.border}` }}>
               <span><span aria-hidden="true" style={{ marginRight: 8, color: done ? T.ok : T.inkMuted }}>{done ? '✓' : '•'}</span>{line(role, result)}</span>
-              {!result && <Btn variant="ghost" onClick={() => onRetry(role)}>{S.summaryRetry}</Btn>}
+              {!result && <Btn variant="ghost" onClick={() => onRetry(role)} aria-label={`${S.summaryRetry}: ${ROLE_TEXT[role][0]}`}>{S.summaryRetry}</Btn>}
             </li>
           );
         })}

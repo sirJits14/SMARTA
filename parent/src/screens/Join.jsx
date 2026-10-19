@@ -60,13 +60,18 @@ export default function Join({ user, profile, route, navigate, setMode }) {
     if (after !== -1) setIndex(after); else setPhase('summary');
   };
   const retry = (role) => { setIndex(steps.indexOf(role)); setPhase('step'); };
-  const open = () => {
+  // Wait for a fresh answer before choosing the mode: App reconciles the mode
+  // against the school context, and a stale one (no new assignments yet) would
+  // drop a teacher-only account back to Family.
+  const open = async () => {
+    setPhase('opening');
+    await school.refresh({ force: true }).catch(() => {});
     const mode = landingMode(results, links || []);
     setMode(mode);
-    school.refresh();
     navigate(mode.view === 'school' ? schoolHome(mode) : '/', { replace: true });
   };
 
+  if (phase === 'opening') return <Spinner label={S.loading} />;
   if (phase === 'preparing') return <Spinner label={S.joinPreparing} />;
   if (phase === 'summary') return <JoinSummary steps={steps} results={results} onRetry={retry} onOpen={open} />;
   if (phase === 'step') {

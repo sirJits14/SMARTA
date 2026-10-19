@@ -15,7 +15,7 @@ const FRESH_MS = 30000;
 // The last answer for this account paints first, so a screen opened again never blanks.
 export function useSchoolContext(uid, enabled = true) {
   const state = useSyncExternalStore(store.subscribe, () => store.get(enabled ? uid : null));
-  const refresh = useCallback(() => (enabled ? store.refresh(uid) : Promise.resolve()), [uid, enabled]);
+  const refresh = useCallback((options) => (enabled ? store.refresh(uid, options) : Promise.resolve()), [uid, enabled]);
   useEffect(() => {
     if (!uid || !enabled) return undefined;
     // Switching tabs reuses an answer from the last half minute; coming back to the app asks again.

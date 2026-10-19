@@ -35,7 +35,7 @@ export default function SubjectTeacherStep({ user, school, label, onDone, onSkip
           return <button key={g} type="button" role="checkbox" aria-checked={on} onClick={() => toggle(g)} disabled={busy}
             style={{ minHeight: T.tap, borderRadius: T.pill, font: 'inherit', fontWeight: 600, cursor: 'pointer',
               border: `1.5px solid ${on ? T.primary : T.border}`, background: on ? T.primary : T.surface, color: on ? T.onPrimary : T.ink }}>
-            {on ? '✓ ' : ''}{`${S.schoolAccessGrade} ${g}`}</button>;
+            {on && <span aria-hidden="true">✓ </span>}{`${S.schoolAccessGrade} ${g}`}</button>;
         })}
       </div>
       <Btn onClick={submit} disabled={busy || !grades.length} style={{ width: '100%' }}>{S.subjectSubmit}</Btn>
