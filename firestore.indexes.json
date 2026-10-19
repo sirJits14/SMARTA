@@ -1,7 +1,5 @@
 {
   "indexes": [
-    { "collectionGroup": "audit_log", "queryScope": "COLLECTION", "fields": [
-      { "fieldPath": "targetType", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" } ] },
     { "collectionGroup": "school_role_requests", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "uid", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "school_role_requests", "queryScope": "COLLECTION", "fields": [
@@ -55,7 +53,9 @@
     { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiresAt", "order": "ASCENDING" } ] },
     { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
-      { "fieldPath": "pushResult.status", "order": "ASCENDING" }, { "fieldPath": "pushResult.claimedAt", "order": "ASCENDING" } ] }
+      { "fieldPath": "pushResult.status", "order": "ASCENDING" }, { "fieldPath": "pushResult.claimedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "audit_log", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "targetType", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" } ] }
   ],
   "fieldOverrides": [
     { "collectionGroup": "devices", "fieldPath": "refreshedAt", "indexes": [
