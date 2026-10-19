@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
-import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest } from '../../shared/schoolAccess.js';
+import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, isDepedEmail } from '../../shared/schoolAccess.js';
 import { enforceRateLimit } from '../callable.js';
 import { groupLegacyAdvisers, sampleStudentIds } from '../lib/legacyAdvisers.js';
 
@@ -277,25 +277,81 @@ export async function deleteSchoolAccess(db, uid) {
   });
 }
 
+const REQUEST_LIMIT = 200;
+const plainAssignment = a => ({ ...a, assignedAt: millis(a.assignedAt) });
+
+// Each adviser request names whoever already holds its section, so reviewers see conflicts first.
+async function requestRows(tx, db, snaps) {
+  const requests = snaps.map(row).sort((a, b) => (millis(a.createdAt) ?? 0) - (millis(b.createdAt) ?? 0));
+  const locks = {};
+  for (const r of requests) if (r.role === 'adviser') locks[r.sectionId] ??= tx.get(lockRef(db, r)).then(s => s.data() || null);
+  const holders = {};
+  for (const r of requests) {
+    const lock = r.role === 'adviser' ? await locks[r.sectionId] : null;
+    if (lock && lock.uid !== r.uid) holders[lock.uid] ??= tx.get(db.doc(`school_accounts/${lock.uid}`)).then(s => s.data() || {});
+  }
+  return Promise.all(requests.map(async r => {
+    const lock = r.role === 'adviser' ? await locks[r.sectionId] : null;
+    const holder = lock && lock.uid !== r.uid ? await holders[lock.uid] : null;
+    return { id: r.id, uid: r.uid, email: r.email || '', displayName: r.displayName || '', emailVerified: r.emailVerified === true,
+      role: r.role, sectionId: r.sectionId || '', gradeLevel: r.gradeLevel, createdAt: millis(r.createdAt),
+      conflict: holder ? { uid: lock.uid, email: holder.email || '', displayName: holder.displayName || holder.email || '' } : null };
+  }));
+}
+
+export async function markSchoolOpened(deps) {
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    if (!actor.assignments.length) return { ok: false };
+    tx.set(deps.db.doc(`school_accounts/${deps.uid}`), { lastSchoolOpenAt: FieldValue.serverTimestamp() }, { merge: true });
+    return { ok: true };
+  });
+}
+
+export async function getSchoolPendingCount(deps) {
+  const actor = await loadSchoolActor(deps);
+  if (!actor.isAdmin) fail('permission-denied', 'Administrators only.');
+  const snap = await deps.db.collection('school_role_requests').where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear).count().get();
+  return { count: snap.data().count };
+}
+
 export async function getSchoolContext(deps) {
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
-    const sections = await tx.get(deps.db.collection('sections').where('schoolYear', '==', actor.schoolYear));
-    const result = { schoolYear: actor.schoolYear, ended: actor.ended, isAdmin: actor.isAdmin, assignments: actor.assignments,
+    const requests = deps.db.collection('school_role_requests');
+    const [sections, mine] = await Promise.all([
+      tx.get(deps.db.collection('sections').where('schoolYear', '==', actor.schoolYear)),
+      tx.get(requests.where('uid', '==', deps.uid)),
+    ]);
+    const result = { schoolYear: actor.schoolYear, ended: actor.ended, isAdmin: actor.isAdmin, assignments: actor.assignments.map(plainAssignment),
       sections: sections.docs.map(s => ({ id: s.id, name: s.data().name || '', gradeLevel: s.data().gradeLevel, schoolYear: s.data().schoolYear }))
-        .sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)) };
+        .sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
+      myRequests: mine.docs.map(row).filter(r => r.schoolYear === actor.schoolYear)
+        .map(r => ({ id: r.id, role: r.role, sectionId: r.sectionId || '', gradeLevel: r.gradeLevel, status: r.status,
+          reason: r.status === 'rejected' ? r.reason || '' : '', createdAt: millis(r.createdAt) }))
+        .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, 20) };
+    const pendingOf = query => tx.get(query.limit(REQUEST_LIMIT));
     if (actor.isAdmin) {
-      const [accounts, legacy] = await Promise.all([
+      const [accounts, legacy, pending] = await Promise.all([
         tx.get(deps.db.collection('school_accounts')),
         tx.get(deps.db.collection('guardian_links').where('status', '==', 'active')),
+        pendingOf(requests.where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear)),
       ]);
       result.managedAssignments = accounts.docs.flatMap(s => (s.data().assignments || []).filter(a => a.schoolYear === actor.schoolYear)
-        .map(a => ({ uid: s.id, email: s.data().email || '', displayName: s.data().displayName || '', ...a })));
+        .map(a => ({ uid: s.id, email: s.data().email || '', displayName: s.data().displayName || '', ...plainAssignment(a), lastSchoolOpenAt: millis(s.data().lastSchoolOpenAt) })));
+      result.pendingRequests = await requestRows(tx, deps.db, pending.docs);
       const candidates = legacy.docs.map(row).filter(l => l.schoolYear === actor.schoolYear && (l.slot === 'adviser' || l.relationship === 'Adviser'));
       result.migrationCandidates = candidates;
       const enrollments = await Promise.all(sampleStudentIds(candidates).filter(id).map(studentId => tx.get(deps.db.doc(`enrollments/${studentId}_${actor.schoolYear}`))));
       const sectionByStudent = Object.fromEntries(enrollments.filter(s => s.data()?.status === 'enrolled').map(s => [s.data().studentId, s.data().sectionId]));
       result.legacyAdvisers = groupLegacyAdvisers(candidates, sectionByStudent);
+    } else {
+      const grades = actor.assignments.filter(a => a.role === 'curriculum_adviser').map(a => a.gradeLevel);
+      if (grades.length) {
+        const pending = await pendingOf(requests.where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear).where('role', '==', 'adviser'));
+        result.reviewQueue = await requestRows(tx, deps.db, pending.docs.filter(s => grades.includes(s.data().gradeLevel)
+          && s.data().uid !== deps.uid && s.data().emailVerified === true && isDepedEmail(s.data().email)));
+      }
     }
     return result;
   });

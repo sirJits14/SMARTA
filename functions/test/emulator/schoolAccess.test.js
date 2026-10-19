@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, clearAll, seedSchool } from './helpers.js';
-import { requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, getSchoolContext, loadSchoolActor, deleteSchoolAccess } from '../../src/handlers/schoolAccess.js';
+import { requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, getSchoolContext, loadSchoolActor, deleteSchoolAccess, markSchoolOpened, getSchoolPendingCount } from '../../src/handlers/schoolAccess.js';
 
 const year = '2026-2027';
 const now = () => new Date('2026-10-17T08:00:00+08:00');
@@ -100,7 +100,7 @@ describe('school request lifecycle', () => {
     expect(inbox).toEqual([expect.objectContaining({ type: 'school_access', title: 'School access approved',
       body: 'You can now use the app for school work. Switch to School in Settings.' })]);
   });
-  it('omits request queues and groups legacy advisers for administrators', async () => {
+  it('groups legacy advisers for administrators only', async () => {
     await db().doc('guardian_links/tLegacy_S1').set({ guardianUid: 'tLegacy', guardianEmail: 'legacy@example.com', guardianName: 'Legacy Teacher',
       studentId: 'S1', status: 'active', schoolYear: '2026-2027', slot: 'adviser', relationship: 'Adviser' });
     const context = await getSchoolContext(deps('admin'));
@@ -170,5 +170,40 @@ describe('replacing and bulk approval', () => {
     ]);
     await expect(resolveSchoolRoles(deps('curriculum'), { requestIds: [clean.id] })).rejects.toMatchObject({ code: 'permission-denied' });
     await expect(resolveSchoolRoles(deps('admin'), { requestIds: [] })).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+});
+
+describe('tracking and queues', () => {
+  it('records when an assigned teacher opens School and shows it to administrators', async () => {
+    expect(await markSchoolOpened(deps('teacher'))).toEqual({ ok: false });
+    expect((await db().doc('school_accounts/teacher').get()).exists).toBe(false);
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
+    expect(await markSchoolOpened(deps('teacher'))).toEqual({ ok: true });
+    const [item] = (await getSchoolContext(deps('admin'))).managedAssignments.filter(a => a.uid === 'teacher');
+    expect(item).toMatchObject({ role: 'adviser', source: 'direct', assignedBy: 'admin@school.test' });
+    expect(typeof item.assignedAt).toBe('number');
+    expect(item.lastSchoolOpenAt).toBeGreaterThanOrEqual(item.assignedAt);
+  });
+  it('counts pending requests for administrators only', async () => {
+    await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
+    await requestSchoolRole(deps('personal'), { role: 'subject_teacher', sectionId: 'SEC8' });
+    expect(await getSchoolPendingCount(deps('admin'))).toEqual({ count: 2 });
+    await expect(getSchoolPendingCount(deps('teacher'))).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+  it('gives each audience its own queue, with conflicts named', async () => {
+    await assignSchoolRole(deps('admin'), { email: users.personal.email, role: 'adviser', sectionId: 'SEC1' });
+    const inGrade = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
+    await requestSchoolRole(deps('teacher'), { role: 'subject_teacher', sectionId: 'SEC1' });
+    await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC8' });
+    const admin = await getSchoolContext(deps('admin'));
+    expect(admin.pendingRequests).toHaveLength(3);
+    expect(admin.pendingRequests.find(r => r.id === inGrade.id).conflict).toEqual({ uid: 'personal', email: 'teacher@gmail.com', displayName: 'teacher@gmail.com' });
+    const curriculum = await getSchoolContext(deps('curriculum'));
+    expect(curriculum.reviewQueue.map(r => r.id)).toEqual([inGrade.id]);
+    expect(curriculum).not.toHaveProperty('pendingRequests');
+    const teacher = await getSchoolContext(deps('teacher'));
+    expect(teacher.myRequests.map(r => r.status)).toEqual(['pending', 'pending', 'pending']);
+    expect(teacher).not.toHaveProperty('reviewQueue');
+    expect(teacher).not.toHaveProperty('pendingRequests');
   });
 });
