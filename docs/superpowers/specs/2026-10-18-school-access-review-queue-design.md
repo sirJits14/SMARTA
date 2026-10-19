@@ -88,7 +88,7 @@ All writes still go through authenticated App Check callables. There are no clie
 | `replaceAdviserFn` (new) | Admin | `{ requestId, reason }`. In one transaction it removes the lock holder's adviser entry for that section, moves the lock, grants the requester (`source: 'replace'`), marks the request approved, and writes `school.replaced`. |
 | `markSchoolOpenedFn` (new) | Assigned teacher | Sets `lastSchoolOpenAt`. It does nothing unless the caller has a current assignment. |
 | `getSchoolPendingCountFn` (new) | Admin | A `count()` aggregation of pending requests for the current school year. |
-| `getSchoolHistoryFn` (new) | Admin | `audit_log` rows where `targetType == 'school_assignment'`, newest first, 50 per page, with a cursor. Needs a composite index on (`targetType`, `at` desc). |
+| `getSchoolHistoryFn` (new) | Admin | Not built: History reads `audit_log` directly from SIMS like the Audit log tab (admin-only by rules). `audit_log` rows where `targetType == 'school_assignment'`, newest first, 50 per page, with a cursor. Needs a composite index on (`targetType`, `at` desc). |
 | `getSchoolContextFn` | All | Admins also get `pendingRequests` (each with a `conflict: { uid, displayName, email }` when the section's lock belongs to someone else) and each assignment's metadata plus its account's `lastSchoolOpenAt`. CAs get `reviewQueue`, the requests they may approve. Everyone gets `myRequests` for the current year. |
 
 `canApproveRoleRequest(actor, request)` in `shared/schoolAccess.js` becomes:
@@ -152,7 +152,7 @@ when n > 0 and on Coverage otherwise.
 - Grouped by grade. Each grade header reads "Grade 12 · 8 of 10 sections have an adviser ·
   Curriculum Adviser: {name | None}".
 - Each section row shows the adviser and their opened status, or **No adviser**. A no-adviser
-  row offers "Pending: {name}" (jumps to the card) or "Assign" (prefills the panel). Each row also
+  row offers "Review {name}'s request" (jumps to the card) or "Assign" (prefills the panel). Each row also
   shows its subject-teacher count.
 - An "Only gaps" toggle and **Export CSV** with the columns Grade, Section, Adviser, Adviser email,
   Opened, Subject teachers, Pending request.
