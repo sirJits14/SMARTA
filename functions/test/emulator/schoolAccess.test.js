@@ -27,6 +27,50 @@ beforeEach(async () => {
   await db().doc('sections/SEC8').set({ name: 'Eight', gradeLevel: 8, schoolYear: year });
 });
 describe('school request lifecycle', () => {
+  it('keeps existing adviser sections consistent when another grant refreshes the account name', async () => {
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
+    const renamedUser = { ...users.teacher, displayName: 'Renamed Teacher' };
+    const renamed = { ...deps('admin'), auth: {
+      ...auth, getUser: async uid => uid === 'teacher' ? renamedUser : users[uid],
+      getUserByEmail: async email => email === renamedUser.email ? renamedUser : auth.getUserByEmail(email),
+    } };
+    await assignSchoolRole(renamed, { email: users.teacher.email, role: 'subject_teacher', sectionId: 'SEC8' });
+    expect((await db().doc('school_accounts/teacher').get()).data().displayName).toBe('Renamed Teacher');
+    expect((await db().doc('sections/SEC1').get()).data().adviserName).toBe('Renamed Teacher');
+    renamedUser.displayName = 'Name after repeat grant';
+    await assignSchoolRole(renamed, { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
+    expect((await db().doc('school_accounts/teacher').get()).data().displayName).toBe('Name after repeat grant');
+    expect((await db().doc('sections/SEC1').get()).data().adviserName).toBe('Name after repeat grant');
+  });
+  it('syncs an approved adviser, replaces them, and preserves the last name on revocation', async () => {
+    await db().doc('sections/SEC1').update({ adviserName: 'Old manual name' });
+    const request = await seedRequest('teacher', 'adviser', 'SEC1');
+    expect((await db().doc('sections/SEC1').get()).data().adviserName).toBe('Old manual name');
+    await resolveSchoolRole(deps('admin'), { requestId: request.id, approve: true });
+    expect((await db().doc('sections/SEC1').get()).data()).toMatchObject({ adviserName: 'Teacher', schoolAdviserUid: 'teacher' });
+    const replacement = await seedRequest('personal', 'adviser', 'SEC1');
+    await replaceAdviser(deps('admin'), { requestId: replacement.id, reason: 'New class adviser' });
+    expect((await db().doc('sections/SEC1').get()).data()).toMatchObject({ adviserName: 'teacher@gmail.com', schoolAdviserUid: 'personal' });
+    await revokeSchoolRole(deps('admin'), { uid: 'personal', role: 'adviser', sectionId: 'SEC1', reason: 'Assignment ended' });
+    const section = (await db().doc('sections/SEC1').get()).data();
+    expect(section.adviserName).toBe('teacher@gmail.com');
+    expect(section.schoolAdviserUid).toBeUndefined();
+  });
+  it('syncs direct assignments and unlocks on account deletion without changing the name', async () => {
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
+    expect((await db().doc('sections/SEC1').get()).data()).toMatchObject({ adviserName: 'Teacher', schoolAdviserUid: 'teacher' });
+    await deleteSchoolAccess(db(), 'teacher');
+    const section = (await db().doc('sections/SEC1').get()).data();
+    expect(section.adviserName).toBe('Teacher');
+    expect(section.schoolAdviserUid).toBeUndefined();
+  });
+  it('does not overwrite the class adviser for subject or curriculum assignments', async () => {
+    await db().doc('sections/SEC1').update({ adviserName: 'Manual adviser' });
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'subject_teacher', sectionId: 'SEC1' });
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'curriculum_adviser', gradeLevel: 7 });
+    expect((await db().doc('sections/SEC1').get()).data()).toMatchObject({ adviserName: 'Manual adviser' });
+    expect((await db().doc('sections/SEC1').get()).data().schoolAdviserUid).toBeUndefined();
+  });
   it('account deletion releases adviser locks and withdraws pending requests', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
     const request = await seedRequest('teacher', 'subject_teacher', 'SEC8');
@@ -92,7 +136,7 @@ describe('school request lifecycle', () => {
     await assignSchoolRole(deps('admin'), { email: users[loser].email, role: 'adviser', sectionId: 'SEC1' });
     expect((await loadSchoolActor(deps(winner))).assignments).toEqual([]);
     expect((await db().collection('audit_log').get()).size).toBe(3);
-  });
+  }, 20000); // Firestore transaction contention can back off beyond Vitest's 5s default.
   it('does not allow self-approval', async () => {
     const r = await seedRequest('curriculum', 'adviser', 'SEC1');
     await expect(resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true, reason: 'Self' })).rejects.toMatchObject({ code: 'permission-denied' });

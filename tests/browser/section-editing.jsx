@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '/shared/theme/theme.css';
 import '/src/registrar.css';
 import SectionsPage from '/src/pages/SectionsPage.jsx';
-import { requestedYears, resetFixture, setScenario, writes } from './section-editing-fixture.js';
+import { requestedYears, resetFixture, setScenario, setAdviser, writes } from './section-editing-fixture.js';
 
 window.IS_REACT_ACT_ENVIRONMENT = true;
 const host = document.getElementById('root');
@@ -90,6 +90,26 @@ const checks = [
 ];
 
 if (location.search.includes('checks')) {
+  checks.push(['An open section detail follows the synced adviser', async () => {
+    await reset('adviser-detail'); await click(host.querySelector('button[aria-label="View Mabini section details"]'));
+    await act(async () => setAdviser('teacher', 'New Detail Adviser'));
+    assert(host.querySelector('dialog').textContent.includes('New Detail Adviser'), 'The open detail still shows the previous adviser');
+    await click(button('Close'));
+  }]);
+  checks.push(['An open editor follows adviser assignment and revocation without losing other edits', async () => {
+    await reset('adviser-sync'); await click(button('Edit'));
+    await change(input('Section name'), 'Unsaved section name');
+    await act(async () => setAdviser('teacher', 'Assigned Teacher'));
+    assert(input('Adviser name').readOnly && input('Adviser name').value === 'Assigned Teacher', 'Assignment did not lock and update the open editor');
+    assert(input('Section name').value === 'Unsaved section name', 'Assignment discarded the section draft');
+    await act(async () => setAdviser('replacement', 'Replacement Teacher'));
+    assert(input('Adviser name').value === 'Replacement Teacher', 'Replacement did not update the open editor');
+    await act(async () => setAdviser(undefined, 'Replacement Teacher'));
+    assert(!input('Adviser name').readOnly && input('Adviser name').value === 'Replacement Teacher', 'Revocation did not preserve the name and unlock');
+    await change(input('Adviser name'), 'Manual after revocation');
+    await click(button('Save changes'));
+    assert(writes[0]?.adviserName === 'Manual after revocation' && writes[0]?.name === 'Unsaved section name', 'Revoked adviser field could not be saved manually');
+  }]);
   for (const [name, run] of checks) {
     const result = document.getElementById('results').appendChild(document.createElement('p'));
     try { await run(); result.textContent = `PASS ${name}`; }

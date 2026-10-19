@@ -21,6 +21,12 @@ import { isAdmin, grades, singleGrade, scopeRoster, canEditSection, sectionEditS
 export function SectionForm({ editing, schoolYear, schedules, onClose, restricted = false }) {
   const action = useAsyncAction();
   const [f, setF] = useState(editing || { gradeLevel: '', name: '', track: '', strand: '', adviserName: '', scheduleId: '', schoolYear });
+  const adviserManaged = Boolean(editing?.schoolAdviserUid);
+  useEffect(() => {
+    setF(previous => editing?.schoolAdviserUid || previous.schoolAdviserUid
+      ? { ...previous, adviserName: editing?.adviserName || '', schoolAdviserUid: editing?.schoolAdviserUid }
+      : previous);
+  }, [editing?.schoolAdviserUid, editing?.adviserName]);
   const [err, setErr] = useState('');
   const [optionsAttempt, setOptionsAttempt] = useState(0);
   const [options, setOptions] = useState({ data: [], loading: true, error: null });
@@ -56,7 +62,7 @@ export function SectionForm({ editing, schoolYear, schedules, onClose, restricte
       {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 12 }}>{err}</div>}
       <Field label="Section name"><Inp value={f.name || ''} onChange={(e) => set('name', e.target.value)} /></Field>
       {!restricted && <Field label="Grade level">
-        <Sel value={f.gradeLevel || ''} onChange={(e) => setGrade(e.target.value)}>
+        <Sel value={f.gradeLevel || ''} onChange={(e) => setGrade(e.target.value)} disabled={adviserManaged}>
           <option value="">—</option>
           {GRADES.map((g) => <option key={g} value={g}>Grade {g}</option>)}
         </Sel>
@@ -77,7 +83,8 @@ export function SectionForm({ editing, schoolYear, schedules, onClose, restricte
           </Field>
         </div>
       )}
-      <Field label="Adviser name"><Inp value={f.adviserName || ''} onChange={(e) => set('adviserName', e.target.value)} /></Field>
+      <Field label="Adviser name"><Inp readOnly={adviserManaged} aria-describedby={adviserManaged ? 'section-adviser-source' : undefined} value={adviserManaged ? editing.adviserName || '' : f.adviserName || ''} onChange={(e) => set('adviserName', e.target.value)} /></Field>
+      {adviserManaged && <p id="section-adviser-source" style={{ color: T.inkMuted, fontSize: 12 }}>Synced from School Access. Change the Class Adviser assignment there.</p>}
       <ResourceState resources={restricted ? [{ ...options, retry: () => setOptionsAttempt(value => value + 1) }] : []} label="available schedules">
       <Field label="Schedule / shift">
         <Sel value={f.scheduleId || ''} onChange={(e) => set('scheduleId', e.target.value)}>
@@ -236,7 +243,7 @@ export default function SectionsPage({ me, schoolYear }) {
                         <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setForm(s); }} style={{ marginRight: 6 }}>Edit</Btn>
                       }
                       {admin && <>
-                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setConfirm(s); }} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                        <Btn variant="ghost" disabled={!!s.schoolAdviserUid} title={s.schoolAdviserUid ? 'Revoke the Class Adviser assignment in School Access before deleting this section.' : undefined} onClick={(e) => { e.stopPropagation(); setConfirm(s); }} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
                       </>}
                     </td>
                   </tr>))}
@@ -248,11 +255,11 @@ export default function SectionsPage({ me, schoolYear }) {
       </div>
       </ResourceState>
       {form && form.schoolYear === selectedYear && (form.id ? canEditSection(me, form, schoolYear) : admin)
-        && <SectionForm key={`${form.id || 'new'}:${selectedYear}:${me?.role}:${oneGrade}`} editing={form.id ? form : null} restricted={!admin} schoolYear={selectedYear} schedules={schedules} onClose={() => setForm(null)} />}
+        && <SectionForm key={`${form.id || 'new'}:${selectedYear}:${me?.role}:${oneGrade}`} editing={form.id ? sections.find(section => section.id === form.id) || form : null} restricted={!admin} schoolYear={selectedYear} schedules={schedules} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSection(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
       {detailSection && (
         <SectionDetailModal printReady={printReady} onPrint={admin ? () => printAndConfirm(detailRosterDeped) : undefined}
-          section={detailSection}
+          section={sections.find(section => section.id === detailSection.id) || detailSection}
           roster={detailRosterAlpha}
           onClose={() => setDetailSection(null)}
           onEditStudent={admin ? (s) => setEditingStudent(s) : null}

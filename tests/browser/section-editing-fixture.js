@@ -15,6 +15,10 @@ export const requestedYears = new Map();
 const notify = () => { revision++; listeners.forEach(fn => fn()); };
 export function resetFixture() { sections = structuredClone(original); scenario = 'normal'; writes.length = 0; requestedYears.clear(); notify(); }
 export function setScenario(value) { scenario = value; notify(); }
+export function setAdviser(uid, name) {
+  sections = sections.map(section => section.id === 'eight' ? { ...section, schoolAdviserUid: uid, adviserName: name } : section);
+  notify();
+}
 resetFixture();
 
 export function useStaffCollectionResource(path, { schoolYear } = {}) {
