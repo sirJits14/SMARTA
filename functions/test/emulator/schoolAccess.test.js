@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, clearAll, seedSchool } from './helpers.js';
-import { requestSchoolRole, resolveSchoolRole, assignSchoolRole, revokeSchoolRole, getSchoolContext, loadSchoolActor, deleteSchoolAccess } from '../../src/handlers/schoolAccess.js';
+import { requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, assignSchoolRole, revokeSchoolRole, getSchoolContext, loadSchoolActor, deleteSchoolAccess } from '../../src/handlers/schoolAccess.js';
 
 const year = '2026-2027';
 const now = () => new Date('2026-10-17T08:00:00+08:00');
@@ -73,11 +73,7 @@ describe('school request lifecycle', () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
     await db().doc(`school_years/${year}`).set({ endedAt: new Date() });
     expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
-    await expect(requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' })).rejects.toMatchObject({ code: 'permission-denied' });
-  });
-  it('retires in-app role requests', async () => {
-    await expect(requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' }))
-      .rejects.toMatchObject({ code: 'permission-denied', message: 'An administrator assigns school roles in SIMS.' });
+    await expect(requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' })).rejects.toMatchObject({ code: 'failed-precondition' });
   });
   it('tells a newly assigned teacher where to switch to School', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
@@ -97,5 +93,29 @@ describe('school request lifecycle', () => {
     expect(curriculum).not.toHaveProperty('managedAssignments');
     expect(curriculum).not.toHaveProperty('legacyAdvisers');
     expect(curriculum).not.toHaveProperty('migrationCandidates');
+  });
+});
+
+describe('teacher requests', () => {
+  it('records a pending request that grants nothing, and dedupes repeats', async () => {
+    const first = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
+    const again = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
+    expect(again.id).toBe(first.id);
+    expect((await db().doc(`school_role_requests/${first.id}`).get()).data()).toMatchObject({ uid: 'teacher', email: 'teacher@deped.gov.ph',
+      emailVerified: true, role: 'adviser', sectionId: 'SEC1', gradeLevel: 7, schoolYear: year, status: 'pending' });
+    expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
+    const audit = (await db().collection('audit_log').get()).docs.map(d => d.data());
+    expect(audit).toEqual([expect.objectContaining({ action: 'school.requested', details: expect.objectContaining({ teacherEmail: 'teacher@deped.gov.ph' }) })]);
+  });
+  it('never takes Curriculum Adviser requests', async () => {
+    await expect(requestSchoolRole(deps('teacher'), { role: 'curriculum_adviser', gradeLevel: 7 }))
+      .rejects.toMatchObject({ code: 'permission-denied', message: 'An administrator assigns Curriculum Adviser access.' });
+  });
+  it('lets a teacher withdraw only their own pending request', async () => {
+    const { id } = await requestSchoolRole(deps('teacher'), { role: 'subject_teacher', sectionId: 'SEC1' });
+    await expect(withdrawSchoolRequest(deps('personal'), { requestId: id })).rejects.toMatchObject({ code: 'not-found' });
+    await withdrawSchoolRequest(deps('teacher'), { requestId: id });
+    expect((await db().doc(`school_role_requests/${id}`).get()).data().status).toBe('withdrawn');
+    await expect(withdrawSchoolRequest(deps('teacher'), { requestId: id })).rejects.toMatchObject({ code: 'failed-precondition' });
   });
 });

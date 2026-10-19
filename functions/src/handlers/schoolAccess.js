@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
-import { SCHOOL_ROLES, assignmentKey, canApproveRoleRequest } from '../../shared/schoolAccess.js';
+import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest } from '../../shared/schoolAccess.js';
+import { enforceRateLimit } from '../callable.js';
 import { groupLegacyAdvisers, sampleStudentIds } from '../lib/legacyAdvisers.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
@@ -15,6 +16,10 @@ const reasonValue = value => {
   return reason;
 };
 const fingerprint = value => createHash('sha256').update(value).digest('hex');
+const requestKey = (uid, assignment) => fingerprint(JSON.stringify([uid, assignmentKey(assignment)]));
+// Audit rows carry the teacher's name so History reads without another lookup.
+const teacherOf = person => ({ teacherEmail: (person?.email || '').toLowerCase(), teacherName: person?.displayName || person?.email || '' });
+const millis = value => (value?.toMillis ? value.toMillis() : null);
 const lockRef = (db, a) => a.role === 'adviser' ? db.doc(`school_adviser_locks/${a.schoolYear}_${a.sectionId}`) : null;
 const auditRow = (actor, action, targetId, details) => ({ action, actorType: 'staff', actorUid: actor.email,
   targetType: 'school_assignment', targetId, details, at: FieldValue.serverTimestamp() });
@@ -71,9 +76,41 @@ async function liveUser(auth, uid) {
   return user;
 }
 
-// School roles are assigned by an administrator in SIMS; the app no longer asks.
-export async function requestSchoolRole() {
-  fail('permission-denied', 'An administrator assigns school roles in SIMS.');
+// Teachers ask from the Parent App; a request confers nothing until approved.
+export async function requestSchoolRole(deps, input) {
+  if (!REQUESTABLE_ROLES.includes(input.role)) fail('permission-denied', 'An administrator assigns Curriculum Adviser access.');
+  const user = await liveUser(deps.auth, deps.uid);
+  await enforceRateLimit(deps.db, deps.uid, 'schoolRoleRequest', { windowMs: 3600000, max: 30 }, (deps.now || (() => new Date()))().getTime());
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const assignment = await assignmentFrom(deps, tx, actor, input);
+    if (actor.assignments.some(a => assignmentKey(a) === assignmentKey(assignment))) fail('already-exists', 'This assignment is already active.');
+    const key = requestKey(deps.uid, assignment);
+    const ref = deps.db.doc(`school_role_requests/${key}`);
+    const existing = await tx.get(ref);
+    const pending = await tx.get(deps.db.collection('school_role_requests').where('uid', '==', deps.uid).where('status', '==', 'pending'));
+    if (existing.data()?.status === 'pending') return { id: key, status: 'pending' };
+    if (pending.size >= 20) fail('resource-exhausted', 'Wait for your pending requests to be reviewed.');
+    tx.set(ref, { ...assignment, uid: deps.uid, email: user.email.toLowerCase(), emailVerified: true,
+      displayName: user.displayName || actor.displayName, status: 'pending', createdAt: FieldValue.serverTimestamp() });
+    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.requested', deps.uid, { ...assignment, ...teacherOf(user) }));
+    return { id: key, status: 'pending' };
+  });
+}
+
+export async function withdrawSchoolRequest(deps, input) {
+  if (!id(input.requestId)) fail('invalid-argument', 'Choose a request.');
+  const ref = deps.db.doc(`school_role_requests/${input.requestId}`);
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const request = (await tx.get(ref)).data();
+    if (!request || request.uid !== deps.uid) fail('not-found', 'Request not found.');
+    if (request.status !== 'pending') fail('failed-precondition', 'This request was already reviewed.');
+    tx.update(ref, { status: 'withdrawn', reason: 'Withdrawn by the teacher', reviewedAt: FieldValue.serverTimestamp() });
+    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.requestWithdrawn', deps.uid, { requestId: ref.id,
+      role: request.role, sectionId: request.sectionId || '', gradeLevel: request.gradeLevel, ...teacherOf(request) }));
+    return { ok: true };
+  });
 }
 
 // Reads must precede the mutation below. The section lock serializes different
