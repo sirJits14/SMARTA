@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canReviewSection, canCorrectSession, canApproveRoleRequest, isFamilyLink, assignmentKey, isDepedEmail, REQUESTABLE_ROLES } from './schoolAccess.js';
+import { canReviewSection, canCorrectSession, canApproveRoleRequest, isFamilyLink, assignmentKey, isDepedEmail, REQUESTABLE_ROLES, GRADE_ROLES, isGradeRole, conflictingRole, canHold } from './schoolAccess.js';
 
 const year = '2026-2027';
 const section = { id: 'S7', schoolYear: year, gradeLevel: 7 };
@@ -19,7 +19,7 @@ describe('school access boundaries', () => {
     expect(canCorrectSession(actor('curriculum_adviser'), section, '2026-10-16', '2026-10-17')).toBe(true);
     expect(canCorrectSession(actor('curriculum_adviser'), section, '2026-10-18', '2026-10-17')).toBe(false);
   });
-  it('allows only administrators to approve role requests, never self approval', () => {
+  it('lets administrators approve anything and Curriculum Advisers approve teacher requests in their grades', () => {
     const request = { uid: 'teacher', email: 'teacher@deped.gov.ph', emailVerified: true, role: 'adviser', gradeLevel: 7, schoolYear: year, status: 'pending' };
     const admin = { uid: 'actor', schoolYear: year, isAdmin: true, assignments: [] };
     expect(canApproveRoleRequest(admin, request)).toBe(true);
@@ -27,13 +27,27 @@ describe('school access boundaries', () => {
     for (const patch of [{ uid: 'actor' }, { schoolYear: '2025-2026' }, { status: 'approved' }]) {
       expect(canApproveRoleRequest(admin, { ...request, ...patch })).toBe(false);
     }
-    // Curriculum Advisers approve adviser requests from verified DepEd accounts in their own grades only.
-    expect(canApproveRoleRequest(actor('curriculum_adviser'), request)).toBe(true);
-    for (const patch of [{ email: 'teacher@gmail.com' }, { emailVerified: false }, { gradeLevel: 8 }, { role: 'subject_teacher' }, { uid: 'actor' }]) {
-      expect(canApproveRoleRequest(actor('curriculum_adviser'), { ...request, ...patch })).toBe(false);
+    const curriculum = actor('curriculum_adviser');
+    for (const patch of [{}, { email: 'teacher@gmail.com' }, { role: 'subject_teacher' }, { role: 'subject_teacher', email: 'teacher@gmail.com' }]) {
+      expect(canApproveRoleRequest(curriculum, { ...request, ...patch })).toBe(true);
+    }
+    for (const patch of [{ emailVerified: false }, { gradeLevel: 8 }, { role: 'curriculum_adviser' }, { uid: 'actor' }]) {
+      expect(canApproveRoleRequest(curriculum, { ...request, ...patch })).toBe(false);
     }
     for (const role of ['adviser', 'subject_teacher']) expect(canApproveRoleRequest(actor(role), request)).toBe(false);
     expect(canApproveRoleRequest(actor('curriculum_adviser', { schoolYear: '2027-2028' }), request)).toBe(false);
+  });
+  it('keeps Adviser and Subject Teacher apart and leaves other roles free', () => {
+    expect(GRADE_ROLES).toEqual(['curriculum_adviser', 'subject_teacher']);
+    expect(isGradeRole('subject_teacher')).toBe(true);
+    expect(isGradeRole('adviser')).toBe(false);
+    expect(conflictingRole(['adviser'], 'subject_teacher')).toBe('adviser');
+    expect(conflictingRole(['subject_teacher'], 'adviser')).toBe('subject_teacher');
+    expect(conflictingRole(['adviser'], 'adviser')).toBeNull();
+    expect(conflictingRole(['curriculum_adviser', 'family'], 'adviser')).toBeNull();
+    expect(canHold(['subject_teacher'], 'curriculum_adviser')).toBe(true);
+    expect(canHold(['subject_teacher'], 'adviser')).toBe(false);
+    expect(canHold([], 'family')).toBe(true);
   });
   it('recognises DepEd accounts and requestable roles', () => {
     expect(isDepedEmail(' Ana@DepEd.gov.ph ')).toBe(true);
