@@ -13,6 +13,13 @@ const shape = (f) => ({
 async function mutateSection(ref, next, merge = false) {
   return runTransaction(db, async tx => {
     const before = await tx.get(ref);
+    if (before.data()?.schoolAdviserUid) {
+      if (!next || next.gradeLevel !== before.data().gradeLevel || next.schoolYear !== before.data().schoolYear) {
+        throw new Error('Revoke the Class Adviser assignment in School Access before deleting this section or changing its grade or school year.');
+      }
+      // A stale open editor must not overwrite a newly assigned adviser.
+      next = { ...next, adviserName: before.data().adviserName };
+    }
     const scheduleIds = [...new Set([before.data()?.scheduleId, next?.scheduleId].filter(Boolean))];
     // Read schedule versions before querying their sections. Concurrent mutations
     // sharing a schedule then conflict and retry this query before committing.
