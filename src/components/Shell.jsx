@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Btn, Card, Modal } from './ui.jsx';
+import { Btn, Card, CountBadge, Modal } from './ui.jsx';
 import DialogFrame from './DialogFrame.jsx';
 import NavIcon from './NavIcon.jsx';
 import ThemeControl from './ThemeControl.jsx';
 import ThemeMenuButton from './ThemeMenuButton.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
-import { canOpen } from '../lib/access.js';
+import { canOpen, isAdmin } from '../lib/access.js';
+import { useSchoolPendingCount } from '../hooks/useSchoolPendingCount.js';
 import { roleLabel } from '../../shared/staffRoles.js';
 import smartaWordmark from '../assets/smarta-wordmark-sidebar.png';
 import smartaWordmarkDark from '../assets/smarta-wordmark-sidebar-dark.png';
@@ -23,6 +24,9 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const mainRef = useRef(null);
   const mobile = width < 768;
   const items = NAV_ITEMS.filter(item => canOpen(me, item.key));
+  const pendingSchool = useSchoolPendingCount(isAdmin(me));
+  const badgeLabel = 'pending school access requests';
+  const navLabel = item => (item.key === 'guardians' && pendingSchool ? `${item.label}, ${pendingSchool} ${badgeLabel}` : item.label);
   const collapsed = !mobile && (preference ?? width < 1024);
   useEffect(() => {
     const resize = () => { setWidth(window.innerWidth); setTooltip(null); if (window.innerWidth >= 768) setDrawer(false); };
@@ -39,10 +43,11 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
         <img className="sims-wordmark theme-dark-only" src={smartaWordmarkDark} alt="SMARTA" width="188" height="54" /></>}</div>
     <nav className="sims-nav" aria-label="Main navigation">
       {items.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
-        aria-label={collapsed ? item.label : undefined} onClick={() => navigate(item.key)}
+        aria-label={collapsed ? navLabel(item) : undefined} onClick={() => navigate(item.key)}
         onMouseEnter={e => showLabel(e,item.label)} onMouseLeave={() => setTooltip(null)}
         onFocus={e => showLabel(e,item.label)} onBlur={() => setTooltip(null)}>
         <NavIcon name={item.icon}/><span className={collapsed ? 'sims-nav-tooltip' : ''}>{item.label}</span>
+        {item.key === 'guardians' && pendingSchool > 0 && <CountBadge count={pendingSchool} label={badgeLabel} />}
       </button>)}
     </nav>
     <div className="sims-account">
