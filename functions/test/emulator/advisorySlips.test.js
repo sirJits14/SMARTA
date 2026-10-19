@@ -128,8 +128,15 @@ describe('redeeming advisory slips', () => {
     const code = await issue();
     const results = await Promise.allSettled(['t1', 't2'].map(uid => redeemAdvisorySlip(tdeps(uid), { code })));
     expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.find(r => r.status === 'rejected').reason).toMatchObject({ code: 'not-found' });
     expect((await db().collection('school_adviser_locks').get()).size).toBe(1);
   }, 30000);
+  it('refuses a teacher who already advises the section and leaves the slip usable', async () => {
+    const code = await issue();
+    await assignSchoolRole({ db: db(), auth: teacherAuth, now, uid: 'admin', email: 'admin@school.test' }, { email: 't1@deped.gov.ph', role: 'adviser', sectionId: 'SEC1' });
+    await expect(redeemAdvisorySlip(tdeps('t1'), { code })).rejects.toMatchObject({ code: 'already-exists', message: 'You are already the adviser of this section.' });
+    expect((await slips()).map(s => s.status)).toEqual(['issued']);
+  });
   it('refuses a section that gained an adviser after the slip was printed', async () => {
     const code = await issue();
     await assignSchoolRole({ db: db(), auth: teacherAuth, now, uid: 'admin', email: 'admin@school.test' }, { email: 't2@deped.gov.ph', role: 'adviser', sectionId: 'SEC1' });

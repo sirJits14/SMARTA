@@ -35,7 +35,10 @@ export async function issueAdvisorySlips(deps, input) {
   const issued = []; const skipped = [];
   for (const sectionId of ids) {
     const result = await db.runTransaction(async tx => {
-      const section = (await tx.get(db.doc(`sections/${sectionId}`))).data();
+      const [sectionSnap, yearSnap] = await Promise.all([tx.get(db.doc(`sections/${sectionId}`)), tx.get(db.doc(`school_years/${schoolYear}`))]);
+      const section = sectionSnap.data();
+      // Re-checked inside the transaction so a concurrent endSchoolYear cannot slip past the up-front check.
+      if (yearSnap.data()?.endedAt) return { skip: 'not-found' };
       if (!section || section.schoolYear !== schoolYear) return { skip: 'not-found' };
       if (!covers(profile, section.gradeLevel)) return { skip: 'out-of-scope' };
       const [lock, open] = await Promise.all([
@@ -46,7 +49,7 @@ export async function issueAdvisorySlips(deps, input) {
       for (const d of open.docs) tx.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'reissued' });
       const code = generateCode(randomBytes(8));
       const label = sectionLabel(section);
-      tx.set(db.doc(`advisory_slips/${hashCode(code)}`), { sectionId, gradeLevel: section.gradeLevel, sectionLabel: label, schoolYear,
+      tx.create(db.doc(`advisory_slips/${hashCode(code)}`), { sectionId, gradeLevel: section.gradeLevel, sectionLabel: label, schoolYear,
         status: 'issued', issuedBy: email, issuedAt: FieldValue.serverTimestamp() });
       tx.set(db.collection('audit_log').doc(), audit(email, 'school.slipIssued', sectionId, { gradeLevel: section.gradeLevel, replaced: open.size }));
       return { slip: { sectionId, sectionLabel: label, gradeLevel: section.gradeLevel, schoolYear, code } };
@@ -133,6 +136,8 @@ export async function redeemAdvisorySlip(deps, input) {
     ]);
     assertCanHold(rolesHeld(actor.assignments, mine.docs, actor.schoolYear), 'adviser');
     const prepared = await prepareGrant(db, tx, deps.uid, assignment);
+    // Already this section's adviser: refuse without consuming the slip.
+    if (prepared.exists) fail('already-exists', 'You are already the adviser of this section.');
     // Reads end here. The slip's issuer is recorded as who assigned the role.
     writeGrant(tx, prepared, { ...actor, email: slip.issuedBy }, user, assignment, 'slip');
     tx.update(ref, { status: 'redeemed', redeemedBy: deps.uid, redeemedAt: FieldValue.serverTimestamp() });
