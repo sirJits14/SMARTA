@@ -2,9 +2,11 @@ import { randomBytes } from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { enforceRateLimit, LIMITS } from '../callable.js';
-import { generateCode, hashCode } from '../lib/activationCode.js';
+import { generateCode, hashCode, normalizeCode, isValidCode } from '../lib/activationCode.js';
 import { sectionLabel } from '../lib/format.js';
 import { scopedGrades } from '../../shared/staffRoles.js';
+import { isDepedEmail } from '../../shared/schoolAccess.js';
+import { loadSchoolActor, liveUser, prepareGrant, writeGrant, inboxRef, auditRow, teacherOf, rolesHeld, assertCanHold } from './schoolAccess.js';
 
 // Advisory slips (spec 2026-10-19): one single-use code per section that makes
 // a verified DepEd account the section's Class Adviser without review.
@@ -89,4 +91,62 @@ export async function listAdvisoryStatus(deps) {
       adviser: account ? { name: account.displayName || account.email || '', email: account.email || '' } : null,
       slip: slip ? { issuedAt: slip.issuedAt?.toMillis?.() ?? null, issuedBy: slip.issuedBy || '' } : null };
   }) };
+}
+
+const GENERIC = 'That advisory slip could not be used. Ask the school to issue a new one.';
+const DEPED = 'Advisory slips need a DepEd email. Request the role instead.';
+
+// Only verified DepEd accounts may use a slip; this refusal describes the
+// caller's own account, so it is safe to say. Everything else is generic.
+async function slipCaller(deps, input) {
+  const code = normalizeCode(input.code);
+  if (!isValidCode(code)) fail('invalid-argument', GENERIC);
+  const user = await liveUser(deps.auth, deps.uid);
+  if (!isDepedEmail(user.email)) fail('permission-denied', DEPED);
+  await enforceRateLimit(deps.db, deps.uid, 'advisorySlip', LIMITS.advisorySlip, (deps.now || (() => new Date()))().getTime());
+  return { user, ref: deps.db.doc(`advisory_slips/${hashCode(code)}`) };
+}
+const usable = (slip, schoolYear, ended) => !ended && slip?.status === 'issued' && slip.schoolYear === schoolYear;
+
+export async function previewAdvisorySlip(deps, input) {
+  const { ref } = await slipCaller(deps, input);
+  const { schoolYear, ended } = await currentYear(deps.db);
+  const slip = (await ref.get()).data();
+  if (!usable(slip, schoolYear, ended)) fail('not-found', GENERIC);
+  return { sectionLabel: slip.sectionLabel, gradeLevel: slip.gradeLevel };
+}
+
+export async function redeemAdvisorySlip(deps, input) {
+  const { user, ref } = await slipCaller(deps, input);
+  const { db } = deps;
+  return db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const slip = (await tx.get(ref)).data();
+    if (!usable(slip, actor.schoolYear, actor.ended)) fail('not-found', GENERIC);
+    const section = (await tx.get(db.doc(`sections/${slip.sectionId}`))).data();
+    if (!section || section.schoolYear !== actor.schoolYear || section.gradeLevel !== slip.gradeLevel) fail('not-found', GENERIC);
+    const assignment = { role: 'adviser', schoolYear: actor.schoolYear, sectionId: slip.sectionId, gradeLevel: slip.gradeLevel };
+    const requests = db.collection('school_role_requests');
+    const [mine, forSection] = await Promise.all([
+      tx.get(requests.where('uid', '==', deps.uid).where('status', '==', 'pending')),
+      tx.get(requests.where('sectionId', '==', slip.sectionId).where('status', '==', 'pending')),
+    ]);
+    assertCanHold(rolesHeld(actor.assignments, mine.docs, actor.schoolYear), 'adviser');
+    const prepared = await prepareGrant(db, tx, deps.uid, assignment);
+    // Reads end here. The slip's issuer is recorded as who assigned the role.
+    writeGrant(tx, prepared, { ...actor, email: slip.issuedBy }, user, assignment, 'slip');
+    tx.update(ref, { status: 'redeemed', redeemedBy: deps.uid, redeemedAt: FieldValue.serverTimestamp() });
+    for (const request of forSection.docs) {
+      const r = request.data();
+      if (r.role !== 'adviser' || r.schoolYear !== actor.schoolYear) continue;
+      const own = r.uid === deps.uid;
+      tx.update(request.ref, { status: own ? 'fulfilled' : 'superseded', reason: own ? 'Assigned by advisory slip' : 'Section adviser assigned by slip',
+        reviewedAt: FieldValue.serverTimestamp() });
+      if (!own) tx.set(inboxRef(db, r.uid, `superseded:${request.id}`), { type: 'school_access', rejected: true,
+        title: 'School access request closed', body: `Another teacher became the adviser of ${slip.sectionLabel} with an advisory slip.`,
+        createdAt: FieldValue.serverTimestamp() });
+    }
+    tx.set(db.collection('audit_log').doc(), auditRow(actor, 'school.slipRedeemed', deps.uid, { ...assignment, issuedBy: slip.issuedBy, ...teacherOf(user) }));
+    return { sectionId: slip.sectionId, sectionLabel: slip.sectionLabel, gradeLevel: slip.gradeLevel };
+  });
 }

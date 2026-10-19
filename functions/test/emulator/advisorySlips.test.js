@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, clearAll, seedSchool } from './helpers.js';
-import { issueAdvisorySlips, revokeAdvisorySlip, listAdvisoryStatus } from '../../src/handlers/advisorySlips.js';
+import { issueAdvisorySlips, revokeAdvisorySlip, listAdvisoryStatus, previewAdvisorySlip, redeemAdvisorySlip } from '../../src/handlers/advisorySlips.js';
 import { endSchoolYear } from '../../src/handlers/schoolYear.js';
 import { hashCode, isValidCode } from '../../src/lib/activationCode.js';
+import { requestSchoolRole, assignSchoolRole, loadSchoolActor } from '../../src/handlers/schoolAccess.js';
 
 const year = '2026-2027';
 const now = () => new Date('2026-10-19T08:00:00+08:00');
@@ -79,5 +80,73 @@ describe('revoking and listing', () => {
     const result = await endSchoolYear({ db: db(), email: 'admin@school.test' }, { schoolYear: year, confirmText: year });
     expect(result.advisorySlipsRevoked).toBe(1);
     expect((await slips())[0]).toMatchObject({ status: 'revoked', revokedReason: 'school-year-ended' });
+  });
+});
+
+const teachers = {
+  t1: { uid: 't1', email: 't1@deped.gov.ph', emailVerified: true, displayName: 'Ana Cruz' },
+  t2: { uid: 't2', email: 't2@deped.gov.ph', emailVerified: true, displayName: 'Ben Dy' },
+  personal: { uid: 'personal', email: 'teacher@gmail.com', emailVerified: true },
+  admin: { uid: 'admin', email: 'admin@school.test', emailVerified: true },
+};
+const teacherAuth = { getUser: async uid => teachers[uid], getUserByEmail: async email => Object.values(teachers).find(u => u.email === email) };
+const tdeps = uid => ({ db: db(), auth: teacherAuth, now, uid, email: teachers[uid].email, displayName: teachers[uid].displayName || uid });
+const issue = async (sectionId = 'SEC1') => (await issueAdvisorySlips(deps('admin'), { sectionIds: [sectionId] })).issued[0].code;
+
+describe('redeeming advisory slips', () => {
+  beforeEach(async () => { await db().doc('users/admin@school.test').set({ uid: 'admin', role: 'admin' }); });
+  it('previews without consuming, then makes a DepEd teacher the adviser', async () => {
+    const code = await issue();
+    expect(await previewAdvisorySlip(tdeps('t1'), { code: code.toLowerCase() })).toEqual({ sectionLabel: 'Grade 7 – Rizal', gradeLevel: 7 });
+    expect(await redeemAdvisorySlip(tdeps('t1'), { code })).toEqual({ sectionId: 'SEC1', sectionLabel: 'Grade 7 – Rizal', gradeLevel: 7 });
+    expect((await loadSchoolActor(tdeps('t1'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1', source: 'slip', assignedBy: 'admin@school.test' }]);
+    expect((await db().doc(`school_adviser_locks/${year}_SEC1`).get()).data().uid).toBe('t1');
+    expect((await db().doc(`advisory_slips/${hashCode(code)}`).get()).data()).toMatchObject({ status: 'redeemed', redeemedBy: 't1' });
+    const audit = (await db().collection('audit_log').where('action', '==', 'school.slipRedeemed').get()).docs.map(d => d.data().details);
+    expect(audit).toEqual([expect.objectContaining({ sectionId: 'SEC1', issuedBy: 'admin@school.test', teacherEmail: 't1@deped.gov.ph' })]);
+  });
+  it('refuses personal emails with a message they can act on', async () => {
+    const code = await issue();
+    for (const fn of [previewAdvisorySlip, redeemAdvisorySlip]) {
+      await expect(fn(tdeps('personal'), { code })).rejects.toMatchObject({ code: 'permission-denied', message: 'Advisory slips need a DepEd email. Request the role instead.' });
+    }
+  });
+  it('works once, and never for revoked, other-year or ended-year slips', async () => {
+    const generic = { code: 'not-found', message: 'That advisory slip could not be used. Ask the school to issue a new one.' };
+    const used = await issue();
+    await redeemAdvisorySlip(tdeps('t1'), { code: used });
+    await expect(redeemAdvisorySlip(tdeps('t2'), { code: used })).rejects.toMatchObject(generic);
+    const revoked = await issue('SEC8');
+    await revokeAdvisorySlip(deps('admin'), { sectionId: 'SEC8' });
+    await expect(previewAdvisorySlip(tdeps('t2'), { code: revoked })).rejects.toMatchObject(generic);
+    const old = await issue('SEC8');
+    await db().doc(`advisory_slips/${hashCode(old)}`).update({ schoolYear: '2025-2026' });
+    await expect(redeemAdvisorySlip(tdeps('t2'), { code: old })).rejects.toMatchObject(generic);
+    await expect(redeemAdvisorySlip(tdeps('t2'), { code: 'BAD' })).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+  it('lets only one of two simultaneous redeemers win', async () => {
+    const code = await issue();
+    const results = await Promise.allSettled(['t1', 't2'].map(uid => redeemAdvisorySlip(tdeps(uid), { code })));
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    expect((await db().collection('school_adviser_locks').get()).size).toBe(1);
+  }, 30000);
+  it('refuses a section that gained an adviser after the slip was printed', async () => {
+    const code = await issue();
+    await assignSchoolRole({ db: db(), auth: teacherAuth, now, uid: 'admin', email: 'admin@school.test' }, { email: 't2@deped.gov.ph', role: 'adviser', sectionId: 'SEC1' });
+    await expect(redeemAdvisorySlip(tdeps('t1'), { code })).rejects.toMatchObject({ code: 'already-exists' });
+  });
+  it('refuses a teacher who is already a Subject Teacher this year', async () => {
+    await requestSchoolRole(tdeps('t1'), { role: 'subject_teacher', gradeLevels: [8] });
+    const code = await issue();
+    await expect(redeemAdvisorySlip(tdeps('t1'), { code })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('closes pending adviser requests for the section', async () => {
+    const mine = await requestSchoolRole(tdeps('t1'), { role: 'adviser', sectionId: 'SEC1' });
+    const theirs = await requestSchoolRole(tdeps('personal'), { role: 'adviser', sectionId: 'SEC1' });
+    await redeemAdvisorySlip(tdeps('t1'), { code: await issue() });
+    expect((await db().doc(`school_role_requests/${mine.id}`).get()).data().status).toBe('fulfilled');
+    expect((await db().doc(`school_role_requests/${theirs.id}`).get()).data()).toMatchObject({ status: 'superseded', reason: 'Section adviser assigned by slip' });
+    const inbox = (await db().collection('guardians/personal/inbox').get()).docs.map(d => d.data());
+    expect(inbox).toEqual([expect.objectContaining({ type: 'school_access', rejected: true, title: 'School access request closed' })]);
   });
 });
