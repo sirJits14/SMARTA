@@ -46,4 +46,13 @@ describe('migrateSubjectTeachers', () => {
       { uid: 't4', email: 't4@deped.gov.ph', displayName: 'Cy' },
       { uid: 't5', email: 't5@gmail.com', displayName: 'Di' }]);
   });
+  it('reports a conflicting account that has no email and no pending request, without throwing', async () => {
+    await db().doc('school_accounts/t6').set({ assignments: [
+      { role: 'adviser', schoolYear: year, sectionId: 'SEC1', gradeLevel: 7 },
+      { role: 'subject_teacher', schoolYear: year, gradeLevel: 8 }] });
+    const { conflicts } = await migrateSubjectTeachers(deps('admin', 'admin@school.test'));
+    expect(conflicts).toEqual([
+      { uid: 't2', email: 't2@deped.gov.ph', displayName: 'Ben' },
+      { uid: 't6', email: '', displayName: '' }]);
+  });
 });

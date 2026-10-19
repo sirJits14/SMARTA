@@ -57,7 +57,7 @@ export async function migrateSubjectTeachers(deps) {
     const requests = requestsByUid.get(uid) || [];
     const roles = rolesHeld(account?.assignments || [], requests, actor.schoolYear);
     if (!(roles.includes('adviser') && conflictingRole(roles, 'adviser'))) continue;
-    const source = account?.data?.email ? account.data : requests[0].data();
+    const source = account?.data?.email ? account.data : (requests[0]?.data() || account?.data || {});
     conflicts.push({ uid, email: source.email || '', displayName: source.displayName || account?.data?.displayName || '' });
   }
   const result = { accountsChanged, requestsChanged, conflicts };
