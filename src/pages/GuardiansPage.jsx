@@ -15,7 +15,7 @@ const LinksTab = lazy(() => import('./guardians/LinksTab.jsx'));
 const ScanLogTab = lazy(() => import('./guardians/ScanLogTab.jsx'));
 const AuditTab = lazy(() => import('./guardians/AuditTab.jsx'));
 const PortalSettingsTab = lazy(() => import('./guardians/PortalSettingsTab.jsx'));
-const SchoolAccessTab = lazy(() => import('./guardians/SchoolAccessTab.jsx'));
+const SchoolAccessTab = lazy(() => import('./guardians/school/SchoolAccessTab.jsx'));
 
 const TabFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>

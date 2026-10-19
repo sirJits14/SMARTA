@@ -16,7 +16,7 @@ export function inboxDestination(item) {
   if (item.type === 'attendance_correction') return `${path}?${new URLSearchParams({ date: item.date || '', session: item.session || '' })}`;
   return item.type === 'attendance' ? `${path}?event=${encodeURIComponent(item.eventId || '')}` : null;
 }
-export const schoolError = (error) => /(?:permission-denied|failed-precondition|already-exists|aborted|invalid-argument|not-found)$/.test(error?.code || '') && error.message
+export const schoolError = (error) => /(?:permission-denied|failed-precondition|already-exists|aborted|invalid-argument|not-found|resource-exhausted)$/.test(error?.code || '') && error.message
   ? error.message : 'Could not complete this action. Check your connection and try again.';
 export const sectionLabel = (section) => section ? `Grade ${section.gradeLevel} · ${section.name || section.sectionName || section.label || section.id}` : 'Section unavailable';
 export const sessionAction = (session) => session?.overrideActive ? 'restore' : session?.absent ? null : 'absent';
