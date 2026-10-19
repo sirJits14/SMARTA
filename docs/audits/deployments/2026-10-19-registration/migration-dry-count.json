@@ -1,0 +1,14 @@
+{
+  "year": "2026-2027",
+  "schoolAccounts": 47,
+  "roleCounts": {
+    "adviser": 47
+  },
+  "subjectTeacherSectionRows": 0,
+  "accountsWithSectionRows": 0,
+  "subjectTeacherGradeRows": 0,
+  "accountsHoldingAdviserAndSubjectTeacher": 0,
+  "pendingRequestsByRole": {},
+  "pendingSectionSubjectRequests": 0,
+  "advisorySlipsExisting": 0
+}
