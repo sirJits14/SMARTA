@@ -5,6 +5,7 @@ const ROUTES = [
   ['verify', /^\/verify$/],
   ['consent', /^\/consent$/],
   ['activate', /^\/activate$/],
+  ['join', /^\/join$/],
   ['learner', /^\/learner\/([^/]+)$/, ['id']],
   ['inbox', /^\/inbox$/],
   ['announcements', /^\/announcements$/],
