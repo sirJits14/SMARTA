@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canReviewSection, canCorrectSession, canApproveRoleRequest, isFamilyLink, assignmentKey } from './schoolAccess.js';
+import { canReviewSection, canCorrectSession, canApproveRoleRequest, isFamilyLink, assignmentKey, isDepedEmail, REQUESTABLE_ROLES } from './schoolAccess.js';
 
 const year = '2026-2027';
 const section = { id: 'S7', schoolYear: year, gradeLevel: 7 };
@@ -27,10 +27,19 @@ describe('school access boundaries', () => {
     for (const patch of [{ uid: 'actor' }, { schoolYear: '2025-2026' }, { status: 'approved' }]) {
       expect(canApproveRoleRequest(admin, { ...request, ...patch })).toBe(false);
     }
-    // A DepEd requester inside the Curriculum Adviser's grade still needs an administrator.
-    for (const role of ['curriculum_adviser', 'adviser', 'subject_teacher']) {
-      expect(canApproveRoleRequest(actor(role), request)).toBe(false);
+    // Curriculum Advisers approve adviser requests from verified DepEd accounts in their own grades only.
+    expect(canApproveRoleRequest(actor('curriculum_adviser'), request)).toBe(true);
+    for (const patch of [{ email: 'teacher@gmail.com' }, { emailVerified: false }, { gradeLevel: 8 }, { role: 'subject_teacher' }, { uid: 'actor' }]) {
+      expect(canApproveRoleRequest(actor('curriculum_adviser'), { ...request, ...patch })).toBe(false);
     }
+    for (const role of ['adviser', 'subject_teacher']) expect(canApproveRoleRequest(actor(role), request)).toBe(false);
+    expect(canApproveRoleRequest(actor('curriculum_adviser', { schoolYear: '2027-2028' }), request)).toBe(false);
+  });
+  it('recognises DepEd accounts and requestable roles', () => {
+    expect(isDepedEmail(' Ana@DepEd.gov.ph ')).toBe(true);
+    expect(isDepedEmail('ana@deped.gov.ph.evil.com')).toBe(false);
+    expect(isDepedEmail(undefined)).toBe(false);
+    expect(REQUESTABLE_ROLES).toEqual(['adviser', 'subject_teacher']);
   });
   it('keeps legacy adviser links outside family authorization', () => {
     expect(isFamilyLink({ status: 'active', relationship: 'Mother' })).toBe(true);
