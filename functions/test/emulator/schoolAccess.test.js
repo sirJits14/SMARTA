@@ -9,6 +9,7 @@ const users = {
   personal: { uid: 'personal', email: 'teacher@gmail.com', emailVerified: true },
   curriculum: { uid: 'curriculum', email: 'ca@deped.gov.ph', emailVerified: true },
   admin: { uid: 'admin', email: 'admin@school.test', emailVerified: true },
+  gone: { uid: 'gone', email: 'gone@deped.gov.ph', emailVerified: true, disabled: true },
 };
 const auth = { getUser: async uid => users[uid], getUserByEmail: async email => Object.values(users).find(u => u.email === email) };
 const deps = uid => ({ db: db(), auth, now, uid, email: users[uid].email, displayName: users[uid].displayName || uid, authTime: 1792195200 });
@@ -56,6 +57,14 @@ describe('school request lifecycle', () => {
     const inbox = (await db().collection('guardians/teacher/inbox').get()).docs.map(d => d.data());
     expect(inbox).toEqual([expect.objectContaining({ type: 'school_access', rejected: true, body: 'Reason: Not your section this year' })]);
     expect((await db().doc(`school_role_requests/${r.id}`).get()).data().status).toBe('rejected');
+  });
+  it('lets a rejection through when the requester account is disabled, but not an approval', async () => {
+    const r = await seedRequest('gone', 'adviser', 'SEC1');
+    await expect(resolveSchoolRole(deps('admin'), { requestId: r.id, approve: true })).rejects.toMatchObject({ code: 'failed-precondition' });
+    await resolveSchoolRole(deps('admin'), { requestId: r.id, approve: false, reason: 'Account no longer active' });
+    expect((await db().doc(`school_role_requests/${r.id}`).get()).data().status).toBe('rejected');
+    const inbox = (await db().collection('guardians/gone/inbox').get()).docs.map(d => d.data());
+    expect(inbox).toEqual([expect.objectContaining({ type: 'school_access', rejected: true })]);
   });
   it('stamps direct and legacy assignments with who and how', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1', source: 'legacy' });

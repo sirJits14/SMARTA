@@ -147,27 +147,29 @@ export async function resolveSchoolRole(deps, input) {
   const ref = deps.db.doc(`school_role_requests/${input.requestId}`);
   const first = (await ref.get()).data();
   if (!first) fail('not-found', 'Request not found.');
-  const user = await liveUser(deps.auth, first.uid);
+  // A rejection never needs the requester's live account, so a disabled or deleted teacher can still be turned down.
+  const user = input.approve ? await liveUser(deps.auth, first.uid) : null;
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
     if (actor.ended) fail('failed-precondition', 'This school year has ended.');
     const request = (await tx.get(ref)).data();
-    if (!request || request.uid !== user.uid || request.email !== user.email.toLowerCase()) fail('failed-precondition', 'The requesting account changed. Ask the teacher to submit a new request.');
-    // Live Auth verification is authoritative, never a caller-supplied field.
-    if (!canApproveRoleRequest(actor, { ...request, email: user.email, emailVerified: user.emailVerified })) fail('permission-denied', 'You cannot review this request.');
+    if (!request) fail('not-found', 'Request not found.');
+    if (user && (request.uid !== user.uid || request.email !== user.email.toLowerCase())) fail('failed-precondition', 'The requesting account changed. Ask the teacher to submit a new request.');
+    // For approvals, live Auth verification is authoritative, never a caller-supplied field.
+    if (!canApproveRoleRequest(actor, user ? { ...request, email: user.email, emailVerified: user.emailVerified } : request)) fail('permission-denied', 'You cannot review this request.');
     let scope = { role: request.role, sectionId: request.sectionId || '', gradeLevel: request.gradeLevel };
-    if (input.approve) {
+    if (user) {
       const assignment = await assignmentFrom(deps, tx, actor, request);
       if (assignment.gradeLevel !== request.gradeLevel) fail('failed-precondition', 'The section changed grades. Ask for a new request.');
       writeGrant(tx, await prepareGrant(deps.db, tx, user.uid, assignment), actor, user, assignment, 'request');
       scope = assignment;
     } else {
-      tx.set(inboxRef(deps.db, user.uid, `rejected:${ref.id}`), { type: 'school_access', rejected: true,
+      tx.set(inboxRef(deps.db, request.uid, `rejected:${ref.id}`), { type: 'school_access', rejected: true,
         title: 'School access request not approved', body: `Reason: ${reason}`, createdAt: FieldValue.serverTimestamp() });
     }
     tx.update(ref, { status: input.approve ? 'approved' : 'rejected', reviewedBy: actor.uid, reviewedAt: FieldValue.serverTimestamp(), reason });
-    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, input.approve ? 'school.requestApproved' : 'school.requestRejected', user.uid,
-      { requestId: ref.id, reason, ...scope, ...teacherOf(user) }));
+    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, input.approve ? 'school.requestApproved' : 'school.requestRejected', request.uid,
+      { requestId: ref.id, reason, ...scope, ...teacherOf(user || request) }));
     return { ok: true };
   });
 }
