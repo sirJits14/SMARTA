@@ -37,3 +37,15 @@ export function issuedText({ issued = [], skipped = [] }) {
   }
   return parts.join(' ');
 }
+
+// The slip sheets and the ID-card sheets must never share the DOM, or one
+// printout would carry the other's content (live one-time codes).
+export const showAdvisoryPanel = (advisorySlips, detailSection) => !!advisorySlips && !detailSection;
+
+// After a revoke, the open panel must stop showing and printing that code.
+// Returns null when nothing is left to print.
+export function withoutRevokedSlip(result, sectionId) {
+  if (!result) return null;
+  const issued = result.issued.filter((slip) => slip.sectionId !== sectionId);
+  return issued.length ? { ...result, issued } : null;
+}

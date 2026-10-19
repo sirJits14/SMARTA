@@ -19,7 +19,7 @@ import GradePills from '../components/GradePills.jsx';
 import { isAdmin, grades, singleGrade, scopeRoster, canEditSection, sectionEditSchoolYears, canIssueAdvisorySlip } from '../lib/access.js';
 import { useAdvisoryStatus } from '../hooks/useAdvisoryStatus.js';
 import { issueAdvisorySlips, revokeAdvisorySlip } from '../data/advisorySlips.js';
-import { adviserStatusText, slipCandidates, slipConfirmMessage } from '../lib/advisoryStatus.js';
+import { adviserStatusText, slipCandidates, slipConfirmMessage, showAdvisoryPanel, withoutRevokedSlip } from '../lib/advisoryStatus.js';
 import AdvisorySlipsPanel from './sections/AdvisorySlipsPanel.jsx';
 
 export function SectionForm({ editing, schoolYear, schedules, onClose, restricted = false }) {
@@ -148,8 +148,10 @@ export default function SectionsPage({ me, schoolYear }) {
   const runSlips = async ({ kind, sections: targets }) => {
     setSlipError('');
     try {
-      if (kind === 'revoke') await revokeAdvisorySlip({ sectionId: targets[0].id });
-      else setAdvisorySlips(await issueAdvisorySlips({ sectionIds: targets.map((s) => s.id) }));
+      if (kind === 'revoke') {
+        await revokeAdvisorySlip({ sectionId: targets[0].id });
+        setAdvisorySlips((current) => withoutRevokedSlip(current, targets[0].id));
+      } else setAdvisorySlips(await issueAdvisorySlips({ sectionIds: targets.map((s) => s.id) }));
     } catch (e) { setSlipError(e.message || 'Could not update advisory slips.'); }
     finally { setSlipConfirm(null); advisory.reload(); }
   };
@@ -192,7 +194,7 @@ export default function SectionsPage({ me, schoolYear }) {
   return (
     <EditorResources resources={resources}><div>
       <ResourceState resources={resources}>
-      {advisorySlips && <AdvisorySlipsPanel result={advisorySlips} onClose={() => setAdvisorySlips(null)} />}
+      {showAdvisoryPanel(advisorySlips, detailSection) && <AdvisorySlipsPanel result={advisorySlips} onClose={() => setAdvisorySlips(null)} />}
       <div className="sections-page-chrome">
         <div className="sims-heading" style={S.plate}>
           <h1 style={S.h1}>{oneGrade ? `Grade ${oneGrade} Sections` : 'Sections'}</h1>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adviserStatusText, slipCandidates, slipConfirmMessage, issuedText } from './advisoryStatus.js';
+import { adviserStatusText, slipCandidates, slipConfirmMessage, issuedText, showAdvisoryPanel, withoutRevokedSlip } from './advisoryStatus.js';
 
 const s7 = { id: 'A', gradeLevel: 7, name: 'Rizal' };
 const s8 = { id: 'B', gradeLevel: 8, name: 'Mabini' };
@@ -27,5 +27,21 @@ describe('advisory status', () => {
   it('summarises an issue run', () => {
     expect(issuedText({ issued: [{}, {}], skipped: [{ sectionId: 'A', reason: 'has-adviser' }] })).toBe('2 slips ready. 1 section skipped because it already has an adviser.');
     expect(issuedText({ issued: [{}], skipped: [] })).toBe('1 slip ready.');
+  });
+});
+
+describe('advisory panel and ID cards stay out of each other\'s printouts', () => {
+  it('shows the slip panel only while no section detail is open', () => {
+    const result = { issued: [{ sectionId: 'A', code: 'ABCD2345' }], skipped: [] };
+    expect(showAdvisoryPanel(result, null)).toBe(true);
+    expect(showAdvisoryPanel(result, s7)).toBe(false);
+    expect(showAdvisoryPanel(null, null)).toBe(false);
+  });
+  it('drops a revoked section from the open panel and closes it when empty', () => {
+    const result = { issued: [{ sectionId: 'A', code: 'AAAA2222' }, { sectionId: 'B', code: 'BBBB3333' }], skipped: [{ sectionId: 'C', reason: 'has-adviser' }] };
+    expect(withoutRevokedSlip(result, 'A')).toEqual({ issued: [{ sectionId: 'B', code: 'BBBB3333' }], skipped: [{ sectionId: 'C', reason: 'has-adviser' }] });
+    expect(withoutRevokedSlip(result, 'Z')).toEqual(result);
+    expect(withoutRevokedSlip({ issued: [{ sectionId: 'A' }], skipped: [] }, 'A')).toBeNull();
+    expect(withoutRevokedSlip(null, 'A')).toBeNull();
   });
 });
