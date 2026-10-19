@@ -57,6 +57,18 @@ describe('authorized portal announcements', () => {
     await staff.update({ sessionValidAfter: 2 });
     await expect(savePortalAnnouncement({ ...deps(), authTime: 1 }, { form })).rejects.toMatchObject({ code: 'unauthenticated' });
   });
+  it('shows a grade-level Subject Teacher the notices for their grade, not other grades', async () => {
+    await db().doc('school_accounts/gA').set({ assignments: [{ role: 'subject_teacher', schoolYear: '2026-2027', gradeLevel: 7 }] });
+    await db().doc('sections/SEC8').set({ name: 'Eight', gradeLevel: 8, schoolYear: '2026-2027' });
+    await db().doc('announcements/g7').set(post({ audience: { roles: ['subject_teacher'], grades: [7] } }));
+    await db().doc('announcements/sec').set(post({ audience: { roles: ['subject_teacher'], grades: [7], sectionIds: ['SEC1'] } }));
+    await db().doc('announcements/g8').set(post({ audience: { roles: ['subject_teacher'], grades: [8] }, audienceKeys: ['g8'] }));
+    await db().doc('announcements/sec8').set(post({ audience: { roles: ['subject_teacher'], grades: [8], sectionIds: ['SEC8'] }, audienceKeys: ['g8'] }));
+    expect((await getPortalAnnouncements(deps(), { view: 'school' })).rows.map(p => p.id).sort()).toEqual(['g7', 'sec']);
+    expect((await getPortalAnnouncement(deps(), { id: 'g7', view: 'school' })).post.id).toBe('g7');
+    await expect(getPortalAnnouncement(deps(), { id: 'g8', view: 'school' })).rejects.toMatchObject({ code: 'not-found' });
+    expect((await getPortalAnnouncements(deps(), { view: 'family' })).rows).toHaveLength(0);
+  });
   it('stops school matching after year end or section grade changes', async () => {
     await db().doc('school_accounts/gA').set({ assignments: [{ role: 'adviser', schoolYear: '2026-2027', sectionId: 'SEC1', gradeLevel: 7 }] });
     await db().doc('announcements/a').set(post({ audience: { roles: ['adviser'], grades: [7] } }));

@@ -149,6 +149,24 @@ describe('sendAnnouncementPush', () => {
   });
 });
 
+describe('sendAnnouncementPush to grade-level Subject Teachers', () => {
+  it('pushes a Subject Teacher notice to the grade-level teacher only', async () => {
+    await db().doc('guardians/gT').set({ email: 't@x', notificationsEnabled: true });
+    await db().doc('guardians/gT/devices/tT1').set({ token: 'tokT1', enabled: true, failureCount: 0 });
+    await db().doc('school_accounts/gT').set({ assignments: [{ role: 'subject_teacher', schoolYear: '2026-2027', gradeLevel: 7 }] });
+    const m = fakeMessaging();
+    await write('st1', post({ audience: { roles: ['subject_teacher'], grades: [7] }, audienceKeys: ['g7'] }));
+    const r = await sendAnnouncementPush(deps(m), 'st1');
+    expect(r.status).toBe('sent');
+    expect(m.sent.flatMap((x) => x.tokens)).toEqual(['tokT1']);
+    await db().doc('school_accounts/gT').update({ assignments: [{ role: 'subject_teacher', schoolYear: '2026-2027', gradeLevel: 8 }] });
+    await write('st2', post({ audience: { roles: ['subject_teacher'], grades: [7] }, audienceKeys: ['g7'] }));
+    const m2 = fakeMessaging();
+    await sendAnnouncementPush(deps(m2), 'st2');
+    expect(m2.sent.flatMap((x) => x.tokens)).toEqual([]);
+  });
+});
+
 describe('handleAnnouncementWrite', () => {
   it('pushes exactly once, even when the trigger is delivered again', async () => {
     const m = fakeMessaging();
@@ -294,6 +312,12 @@ describe('announcementAudienceCount', () => {
   it('counts guardians whose keys overlap', async () => {
     expect(await announcementAudienceCount({ db: db(), profile: admin }, { audienceKeys: ['all'] })).toEqual({ count: 4 });
     expect(await announcementAudienceCount({ db: db(), profile: jhs }, { audienceKeys: ['g7'] })).toEqual({ count: 3 });
+  });
+  it('counts a grade-level Subject Teacher in a role-targeted audience', async () => {
+    await db().doc('guardians/gT').set({ email: 't@x', notificationsEnabled: true });
+    await db().doc('school_accounts/gT').set({ assignments: [{ role: 'subject_teacher', schoolYear: '2026-2027', gradeLevel: 7 }] });
+    expect(await announcementAudienceCount({ db: db(), profile: admin }, { audience: { roles: ['subject_teacher'], grades: [7] } })).toEqual({ count: 1 });
+    expect(await announcementAudienceCount({ db: db(), profile: admin }, { audience: { roles: ['subject_teacher'], grades: [8] } })).toEqual({ count: 0 });
   });
   it('refuses audiences outside the caller\'s scope and malformed keys', async () => {
     await expect(announcementAudienceCount({ db: db(), profile: jhs }, { audienceKeys: ['all'] })).rejects.toMatchObject({ code: 'permission-denied' });
