@@ -240,6 +240,7 @@ const S = {
   schoolAccessRole: 'Responsibility',
   schoolAccessSection: 'Section',
   schoolAccessChooseSection: 'Choose section',
+  schoolAccessGrade: 'Grade',
   schoolAccessSubmit: 'Send request',
   schoolAccessSent: 'Request sent. You get an inbox note when it is reviewed.',
   schoolAccessMine: 'My requests',

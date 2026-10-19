@@ -40,7 +40,7 @@ describe('strings', () => {
   });
   it('has the school access request strings', () => {
     for (const k of ['schoolAccessTitle', 'schoolAccessRow', 'schoolAccessRowHint', 'schoolAccessIntro', 'schoolAccessRole', 'schoolAccessSection',
-      'schoolAccessChooseSection', 'schoolAccessSubmit', 'schoolAccessSent', 'schoolAccessMine', 'schoolAccessNone', 'schoolAccessWithdraw',
+      'schoolAccessChooseSection', 'schoolAccessGrade', 'schoolAccessSubmit', 'schoolAccessSent', 'schoolAccessMine', 'schoolAccessNone', 'schoolAccessWithdraw',
       'schoolAccessWithdrawn', 'schoolAccessEnded', 'requestPending', 'requestApproved', 'requestRejected', 'requestWithdrawn',
       'schoolRequestsTitle', 'schoolRequestsIntro', 'schoolRequestsEmpty', 'schoolRequestsApprove', 'schoolRequestsReject',
       'schoolRequestsReason', 'schoolRequestsConfirmReject', 'schoolRequestsCancel', 'schoolRequestsNeedsAdmin',

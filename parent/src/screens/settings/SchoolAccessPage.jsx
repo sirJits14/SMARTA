@@ -34,7 +34,7 @@ export default function SchoolAccessPage({ ctx, back }) {
                 {REQUESTABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</Sel></Field>
               <Field label={S.schoolAccessSection}><Sel required value={form.sectionId} disabled={busy} onChange={(e) => setForm({ ...form, sectionId: e.target.value })}>
                 <option value="">{S.schoolAccessChooseSection}</option>
-                {sectionsByGrade(sections).map((g) => <optgroup key={g.grade} label={`Grade ${g.grade}`}>
+                {sectionsByGrade(sections).map((g) => <optgroup key={g.grade} label={`${S.schoolAccessGrade} ${g.grade}`}>
                   {g.sections.map((s) => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}</optgroup>)}</Sel></Field>
               <Btn type="submit" disabled={busy || !form.sectionId}>{S.schoolAccessSubmit}</Btn>
             </form>
