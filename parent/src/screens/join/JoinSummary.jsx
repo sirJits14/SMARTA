@@ -10,13 +10,13 @@ const line = (role, result) => {
   if (result.outcome === 'pending') return `${title} · ${S.summaryPending}`;
   if (role === 'family') return `${S.summaryLinked} ${nameCase(result.detail)}`;
   if (role === 'adviser') return `${S.summaryAdviser} ${result.detail}`;
-  return `${S.summarySubject} ${result.detail}`;
+  return `${result.detail.includes(',') ? S.summarySubject : S.summarySubjectOne} ${result.detail}`;
 };
 
 export default function JoinSummary({ steps, results, onRetry, onOpen }) {
   return (
     <Card>
-      <h1 style={{ fontSize: 20, marginTop: 0 }}>{S.summaryTitle}</h1>
+      <h1 style={{ fontSize: 20, marginTop: 0 }}>{steps.some((role) => results[role]) ? S.summaryTitle : S.summaryTitleNone}</h1>
       <ul style={{ listStyle: 'none', margin: '0 0 16px', padding: 0 }}>
         {steps.map((role) => {
           const result = results[role];

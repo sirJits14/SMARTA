@@ -63,7 +63,7 @@ export default function AdviserStep({ user, school, query, label, onDone, onSkip
 
   return (
     <Card>
-      <StepHeader label={label} title={S.adviserRequestTitle}>{deped ? S.adviserRequestBody : `${S.joinNeedsApprovalNote} ${S.adviserRequestBody}`}</StepHeader>
+      <StepHeader label={label} title={S.adviserRequestTitle}>{S.adviserRequestBody}</StepHeader>
       {err && <Banner tone="danger">{err.text}</Banner>}
       <Field label={S.schoolAccessSection}><Sel required value={sectionId} disabled={busy} onChange={(e) => setSectionId(e.target.value)}>
         <option value="">{S.schoolAccessChooseSection}</option>

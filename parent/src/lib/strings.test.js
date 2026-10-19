@@ -44,7 +44,7 @@ describe('strings', () => {
       'schoolAccessWithdrawn', 'schoolAccessEnded', 'requestPending', 'requestApproved', 'requestRejected', 'requestWithdrawn',
       'schoolRequestsTitle', 'schoolRequestsIntro', 'schoolRequestsEmpty', 'schoolRequestsApprove', 'schoolRequestsReject',
       'schoolRequestsReason', 'schoolRequestsConfirmReject', 'schoolRequestsCancel', 'schoolRequestsNeedsAdmin',
-      'schoolRequestsApproved', 'schoolRequestsRejected'])
+      'schoolRequestsApproved', 'schoolRequestsRejected', 'announcementsEmptySchool'])
       expect(typeof S[k], k).toBe('string');
   });
   it('has the join strings', () => {
@@ -53,7 +53,7 @@ describe('strings', () => {
       'joinStepOf', 'joinOf', 'joinPreparing', 'joinPrepareFailed', 'joinSkipStep', 'adviserSlipTitle', 'adviserSlipBody', 'adviserScan', 'adviserScanTitle',
       'adviserCodeLabel', 'adviserCheck', 'adviserConfirmTitle', 'adviserConfirm', 'adviserNotMine', 'adviserNoSlip', 'adviserUseSlip', 'adviserRequestTitle',
       'adviserRequestBody', 'adviserWrongKind', 'familyWrongKind', 'adviserRequestInstead', 'subjectTitle', 'subjectBody', 'subjectBodyApproval', 'subjectSubmit',
-      'summaryTitle', 'summaryLinked', 'summaryAdviser', 'summarySubject', 'summaryPending', 'summaryRetry', 'summaryContinue', 'summarySkipped',
+      'summaryTitle', 'summaryTitleNone', 'summarySubjectOne', 'summaryLinked', 'summaryAdviser', 'summarySubject', 'summaryPending', 'summaryRetry', 'summaryContinue', 'summarySkipped',
       'addRoleRow', 'addRoleRowHint', 'schoolRequestsRow', 'requestFulfilled', 'requestSuperseded'])
       expect(typeof S[k], k).toBe('string');
   });
