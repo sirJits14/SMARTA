@@ -26,9 +26,13 @@ replaceOnce('    match /access_requests/{id}', current.slice(denyStart, denyEnd)
 rules = rules.replace('// Staff write directly; Functions own pushedAt/pushResult and the\n    // scheduled→published→expired moves. Guardians read only published posts\n    // whose audienceKeys overlap guardians/{uid}.audienceKeys (server-written).', '// Functions authorize portal reads/writes against live family and school access.\n    // Legacy staff writes remain supported for non-role-targeted posts.');
 writeFileSync(resolve(dir, 'firestore.school-family.rules'), rules);
 
-// Preserve all existing production indexes and add only this feature's three.
+// Preserve all existing production indexes and add only this feature's three,
+// plus the School access History index (kept last in the root file).
 const before = JSON.parse(read(resolve(dir, 'firestore.indexes.before.json')));
-const additions = JSON.parse(read('firestore.indexes.json')).indexes.slice(0, 3);
+const rootIndexes = JSON.parse(read('firestore.indexes.json')).indexes;
+const history = rootIndexes.filter(item => item.collectionGroup === 'audit_log');
+if (history.length !== 1 || rootIndexes.at(-1) !== history[0]) throw new Error('Expected one audit_log index, last in firestore.indexes.json');
+const additions = [...rootIndexes.slice(0, 3), ...history];
 const indexes = [...before.indexes];
 for (const item of additions) {
   if (!indexes.some(old => JSON.stringify(old) === JSON.stringify(item))) indexes.push(item);
