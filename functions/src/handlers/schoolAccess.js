@@ -172,6 +172,54 @@ export async function resolveSchoolRole(deps, input) {
   });
 }
 
+// One transaction moves the section from the current adviser to the requester,
+// so the section is never without an adviser and never has two.
+export async function replaceAdviser(deps, input) {
+  if (!id(input.requestId)) fail('invalid-argument', 'Choose a request.');
+  const reason = reasonValue(input.reason);
+  const ref = deps.db.doc(`school_role_requests/${input.requestId}`);
+  const first = (await ref.get()).data();
+  if (!first) fail('not-found', 'Request not found.');
+  const user = await liveUser(deps.auth, first.uid);
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    if (!actor.isAdmin) fail('permission-denied', 'Administrators only.');
+    const request = (await tx.get(ref)).data();
+    if (!request || request.uid !== user.uid || request.email !== user.email.toLowerCase()) fail('failed-precondition', 'The requesting account changed. Ask the teacher to submit a new request.');
+    if (!canApproveRoleRequest(actor, { ...request, email: user.email, emailVerified: user.emailVerified })) fail('permission-denied', 'You cannot review this request.');
+    if (request.role !== 'adviser') fail('failed-precondition', 'Only adviser requests can replace an adviser.');
+    const assignment = await assignmentFrom(deps, tx, actor, request);
+    if (assignment.gradeLevel !== request.gradeLevel) fail('failed-precondition', 'The section changed grades. Ask for a new request.');
+    const lock = lockRef(deps.db, assignment);
+    const holder = (await tx.get(lock)).data();
+    if (!holder || holder.uid === user.uid) fail('failed-precondition', 'This section has no other adviser. Approve the request instead.');
+    const previousRef = deps.db.doc(`school_accounts/${holder.uid}`);
+    const accountRef = deps.db.doc(`school_accounts/${user.uid}`);
+    const [previous, account] = await Promise.all([tx.get(previousRef), tx.get(accountRef)]);
+    const key = assignmentKey(assignment);
+    if (previous.exists) tx.update(previousRef, { assignments: (previous.data().assignments || []).filter(a => assignmentKey(a) !== key), updatedAt: FieldValue.serverTimestamp() });
+    const assignments = account.data()?.assignments || [];
+    writeGrant(tx, { accountRef, lock, assignments, exists: assignments.some(a => assignmentKey(a) === key) }, actor, user, assignment, 'replace');
+    tx.update(ref, { status: 'approved', reviewedBy: actor.uid, reviewedAt: FieldValue.serverTimestamp(), reason });
+    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.replaced', user.uid, { requestId: ref.id, reason, ...assignment,
+      previousUid: holder.uid, previousEmail: previous.data()?.email || '', ...teacherOf(user) }));
+    return { ok: true };
+  });
+}
+
+// Requests run one by one so a section conflict fails only its own request.
+export async function resolveSchoolRoles(deps, input) {
+  const ids = Array.isArray(input.requestIds) ? [...new Set(input.requestIds)] : [];
+  if (!ids.length || ids.length > 25 || !ids.every(value => id(value))) fail('invalid-argument', 'Choose 1–25 requests.');
+  if (!(await loadSchoolActor(deps)).isAdmin) fail('permission-denied', 'Administrators only.');
+  const results = [];
+  for (const requestId of ids) {
+    try { await resolveSchoolRole(deps, { requestId, approve: true, reason: input.reason }); results.push({ id: requestId, ok: true }); }
+    catch (e) { results.push({ id: requestId, ok: false, error: e instanceof CallableError ? e.message : 'Could not approve this request. Try again.' }); }
+  }
+  return { results };
+}
+
 export async function assignSchoolRole(deps, input) {
   const actor = await loadSchoolActor(deps);
   if (!actor.isAdmin) fail('permission-denied', 'Administrators only.');

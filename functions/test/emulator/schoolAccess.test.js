@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, clearAll, seedSchool } from './helpers.js';
-import { requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, assignSchoolRole, revokeSchoolRole, getSchoolContext, loadSchoolActor, deleteSchoolAccess } from '../../src/handlers/schoolAccess.js';
+import { requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, getSchoolContext, loadSchoolActor, deleteSchoolAccess } from '../../src/handlers/schoolAccess.js';
 
 const year = '2026-2027';
 const now = () => new Date('2026-10-17T08:00:00+08:00');
@@ -136,5 +136,39 @@ describe('teacher requests', () => {
     await withdrawSchoolRequest(deps('teacher'), { requestId: id });
     expect((await db().doc(`school_role_requests/${id}`).get()).data().status).toBe('withdrawn');
     await expect(withdrawSchoolRequest(deps('teacher'), { requestId: id })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+});
+
+describe('replacing and bulk approval', () => {
+  it('replaces the current adviser in one audited step, administrators only', async () => {
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
+    const { id } = await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' });
+    await expect(resolveSchoolRole(deps('admin'), { requestId: id, approve: true })).rejects.toMatchObject({ code: 'already-exists' });
+    await expect(replaceAdviser(deps('curriculum'), { requestId: id, reason: 'Moved' })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(replaceAdviser(deps('admin'), { requestId: id })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await replaceAdviser(deps('admin'), { requestId: id, reason: 'Teacher moved to Grade 8' });
+    expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
+    expect((await loadSchoolActor(deps('personal'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1', source: 'replace' }]);
+    expect((await db().doc('school_adviser_locks/2026-2027_SEC1').get()).data().uid).toBe('personal');
+    expect((await db().doc(`school_role_requests/${id}`).get()).data()).toMatchObject({ status: 'approved', reason: 'Teacher moved to Grade 8' });
+    const replaced = (await db().collection('audit_log').where('action', '==', 'school.replaced').get()).docs.map(d => d.data().details);
+    expect(replaced).toEqual([expect.objectContaining({ previousUid: 'teacher', previousEmail: 'teacher@deped.gov.ph', teacherEmail: 'teacher@gmail.com' })]);
+  });
+  it('refuses Replace when nobody else holds the section', async () => {
+    const { id } = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
+    await expect(replaceAdviser(deps('admin'), { requestId: id, reason: 'Moved' })).rejects.toMatchObject({ code: 'failed-precondition' });
+  });
+  it('bulk approval reports each request and never stops at a failure', async () => {
+    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC8' });
+    const clean = await requestSchoolRole(deps('teacher'), { role: 'subject_teacher', sectionId: 'SEC1' });
+    const taken = await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC8' });
+    const { results } = await resolveSchoolRoles(deps('admin'), { requestIds: [taken.id, clean.id, 'missing'] });
+    expect(results).toEqual([
+      { id: taken.id, ok: false, error: 'This section already has an adviser. An administrator must revoke that assignment first.' },
+      { id: clean.id, ok: true },
+      { id: 'missing', ok: false, error: 'Request not found.' },
+    ]);
+    await expect(resolveSchoolRoles(deps('curriculum'), { requestIds: [clean.id] })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(resolveSchoolRoles(deps('admin'), { requestIds: [] })).rejects.toMatchObject({ code: 'invalid-argument' });
   });
 });
