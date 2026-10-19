@@ -1,0 +1,8 @@
+
+ RUN  v4.1.11 C:/Users/jitsb/.codex/worktrees/51d5/bnhs-sims/.superpowers/releases/section-adviser-sync/release/backend/functions
+
+
+ Test Files  3 passed (3)
+      Tests  73 passed (73)
+   Start at  21:30:29
+   Duration  52.44s (transform 1.13s, setup 0ms, import 30.95s, tests 19.18s, environment 1ms)

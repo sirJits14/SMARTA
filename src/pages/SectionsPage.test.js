@@ -23,6 +23,18 @@ const render = me => renderToStaticMarkup(h(SectionsPage, { me, schoolYear: '202
 beforeEach(() => { fixture.sections = [section]; fixture.advisory = new Map(); });
 
 describe('coordinator section controls', () => {
+  it.each([false, true])('makes an assigned adviser read-only in the section form (restricted=%s)', restricted => {
+    const html = renderToStaticMarkup(h(sectionPage.SectionForm, {
+      editing: { ...section, schoolAdviserUid: 'teacher' }, restricted,
+      schoolYear: '2026-2027', schedules: [], onClose: vi.fn(),
+    }));
+    expect(html).toMatch(/<input[^>]*readOnly=""[^>]*value="Ana Cruz"/);
+    expect(html).toContain('School Access');
+    const unlocked = renderToStaticMarkup(h(sectionPage.SectionForm, {
+      editing: section, restricted, schoolYear: '2026-2027', schedules: [], onClose: vi.fn(),
+    }));
+    expect(unlocked).not.toMatch(/<input[^>]*readOnly=""[^>]*value="Ana Cruz"/);
+  });
   it('offers Edit and a two-year chooser without Add or Delete', () => {
     const html = render(glc);
     expect(html).toContain('>Edit<');

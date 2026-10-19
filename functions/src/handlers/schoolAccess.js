@@ -150,23 +150,48 @@ export async function withdrawSchoolRequest(deps, input) {
 
 // Reads must precede the mutation below. The section lock serializes different
 // users requesting the same advisory section without relying on a query race.
+async function adviserSections(db, tx, uid, assignments, schoolYear) {
+  const candidates = assignments.filter(a => a.role === 'adviser' && a.schoolYear === schoolYear);
+  const rows = await Promise.all(candidates.map(async assignment => {
+    const [section, lock] = await Promise.all([
+      tx.get(db.doc(`sections/${assignment.sectionId}`)), tx.get(lockRef(db, assignment)),
+    ]);
+    return lock.data()?.uid === uid && section.data()?.schoolYear === schoolYear
+      && section.data()?.gradeLevel === assignment.gradeLevel ? section : null;
+  }));
+  return rows.filter(Boolean);
+}
+
 export async function prepareGrant(db, tx, uid, assignment) {
   const accountRef = db.doc(`school_accounts/${uid}`);
   const lock = lockRef(db, assignment);
   const [account, locked] = await Promise.all([tx.get(accountRef), lock ? tx.get(lock) : null]);
   if (locked?.exists && locked.data().uid !== uid) fail('already-exists', 'This section already has an adviser. An administrator must revoke that assignment first.');
   const assignments = account.data()?.assignments || [];
-  return { accountRef, lock, assignments, exists: assignments.some(a => assignmentKey(a) === assignmentKey(assignment)) };
+  const sections = await adviserSections(db, tx, uid, assignments, assignment.schoolYear);
+  return { accountRef, lock, assignments, sections, exists: assignments.some(a => assignmentKey(a) === assignmentKey(assignment)) };
 }
 // serverTimestamp cannot sit inside an array, so assignedAt uses the function's clock.
 // Returns the account's assignments after the grant, so callers can grant several in one transaction.
 export function writeGrant(tx, prepared, actor, user, assignment, source) {
-  if (prepared.exists) return prepared.assignments;
   const db = prepared.accountRef.firestore;
-  const assignments = [...prepared.assignments, { ...assignment, assignedAt: Timestamp.now(), assignedBy: actor.email, source }];
-  tx.set(prepared.accountRef, { uid: user.uid, email: user.email.toLowerCase(), displayName: user.displayName || user.email,
+  const displayName = user.displayName?.trim() || user.email;
+  for (const section of prepared.sections || []) {
+    if (assignment.role !== 'adviser' || section.id !== assignment.sectionId) {
+      tx.update(section.ref, { adviserName: displayName, schoolAdviserUid: user.uid });
+    }
+  }
+  // The section and School Access assignment commit together. Repeat grants
+  // also repair sections assigned before adviser synchronization was added.
+  if (assignment.role === 'adviser') tx.update(db.doc(`sections/${assignment.sectionId}`), {
+    adviserName: displayName, schoolAdviserUid: user.uid,
+  });
+  const assignments = prepared.exists ? prepared.assignments
+    : [...prepared.assignments, { ...assignment, assignedAt: Timestamp.now(), assignedBy: actor.email, source }];
+  tx.set(prepared.accountRef, { uid: user.uid, email: user.email.toLowerCase(), displayName,
     assignments, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   if (prepared.lock) tx.set(prepared.lock, { uid: user.uid, ...assignment });
+  if (prepared.exists) return assignments;
   // Approvals, replacements and slips write their own audit row.
   if (['direct', 'legacy', 'self'].includes(source)) tx.set(db.collection('audit_log').doc(), auditRow(actor, 'school.assigned', user.uid, { ...assignment, source, ...teacherOf(user) }));
   tx.set(inboxRef(db, user.uid, assignmentKey(assignment)), {
@@ -235,10 +260,11 @@ export async function replaceAdviser(deps, input) {
     const accountRef = deps.db.doc(`school_accounts/${user.uid}`);
     const [previous, account] = await Promise.all([tx.get(previousRef), tx.get(accountRef)]);
     const key = assignmentKey(assignment);
-    if (previous.exists) tx.update(previousRef, { assignments: (previous.data().assignments || []).filter(a => assignmentKey(a) !== key), updatedAt: FieldValue.serverTimestamp() });
     const assignments = account.data()?.assignments || [];
     assertCanHold(rolesHeld(assignments, [], actor.schoolYear), 'adviser');
-    writeGrant(tx, { accountRef, lock, assignments, exists: assignments.some(a => assignmentKey(a) === key) }, actor, user, assignment, 'replace');
+    const sections = await adviserSections(deps.db, tx, user.uid, assignments, assignment.schoolYear);
+    if (previous.exists) tx.update(previousRef, { assignments: (previous.data().assignments || []).filter(a => assignmentKey(a) !== key), updatedAt: FieldValue.serverTimestamp() });
+    writeGrant(tx, { accountRef, lock, assignments, sections, exists: assignments.some(a => assignmentKey(a) === key) }, actor, user, assignment, 'replace');
     tx.update(ref, { status: 'approved', reviewedBy: actor.uid, reviewedAt: FieldValue.serverTimestamp(), reason });
     tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.replaced', user.uid, { requestId: ref.id, reason, ...assignment,
       previousUid: holder.uid, previousEmail: previous.data()?.email || '', ...teacherOf(user) }));
@@ -294,8 +320,12 @@ export async function revokeSchoolRole(deps, input) {
     if (!target) fail('not-found', 'This assignment is no longer active.');
     const lock = lockRef(deps.db, target);
     const locked = lock ? await tx.get(lock) : null;
+    const section = lock ? await tx.get(deps.db.doc(`sections/${target.sectionId}`)) : null;
     tx.update(ref, { assignments: assignments.filter(a => assignmentKey(a) !== assignmentKey(target)), updatedAt: FieldValue.serverTimestamp() });
     if (locked?.data()?.uid === input.uid) tx.delete(lock);
+    // Retain the last synced name, but restore manual editing. Never unlock
+    // a section that has since been assigned to somebody else.
+    if (section?.data()?.schoolAdviserUid === input.uid) tx.update(section.ref, { schoolAdviserUid: FieldValue.delete() });
     tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.revoked', input.uid, { ...target, reason, ...teacherOf(account) }));
     return { ok: true };
   });
@@ -310,8 +340,11 @@ export async function deleteSchoolAccess(db, uid) {
     const [account, pending] = await Promise.all([
       tx.get(ref), tx.get(db.collection('school_role_requests').where('uid', '==', uid).where('status', '==', 'pending')),
     ]);
-    const locks = await Promise.all((account.data()?.assignments || []).filter(a => a.role === 'adviser').map(a => tx.get(lockRef(db, a))));
+    const advisers = (account.data()?.assignments || []).filter(a => a.role === 'adviser');
+    const locks = await Promise.all(advisers.map(a => tx.get(lockRef(db, a))));
+    const sections = await Promise.all(advisers.map(a => tx.get(db.doc(`sections/${a.sectionId}`))));
     for (const lock of locks) if (lock.data()?.uid === uid) tx.delete(lock.ref);
+    for (const section of sections) if (section.data()?.schoolAdviserUid === uid) tx.update(section.ref, { schoolAdviserUid: FieldValue.delete() });
     for (const request of pending.docs) tx.update(request.ref, { status: 'withdrawn', reason: 'Account deleted', reviewedAt: FieldValue.serverTimestamp() });
     tx.delete(ref);
   });

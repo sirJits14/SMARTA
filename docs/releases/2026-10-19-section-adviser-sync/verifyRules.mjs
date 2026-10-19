@@ -1,0 +1,23 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+const [expectedPath, reportPath] = process.argv.slice(2);
+if (!expectedPath || !reportPath) throw new Error('Usage: node verifyRules.mjs EXPECTED_RULES REPORT.json');
+const require = createRequire(resolve('functions/package.json'));
+const { GoogleAuth } = require('google-auth-library');
+const client = await new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] }).getClient();
+const base = 'https://firebaserules.googleapis.com/v1/';
+const release = (await client.request({ url: base + 'projects/bnhs-sims/releases/cloud.firestore' })).data;
+const ruleset = (await client.request({ url: base + release.rulesetName })).data;
+const files = ruleset.source?.files || [];
+if (files.length !== 1) throw new Error('Expected one Firestore rules file.');
+const normalize = value => value.replaceAll('\r\n', '\n').trim();
+const expected = normalize(readFileSync(expectedPath, 'utf8'));
+const actual = normalize(files[0].content);
+const sha256 = value => createHash('sha256').update(value).digest('hex');
+const result = { checkedAt: new Date().toISOString(), rulesetName: release.rulesetName,
+  expectedSha256: sha256(expected), deployedSha256: sha256(actual), matches: actual === expected };
+writeFileSync(reportPath, JSON.stringify(result, null, 2) + '\n');
+console.log(JSON.stringify(result));
+if (!result.matches) throw new Error('Deployed rules differ from the expected release.');

@@ -53,6 +53,15 @@ describe('coordinator section callable authentication', () => {
 });
 
 describe('coordinator section editor', () => {
+  it('protects an assigned adviser while allowing other section edits and manual edits after revocation', async () => {
+    await db().doc('sections/eight').update({ schoolAdviserUid: 'teacher' });
+    await expect(updateCoordinatorSection(ctx(), edit())).rejects.toMatchObject({ code: 'failed-precondition' });
+    await updateCoordinatorSection(ctx(), edit({ adviserName: 'Ana Cruz' }));
+    expect((await read('sections/eight')).name).toBe('Rizal');
+    await db().doc('sections/eight').set(section());
+    await updateCoordinatorSection(ctx(), edit());
+    expect((await read('sections/eight')).adviserName).toBe('Ben Dy');
+  });
   it.each(['2026-2027', '2027-2028'])('edits only the three approved fields in %s', async schoolYear => {
     await db().doc('sections/eight').set(section({ schoolYear, customAdminField: 'preserved' }));
     await updateCoordinatorSection(ctx(), edit());

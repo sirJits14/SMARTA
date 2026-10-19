@@ -56,6 +56,9 @@ export async function updateCoordinatorSection(ctx, data) {
   const auditRef = ctx.db.collection('audit_log').doc();
   return ctx.db.runTransaction(async tx => {
     const { ref, section } = await editableSection(tx, ctx, data.sectionId);
+    if (section.schoolAdviserUid && patch.adviserName !== section.adviserName) {
+      throw new CallableError('failed-precondition', 'This adviser is managed by School Access. Refresh the section and change the Class Adviser assignment there.');
+    }
     const scheduleIds = [...new Set([section.scheduleId, patch.scheduleId].filter(validId))];
     const schedules = await Promise.all(scheduleIds.map(id => tx.get(ctx.db.doc(`schedules/${id}`))));
     if (patch.scheduleId && !schedules[scheduleIds.indexOf(patch.scheduleId)]?.exists) invalid('This schedule no longer exists. Choose another schedule.');

@@ -1,0 +1,26 @@
+
+ RUN  v4.1.10 C:/Users/jitsb/.codex/worktrees/51d5/bnhs-sims
+
+ ❯ tests/rules/temporaryPassword.test.js (8 tests | 1 failed) 22292ms
+     × administrator can read only their own profile while a password change is required 10073ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/rules/temporaryPassword.test.js > temporary-password database restrictions > administrator can read only their own profile while a password change is required
+Error: Hook timed out in 10000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with "hookTimeout".
+ ❯ tests/rules/temporaryPassword.test.js:6:1
+      4| let env;
+      5| const tokenFor = (who, authTime = 1000) => ({ ...who, token: { ...who.…
+      6| beforeEach(async () => {
+       | ^
+      7|   env = await setup();
+      8|   await seedBaseline(env);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 8 passed | 1 skipped (10)
+      Tests  1 failed | 79 passed | 11 skipped (91)
+   Start at  21:30:29
+   Duration  66.96s (transform 254ms, setup 0ms, import 9.31s, tests 54.10s, environment 1ms)

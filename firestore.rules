@@ -153,7 +153,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     match /enrollments/{id} { allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade(); allow write: if isAdmin(); }
-    match /sections/{id}    { allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade(); allow write: if isAdmin(); }
+    match /sections/{id} {
+      allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade();
+      // School Access owns this marker. Clients cannot forge or remove it.
+      allow create: if isAdmin() && !request.resource.data.keys().hasAny(['schoolAdviserUid']);
+      allow update: if isAdmin()
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['schoolAdviserUid'])
+        && (resource.data.get('schoolAdviserUid', '') == ''
+          || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['adviserName', 'gradeLevel', 'schoolYear']));
+      allow delete: if isAdmin() && resource.data.get('schoolAdviserUid', '') == '';
+    }
     match /schedules/{id}   { allow read: if isAdmin() || isKiosk() || coordinatorMayReadSchedule(); allow write: if isAdmin(); }
     match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
     match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
