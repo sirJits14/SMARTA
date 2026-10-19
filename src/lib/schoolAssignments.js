@@ -69,7 +69,7 @@ const cell = value => {
   if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;
 };
-export const toCsv = rows => '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');
+export const toCsv = rows => '\uFEFF' + rows.map(r => r.map(cell).join(',')).join('\r\n');
 
 export function assignmentCsvRows(items, sections = []) {
   const byId = Object.fromEntries(sections.map(s => [s.id, s]));

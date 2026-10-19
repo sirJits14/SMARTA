@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, REQUEST_STATUS, sectionsByGrade, manilaDay, claimOpenedToday } from './school.js';
+import { attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened } from './school.js';
 import { portalView, notificationDestination } from './nav.js';
 import { matchRoute } from './router.js';
 describe('school access presentation', () => {
@@ -36,11 +36,13 @@ describe('school access presentation', () => {
     const store = new Map();
     const storage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
     expect(manilaDay(new Date('2026-10-18T17:30:00Z'))).toBe('2026-10-19');
-    expect(claimOpenedToday('u1', '2026-10-19', storage)).toBe(true);
-    expect(claimOpenedToday('u1', '2026-10-19', storage)).toBe(false);
-    expect(claimOpenedToday('u2', '2026-10-19', storage)).toBe(true);
-    expect(claimOpenedToday('u2', '2026-10-20', storage)).toBe(true);
-    expect(claimOpenedToday('u3', '2026-10-20', { getItem: () => { throw new Error('blocked'); } })).toBe(true);
+    expect(openedToday('u1', '2026-10-19', storage)).toBe(false);
+    rememberOpened('u1', '2026-10-19', storage);
+    expect(openedToday('u1', '2026-10-19', storage)).toBe(true);
+    expect(openedToday('u2', '2026-10-19', storage)).toBe(false);
+    expect(openedToday('u1', '2026-10-20', storage)).toBe(false);
+    expect(openedToday('u3', '2026-10-20', { getItem: () => { throw new Error('blocked'); } })).toBe(false);
+    expect(() => rememberOpened('u3', '2026-10-20', { setItem: () => { throw new Error('blocked'); } })).not.toThrow();
   });
   it('only restores an active override and keeps base absences unchanged', () => {
     expect(sessionAction({ absent: true, overrideActive: false })).toBeNull();

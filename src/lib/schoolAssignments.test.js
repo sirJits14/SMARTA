@@ -58,7 +58,7 @@ describe('school access tracking', () => {
     expect(filterAssignments(all, { status: 'not_opened' }, sections).map(a => a.uid)).toEqual(['u2', 'u3']);
   });
   it('writes Excel-safe CSV', () => {
-    expect(toCsv([['Name', 'Note'], ['Ana "A" Cruz', '=SUM(A1)']])).toBe('﻿"Name","Note"\r\n"Ana ""A"" Cruz","\'=SUM(A1)"');
+    expect(toCsv([['Name', 'Note'], ['Ana "A" Cruz', '=SUM(A1)']])).toBe('\uFEFF"Name","Note"\r\n"Ana ""A"" Cruz","\'=SUM(A1)"');
   });
   it('exports assignments and coverage rows', () => {
     const rows = assignmentCsvRows([ana], sections);

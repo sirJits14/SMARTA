@@ -31,7 +31,7 @@ export default function SchoolAccessTab() {
         {context && <p style={{ margin: '4px 0 0', fontSize: 13, color: T.inkMuted }}>SY {context.schoolYear}{context.ended ? ' · ended, read only' : ''}</p>}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
-        <span role="status" style={{ fontSize: 12, color: T.inkMuted }}>{loading ? 'Updating…' : loadedAt ? `Updated ${relativeAge(loadedAt)}` : ''}</span>
+        <span style={{ fontSize: 12, color: T.inkMuted }}>{loading ? 'Updating…' : loadedAt ? `Updated ${relativeAge(loadedAt)}` : ''}</span>
         <Btn variant="ghost" disabled={loading || school.pending} onClick={refresh}>Refresh</Btn>
         {context?.isAdmin && <Btn disabled={context.ended} onClick={() => setDraft({})}>Assign role</Btn>}
       </div>

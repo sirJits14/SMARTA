@@ -9,14 +9,15 @@ export function sectionsByGrade(sections = []) {
 export const manilaDay = (date = new Date()) => date.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 const OPENED_KEY = 'bnhs-school-opened';
 const localStore = () => { try { return localStorage; } catch { return null; } };
-// School mode tells SIMS it was opened at most once a day per account.
-export function claimOpenedToday(uid, day = manilaDay(), storage = localStore()) {
+// School mode tells SIMS it was opened at most once a day per account; remembered only after the call succeeds.
+export function openedToday(uid, day = manilaDay(), storage = localStore()) {
   try {
     const saved = JSON.parse(storage?.getItem(OPENED_KEY) || 'null');
-    if (saved?.uid === uid && saved.day === day) return false;
-    storage?.setItem(OPENED_KEY, JSON.stringify({ uid, day }));
-  } catch { /* storage unavailable: report anyway */ }
-  return true;
+    return saved?.uid === uid && saved.day === day;
+  } catch { return false; }
+}
+export function rememberOpened(uid, day = manilaDay(), storage = localStore()) {
+  try { storage?.setItem(OPENED_KEY, JSON.stringify({ uid, day })); } catch { /* storage unavailable: report again next time */ }
 }
 export function attendanceSections(context = {}) {
   return (context.sections || []).filter(section => context.isAdmin || (context.assignments || []).some(a =>
