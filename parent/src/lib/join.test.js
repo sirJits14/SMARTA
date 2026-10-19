@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { JOIN_ROLES, heldRoles, pendingRoles, roleOptions, toggleRole, joinSteps, initialSelection, initialCode, landingMode, codeDraft, prettyCode } from './join.js';
+import { JOIN_ROLES, heldRoles, pendingRoles, roleOptions, toggleRole, joinSteps, initialSelection, initialCode, landingModeFor, codeDraft, prettyCode } from './join.js';
 
 const state = (options, key) => options.find((o) => o.key === key);
 describe('join rules', () => {
@@ -48,11 +48,20 @@ describe('join rules', () => {
     expect(initialCode({ a: 'abcd2345' }, 'family')).toBe('');
   });
   it('lands teacher-only accounts in School and everyone else in Family', () => {
-    expect(landingMode({ adviser: { outcome: 'active' } }, [])).toEqual({ view: 'school', hasClass: true });
-    expect(landingMode({ subject_teacher: { outcome: 'active' } }, [])).toEqual({ view: 'school', hasClass: false });
-    expect(landingMode({ adviser: { outcome: 'active' }, family: { outcome: 'active' } }, [])).toEqual({ view: 'family', hasClass: false });
-    expect(landingMode({ adviser: { outcome: 'pending' } }, [])).toEqual({ view: 'family', hasClass: false });
-    expect(landingMode({ subject_teacher: { outcome: 'active' } }, [{}])).toEqual({ view: 'family', hasClass: false });
+    expect(landingModeFor({ adviser: { outcome: 'active' } }, [])).toEqual({ view: 'school', hasClass: true });
+    expect(landingModeFor({ subject_teacher: { outcome: 'active' } }, [])).toEqual({ view: 'school', hasClass: false });
+    expect(landingModeFor({ adviser: { outcome: 'active' }, family: { outcome: 'active' } }, [])).toEqual({ view: 'family', hasClass: false });
+    expect(landingModeFor({ adviser: { outcome: 'pending' } }, [])).toEqual({ view: 'family', hasClass: false });
+    expect(landingModeFor({ subject_teacher: { outcome: 'active' } }, [{}])).toEqual({ view: 'family', hasClass: false });
+    expect(landingModeFor({}, [])).toEqual({ view: 'family', hasClass: false });
+  });
+  it('counts roles the account already holds, so a skip lands in School', () => {
+    expect(landingModeFor({}, [], [{ role: 'curriculum_adviser', gradeLevel: 7 }])).toEqual({ view: 'school', hasClass: false });
+    expect(landingModeFor({}, [], [{ role: 'adviser', sectionId: 'a' }])).toEqual({ view: 'school', hasClass: true });
+    expect(landingModeFor({ subject_teacher: { outcome: 'active' } }, [], [{ role: 'adviser', sectionId: 'a' }])).toEqual({ view: 'school', hasClass: true });
+    expect(landingModeFor({}, [{}], [{ role: 'adviser', sectionId: 'a' }])).toEqual({ view: 'family', hasClass: false });
+    expect(landingModeFor({ family: { outcome: 'active' } }, [], [{ role: 'curriculum_adviser' }])).toEqual({ view: 'family', hasClass: false });
+    expect(landingModeFor({}, [], [{ role: 'family' }])).toEqual({ view: 'family', hasClass: false });
   });
   it('formats typed codes like the server reads them', () => {
     expect(codeDraft('abcd-o1il-xyz')).toBe('ABCD0111');

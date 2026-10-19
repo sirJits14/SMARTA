@@ -36,7 +36,7 @@ function RoleCard({ option, onToggle }) {
   );
 }
 
-export default function RoleChooser({ name, setName, options, selected, setSelected, onContinue, error }) {
+export default function RoleChooser({ name, setName, options, selected, setSelected, onContinue, onSkip, error }) {
   const steps = joinSteps(options);
   const anyApproval = options.some((o) => o.state === 'selected' && o.needsApproval);
   const ready = name.trim().length >= 2 && steps.length > 0;
@@ -55,6 +55,7 @@ export default function RoleChooser({ name, setName, options, selected, setSelec
       <Btn onClick={onContinue} disabled={!ready} style={{ width: '100%' }}>
         {ready ? `${S.joinContinue} · ${steps.length} ${steps.length === 1 ? S.joinStep : S.joinSteps}` : S.joinContinue}
       </Btn>
+      {onSkip && <Btn variant="ghost" onClick={onSkip} style={{ width: '100%', marginTop: 10 }}>{S.activateSkip}</Btn>}
     </Card>
   );
 }

@@ -40,9 +40,13 @@ export const codeDraft = (value) => normalizeCode(value).slice(0, 8);
 export const initialCode = (query = {}, role) => codeDraft((role === 'adviser' ? query.a : role === 'family' ? query.c : '') || '');
 export const prettyCode = (value) => (value.length > 4 ? `${value.slice(0, 4)}-${value.slice(4)}` : value);
 
-export function landingMode(results = {}, familyLinks = []) {
+// Where "Open the app" lands. Roles just claimed (results) and roles the account
+// already holds (assignments, e.g. a Curriculum Adviser assigned by the school)
+// both count; a family link or Family result keeps the account in Family.
+export function landingModeFor(results = {}, familyLinks = [], assignments = []) {
   const active = (role) => results[role]?.outcome === 'active';
-  const school = active('adviser') || active('subject_teacher');
+  const assigned = (role) => assignments.some((a) => a.role === role);
+  const school = active('adviser') || active('subject_teacher') || assignments.some((a) => a.role && a.role !== 'family');
   const family = active('family') || familyLinks.length > 0;
-  return school && !family ? { view: 'school', hasClass: active('adviser') } : { view: 'family', hasClass: false };
+  return school && !family ? { view: 'school', hasClass: active('adviser') || assigned('adviser') } : { view: 'family', hasClass: false };
 }
