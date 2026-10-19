@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fixture = vi.hoisted(() => ({ sections: [] }));
+const fixture = vi.hoisted(() => ({ sections: [], advisory: new Map() }));
 vi.mock('../hooks/useCollection.js', () => ({
   useStaffCollectionResource: path => ({ data: path === 'sections' ? fixture.sections : [], loading: false, error: null }),
 }));
@@ -11,6 +11,8 @@ vi.mock('../data/sections.js', () => ({ createSection: vi.fn(), updateSection: v
 vi.mock('../data/coordinatorSections.js', () => ({ updateCoordinatorSection: vi.fn(), getCoordinatorSectionOptions: vi.fn() }));
 vi.mock('../data/students.js', () => ({ saveStudentWithEnrollment: vi.fn() }));
 vi.mock('../data/idCards.js', () => ({ markIdCardsPrinted: vi.fn() }));
+vi.mock('../hooks/useAdvisoryStatus.js', () => ({ useAdvisoryStatus: () => ({ bySection: fixture.advisory, loading: false, error: '', reload: vi.fn() }) }));
+vi.mock('../data/advisorySlips.js', () => ({ issueAdvisorySlips: vi.fn(), revokeAdvisorySlip: vi.fn(), listAdvisoryStatus: vi.fn() }));
 
 import SectionsPage, * as sectionPage from './SectionsPage.jsx';
 
@@ -18,7 +20,7 @@ const h = React.createElement;
 const glc = { role: 'glc', gradeLevel: 8 };
 const section = { id: 's8', gradeLevel: 8, name: 'Mabini', adviserName: 'Ana Cruz', schoolYear: '2026-2027', scheduleId: 'AM' };
 const render = me => renderToStaticMarkup(h(SectionsPage, { me, schoolYear: '2026-2027' }));
-beforeEach(() => { fixture.sections = [section]; });
+beforeEach(() => { fixture.sections = [section]; fixture.advisory = new Map(); });
 
 describe('coordinator section controls', () => {
   it('offers Edit and a two-year chooser without Add or Delete', () => {
@@ -57,5 +59,30 @@ describe('coordinator section controls', () => {
     expect(html).not.toContain('<option value="TVL"');
     expect(html).not.toContain('<option value="ABM"');
     expect(html).not.toContain('type="time"');
+  });
+});
+
+describe('advisory slips on the Sections page', () => {
+  it('offers a slip to administrators and in-grade coordinators for a section without an adviser', () => {
+    fixture.advisory = new Map([['s8', { sectionId: 's8', adviser: null, slip: null }]]);
+    for (const me of [{ role: 'admin' }, glc, { role: 'jhs_coord' }]) {
+      const html = render(me);
+      expect(html).toContain('>Advisory slip<');
+      expect(html).toContain('No adviser in app');
+      expect(html).toContain('Print slips for sections without an adviser');
+    }
+    expect(render({ role: 'glc', gradeLevel: 7 })).not.toContain('>Advisory slip<');
+  });
+  it('shows the app adviser and hides the slip action once a section has one', () => {
+    fixture.advisory = new Map([['s8', { sectionId: 's8', adviser: { name: 'Ana Cruz', email: 'a@deped.gov.ph' }, slip: null }]]);
+    const html = render({ role: 'admin' });
+    expect(html).toContain('In app: Ana Cruz');
+    expect(html).not.toContain('>Advisory slip<');
+  });
+  it('offers Revoke while a slip is outstanding', () => {
+    fixture.advisory = new Map([['s8', { sectionId: 's8', adviser: null, slip: { issuedAt: Date.parse('2026-10-19T02:00:00Z'), issuedBy: 'x' } }]]);
+    const html = render(glc);
+    expect(html).toContain('>Revoke slip<');
+    expect(html).toContain('Slip issued · Oct 19, 2026');
   });
 });

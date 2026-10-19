@@ -27,6 +27,13 @@ export function singleGrade(me) {
   return g && g.length === 1 ? g[0] : null;
 }
 
+// Advisory slips: administrators for every grade, coordinators for their own (spec 2026-10-19).
+export function canIssueAdvisorySlip(me, section) {
+  if (!roleOf(me) || !section) return false;
+  const g = grades(me);
+  return g === null || g.includes(Number(section.gradeLevel));
+}
+
 // A profile bound to another Auth account (uid set and different) is treated
 // as missing, so re-registering a staff email can't claim it. Legacy profiles
 // without a uid match by email, as the rules and functions do.
