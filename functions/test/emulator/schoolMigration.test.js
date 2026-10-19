@@ -31,4 +31,19 @@ describe('migrateSubjectTeachers', () => {
     const again = await migrateSubjectTeachers(deps('admin', 'admin@school.test'));
     expect(again).toMatchObject({ accountsChanged: 0, requestsChanged: 0 });
   });
+  it('also reports accounts whose pending requests combine Adviser and Subject Teacher', async () => {
+    await db().doc('school_accounts/t4').set({ email: 't4@deped.gov.ph', displayName: 'Cy', assignments: [
+      { role: 'subject_teacher', schoolYear: year, gradeLevel: 7 }] });
+    await db().doc('school_role_requests/r4').set({ uid: 't4', email: 't4@deped.gov.ph', emailVerified: true, role: 'adviser',
+      schoolYear: year, sectionId: 'SEC1', gradeLevel: 7, status: 'pending', createdAt: new Date() });
+    await db().doc('school_role_requests/r5a').set({ uid: 't5', email: 't5@gmail.com', displayName: 'Di', emailVerified: true, role: 'adviser',
+      schoolYear: year, sectionId: 'SEC1', gradeLevel: 7, status: 'pending', createdAt: new Date() });
+    await db().doc('school_role_requests/r5b').set({ uid: 't5', email: 't5@gmail.com', displayName: 'Di', emailVerified: true, role: 'subject_teacher',
+      schoolYear: year, gradeLevel: 8, status: 'pending', createdAt: new Date() });
+    const { conflicts } = await migrateSubjectTeachers(deps('admin', 'admin@school.test'));
+    expect(conflicts).toEqual([
+      { uid: 't2', email: 't2@deped.gov.ph', displayName: 'Ben' },
+      { uid: 't4', email: 't4@deped.gov.ph', displayName: 'Cy' },
+      { uid: 't5', email: 't5@gmail.com', displayName: 'Di' }]);
+  });
 });

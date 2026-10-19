@@ -26,4 +26,17 @@ describe('migrateAssignments', () => {
     const already = [{ role: 'subject_teacher', schoolYear: 'Y', gradeLevel: 9 }];
     expect(migrateAssignments(already, grade)).toEqual({ assignments: already, changed: false });
   });
+  it('collapses an already grade-level row that duplicates a converted section row, keeping the earliest', () => {
+    const { assignments, changed } = migrateAssignments([
+      { role: 'subject_teacher', schoolYear: 'Y', sectionId: 'A', gradeLevel: 7, assignedAt: at(20), assignedBy: 'a' },
+      { role: 'subject_teacher', schoolYear: 'Y', gradeLevel: 7, assignedAt: at(10), assignedBy: 'g' },
+    ], grade);
+    expect(changed).toBe(true);
+    expect(assignments).toHaveLength(1);
+    expect(assignments[0]).toMatchObject({ gradeLevel: 7, assignedBy: 'g' });
+  });
+  it('leaves a section row unchanged when no grade can be determined', () => {
+    const rows = [{ role: 'subject_teacher', schoolYear: 'Y', sectionId: 'GONE' }];
+    expect(migrateAssignments(rows, grade)).toEqual({ assignments: rows, changed: false });
+  });
 });
