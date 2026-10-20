@@ -21,6 +21,9 @@ export function roleOptions({ held = [], selected = [], email = '' }) {
   });
 }
 
+// Settings › Add a role: only DepEd accounts are told about Class Adviser (spec 2026-10-21).
+export const addRoleHint = (email, strings) => (isDepedEmail(email) ? strings.addRoleRowHint : strings.addRoleRowHintParent);
+
 export function toggleRole(selected, key, options) {
   const option = options.find((o) => o.key === key);
   if (!option || option.state === 'held') return selected;

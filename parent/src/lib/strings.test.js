@@ -54,7 +54,7 @@ describe('strings', () => {
       'adviserCodeLabel', 'adviserCheck', 'adviserConfirmTitle', 'adviserConfirm', 'adviserNotMine', 'adviserNoSlip', 'adviserUseSlip', 'adviserRequestTitle',
       'adviserRequestBody', 'adviserWrongKind', 'familyWrongKind', 'adviserRequestInstead',
       'summaryTitle', 'summaryTitleNone', 'summaryLinked', 'summaryAdviser', 'summaryPending', 'summaryRetry', 'summaryContinue', 'summarySkipped',
-      'addRoleRow', 'addRoleRowHint', 'schoolRequestsRow', 'requestFulfilled', 'requestSuperseded'])
+      'addRoleRow', 'addRoleRowHint', 'addRoleRowHintParent', 'schoolRequestsRow', 'requestFulfilled', 'requestSuperseded'])
       expect(typeof S[k], k).toBe('string');
   });
   it('calls the family role Parent/Guardian and drops Subject Teacher copy', () => {

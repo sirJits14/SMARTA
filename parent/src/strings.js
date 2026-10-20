@@ -295,6 +295,7 @@ const S = {
   summaryContinue: 'Open the app',
   addRoleRow: 'Add a role',
   addRoleRowHint: 'Parent/Guardian or Class Adviser',
+  addRoleRowHintParent: 'Parent/Guardian',
   schoolRequestsRow: 'My school requests',
   requestPending: 'Waiting for review',
   requestApproved: 'Approved',

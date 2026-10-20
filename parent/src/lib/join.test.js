@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { JOIN_ROLES, heldRoles, roleOptions, toggleRole, joinSteps, initialSelection, initialCode, landingModeFor, codeDraft, prettyCode } from './join.js';
+import { JOIN_ROLES, heldRoles, roleOptions, toggleRole, joinSteps, initialSelection, initialCode, landingModeFor, codeDraft, prettyCode, addRoleHint } from './join.js';
 
 const state = (options, key) => options.find((o) => o.key === key);
 describe('join rules', () => {
@@ -26,6 +26,12 @@ describe('join rules', () => {
     expect(roleOptions({ held: [], selected: [], email: '' }).map((o) => o.key)).toEqual(['family']);
     expect(state(roleOptions({ held: ['adviser'], selected: [], email: 'a@deped.gov.ph' }), 'adviser')).toMatchObject({ state: 'held', active: true });
     expect(state(roleOptions({ held: ['adviser'], selected: [], email: 'p@gmail.com' }), 'adviser')).toMatchObject({ state: 'held', active: true });
+  });
+  it('tells only DepEd accounts about Class Adviser in the Settings row', () => {
+    const strings = { addRoleRowHint: 'Parent/Guardian or Class Adviser', addRoleRowHintParent: 'Parent/Guardian' };
+    expect(addRoleHint('a@deped.gov.ph', strings)).toBe('Parent/Guardian or Class Adviser');
+    expect(addRoleHint('p@gmail.com', strings)).toBe('Parent/Guardian');
+    expect(addRoleHint(undefined, strings)).toBe('Parent/Guardian');
   });
   it('ignores a slip-link preselection for an account that cannot be an adviser', () => {
     const selected = initialSelection({ a: 'ABCD2345' });
