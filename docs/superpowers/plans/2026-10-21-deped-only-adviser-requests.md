@@ -482,9 +482,10 @@ In `docs/parent-portal-adviser-guide.md`, replace step 5:
 ```
 with:
 ```
-5. **No slip yet?** Request your section instead, with your grade and
-   section. An Administrator or your grade's Curriculum Adviser approves it,
-   and the request shows as *Waiting for approval* until then.
+5. **No slip yet?** When the school has opened section requests, request
+   your section instead, with your grade and section. An Administrator or
+   your grade's Curriculum Adviser approves it, and the request shows as
+   *Waiting for approval* until then.
 6. Already using the app? Open **Settings → Add a role**.
 
 **No DepEd email?** The Class Adviser option appears only for
@@ -596,30 +597,30 @@ Two commits: `Pin the DepEd check before the request gate in a test` (the test f
 
 Follow the advisory-toggle release for the mechanics (`docs/releases/2026-10-21-advisory-toggle/README.md`) and the Subject Teacher record for the evidence format (`docs/audits/deployments/2026-10-20-retire-subject-teacher/README.md`). This release has no SIMS deploy and no data cleanup.
 
-0. **Check the advisory-toggle release first.** PR #80 (`docs/releases/2026-10-21-advisory-toggle/`) already published the PR #77 gate to production: SIMS, the Parent App, and the functions `getSchoolContextFn`, `requestSchoolRoleFn` and `setAdvisoryRequestsEnabledFn`. Confirm it is live and that its deployment record is merged on master. If its record is not merged yet, stop and ask the user. That release's preparers are pinned to source revision `ee8a5e4`: never re-run its `prepare.mjs` or `build.mjs` from master after this PR merges, because that would ship this branch's changes under that release's record.
+0. **Check the advisory-toggle release first.** PR #80 (`docs/releases/2026-10-21-advisory-toggle/`) already published the PR #77 gate to production: SIMS, the Parent App, and the functions `getSchoolContextFn`, `requestSchoolRoleFn` and `setAdvisoryRequestsEnabledFn`. Confirm it is live and that its deployment record is merged on master. If its record is not merged yet, stop and ask the user. Do not re-run that release's `prepare.mjs` after this PR merges: it copies the current working tree and records the commit it ran from, so on post-merge master it would ship this PR's changes under that release's record. To know what that release shipped, read the `sourceCommit` in the advisory-toggle record's `manifest.json`.
 1. **Baseline.**
    - Byte-check the live Parent App against the advisory-toggle release's Parent hosting verification (in its deployment record), not the Subject Teacher retirement record: the two no longer match. Expect every file to match before anything is deployed.
    - Read-only count in production of `school_role_requests` with `status == 'pending'` whose `email` is not `@deped.gov.ph`, and of `school_accounts` adviser rows held by non-DepEd emails. Save the counts (numbers only, no emails) in the record. They are expected to stay as they are.
    - `previewAdvisorySlipFn` and `redeemAdvisorySlipFn` were not part of the advisory-toggle deploy, so they also go live with PR #77's `loadSchoolActor` change (one extra `settings/app` read) as well as the shortened slip message. The record should say so.
-2. **Functions, by name, from the backend preparer.**
+2. **Before the first deploy,** check the live Hosting release list for the `bnhs-parent` site (this release does not touch SIMS). Stop and ask the user if a release newer than the baseline appears: other sessions also deploy.
+3. **Functions, by name, from the backend preparer.**
    - Run `node docs/releases/2026-10-18-school-family/prepareBackend.mjs .superpowers/releases/deped-adviser/backend` from the merged master.
    - Put `PORTAL_URL=https://bnhs-parent.web.app` in the prepared backend's ignored Functions `.env` (`.superpowers/releases/deped-adviser/backend/functions/.env`), as the advisory-toggle release does.
    - Run the backend's unit tests (`npm test`) and the emulator tests for `schoolAccess` and `advisorySlips`, one file at a time.
    - Use a `firebase.deped-adviser-release.json` copied from `firebase.advisory-toggle-release.json`: functions source `.superpowers/releases/deped-adviser/backend/functions`, predeploy that backend's `syncShared.mjs`, and only the `parent` hosting target pointing at the new Parent App build.
    - Deploy with `NODE_OPTIONS=--dns-result-order=ipv4first` and `FUNCTIONS_DISCOVERY_TIMEOUT=120`, and only these functions: `requestSchoolRoleFn`, `previewAdvisorySlipFn`, `redeemAdvisorySlipFn`.
    - Afterwards list the live functions: all must be ACTIVE and the count unchanged.
-3. **Parent App.**
-   - Build with the same pattern as the advisory-toggle `build.mjs`, as this release's own copy (do not invoke the advisory-toggle one): load the production `VITE_` configuration from the main checkout's `parent/.env` into the build process only, check `VITE_FIREBASE_PROJECT_ID` is `bnhs-sims`, force `VITE_USE_EMULATORS=false`, and drop `VITE_APPCHECK_DEBUG_TOKEN`.
-   - Build from a `git archive` export of merged master, with `index.html` and `manifest.webmanifest` normalized to LF.
+4. **Parent App build and checks.**
+   - Export merged master with `git archive` into a release directory (it then holds `parent/` and `shared/`), and normalize `parent/index.html` and `parent/public/manifest.webmanifest` to LF. Link the declared dependencies into the export's `parent/` as the advisory-toggle README says.
+   - Build with the advisory-toggle `build.mjs`, run from the merged master checkout: `node docs/releases/2026-10-21-advisory-toggle/build.mjs parent <directory containing the production env> <release directory>`. Its usage line is `<sims|parent> <production-env-directory> [prepared-release-directory]`; it runs `vite build` in `<release directory>/parent` and does not copy anything from the working tree. The production-env directory is the main checkout's `parent/` (its `.env` is loaded into the build process only). The script loads the production `VITE_` configuration, checks that `VITE_FIREBASE_PROJECT_ID` is `bnhs-sims`, forces `VITE_USE_EMULATORS=false` and drops `VITE_APPCHECK_DEBUG_TOKEN`. If any argument does not fit, do the same four actions by hand instead.
    - Before deploying, check that the built main chunk contains the `VITE_RECAPTCHA_SITE_KEY` value (test for it without printing it) and contains neither `FIREBASE_APPCHECK_DEBUG_TOKEN` nor the emulator connection wiring from `src/firebase.js`.
    - Why: `src/firebase.js` starts App Check only when the site key is set. A Parent build without it deploys cleanly, then refuses every sign-in because Auth enforces App Check. A byte-check against the same build cannot catch it (see `docs/audits/deployments/2026-10-21-sims-appcheck-key-fix/README.md`).
-   - Deploy `hosting:parent` and byte-verify the live site against the build.
-4. **Right before deploying anything,** check the live Hosting release list for both sites (`bnhs-parent` and `bnhs-sims`). Stop and ask the user if a release newer than the baseline appears: other sessions also deploy.
-5. **Smoke test.**
+5. **Deploy the Parent App.** Deploy `hosting:parent` and byte-verify the live site against the build.
+6. **Smoke test.**
    - Unauthenticated call to `requestSchoolRoleFn` answers 401.
    - The live site serves the new main script.
    - The signed-in check is done by the user on their own device: a personal account shows only Parent/Guardian in the chooser and "Parent/Guardian" as the Settings › Add a role subtitle; a DepEd account shows both cards and the "Parent/Guardian or Class Adviser" subtitle. The built-in browser gets an App Check 403, and the releasing agent must not type production passwords. Do not submit a request from either account.
-6. **Record and rollback.**
+7. **Record and rollback.**
    - Open a deployment record PR under `docs/audits/deployments/2026-10-2x-deped-adviser-requests/` with the counts, logs, verifications and rollback notes.
-   - Rollback for the three functions: re-prepare the backend from the master commit just before this PR merged (name that commit in the record) and redeploy the same three functions.
+   - Rollback for the three functions: re-prepare the backend from the master commit just before this PR merged (name that commit in the record) and redeploy the same three functions. Re-preparing the two slip functions from that commit leaves them with PR #77's `loadSchoolActor` change, because they were not part of the advisory-toggle deploy. That is harmless: one extra `settings/app` read.
    - Rollback for the Parent App: the Hosting console version from the advisory-toggle release.

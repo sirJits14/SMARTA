@@ -44,6 +44,8 @@ Settings › Add a role row hint:
 - The row subtitle names Class Adviser only for DepEd accounts. A non-DepEd account sees "Parent/Guardian" instead of
   "Parent/Guardian or Class Adviser". `addRoleHint(email, strings)` in `parent/src/lib/join.js` picks the string; the new
   string is `addRoleRowHintParent`.
+- An Administrator-assigned non-DepEd adviser sees "Parent/Guardian" in the Settings row (the only role they can still
+  add), while the chooser keeps their locked Class Adviser card.
 
 Not changed:
 - `AdviserStep.jsx`. Its non-DepEd branches become unreachable but are harmless, and the step stays out of the diff.
@@ -93,7 +95,7 @@ Everything else is unchanged:
   that way, so the tests seed the request rows directly, the way a request left over from before this change would look.
   The assertions about what the queue and approvers see stay as they are.
 
-**Release** follows the Subject Teacher pattern, with a record PR:
+**Release** follows the advisory-toggle release (`docs/releases/2026-10-21-advisory-toggle/`) for the mechanics, with a record PR:
 - Functions: `requestSchoolRoleFn`, plus `previewAdvisorySlipFn` and `redeemAdvisorySlipFn` for the shortened slip message,
   deployed by name from `docs/releases/2026-10-18-school-family/prepareBackend.mjs`.
   Backend unit and emulator tests run on the prepared backend.
