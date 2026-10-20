@@ -1,7 +1,7 @@
 import S from '../../strings.js';
 import { T } from '../../styles.js';
 
-// "Step 1 of 2 · Family Member" above each role step, then the step title.
+// "Step 1 of 2 · Parent/Guardian" above each role step, then the step title.
 export default function StepHeader({ label, title, children }) {
   return (
     <>

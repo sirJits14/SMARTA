@@ -8,7 +8,7 @@ beforeEach(() => {
 });
 afterEach(() => { delete globalThis.localStorage; });
 
-const context = { sections: [{ id: 'A' }, { id: 'B' }], assignments: [{ role: 'adviser', sectionId: 'B' }, { role: 'subject_teacher', sectionId: 'A' }] };
+const context = { sections: [{ id: 'A' }, { id: 'B' }], assignments: [{ role: 'adviser', sectionId: 'B' }, { role: 'curriculum_adviser', gradeLevel: 7 }] };
 
 describe('portal mode', () => {
   it('defaults to Family and remembers School per account', () => {
@@ -41,7 +41,7 @@ describe('portal mode', () => {
     expect(canUseSchool({ isAdmin: true, assignments: [] })).toBe(false);
     expect(canUseSchool(context)).toBe(true);
     expect(hasClass(context)).toBe(true);
-    expect(hasClass({ assignments: [{ role: 'subject_teacher', sectionId: 'A' }] })).toBe(false);
+    expect(hasClass({ assignments: [{ role: 'curriculum_adviser', gradeLevel: 7 }] })).toBe(false);
     expect(advisorySections(context)).toEqual([{ id: 'B' }]);
     expect(schoolHome({ view: 'school', hasClass: true })).toBe('/school');
     expect(schoolHome({ view: 'school', hasClass: false })).toBe('/announcements?view=school');
@@ -50,7 +50,7 @@ describe('portal mode', () => {
 
 describe('reconcileMode', () => {
   const school = (hasClass) => ({ view: 'school', hasClass });
-  const subject = { assignments: [{ role: 'subject_teacher', sectionId: 'A' }] };
+  const subject = { assignments: [{ role: 'curriculum_adviser', gradeLevel: 7 }] };
   it('leaves Family and unloaded context alone', () => {
     const family = { view: 'family', hasClass: false };
     expect(reconcileMode(family, context)).toEqual({ mode: family, changed: false });

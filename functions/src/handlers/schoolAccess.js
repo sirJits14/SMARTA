@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
-import { SCHOOL_ROLES, SCHOOL_ROLE_LABELS, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, conflictingRole, isDepedEmail, isGradeRole } from '../../shared/schoolAccess.js';
+import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, isGradeRole } from '../../shared/schoolAccess.js';
 import { enforceRateLimit } from '../callable.js';
 import { groupLegacyAdvisers, sampleStudentIds } from '../lib/legacyAdvisers.js';
 
@@ -27,16 +27,6 @@ const lockRef = (db, a) => a.role === 'adviser' ? db.doc(`school_adviser_locks/$
 export const auditRow = (actor, action, targetId, details) => ({ action, actorType: 'staff', actorUid: actor.email,
   targetType: 'school_assignment', targetId, details, at: FieldValue.serverTimestamp() });
 
-// Roles an account holds or has asked for in this school year; the
-// Adviser/Subject Teacher exclusion counts both.
-export const rolesHeld = (assignments, pendingDocs, schoolYear) => [
-  ...assignments.filter(a => a.schoolYear === schoolYear).map(a => a.role),
-  ...pendingDocs.map(d => d.data()).filter(r => r.schoolYear === schoolYear).map(r => r.role),
-];
-export function assertCanHold(roles, role) {
-  const other = conflictingRole(roles, role);
-  if (other) fail('failed-precondition', `This account already has the ${SCHOOL_ROLE_LABELS[other]} role this school year. Class Adviser and Subject Teacher can't be combined.`);
-}
 const gradeValue = value => Number.isInteger(value) && value >= 7 && value <= 12;
 
 // Callables validate Auth/App Check first. Transactional callers re-read scope
@@ -79,8 +69,6 @@ async function assignmentFrom(deps, reader, actor, input) {
   if (!id(input.sectionId)) fail('invalid-argument', 'Choose a section.');
   const section = (await read(deps.db, reader, deps.db.doc(`sections/${input.sectionId}`))).data();
   if (!section || section.schoolYear !== actor.schoolYear || !gradeValue(section.gradeLevel)) fail('failed-precondition', 'This section is unavailable for the current school year.');
-  // Older clients name a section for Subject Teacher; the role is held for that section's grade.
-  if (input.role === 'subject_teacher') return { role: input.role, schoolYear: actor.schoolYear, gradeLevel: section.gradeLevel };
   return { role: input.role, schoolYear: actor.schoolYear, sectionId: input.sectionId, gradeLevel: section.gradeLevel };
 }
 
@@ -93,43 +81,26 @@ export async function liveUser(auth, uid) {
   return user;
 }
 
-// Teachers ask from the Parent App. A DepEd Subject Teacher is granted at once;
-// every other request confers nothing until approved.
+// Teachers ask from the Parent App; a request confers nothing until approved.
 export async function requestSchoolRole(deps, input) {
+  if (input.role === 'subject_teacher') fail('invalid-argument', 'Subject Teacher is no longer offered. Choose Class Adviser, or Parent/Guardian to link a learner.');
   if (!REQUESTABLE_ROLES.includes(input.role)) fail('permission-denied', 'An administrator assigns Curriculum Adviser access.');
-  const byGrade = input.role === 'subject_teacher' && input.gradeLevels !== undefined;
-  if (byGrade && (!Array.isArray(input.gradeLevels) || !input.gradeLevels.length || !input.gradeLevels.every(gradeValue))) fail('invalid-argument', 'Choose one or more grades from 7 to 12.');
-  const inputs = byGrade ? [...new Set(input.gradeLevels)].map(gradeLevel => ({ role: 'subject_teacher', gradeLevel })) : [input];
   const user = await liveUser(deps.auth, deps.uid);
   await enforceRateLimit(deps.db, deps.uid, 'schoolRoleRequest', { windowMs: 3600000, max: 30 }, (deps.now || (() => new Date()))().getTime());
-  const instant = input.role === 'subject_teacher' && isDepedEmail(user.email);
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
-    const wanted = [];
-    for (const one of inputs) wanted.push(await assignmentFrom(deps, tx, actor, one));
+    const assignment = await assignmentFrom(deps, tx, actor, input);
     const requests = deps.db.collection('school_role_requests');
     const pending = await tx.get(requests.where('uid', '==', deps.uid).where('status', '==', 'pending'));
-    assertCanHold(rolesHeld(actor.assignments, pending.docs, actor.schoolYear), input.role);
-    const fresh = wanted.filter(a => !actor.assignments.some(h => assignmentKey(h) === assignmentKey(a)));
-    if (!fresh.length) fail('already-exists', 'This assignment is already active.');
-    if (instant) {
-      const prepared = await prepareGrant(deps.db, tx, deps.uid, fresh[0]);
-      let assignments = prepared.assignments;
-      for (const assignment of fresh) {
-        assignments = writeGrant(tx, { ...prepared, assignments, exists: assignments.some(a => assignmentKey(a) === assignmentKey(assignment)) }, actor, user, assignment, 'self');
-      }
-      return { status: 'granted', count: fresh.length };
-    }
-    const refs = fresh.map(a => requests.doc(requestKey(deps.uid, a)));
-    const existing = await Promise.all(refs.map(ref => tx.get(ref)));
-    const toCreate = fresh.filter((_, i) => existing[i].data()?.status !== 'pending');
-    if (pending.size + toCreate.length > 20) fail('resource-exhausted', 'Wait for your pending requests to be reviewed.');
-    for (const assignment of toCreate) {
-      tx.set(requests.doc(requestKey(deps.uid, assignment)), { ...assignment, uid: deps.uid, email: user.email.toLowerCase(), emailVerified: true,
+    if (actor.assignments.some(h => assignmentKey(h) === assignmentKey(assignment))) fail('already-exists', 'This assignment is already active.');
+    const ref = requests.doc(requestKey(deps.uid, assignment));
+    if ((await tx.get(ref)).data()?.status !== 'pending') {
+      if (pending.size >= 20) fail('resource-exhausted', 'Wait for your pending requests to be reviewed.');
+      tx.set(ref, { ...assignment, uid: deps.uid, email: user.email.toLowerCase(), emailVerified: true,
         displayName: user.displayName || actor.displayName, status: 'pending', createdAt: FieldValue.serverTimestamp() });
       tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.requested', deps.uid, { ...assignment, ...teacherOf(user) }));
     }
-    return { status: 'pending', id: refs[0].id, ids: refs.map(ref => ref.id) };
+    return { status: 'pending', id: ref.id, ids: [ref.id] };
   });
 }
 
@@ -221,7 +192,6 @@ export async function resolveSchoolRole(deps, input) {
       const assignment = await assignmentFrom(deps, tx, actor, request);
       if (assignment.gradeLevel !== request.gradeLevel) fail('failed-precondition', 'The section changed grades. Ask for a new request.');
       const prepared = await prepareGrant(deps.db, tx, user.uid, assignment);
-      assertCanHold(rolesHeld(prepared.assignments, [], actor.schoolYear), assignment.role);
       writeGrant(tx, prepared, actor, user, assignment, 'request');
       scope = assignment;
     } else {
@@ -261,7 +231,6 @@ export async function replaceAdviser(deps, input) {
     const [previous, account] = await Promise.all([tx.get(previousRef), tx.get(accountRef)]);
     const key = assignmentKey(assignment);
     const assignments = account.data()?.assignments || [];
-    assertCanHold(rolesHeld(assignments, [], actor.schoolYear), 'adviser');
     const sections = await adviserSections(deps.db, tx, user.uid, assignments, assignment.schoolYear);
     if (previous.exists) tx.update(previousRef, { assignments: (previous.data().assignments || []).filter(a => assignmentKey(a) !== key), updatedAt: FieldValue.serverTimestamp() });
     writeGrant(tx, { accountRef, lock, assignments, sections, exists: assignments.some(a => assignmentKey(a) === key) }, actor, user, assignment, 'replace');
@@ -300,7 +269,6 @@ export async function assignSchoolRole(deps, input) {
     if (!current.isAdmin) fail('permission-denied', 'Administrators only.');
     const assignment = await assignmentFrom(deps, tx, current, input);
     const prepared = await prepareGrant(deps.db, tx, user.uid, assignment);
-    assertCanHold(rolesHeld(prepared.assignments, [], current.schoolYear), assignment.role);
     writeGrant(tx, prepared, current, user, assignment, input.source === 'legacy' ? 'legacy' : 'direct');
     return { ok: true };
   });
@@ -401,7 +369,7 @@ export async function getSchoolContext(deps) {
     const result = { schoolYear: actor.schoolYear, ended: actor.ended, isAdmin: actor.isAdmin, assignments: actor.assignments.map(plainAssignment),
       sections: sections.docs.map(s => ({ id: s.id, name: s.data().name || '', gradeLevel: s.data().gradeLevel, schoolYear: s.data().schoolYear }))
         .sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
-      myRequests: mine.docs.map(row).filter(r => r.schoolYear === actor.schoolYear)
+      myRequests: mine.docs.map(row).filter(r => r.schoolYear === actor.schoolYear && SCHOOL_ROLES.includes(r.role))
         .map(r => ({ id: r.id, role: r.role, sectionId: r.sectionId || '', gradeLevel: r.gradeLevel, status: r.status,
           reason: r.status === 'rejected' ? r.reason || '' : '', createdAt: millis(r.createdAt) }))
         .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)).slice(0, 20) };
@@ -412,7 +380,7 @@ export async function getSchoolContext(deps) {
         tx.get(deps.db.collection('guardian_links').where('status', '==', 'active')),
         pendingOf(requests.where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear)),
       ]);
-      result.managedAssignments = accounts.docs.flatMap(s => (s.data().assignments || []).filter(a => a.schoolYear === actor.schoolYear)
+      result.managedAssignments = accounts.docs.flatMap(s => (s.data().assignments || []).filter(a => a.schoolYear === actor.schoolYear && SCHOOL_ROLES.includes(a.role))
         .map(a => ({ uid: s.id, email: s.data().email || '', displayName: s.data().displayName || '', ...plainAssignment(a), lastSchoolOpenAt: millis(s.data().lastSchoolOpenAt) })));
       result.pendingRequests = await requestRows(tx, deps.db, pending.docs);
       const candidates = legacy.docs.map(row).filter(l => l.schoolYear === actor.schoolYear && (l.slot === 'adviser' || l.relationship === 'Adviser'));

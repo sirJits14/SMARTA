@@ -1,6 +1,6 @@
 import S from '../strings.js';
-export const ROLE_LABELS = { adviser: 'Adviser', subject_teacher: 'Subject Teacher', curriculum_adviser: 'Curriculum Adviser' };
-export const REQUESTABLE_ROLES = ['adviser', 'subject_teacher'];
+export const ROLE_LABELS = { adviser: 'Adviser', curriculum_adviser: 'Curriculum Adviser' };
+export const REQUESTABLE_ROLES = ['adviser'];
 export const REQUEST_STATUS = { pending: S.requestPending, approved: S.requestApproved, rejected: S.requestRejected, withdrawn: S.requestWithdrawn,
   fulfilled: S.requestFulfilled, superseded: S.requestSuperseded };
 export function sectionsByGrade(sections = []) {

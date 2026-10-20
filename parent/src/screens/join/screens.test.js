@@ -20,7 +20,6 @@ const load = {
   RoleChooser: () => import('./RoleChooser.jsx'),
   FamilyStep: () => import('./FamilyStep.jsx'),
   AdviserStep: () => import('./AdviserStep.jsx'),
-  SubjectTeacherStep: () => import('./SubjectTeacherStep.jsx'),
   JoinSummary: () => import('./JoinSummary.jsx'),
   StepHeader: () => import('./StepHeader.jsx'),
 };
@@ -37,8 +36,8 @@ describe('Join screens', () => {
     const { stepLabel } = await load.StepHeader();
     const { ROLE_TEXT } = await load.RoleChooser();
     expect(typeof stepLabel).toBe('function');
-    expect(stepLabel(0, 2, 'Family Member')).toContain('1');
-    expect(Object.keys(ROLE_TEXT)).toEqual(['family', 'adviser', 'subject_teacher']);
+    expect(stepLabel(0, 2, 'Parent/Guardian')).toContain('1');
+    expect(Object.keys(ROLE_TEXT)).toEqual(['family', 'adviser']);
     expect(ROLE_TEXT.family[0]).toBe(S.joinFamily);
   });
 
@@ -47,10 +46,12 @@ describe('Join screens', () => {
     return renderToStaticMarkup(createElement(RoleChooser, { name: 'Ana Reyes', setName() {}, setSelected() {}, onContinue() {}, selected: [], ...props }));
   };
 
-  it('shows the three role titles and no approval tag for a DepEd email', async () => {
+  it('shows the two role titles and no approval tag for a DepEd email', async () => {
     const options = roleOptions({ email: 'ana@deped.gov.ph' });
     const html = await render({ options });
-    for (const title of [S.joinFamily, S.joinAdviser, S.joinSubject]) expect(html).toContain(title);
+    for (const title of [S.joinFamily, S.joinAdviser]) expect(html).toContain(title);
+    expect(html).toContain('Parent/Guardian');
+    expect(html).not.toContain('Subject Teacher');
     expect(html).not.toContain(S.joinNeedsApproval);
   });
 
@@ -62,12 +63,11 @@ describe('Join screens', () => {
     expect(html).toContain('approves school roles');
   });
 
-  it('explains a blocked card', async () => {
-    const options = roleOptions({ email: 'ana@deped.gov.ph', selected: ['adviser'] });
-    expect(options.find((o) => o.key === 'subject_teacher').state).toBe('blocked');
-    const html = await render({ options, selected: ['adviser'] });
-    expect(html).toContain('Choose Adviser or Subject Teacher, not both.');
-    expect(html).toContain(S.joinChooseOne);
+  it('lets a teacher who is also a parent tick both cards', async () => {
+    const options = roleOptions({ email: 'ana@deped.gov.ph', selected: ['family', 'adviser'] });
+    const html = await render({ options, selected: ['family', 'adviser'] });
+    expect(html.match(/aria-checked="true"/g)).toHaveLength(2);
+    expect(html).not.toContain('not both');
   });
 
   it('marks a held role as active', async () => {

@@ -3,7 +3,7 @@
 Approved Class Adviser assignments own `sections.adviserName`. Approval, direct
 assignment, legacy conversion, and replacement write the name and the
 server-owned `schoolAdviserUid` in the same transaction as School Access.
-Pending requests, Subject Teachers, and Curriculum Advisers do not become class
+Pending requests and Curriculum Advisers do not become class
 advisers. When a grant refreshes a teacher's account name, their existing
 current-year adviser sections are refreshed too.
 

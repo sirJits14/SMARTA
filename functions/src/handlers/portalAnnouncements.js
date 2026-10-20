@@ -41,8 +41,8 @@ export async function announcementPeople(db, uid = null, targetSectionIds = []) 
     if (account.disabled === true || ended) continue;
     person(account.id).assignments = (account.assignments || []).filter(assignment => {
       if (assignment.schoolYear !== schoolYear || !ANNOUNCEMENT_ROLES.includes(assignment.role) || assignment.role === 'family') return false;
-      // Grade roles (Curriculum Adviser, grade-level Subject Teacher) carry no section; a section-bound legacy row still needs its section check.
-      if (assignment.role === 'curriculum_adviser' || (isGradeRole(assignment.role) && !assignment.sectionId)) return Number.isInteger(assignment.gradeLevel) && assignment.gradeLevel >= 7 && assignment.gradeLevel <= 12;
+      // Curriculum Adviser is held per grade and carries no section.
+      if (isGradeRole(assignment.role)) return Number.isInteger(assignment.gradeLevel) && assignment.gradeLevel >= 7 && assignment.gradeLevel <= 12;
       return Number(sectionById.get(assignment.sectionId)?.gradeLevel) === assignment.gradeLevel;
     });
   }

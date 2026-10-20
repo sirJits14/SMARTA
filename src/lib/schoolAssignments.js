@@ -1,5 +1,8 @@
 import { ROLE_LABELS, sectionLabel } from '../../parent/src/lib/school.js';
 
+// Audit history still names roles that were retired (Subject Teacher, spec 2026-10-20).
+const HISTORY_ROLE_LABELS = { ...ROLE_LABELS, subject_teacher: 'Subject Teacher' };
+
 // Legacy adviser rows for Guardians → School access: one per teacher, marked
 // once that teacher already holds an adviser assignment this year.
 export function legacyAdviserRows(advisers = [], managedAssignments = []) {
@@ -46,8 +49,7 @@ export function coverageByGrade(sections = [], assignments = [], pending = []) {
       pending: pending.find(r => r.role === 'adviser' && r.sectionId === section.id) || null,
     }));
     return { grade, rows, covered: rows.filter(r => r.adviser).length,
-      curriculumAdvisers: assignments.filter(a => a.role === 'curriculum_adviser' && Number(a.gradeLevel) === grade),
-      subjectTeachers: assignments.filter(a => a.role === 'subject_teacher' && Number(a.gradeLevel) === grade) };
+      curriculumAdvisers: assignments.filter(a => a.role === 'curriculum_adviser' && Number(a.gradeLevel) === grade) };
   });
 }
 
@@ -74,23 +76,28 @@ export const toCsv = rows => '\uFEFF' + rows.map(r => r.map(cell).join(',')).joi
 export function assignmentCsvRows(items, sections = []) {
   const byId = Object.fromEntries(sections.map(s => [s.id, s]));
   return [['Name', 'Email', 'Responsibility', 'Grade', 'Section', 'Assigned on', 'Assigned by', 'Source', 'Status'],
-    ...items.map(item => [who(item), item.email || '', ROLE_LABELS[item.role] || item.role, Number(item.gradeLevel), byId[item.sectionId]?.name || '',
+    ...items.map(item => [who(item), item.email || '', HISTORY_ROLE_LABELS[item.role] || item.role, Number(item.gradeLevel), byId[item.sectionId]?.name || '',
       shortDate(item.assignedAt), item.assignedBy || '', item.source || '', openedStatus(item).opened ? 'Opened' : 'Not opened yet'])];
 }
 
 export function coverageCsvRows(groups) {
-  return [['Grade', 'Section', 'Adviser', 'Adviser email', 'Opened', 'Grade subject teachers', 'Pending request'],
+  return [['Grade', 'Section', 'Adviser', 'Adviser email', 'Opened', 'Pending request'],
     ...groups.flatMap(g => g.rows.map(r => [g.grade, r.section.name || r.section.id, who(r.adviser), r.adviser?.email || '',
-      r.adviser ? (openedStatus(r.adviser).opened ? 'Yes' : 'No') : '', g.subjectTeachers.length, who(r.pending)]))];
+      r.adviser ? (openedStatus(r.adviser).opened ? 'Yes' : 'No') : '', who(r.pending)]))];
 }
 
 const VERBS = { 'school.requestApproved': 'approved', 'school.requestRejected': 'rejected the request from', 'school.assigned': 'assigned', 'school.revoked': 'revoked' };
+function retiredGrades(removed = []) {
+  const grades = [...new Set(removed.map(a => a.gradeLevel).filter(g => g != null))].sort((a, b) => a - b);
+  return grades.length ? ` · Grade${grades.length > 1 ? 's' : ''} ${grades.join(', ')}` : '';
+}
+
 export function historyLine(row, sections = []) {
   const d = row.details || {};
   const teacher = d.teacherName || d.teacherEmail || row.targetId;
   const section = sections.find(s => s.id === d.sectionId);
   const scope = d.sectionId ? (section ? sectionLabel(section) : `Section ${d.sectionId}`) : d.gradeLevel ? `Grade ${d.gradeLevel}` : '';
-  const what = [ROLE_LABELS[d.role], scope].filter(Boolean).join(' · ');
+  const what = [HISTORY_ROLE_LABELS[d.role], scope].filter(Boolean).join(' · ');
   const when = row.at?.toDate ? row.at.toDate().toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
   const text = row.action === 'school.requested' ? `${teacher} requested ${what}`
     : row.action === 'school.requestWithdrawn' ? `${teacher} withdrew a request for ${what}`
@@ -98,6 +105,7 @@ export function historyLine(row, sections = []) {
     : row.action === 'school.slipIssued' ? `${row.actorUid} issued an advisory slip · ${scope}`
     : row.action === 'school.slipRevoked' ? `${row.actorUid} revoked the advisory slip · ${scope}`
     : row.action === 'school.slipRedeemed' ? `${teacher} became Class Adviser with a slip from ${d.issuedBy} · ${what}`
+    : row.action === 'school.roleRetired' ? `${row.actorUid} ended ${teacher}'s ${HISTORY_ROLE_LABELS[d.role] || d.role} access (role retired)${retiredGrades(d.removed)}`
     : `${row.actorUid} ${VERBS[row.action] || row.action} ${teacher} · ${what}`;
   return { when, text, reason: d.reason && d.reason !== 'Approved' ? d.reason : '' };
 }

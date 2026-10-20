@@ -4,6 +4,12 @@ import S from '../strings.js';
 
 const ms = (n) => ({ toMillis: () => n });
 
+describe('audienceText after Subject Teacher was retired', () => {
+  it('skips the retired role on old notices', () => {
+    expect(audienceText(['g7'], { grades: [7], roles: ['subject_teacher', 'adviser'] })).toBe('Advisers · Grade 7');
+  });
+});
+
 describe('linkify', () => {
   it('links http and https URLs and keeps the rest as text', () => {
     expect(linkify('See https://deped.gov.ph/memo and http://x.ph now')).toEqual([

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchesAnnouncementAudience } from './announcementAudience.js';
+import { matchesAnnouncementAudience, ANNOUNCEMENT_ROLES, ANNOUNCEMENT_ROLE_LABELS } from './announcementAudience.js';
 
 const year = '2026-2027';
 const sections = [{ id: 's7', gradeLevel: 7 }, { id: 's8', gradeLevel: 8 }];
@@ -25,12 +25,16 @@ describe('announcement recipient matching', () => {
   it('does not turn school roles into family rights', () => {
     expect(matchesAnnouncementAudience({ roles: ['family'], all: true }, { ...person, family: [] }, 'family')).toBe(false);
   });
-  it('reaches grade-level subject teachers for their grade and for sections in it', () => {
-    const teacher = { ...person, assignments: [{ role: 'subject_teacher', schoolYear: year, gradeLevel: 7 }] };
-    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], grades: [7] }, teacher, 'school')).toBe(true);
-    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], grades: [8] }, teacher, 'school')).toBe(false);
-    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], all: true, sectionIds: ['s7'] }, teacher, 'school')).toBe(true);
-    expect(matchesAnnouncementAudience({ roles: ['subject_teacher'], all: true, sectionIds: ['s8'] }, teacher, 'school')).toBe(false);
+  it('reaches Curriculum Advisers for their grade and for sections in it', () => {
+    const teacher = { ...person, assignments: [{ role: 'curriculum_adviser', schoolYear: year, gradeLevel: 7 }] };
+    expect(matchesAnnouncementAudience({ roles: ['curriculum_adviser'], grades: [7] }, teacher, 'school')).toBe(true);
+    expect(matchesAnnouncementAudience({ roles: ['curriculum_adviser'], grades: [8] }, teacher, 'school')).toBe(false);
+    expect(matchesAnnouncementAudience({ roles: ['curriculum_adviser'], all: true, sectionIds: ['s7'] }, teacher, 'school')).toBe(true);
+    expect(matchesAnnouncementAudience({ roles: ['curriculum_adviser'], all: true, sectionIds: ['s8'] }, teacher, 'school')).toBe(false);
     expect(matchesAnnouncementAudience({ roles: ['adviser'], grades: [7] }, teacher, 'school')).toBe(false);
+  });
+  it('lists three recipient roles and no Subject Teachers', () => {
+    expect(ANNOUNCEMENT_ROLES).toEqual(['family', 'adviser', 'curriculum_adviser']);
+    expect(Object.keys(ANNOUNCEMENT_ROLE_LABELS)).toEqual(['family', 'adviser', 'curriculum_adviser']);
   });
 });

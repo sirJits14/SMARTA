@@ -15,7 +15,7 @@ export function postsForTab(posts, tab) {
 }
 
 export function audienceLabel(keys = [], audience) {
-  if (audience?.roles) return `${audience.roles.map(role => ANNOUNCEMENT_ROLE_LABELS[role]).join(', ')} · ${keys.includes('all') ? 'All grades' : keys.map(key => `Grade ${key.slice(1)}`).join(' · ')}${audience.sectionIds?.length ? ` · ${audience.sectionIds.length} selected section${audience.sectionIds.length === 1 ? '' : 's'}` : ''}`;
+  if (audience?.roles) return `${audience.roles.filter(role => ANNOUNCEMENT_ROLE_LABELS[role]).map(role => ANNOUNCEMENT_ROLE_LABELS[role]).join(', ')} · ${keys.includes('all') ? 'All grades' : keys.map(key => `Grade ${key.slice(1)}`).join(' · ')}${audience.sectionIds?.length ? ` · ${audience.sectionIds.length} selected section${audience.sectionIds.length === 1 ? '' : 's'}` : ''}`;
   if (keys.includes('all')) return 'All parents';
   return keys.map((k) => `Grade ${k.slice(1)}`).join(' · ');
 }
@@ -45,7 +45,7 @@ export function formFromPost(p) {
   const publish = toMillis(p.publishAt), expires = toMillis(p.expiresAt);
   return {
     title: p.title, body: p.body, all: !!p.audience?.all, grades: p.audience?.grades ? [...p.audience.grades] : [],
-    roles: [...(p.audience?.roles || ['family'])], sectionIds: [...(p.audience?.sectionIds || [])],
+    roles: (p.audience?.roles || ['family']).filter(role => ANNOUNCEMENT_ROLES.includes(role)), sectionIds: [...(p.audience?.sectionIds || [])],
     when: p.status === 'scheduled' ? 'schedule' : 'now',
     date: publish == null ? '' : manilaDate(new Date(publish)), time: publish == null ? '' : manilaTime(new Date(publish)),
     expires: expires == null ? '' : manilaDate(new Date(expires)),

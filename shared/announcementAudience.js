@@ -2,8 +2,8 @@ import { isGradeRole } from './schoolAccess.js';
 
 // Audience keys retain the SIMS writer's grade scope. Recipient permission is
 // derived from current server-owned entitlements, never cached audience keys.
-export const ANNOUNCEMENT_ROLES = ['family', 'adviser', 'subject_teacher', 'curriculum_adviser'];
-export const ANNOUNCEMENT_ROLE_LABELS = { family: 'Families', adviser: 'Advisers', subject_teacher: 'Subject Teachers', curriculum_adviser: 'Curriculum Advisers' };
+export const ANNOUNCEMENT_ROLES = ['family', 'adviser', 'curriculum_adviser'];
+export const ANNOUNCEMENT_ROLE_LABELS = { family: 'Families', adviser: 'Advisers', curriculum_adviser: 'Curriculum Advisers' };
 
 export function matchesAnnouncementAudience(audience, person, view = 'family') {
   if (!audience || !person?.schoolYear) return false;

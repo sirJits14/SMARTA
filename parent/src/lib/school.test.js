@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { callableMessage, schoolError, attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened, scopeLabel } from './school.js';
+import { callableMessage, schoolError, attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, ROLE_LABELS, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened, scopeLabel } from './school.js';
 import { portalView, notificationDestination } from './nav.js';
 import { matchRoute } from './router.js';
 describe('school access presentation', () => {
@@ -9,7 +9,7 @@ describe('school access presentation', () => {
     expect(portalView(matchRoute('/announcements', '?view=school'))).toBe('school');
     expect(portalView(matchRoute('/learner/a', '?view=school'))).toBe('family');
   });
-  it('subject teachers have no learner roster; advisers and curriculum advisers have scoped rosters', () => {
+  it('a leftover Subject Teacher row has no learner roster; advisers and curriculum advisers have scoped rosters', () => {
     expect(attendanceSections({ sections, assignments: [{ role: 'subject_teacher', sectionId: 'a' }] })).toEqual([]);
     expect(attendanceSections({ sections, assignments: [{ role: 'adviser', sectionId: 'a' }] })).toEqual([sections[0]]);
     expect(attendanceSections({ sections, assignments: [{ role: 'curriculum_adviser', gradeLevel: 8 }] })).toEqual([sections[1]]);
@@ -27,7 +27,8 @@ describe('school access presentation', () => {
     expect(inboxDestination({ type: 'school_access', rejected: true })).toBe('/settings/school-access');
   });
   it('offers requestable roles and sections grouped by grade', () => {
-    expect(REQUESTABLE_ROLES).toEqual(['adviser', 'subject_teacher']);
+    expect(REQUESTABLE_ROLES).toEqual(['adviser']);
+    expect(ROLE_LABELS).toEqual({ adviser: 'Adviser', curriculum_adviser: 'Curriculum Adviser' });
     expect(REQUEST_STATUS.rejected).toBe('Not approved');
     expect(sectionsByGrade([{ id: 'b', gradeLevel: 8 }, { id: 'a', gradeLevel: 7 }, { id: 'c', gradeLevel: 8 }]))
       .toEqual([{ grade: 7, sections: [{ id: 'a', gradeLevel: 7 }] }, { grade: 8, sections: [{ id: 'b', gradeLevel: 8 }, { id: 'c', gradeLevel: 8 }] }]);

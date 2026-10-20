@@ -6,16 +6,13 @@ import { toggleRole, joinSteps } from '../../lib/join.js';
 export const ROLE_TEXT = {
   family: [S.joinFamily, S.joinFamilyHint],
   adviser: [S.joinAdviser, S.joinAdviserHint],
-  subject_teacher: [S.joinSubject, S.joinSubjectHint],
 };
 const tag = { fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 999, border: `1px solid ${T.border}`, color: T.inkMuted };
 
 function RoleCard({ option, onToggle }) {
   const checked = option.state === 'selected' || option.state === 'held';
-  const locked = option.state === 'held' || option.state === 'blocked';
+  const locked = option.state === 'held';
   const [title, hint] = ROLE_TEXT[option.key];
-  // Only the box and title fade on a blocked card; the explanation keeps full contrast.
-  const dim = option.state === 'blocked' ? 0.62 : 1;
   return (
     <button type="button" role="checkbox" aria-checked={checked} aria-disabled={locked} onClick={locked ? undefined : onToggle}
       style={{ display: 'grid', gridTemplateColumns: '28px 1fr', gap: 12, alignItems: 'start', width: '100%', minHeight: 64, textAlign: 'left',
@@ -23,14 +20,14 @@ function RoleCard({ option, onToggle }) {
         background: checked ? 'var(--t-selected)' : T.surface,
         border: `1px solid ${checked ? T.primary : T.border}` }}>
       <span aria-hidden="true" style={{ width: 24, height: 24, marginTop: 2, borderRadius: 7, display: 'grid', placeItems: 'center', fontWeight: 700,
-        border: `2px solid ${checked ? T.primary : T.border}`, background: checked ? T.primary : 'transparent', color: T.onPrimary, opacity: dim }}>{checked ? '✓' : ''}</span>
+        border: `2px solid ${checked ? T.primary : T.border}`, background: checked ? T.primary : 'transparent', color: T.onPrimary }}>{checked ? '✓' : ''}</span>
       <span>
         <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-          <strong style={{ fontSize: 16, opacity: dim }}>{title}</strong>
+          <strong style={{ fontSize: 16 }}>{title}</strong>
           {option.active && <span style={tag}>{S.joinActive}</span>}
           {!option.active && option.needsApproval && <span style={tag}>{S.joinNeedsApproval}</span>}
         </span>
-        <span style={{ display: 'block', fontSize: 14, color: T.inkMuted, marginTop: 2 }}>{option.state === 'blocked' ? S.joinChooseOne : hint}</span>
+        <span style={{ display: 'block', fontSize: 14, color: T.inkMuted, marginTop: 2 }}>{hint}</span>
       </span>
     </button>
   );

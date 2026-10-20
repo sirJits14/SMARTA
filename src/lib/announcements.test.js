@@ -53,7 +53,7 @@ describe('labels', () => {
 
 describe('form', () => {
   it('retains independent recipient roles and optional section narrowing', () => {
-    expect(audienceOf(form({ all: false, grades: [7], roles: ['family', 'subject_teacher'], sectionIds: ['SEC1'] }))).toEqual({ grades: [7], roles: ['family', 'subject_teacher'], sectionIds: ['SEC1'] });
+    expect(audienceOf(form({ all: false, grades: [7], roles: ['family', 'curriculum_adviser'], sectionIds: ['SEC1'] }))).toEqual({ grades: [7], roles: ['family', 'curriculum_adviser'], sectionIds: ['SEC1'] });
     expect(validateForm(form({ roles: [] }), { me: admin, nowMs: NOW, pinnedCount: 0 })).toBe('Choose at least one recipient role.');
     expect(emptyForm(admin).roles).toEqual(['family']);
   });
@@ -64,6 +64,12 @@ describe('form', () => {
   it('maps the form audience', () => {
     expect(audienceOf(form())).toEqual({ all: true });
     expect(audienceOf(form({ all: false, grades: [9, 7] }))).toEqual({ grades: [7, 9] });
+  });
+  it('drops the retired Subject Teacher role from saved announcements', () => {
+    const post = { title: 'T', body: 'B', status: 'scheduled', audience: { grades: [7], roles: ['subject_teacher', 'adviser'] } };
+    expect(formFromPost(post).roles).toEqual(['adviser']);
+    expect(formFromPost({ ...post, audience: { grades: [7], roles: ['subject_teacher'] } }).roles).toEqual([]);
+    expect(audienceLabel(['g7'], post.audience)).toBe('Advisers · Grade 7');
   });
   it('reads a post back into the form in Philippine time', () => {
     const f = formFromPost({ title: 'T', body: 'B', audience: { grades: [7] }, status: 'scheduled', publishAt: ms(Date.parse('2026-10-06T07:30:00+08:00')), expiresAt: ms(Date.parse('2026-10-09T23:59:59.999+08:00')), pinned: true, push: true });

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { canReviewSection, canCorrectSession, canApproveRoleRequest, isFamilyLink, assignmentKey, isDepedEmail, REQUESTABLE_ROLES, GRADE_ROLES, isGradeRole, conflictingRole, canHold } from './schoolAccess.js';
+import { canReviewSection, canCorrectSession, canApproveRoleRequest, isFamilyLink, assignmentKey, isDepedEmail, REQUESTABLE_ROLES, GRADE_ROLES, SCHOOL_ROLES, isGradeRole } from './schoolAccess.js';
 
 const year = '2026-2027';
 const section = { id: 'S7', schoolYear: year, gradeLevel: 7 };
 const actor = (role, extra = {}) => ({ uid: 'actor', schoolYear: year, assignments: [{ role, schoolYear: year, sectionId: 'S7', gradeLevel: 7 }], ...extra });
 describe('school access boundaries', () => {
-  it('subject teaching permits no tracking, while advisory and curriculum scopes are enforced', () => {
+  it('a leftover Subject Teacher row permits no tracking, while advisory and curriculum scopes are enforced', () => {
     expect(canReviewSection(actor('subject_teacher'), section)).toBe(false);
     expect(canReviewSection(actor('adviser'), section)).toBe(true);
     expect(canReviewSection(actor('adviser'), { ...section, id: 'S8' })).toBe(false);
@@ -28,32 +28,27 @@ describe('school access boundaries', () => {
       expect(canApproveRoleRequest(admin, { ...request, ...patch })).toBe(false);
     }
     const curriculum = actor('curriculum_adviser');
-    for (const patch of [{}, { email: 'teacher@gmail.com' }, { role: 'subject_teacher' }, { role: 'subject_teacher', email: 'teacher@gmail.com' }]) {
+    for (const patch of [{}, { email: 'teacher@gmail.com' }]) {
       expect(canApproveRoleRequest(curriculum, { ...request, ...patch })).toBe(true);
     }
-    for (const patch of [{ emailVerified: false }, { gradeLevel: 8 }, { role: 'curriculum_adviser' }, { uid: 'actor' }]) {
+    for (const patch of [{ emailVerified: false }, { gradeLevel: 8 }, { role: 'curriculum_adviser' }, { role: 'subject_teacher' }, { uid: 'actor' }]) {
       expect(canApproveRoleRequest(curriculum, { ...request, ...patch })).toBe(false);
     }
-    for (const role of ['adviser', 'subject_teacher']) expect(canApproveRoleRequest(actor(role), request)).toBe(false);
+    for (const role of ['adviser']) expect(canApproveRoleRequest(actor(role), request)).toBe(false);
     expect(canApproveRoleRequest(actor('curriculum_adviser', { schoolYear: '2027-2028' }), request)).toBe(false);
   });
-  it('keeps Adviser and Subject Teacher apart and leaves other roles free', () => {
-    expect(GRADE_ROLES).toEqual(['curriculum_adviser', 'subject_teacher']);
-    expect(isGradeRole('subject_teacher')).toBe(true);
+  it('keeps only Class Adviser and Curriculum Adviser as school roles', () => {
+    expect(SCHOOL_ROLES).toEqual(['adviser', 'curriculum_adviser']);
+    expect(GRADE_ROLES).toEqual(['curriculum_adviser']);
+    expect(isGradeRole('curriculum_adviser')).toBe(true);
+    expect(isGradeRole('subject_teacher')).toBe(false);
     expect(isGradeRole('adviser')).toBe(false);
-    expect(conflictingRole(['adviser'], 'subject_teacher')).toBe('adviser');
-    expect(conflictingRole(['subject_teacher'], 'adviser')).toBe('subject_teacher');
-    expect(conflictingRole(['adviser'], 'adviser')).toBeNull();
-    expect(conflictingRole(['curriculum_adviser', 'family'], 'adviser')).toBeNull();
-    expect(canHold(['subject_teacher'], 'curriculum_adviser')).toBe(true);
-    expect(canHold(['subject_teacher'], 'adviser')).toBe(false);
-    expect(canHold([], 'family')).toBe(true);
   });
   it('recognises DepEd accounts and requestable roles', () => {
     expect(isDepedEmail(' Ana@DepEd.gov.ph ')).toBe(true);
     expect(isDepedEmail('ana@deped.gov.ph.evil.com')).toBe(false);
     expect(isDepedEmail(undefined)).toBe(false);
-    expect(REQUESTABLE_ROLES).toEqual(['adviser', 'subject_teacher']);
+    expect(REQUESTABLE_ROLES).toEqual(['adviser']);
   });
   it('keeps legacy adviser links outside family authorization', () => {
     expect(isFamilyLink({ status: 'active', relationship: 'Mother' })).toBe(true);
@@ -62,7 +57,7 @@ describe('school access boundaries', () => {
     expect(isFamilyLink({ status: 'revoked', relationship: 'Father' })).toBe(false);
   });
   it('has collision-free scope keys', () => {
-    expect(assignmentKey({ role: 'adviser', schoolYear: year, sectionId: 'S7' })).not.toBe(assignmentKey({ role: 'subject_teacher', schoolYear: year, sectionId: 'S7' }));
+    expect(assignmentKey({ role: 'adviser', schoolYear: year, sectionId: 'S7' })).not.toBe(assignmentKey({ role: 'curriculum_adviser', schoolYear: year, sectionId: 'S7' }));
   });
 });
 

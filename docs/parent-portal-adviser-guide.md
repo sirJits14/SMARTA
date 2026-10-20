@@ -24,7 +24,7 @@
 1. Sign in to the parent portal with your **@deped.gov.ph** Google account
    and agree to the notice.
 2. On **Who are you?**, enter your name and tick **Class Adviser**. You can
-   also tick **Family Member** if you have a learner to link.
+   also tick **Parent/Guardian** if you have a learner to link.
 3. Ask the Administrator, or the JHS/SHS Academic Coordinator or Grade Level
    Coordinator for your grade, for your section's advisory slip. Scan its QR
    code or type its code.

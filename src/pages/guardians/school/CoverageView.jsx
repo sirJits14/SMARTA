@@ -25,7 +25,6 @@ export default function CoverageView({ context, onAssign, onOpenRequest }) {
           <h3 style={{ ...S.h2, margin: 0 }}>Grade {g.grade}</h3>
           <span style={{ fontSize: 13, fontWeight: 600 }}>{`${g.covered} of ${g.rows.length} sections have an adviser`}</span>
           <span style={{ fontSize: 13, color: T.inkMuted }}>{`Curriculum Adviser: ${g.curriculumAdvisers.map(who).join(', ') || 'None'}`}</span>
-          <span style={{ fontSize: 13, color: T.inkMuted }}>{`Subject Teachers: ${g.subjectTeachers.length}`}</span>
         </div>
         {rows.length === 0
           ? <p style={{ fontSize: 13, color: T.inkMuted, margin: '12px 0 0' }}>Every Grade {g.grade} section has an adviser.</p>

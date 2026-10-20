@@ -6,7 +6,7 @@ import { generateCode, hashCode, normalizeCode, isValidCode } from '../lib/activ
 import { sectionLabel } from '../lib/format.js';
 import { scopedGrades } from '../../shared/staffRoles.js';
 import { isDepedEmail } from '../../shared/schoolAccess.js';
-import { loadSchoolActor, liveUser, prepareGrant, writeGrant, inboxRef, auditRow, teacherOf, rolesHeld, assertCanHold } from './schoolAccess.js';
+import { loadSchoolActor, liveUser, prepareGrant, writeGrant, inboxRef, auditRow, teacherOf } from './schoolAccess.js';
 
 // Advisory slips (spec 2026-10-19): one single-use code per section that makes
 // a verified DepEd account the section's Class Adviser without review.
@@ -130,11 +130,7 @@ export async function redeemAdvisorySlip(deps, input) {
     if (!section || section.schoolYear !== actor.schoolYear || section.gradeLevel !== slip.gradeLevel) fail('not-found', GENERIC);
     const assignment = { role: 'adviser', schoolYear: actor.schoolYear, sectionId: slip.sectionId, gradeLevel: slip.gradeLevel };
     const requests = db.collection('school_role_requests');
-    const [mine, forSection] = await Promise.all([
-      tx.get(requests.where('uid', '==', deps.uid).where('status', '==', 'pending')),
-      tx.get(requests.where('sectionId', '==', slip.sectionId).where('status', '==', 'pending')),
-    ]);
-    assertCanHold(rolesHeld(actor.assignments, mine.docs, actor.schoolYear), 'adviser');
+    const forSection = await tx.get(requests.where('sectionId', '==', slip.sectionId).where('status', '==', 'pending'));
     const prepared = await prepareGrant(db, tx, deps.uid, assignment);
     // Already this section's adviser: refuse without consuming the slip.
     if (prepared.exists) fail('already-exists', 'You are already the adviser of this section.');

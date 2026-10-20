@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { FieldValue } from 'firebase-admin/firestore';
 import { db, clearAll, seedSchool } from './helpers.js';
 import { requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, getSchoolContext, loadSchoolActor, deleteSchoolAccess, markSchoolOpened, getSchoolPendingCount } from '../../src/handlers/schoolAccess.js';
 
@@ -36,7 +35,7 @@ describe('school request lifecycle', () => {
       ...auth, getUser: async uid => uid === 'teacher' ? renamedUser : users[uid],
       getUserByEmail: async email => email === renamedUser.email ? renamedUser : auth.getUserByEmail(email),
     } };
-    // Adviser and Subject Teacher can't be combined, so another grade role triggers the refresh.
+    // A Curriculum Adviser grant triggers the refresh.
     await assignSchoolRole(renamed, { email: users.teacher.email, role: 'curriculum_adviser', gradeLevel: 8 });
     expect((await db().doc('school_accounts/teacher').get()).data().displayName).toBe('Renamed Teacher');
     expect((await db().doc('sections/SEC1').get()).data().adviserName).toBe('Renamed Teacher');
@@ -67,16 +66,15 @@ describe('school request lifecycle', () => {
     expect(section.adviserName).toBe('Teacher');
     expect(section.schoolAdviserUid).toBeUndefined();
   });
-  it('does not overwrite the class adviser for subject or curriculum assignments', async () => {
+  it('does not overwrite the class adviser for curriculum assignments', async () => {
     await db().doc('sections/SEC1').update({ adviserName: 'Manual adviser' });
-    await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'subject_teacher', sectionId: 'SEC1' });
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'curriculum_adviser', gradeLevel: 7 });
     expect((await db().doc('sections/SEC1').get()).data()).toMatchObject({ adviserName: 'Manual adviser' });
     expect((await db().doc('sections/SEC1').get()).data().schoolAdviserUid).toBeUndefined();
   });
   it('account deletion releases adviser locks and withdraws pending requests', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
-    const request = await seedRequest('teacher', 'subject_teacher', 'SEC8');
+    const request = await seedRequest('teacher', 'adviser', 'SEC8');
     await deleteSchoolAccess(db(), 'teacher');
     expect((await db().doc('school_accounts/teacher').get()).exists).toBe(false);
     expect((await db().doc('school_adviser_locks/2026-2027_SEC1').get()).exists).toBe(false);
@@ -91,12 +89,6 @@ describe('school request lifecycle', () => {
     expect(entry).toMatchObject({ role: 'adviser', sectionId: 'SEC1', schoolYear: year, source: 'request', assignedBy: 'ca@deped.gov.ph' });
     expect(entry.assignedAt.toMillis()).toBeGreaterThan(0);
     expect((await db().doc(`school_role_requests/${r.id}`).get()).data()).toMatchObject({ status: 'approved', reason: 'Approved', reviewedBy: 'curriculum' });
-  });
-  it('lets a Curriculum Adviser approve an in-grade subject-teacher request from a personal email', async () => {
-    const r = await seedRequest('personal', 'subject_teacher', 'SEC1');
-    await db().doc(`school_role_requests/${r.id}`).update({ sectionId: FieldValue.delete() });
-    await resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true });
-    expect((await loadSchoolActor(deps('personal'))).assignments).toMatchObject([{ role: 'subject_teacher', gradeLevel: 7, source: 'request' }]);
   });
   it('a rejection needs a reason and tells the teacher why', async () => {
     const r = await seedRequest('teacher', 'adviser', 'SEC1');
@@ -126,7 +118,7 @@ describe('school request lifecycle', () => {
     await resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true });
     expect((await loadSchoolActor(deps('personal'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1' }]);
   });
-  it('rejects curriculum approvals outside their grades and subject-teacher elevation', async () => {
+  it('rejects curriculum approvals outside their grades and curriculum elevation', async () => {
     const r = await seedRequest('teacher', 'adviser', 'SEC8');
     await expect(resolveSchoolRole(deps('curriculum'), { requestId: r.id, approve: true, reason: 'Verified' })).rejects.toMatchObject({ code: 'permission-denied' });
     await expect(assignSchoolRole(deps('curriculum'), { email: users.teacher.email, role: 'curriculum_adviser', gradeLevel: 8 })).rejects.toMatchObject({ code: 'permission-denied' });
@@ -217,7 +209,7 @@ describe('replacing and bulk approval', () => {
   });
   it('bulk approval reports each request and never stops at a failure', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC8' });
-    const clean = await requestSchoolRole(deps('other'), { role: 'subject_teacher', gradeLevels: [7] });
+    const clean = await requestSchoolRole(deps('other'), { role: 'adviser', sectionId: 'SEC1' });
     const taken = await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC8' });
     const { results } = await resolveSchoolRoles(deps('admin'), { requestIds: [taken.id, clean.id, 'missing'] });
     expect(results).toEqual([
@@ -243,7 +235,7 @@ describe('tracking and queues', () => {
   });
   it('counts pending requests for administrators only', async () => {
     await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
-    await requestSchoolRole(deps('personal'), { role: 'subject_teacher', sectionId: 'SEC8' });
+    await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC8' });
     expect(await getSchoolPendingCount(deps('admin'))).toEqual({ count: 2 });
     await expect(getSchoolPendingCount(deps('teacher'))).rejects.toMatchObject({ code: 'permission-denied' });
   });
@@ -251,12 +243,12 @@ describe('tracking and queues', () => {
     await assignSchoolRole(deps('admin'), { email: users.personal.email, role: 'adviser', sectionId: 'SEC1' });
     const inGrade = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
     await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC8' });
-    const subject = await requestSchoolRole(deps('other'), { role: 'subject_teacher', gradeLevels: [7] });
+    const otherInGrade = await requestSchoolRole(deps('other'), { role: 'adviser', sectionId: 'SEC1' });
     const admin = await getSchoolContext(deps('admin'));
     expect(admin.pendingRequests).toHaveLength(3);
     expect(admin.pendingRequests.find(r => r.id === inGrade.id).conflict).toEqual({ uid: 'personal', email: 'teacher@gmail.com', displayName: 'teacher@gmail.com' });
     const curriculum = await getSchoolContext(deps('curriculum'));
-    expect(curriculum.reviewQueue.map(r => r.id).sort()).toEqual([inGrade.id, subject.id].sort());
+    expect(curriculum.reviewQueue.map(r => r.id).sort()).toEqual([inGrade.id, otherInGrade.id].sort());
     expect(curriculum).not.toHaveProperty('pendingRequests');
     const teacher = await getSchoolContext(deps('teacher'));
     expect(teacher.myRequests.map(r => r.status)).toEqual(['pending', 'pending']);
@@ -265,52 +257,28 @@ describe('tracking and queues', () => {
   });
 });
 
-describe('grade-level subject teachers and the exclusion rule', () => {
-  it('grants DepEd subject teachers their grades at once', async () => {
-    const result = await requestSchoolRole(deps('teacher'), { role: 'subject_teacher', gradeLevels: [8, 7, 7] });
-    expect(result).toEqual({ status: 'granted', count: 2 });
-    const assignments = (await loadSchoolActor(deps('teacher'))).assignments;
-    expect(assignments).toHaveLength(2);
-    expect(assignments).toEqual(expect.arrayContaining([
-      expect.objectContaining({ role: 'subject_teacher', gradeLevel: 8, source: 'self', assignedBy: 'teacher@deped.gov.ph' }),
-      expect.objectContaining({ role: 'subject_teacher', gradeLevel: 7, source: 'self' })]));
-    expect(assignments.every(a => a.sectionId === undefined)).toBe(true);
-    expect((await db().collection('school_role_requests').get()).size).toBe(0);
-    await expect(requestSchoolRole(deps('teacher'), { role: 'subject_teacher', gradeLevels: [7] })).rejects.toMatchObject({ code: 'already-exists' });
-  });
-  it('sends one request per grade for personal emails', async () => {
-    const result = await requestSchoolRole(deps('personal'), { role: 'subject_teacher', gradeLevels: [7, 8] });
-    expect(result.status).toBe('pending');
-    expect(result.ids).toHaveLength(2);
-    const rows = (await db().collection('school_role_requests').get()).docs.map(d => d.data());
-    expect(rows.map(r => r.gradeLevel).sort()).toEqual([7, 8]);
-    expect(rows.every(r => r.sectionId === undefined && r.role === 'subject_teacher')).toBe(true);
-    expect((await loadSchoolActor(deps('personal'))).assignments).toEqual([]);
-  });
-  it('stores a section-based subject-teacher call as that section\'s grade', async () => {
-    await requestSchoolRole(deps('teacher'), { role: 'subject_teacher', sectionId: 'SEC8' });
-    expect((await loadSchoolActor(deps('teacher'))).assignments).toMatchObject([{ role: 'subject_teacher', gradeLevel: 8 }]);
-  });
-  it('rejects bad grade lists', async () => {
-    for (const gradeLevels of [[], [6], [13], ['7'], [7, 8, 9, 10, 11, 12, 7.5]]) {
-      await expect(requestSchoolRole(deps('teacher'), { role: 'subject_teacher', gradeLevels })).rejects.toMatchObject({ code: 'invalid-argument' });
+describe('the retired Subject Teacher role', () => {
+  const retired = 'Subject Teacher is no longer offered. Choose Class Adviser, or Parent/Guardian to link a learner.';
+  it('refuses Subject Teacher requests, with or without grades, and direct assignments', async () => {
+    for (const input of [{ role: 'subject_teacher', gradeLevels: [7] }, { role: 'subject_teacher', sectionId: 'SEC1' }]) {
+      await expect(requestSchoolRole(deps('teacher'), input)).rejects.toMatchObject({ code: 'invalid-argument', message: retired });
     }
+    await expect(assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'subject_teacher', gradeLevel: 7 })).rejects.toMatchObject({ code: 'invalid-argument' });
+    expect((await db().collection('school_role_requests').get()).size).toBe(0);
   });
-  it('never lets one account be Adviser and Subject Teacher in the same year', async () => {
+  it('hides leftover Subject Teacher rows and requests from every context', async () => {
+    await db().doc('school_accounts/teacher').set({ email: users.teacher.email, assignments: [{ role: 'subject_teacher', schoolYear: year, gradeLevel: 7 }] });
+    await db().doc('school_role_requests/old').set({ uid: 'teacher', email: users.teacher.email, emailVerified: true, role: 'subject_teacher',
+      schoolYear: year, gradeLevel: 8, status: 'rejected', reason: 'The Subject Teacher role was retired.', createdAt: new Date() });
+    const teacher = await getSchoolContext(deps('teacher'));
+    expect(teacher.assignments).toEqual([]);
+    expect(teacher.myRequests).toEqual([]);
+    const admin = await getSchoolContext(deps('admin'));
+    expect(admin.managedAssignments.filter(a => a.uid === 'teacher')).toEqual([]);
+  });
+  it('lets a former Subject Teacher become a Class Adviser', async () => {
+    await db().doc('school_accounts/teacher').set({ email: users.teacher.email, assignments: [{ role: 'subject_teacher', schoolYear: year, gradeLevel: 7 }] });
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
-    await expect(requestSchoolRole(deps('teacher'), { role: 'subject_teacher', gradeLevels: [7] })).rejects.toMatchObject({ code: 'failed-precondition' });
-    await expect(assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'subject_teacher', gradeLevel: 8 })).rejects.toMatchObject({ code: 'failed-precondition' });
-    await requestSchoolRole(deps('personal'), { role: 'subject_teacher', gradeLevels: [8] });
-    await expect(requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC8' })).rejects.toMatchObject({ code: 'failed-precondition' });
-  });
-  it('refuses to approve a request that would combine the two roles', async () => {
-    const r = await seedRequest('teacher', 'adviser', 'SEC8');
-    await db().doc('school_accounts/teacher').set({ assignments: [{ role: 'subject_teacher', schoolYear: year, gradeLevel: 7 }] }, { merge: true });
-    await expect(resolveSchoolRole(deps('admin'), { requestId: r.id, approve: true })).rejects.toMatchObject({ code: 'failed-precondition' });
-  });
-  it('revokes a grade-level subject teacher by grade', async () => {
-    await requestSchoolRole(deps('teacher'), { role: 'subject_teacher', gradeLevels: [7, 8] });
-    await revokeSchoolRole(deps('admin'), { uid: 'teacher', role: 'subject_teacher', gradeLevel: 7, reason: 'Moved' });
-    expect((await loadSchoolActor(deps('teacher'))).assignments).toMatchObject([{ role: 'subject_teacher', gradeLevel: 8 }]);
+    expect((await loadSchoolActor(deps('teacher'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1' }]);
   });
 });

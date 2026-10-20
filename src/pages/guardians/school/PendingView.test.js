@@ -8,7 +8,7 @@ const base = { schoolYear: '2026-2027', ended: false, sections: [{ id: 'A', name
 const requests = [
   { id: 'r1', uid: 'u1', displayName: 'Dan Lee', email: 'dan@deped.gov.ph', role: 'adviser', sectionId: 'A', gradeLevel: 7, createdAt: Date.now(),
     conflict: { uid: 'u0', displayName: 'Ana Cruz', email: 'ana@deped.gov.ph' } },
-  { id: 'r2', uid: 'u2', displayName: 'Eve Tan', email: 'eve@gmail.com', role: 'subject_teacher', sectionId: 'A', gradeLevel: 7, createdAt: Date.now(), conflict: null },
+  { id: 'r2', uid: 'u2', displayName: 'Eve Tan', email: 'eve@gmail.com', role: 'adviser', sectionId: 'A', gradeLevel: 7, createdAt: Date.now(), conflict: null },
 ];
 const render = context => renderToStaticMarkup(h(PendingView, { school: { context, run: async () => undefined, pending: false }, onUseLegacy: () => {} }));
 
