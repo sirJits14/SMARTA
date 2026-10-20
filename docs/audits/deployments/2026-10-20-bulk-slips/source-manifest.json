@@ -1,0 +1,9 @@
+{
+  "baseline": "docs/releases/2026-10-19-registration/prepare.mjs",
+  "overlays": {
+    "src/lib/advisoryStatus.js": "43965a53540efc94ad1b2f6cbe009a2c5083656bddc67d5b7f5b5748f849b71b",
+    "src/lib/advisoryStatus.test.js": "6a6fd8a932ab5e57f3864dd79f39d9823f8f7c9707de5cbe1491f016d8c3ec4c",
+    "src/pages/SectionsPage.jsx": "c1dc87e3cf6720002a72236cf3cad18a2e0953a037bfcd874023dab2dcc31218",
+    "src/pages/SectionsPage.test.js": "3e30416252d5badf9509e9e0b86b75935d5c7aa184d4ea8c1037e55d58e9de23"
+  }
+}
