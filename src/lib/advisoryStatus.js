@@ -19,9 +19,35 @@ export function adviserStatusText(status) {
 export const slipCandidates = (sections, bySection, me) =>
   sections.filter((s) => canIssueAdvisorySlip(me, s) && bySection.has(s.id) && !bySection.get(s.id).adviser);
 
+// Bulk printing works on ticked sections. The "select" shortcut ticks only
+// sections without an open slip; sections with one can still be ticked by hand.
+const hasOpenSlip = (bySection, section) => !!bySection.get(section.id)?.slip;
+export const needingSlip = (candidates, bySection) => candidates.filter((s) => !hasOpenSlip(bySection, s));
+export const withSelected = (selection, sections) => new Set([...selection, ...sections.map((s) => s.id)]);
+// Drops ticks for sections that gained an adviser or left scope since ticking.
+export const selectedSections = (selection, candidates) => candidates.filter((s) => selection.has(s.id));
+
+export function selectionText(sections, bySection) {
+  const replacing = sections.filter((s) => hasOpenSlip(bySection, s)).length;
+  const base = `${plural(sections.length, 'section', 'sections')} selected`;
+  return replacing ? `${base} · ${replacing} will replace an unused slip` : base;
+}
+
+const listed = (sections) => {
+  const names = sections.slice(0, 3).map(sectionLabel);
+  return sections.length > 3 ? `${names.join(', ')} and ${sections.length - 3} more` : names.join(sections.length === 2 ? ' and ' : ', ');
+};
+
 export function slipConfirmMessage(kind, sections, bySection) {
   if (kind === 'revoke') return `Revoke the advisory slip for ${sectionLabel(sections[0])}? The printed slip stops working.`;
-  if (sections.length > 1) return `Issue advisory slips for ${sections.length} sections without an adviser? Print them right away: the codes are shown only once. Any older unused slips for these sections stop working.`;
+  if (sections.length > 1) {
+    const replacing = sections.filter((s) => hasOpenSlip(bySection, s));
+    const base = `Issue advisory slips for ${sections.length} sections? Print them right away: the codes are shown only once.`;
+    if (!replacing.length) return base;
+    return replacing.length === 1
+      ? `${base} ${listed(replacing)} already has an unused slip. That old slip stops working.`
+      : `${base} ${replacing.length} already have an unused slip (${listed(replacing)}). Those old slips stop working.`;
+  }
   const [section] = sections;
   return bySection.get(section.id)?.slip
     ? `Print a new advisory slip for ${sectionLabel(section)}? A new code will be printed. The old slip stops working.`

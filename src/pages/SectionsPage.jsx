@@ -20,7 +20,8 @@ import { isAdmin, grades, singleGrade, scopeRoster, canEditSection, sectionEditS
 import { callableMessage } from '../../parent/src/lib/school.js';
 import { useAdvisoryStatus } from '../hooks/useAdvisoryStatus.js';
 import { issueAdvisorySlips, revokeAdvisorySlip } from '../data/advisorySlips.js';
-import { adviserStatusText, slipCandidates, slipConfirmMessage, showAdvisoryPanel, withoutRevokedSlip } from '../lib/advisoryStatus.js';
+import { adviserStatusText, slipCandidates, slipConfirmMessage, showAdvisoryPanel, withoutRevokedSlip,
+  needingSlip, withSelected, selectedSections, selectionText } from '../lib/advisoryStatus.js';
 import AdvisorySlipsPanel from './sections/AdvisorySlipsPanel.jsx';
 
 export function SectionForm({ editing, schoolYear, schedules, onClose, restricted = false }) {
@@ -153,13 +154,19 @@ export default function SectionsPage({ me, schoolYear }) {
   const [advisorySlips, setAdvisorySlips] = useState(null);
   const [slipConfirm, setSlipConfirm] = useState(null);
   const [slipError, setSlipError] = useState('');
+  // Ticked section ids; kept across grade tabs so one print run can span grades.
+  const [slipSelection, setSlipSelection] = useState(() => new Set());
+  const toggleSlip = (id) => setSlipSelection((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const runSlips = async ({ kind, sections: targets }) => {
     setSlipError('');
     try {
       if (kind === 'revoke') {
         await revokeAdvisorySlip({ sectionId: targets[0].id });
         setAdvisorySlips((current) => withoutRevokedSlip(current, targets[0].id));
-      } else setAdvisorySlips(await issueAdvisorySlips({ sectionIds: targets.map((s) => s.id) }));
+      } else {
+        setAdvisorySlips(await issueAdvisorySlips({ sectionIds: targets.map((s) => s.id) }));
+        setSlipSelection(new Set());
+      }
     } catch (e) { setSlipError(callableMessage(e) || 'Could not update advisory slips.'); }
     finally { setSlipConfirm(null); advisory.reload(); }
   };
@@ -184,6 +191,10 @@ export default function SectionsPage({ me, schoolYear }) {
   const activeList = groups.find(([g]) => g === activeGrade)?.[1] || [];
   const sectionSearchActive = sectionQuery.trim().length > 0;
   const matchingSections = useMemo(() => activeList.filter((section) => sectionMatches(sectionQuery, section)), [activeList, sectionQuery]);
+  const slipTargetIds = useMemo(() => new Set(slipTargets.map((s) => s.id)), [slipTargets]);
+  const ticked = useMemo(() => selectedSections(slipSelection, slipTargets), [slipSelection, slipTargets]);
+  const untickedNeedingSlip = useMemo(() => needingSlip(matchingSections.filter((s) => slipTargetIds.has(s.id) && !slipSelection.has(s.id)), advisory.bySection),
+    [matchingSections, slipTargetIds, slipSelection, advisory.bySection]);
   const detailRoster = useMemo(() => {
     if (!detailSection) return [];
     const ids = enrolledStudentIdsBySection.get(detailSection.id) || new Set();
@@ -207,7 +218,6 @@ export default function SectionsPage({ me, schoolYear }) {
         <div className="sims-heading" style={S.plate}>
           <h1 style={S.h1}>{oneGrade ? `Grade ${oneGrade} Sections` : 'Sections'}</h1>
           {admin && <Btn onClick={() => setForm({ schoolYear: selectedYear })}>Add section</Btn>}
-          {slipTargets.length > 0 && <Btn variant="ghost" onClick={() => setSlipConfirm({ kind: 'issue', sections: slipTargets })}>Print slips for sections without an adviser</Btn>}
         </div>
         {slipError && <p role="alert" className="sims-feedback">{slipError}</p>}
         {advisory.error && <p role="alert" className="sims-feedback">{advisory.error}</p>}
@@ -235,14 +245,18 @@ export default function SectionsPage({ me, schoolYear }) {
                 label="Grade level"
               />
             </div>
-            <div style={{ marginBottom: 10 }}>
-              <Inp
-                type="search"
-                value={sectionQuery}
-                onChange={(event) => setSectionQuery(event.target.value)}
-                aria-label={`Search sections in Grade ${activeGrade}`}
-                placeholder={`Search Grade ${activeGrade} sections by name`}
-              />
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ flex: '1 1 260px' }}>
+                <Inp
+                  type="search"
+                  value={sectionQuery}
+                  onChange={(event) => setSectionQuery(event.target.value)}
+                  aria-label={`Search sections in Grade ${activeGrade}`}
+                  placeholder={`Search Grade ${activeGrade} sections by name`}
+                />
+              </div>
+              {untickedNeedingSlip.length > 0 && <Btn variant="ghost" onClick={() => setSlipSelection((prev) => withSelected(prev, untickedNeedingSlip))}>
+                {`Select ${untickedNeedingSlip.length} ${untickedNeedingSlip.length === 1 ? 'section' : 'sections'} without a slip`}</Btn>}
             </div>
             {sectionSearchActive && (
               <div aria-live="polite" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, marginBottom: 10 }}>
@@ -254,10 +268,15 @@ export default function SectionsPage({ me, schoolYear }) {
                 <EmptyState title="No matching sections" hint={`No Grade ${activeGrade} sections match "${sectionQuery}".`} />
               ) : <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead><tr style={S.thead}>
+                  {slipTargets.length > 0 && <th style={{ ...S.th, width: 44 }} aria-label="Select for advisory slips" />}
                   {['Section', 'Strand', 'Adviser', 'Schedule', ...(canViewRoster ? ['Enrolled'] : []), ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
                 </tr></thead>
                 <tbody>{matchingSections.map((s) => (
                   <tr key={s.id} onClick={canViewRoster ? () => setDetailSection(s) : undefined} style={{ cursor: canViewRoster ? 'pointer' : undefined }}>
+                    {slipTargets.length > 0 && <td style={S.td} onClick={(e) => e.stopPropagation()}>
+                      {slipTargetIds.has(s.id) && <input type="checkbox" aria-label={`Select ${s.name} for an advisory slip`} checked={slipSelection.has(s.id)}
+                        onChange={() => toggleSlip(s.id)} style={{ width: 18, height: 18, cursor: 'pointer' }} />}
+                    </td>}
                     <td style={{ ...S.td, fontWeight: 600 }}>{canViewRoster ? <button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}><span>{s.name}</span><span aria-hidden="true">›</span></button> : s.name}</td>
                     <td style={S.td}>{s.strand || '—'}</td>
                     <td style={S.td}>
@@ -282,6 +301,11 @@ export default function SectionsPage({ me, schoolYear }) {
                 </tbody>
               </table></div>}
             </Card>
+            {ticked.length > 0 && <div className="school-bulk-bar" role="region" aria-label="Advisory slips to print" style={{ marginTop: 16 }}>
+              <span style={{ fontWeight: 600 }}>{selectionText(ticked, advisory.bySection)}</span>
+              <Btn variant="ghost" onClick={() => setSlipSelection(new Set())}>Clear</Btn>
+              <Btn onClick={() => setSlipConfirm({ kind: 'issue', sections: ticked })}>{`Print ${ticked.length === 1 ? 'slip' : `${ticked.length} slips`}`}</Btn>
+            </div>}
           </>
         )}
       </div>
