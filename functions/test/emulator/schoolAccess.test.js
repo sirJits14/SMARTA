@@ -23,6 +23,7 @@ const seedRequest = async (uid, role, sectionId) => {
 };
 beforeEach(async () => {
   await clearAll(); await seedSchool();
+  await db().doc('settings/app').set({ advisoryRequestsEnabled: true }, { merge: true });
   await db().doc('users/admin@school.test').set({ uid: 'admin', role: 'admin' });
   await db().doc('school_accounts/curriculum').set({ assignments: [{ role: 'curriculum_adviser', schoolYear: year, gradeLevel: 7 }] });
   await db().doc('sections/SEC8').set({ name: 'Eight', gradeLevel: 8, schoolYear: year });
@@ -141,7 +142,7 @@ describe('school request lifecycle', () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
     await db().doc(`school_years/${year}`).set({ endedAt: new Date() });
     expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
-    await expect(requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' })).rejects.toMatchObject({ code: 'failed-precondition' });
+    await expect(requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' })).rejects.toMatchObject({ code: 'failed-precondition' });
   });
   it('tells a newly assigned teacher where to switch to School', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
@@ -179,6 +180,20 @@ describe('teacher requests', () => {
     await expect(requestSchoolRole(deps('teacher'), { role: 'curriculum_adviser', gradeLevel: 7 }))
       .rejects.toMatchObject({ code: 'permission-denied', message: 'An administrator assigns Curriculum Adviser access.' });
   });
+  it('refuses a non-DepEd account and writes nothing', async () => {
+    await expect(requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' }))
+      .rejects.toMatchObject({ code: 'permission-denied', message: 'Class Adviser requests need a @deped.gov.ph account.' });
+    expect((await db().collection('school_role_requests').get()).size).toBe(0);
+    expect((await db().collection('audit_log').get()).size).toBe(0);
+    expect((await db().doc('rate_limits/personal').get()).exists).toBe(false);
+  });
+  it('still lets an Administrator assign a non-DepEd account and approve its waiting request', async () => {
+    await assignSchoolRole(deps('admin'), { email: users.personal.email, role: 'adviser', sectionId: 'SEC1' });
+    const waiting = await seedRequest('other', 'adviser', 'SEC8');
+    await resolveSchoolRole(deps('admin'), { requestId: waiting.id, approve: true });
+    expect((await loadSchoolActor(deps('personal'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC1' }]);
+    expect((await loadSchoolActor(deps('other'))).assignments).toMatchObject([{ role: 'adviser', sectionId: 'SEC8' }]);
+  });
   it('lets a teacher withdraw only their own pending request', async () => {
     const { id } = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
     await expect(withdrawSchoolRequest(deps('personal'), { requestId: id })).rejects.toMatchObject({ code: 'not-found' });
@@ -191,7 +206,7 @@ describe('teacher requests', () => {
 describe('replacing and bulk approval', () => {
   it('replaces the current adviser in one audited step, administrators only', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
-    const { id } = await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' });
+    const { id } = await seedRequest('personal', 'adviser', 'SEC1');
     await expect(resolveSchoolRole(deps('admin'), { requestId: id, approve: true })).rejects.toMatchObject({ code: 'already-exists' });
     await expect(replaceAdviser(deps('curriculum'), { requestId: id, reason: 'Moved' })).rejects.toMatchObject({ code: 'permission-denied' });
     await expect(replaceAdviser(deps('admin'), { requestId: id })).rejects.toMatchObject({ code: 'invalid-argument' });
@@ -209,8 +224,8 @@ describe('replacing and bulk approval', () => {
   });
   it('bulk approval reports each request and never stops at a failure', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC8' });
-    const clean = await requestSchoolRole(deps('other'), { role: 'adviser', sectionId: 'SEC1' });
-    const taken = await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC8' });
+    const clean = await seedRequest('other', 'adviser', 'SEC1');
+    const taken = await seedRequest('personal', 'adviser', 'SEC8');
     const { results } = await resolveSchoolRoles(deps('admin'), { requestIds: [taken.id, clean.id, 'missing'] });
     expect(results).toEqual([
       { id: taken.id, ok: false, error: 'This section already has an adviser. An administrator must revoke that assignment first.' },
@@ -235,7 +250,7 @@ describe('tracking and queues', () => {
   });
   it('counts pending requests for administrators only', async () => {
     await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
-    await requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC8' });
+    await seedRequest('personal', 'adviser', 'SEC8');
     expect(await getSchoolPendingCount(deps('admin'))).toEqual({ count: 2 });
     await expect(getSchoolPendingCount(deps('teacher'))).rejects.toMatchObject({ code: 'permission-denied' });
   });
@@ -243,7 +258,7 @@ describe('tracking and queues', () => {
     await assignSchoolRole(deps('admin'), { email: users.personal.email, role: 'adviser', sectionId: 'SEC1' });
     const inGrade = await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' });
     await requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC8' });
-    const otherInGrade = await requestSchoolRole(deps('other'), { role: 'adviser', sectionId: 'SEC1' });
+    const otherInGrade = await seedRequest('other', 'adviser', 'SEC1');
     const admin = await getSchoolContext(deps('admin'));
     expect(admin.pendingRequests).toHaveLength(3);
     expect(admin.pendingRequests.find(r => r.id === inGrade.id).conflict).toEqual({ uid: 'personal', email: 'teacher@gmail.com', displayName: 'teacher@gmail.com' });

@@ -2,11 +2,12 @@ import { createHash } from 'node:crypto';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
-import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, isGradeRole } from '../../shared/schoolAccess.js';
+import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, isGradeRole, isDepedEmail } from '../../shared/schoolAccess.js';
 import { enforceRateLimit } from '../callable.js';
 import { groupLegacyAdvisers, sampleStudentIds } from '../lib/legacyAdvisers.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
+const DEPED_ONLY = 'Class Adviser requests need a @deped.gov.ph account.';
 const read = (db, reader, ref) => reader === db ? ref.get() : reader.get(ref);
 const id = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 const emailValue = value => typeof value === 'string' && /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(value);
@@ -86,6 +87,7 @@ export async function requestSchoolRole(deps, input) {
   if (input.role === 'subject_teacher') fail('invalid-argument', 'Subject Teacher is no longer offered. Choose Class Adviser, or Parent/Guardian to link a learner.');
   if (!REQUESTABLE_ROLES.includes(input.role)) fail('permission-denied', 'An administrator assigns Curriculum Adviser access.');
   const user = await liveUser(deps.auth, deps.uid);
+  if (!isDepedEmail(user.email)) fail('permission-denied', DEPED_ONLY);
   await enforceRateLimit(deps.db, deps.uid, 'schoolRoleRequest', { windowMs: 3600000, max: 30 }, (deps.now || (() => new Date()))().getTime());
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
