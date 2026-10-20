@@ -9,6 +9,7 @@ import { useQuery, useDoc } from '../hooks/useDoc.js';
 import { useTheme } from '../hooks/useTheme.js';
 import { useSchoolContext } from '../hooks/useSchoolContext.js';
 import { canUseSchool, hasClass, schoolHome } from '../lib/portalMode.js';
+import { addRoleHint } from '../lib/join.js';
 import { THEME_LABEL } from '../lib/themeLabels.js';
 import { notificationState } from '../lib/notificationState.js';
 import { useDeviceStatus } from '../lib/notifications.js';
@@ -92,7 +93,7 @@ function SettingsHome({ ctx }) {
         {schoolAllowed && <SettingsRow tile="teal" icon="class" label={S.modeTitle} value={mode.view === 'school' ? S.modeSchool : S.modeFamily} onClick={() => navigate('/settings/mode')} />}
         {Array.isArray(schoolContext?.reviewQueue) && <SettingsRow tile="teal" icon="class" label={S.schoolRequestsTitle}
           value={schoolContext.reviewQueue.length ? String(schoolContext.reviewQueue.length) : ''} onClick={() => navigate('/settings/school-requests')} />}
-        <SettingsRow tile="teal" icon="class" label={S.addRoleRow} subtitle={S.addRoleRowHint} onClick={() => navigate('/join')} />
+        <SettingsRow tile="teal" icon="class" label={S.addRoleRow} subtitle={addRoleHint(user.email, S)} onClick={() => navigate('/join')} />
         {schoolContext?.myRequests?.length > 0 && <SettingsRow tile="teal" icon="class" label={S.schoolRequestsRow}
           value={schoolContext.myRequests.some((r) => r.status === 'pending') ? S.requestPending : undefined} onClick={() => navigate('/settings/school-access')} />}
       </SettingsGroup>

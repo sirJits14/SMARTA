@@ -16,6 +16,7 @@ const slips = async () => (await db().collection('advisory_slips').get()).docs.m
 
 beforeEach(async () => {
   await clearAll(); await seedSchool();
+  await db().doc('settings/app').set({ advisoryRequestsEnabled: true }, { merge: true });
   await db().doc('sections/SEC8').set({ name: 'Eight', gradeLevel: 8, schoolYear: year });
 });
 
@@ -92,6 +93,13 @@ const teachers = {
 const teacherAuth = { getUser: async uid => teachers[uid], getUserByEmail: async email => Object.values(teachers).find(u => u.email === email) };
 const tdeps = uid => ({ db: db(), auth: teacherAuth, now, uid, email: teachers[uid].email, displayName: teachers[uid].displayName || uid });
 const issue = async (sectionId = 'SEC1') => (await issueAdvisorySlips(deps('admin'), { sectionIds: [sectionId] })).issued[0].code;
+// A request left over from before non-DepEd accounts were refused.
+const seedRequest = async (uid, sectionId) => {
+  const id = `${uid}_adviser_${sectionId}`;
+  await db().doc(`school_role_requests/${id}`).set({ uid, email: teachers[uid].email, emailVerified: true, displayName: uid,
+    role: 'adviser', schoolYear: year, sectionId, gradeLevel: 7, status: 'pending', createdAt: new Date() });
+  return { id };
+};
 
 describe('redeeming advisory slips', () => {
   beforeEach(async () => { await db().doc('users/admin@school.test').set({ uid: 'admin', role: 'admin' }); });
@@ -107,10 +115,10 @@ describe('redeeming advisory slips', () => {
     const audit = (await db().collection('audit_log').where('action', '==', 'school.slipRedeemed').get()).docs.map(d => d.data().details);
     expect(audit).toEqual([expect.objectContaining({ sectionId: 'SEC1', issuedBy: 'admin@school.test', teacherEmail: 't1@deped.gov.ph' })]);
   });
-  it('refuses personal emails with a message they can act on', async () => {
+  it('refuses personal emails', async () => {
     const code = await issue();
     for (const fn of [previewAdvisorySlip, redeemAdvisorySlip]) {
-      await expect(fn(tdeps('personal'), { code })).rejects.toMatchObject({ code: 'permission-denied', message: 'Advisory slips need a DepEd email. Request the role instead.' });
+      await expect(fn(tdeps('personal'), { code })).rejects.toMatchObject({ code: 'permission-denied', message: 'Advisory slips need a DepEd email.' });
     }
   });
   it('works once, and never for revoked, other-year or ended-year slips', async () => {
@@ -151,7 +159,7 @@ describe('redeeming advisory slips', () => {
   });
   it('closes pending adviser requests for the section', async () => {
     const mine = await requestSchoolRole(tdeps('t1'), { role: 'adviser', sectionId: 'SEC1' });
-    const theirs = await requestSchoolRole(tdeps('personal'), { role: 'adviser', sectionId: 'SEC1' });
+    const theirs = await seedRequest('personal', 'SEC1');
     await redeemAdvisorySlip(tdeps('t1'), { code: await issue() });
     expect((await db().doc(`school_role_requests/${mine.id}`).get()).data().status).toBe('fulfilled');
     expect((await db().doc(`school_role_requests/${theirs.id}`).get()).data()).toMatchObject({ status: 'superseded', reason: 'Section adviser assigned by slip' });

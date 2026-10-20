@@ -11,13 +11,18 @@ export function heldRoles(context, familyLinks = []) {
 
 export function roleOptions({ held = [], selected = [], email = '' }) {
   const deped = isDepedEmail(email);
-  return JOIN_ROLES.map((key) => {
+  return JOIN_ROLES.flatMap((key) => {
     // A parent may always link another learner, so Parent/Guardian is never locked.
-    if (key === 'family') return { key, state: selected.includes(key) ? 'selected' : 'available', active: held.includes(key), needsApproval: false };
-    if (held.includes(key)) return { key, state: 'held', active: true, needsApproval: false };
-    return { key, state: selected.includes(key) ? 'selected' : 'available', active: false, needsApproval: !deped };
+    if (key === 'family') return [{ key, state: selected.includes(key) ? 'selected' : 'available', active: held.includes(key) }];
+    if (held.includes(key)) return [{ key, state: 'held', active: true }];
+    // Only DepEd accounts can become a Class Adviser by themselves (spec 2026-10-21).
+    if (!deped) return [];
+    return [{ key, state: selected.includes(key) ? 'selected' : 'available', active: false }];
   });
 }
+
+// Settings › Add a role: only DepEd accounts are told about Class Adviser (spec 2026-10-21).
+export const addRoleHint = (email, strings) => (isDepedEmail(email) ? strings.addRoleRowHint : strings.addRoleRowHintParent);
 
 export function toggleRole(selected, key, options) {
   const option = options.find((o) => o.key === key);

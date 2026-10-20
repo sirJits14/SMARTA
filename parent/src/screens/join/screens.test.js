@@ -46,21 +46,29 @@ describe('Join screens', () => {
     return renderToStaticMarkup(createElement(RoleChooser, { name: 'Ana Reyes', setName() {}, setSelected() {}, onContinue() {}, selected: [], ...props }));
   };
 
-  it('shows the two role titles and no approval tag for a DepEd email', async () => {
+  it('shows the two role titles for a DepEd email', async () => {
     const options = roleOptions({ email: 'ana@deped.gov.ph' });
     const html = await render({ options });
     for (const title of [S.joinFamily, S.joinAdviser]) expect(html).toContain(title);
     expect(html).toContain('Parent/Guardian');
     expect(html).not.toContain('Subject Teacher');
-    expect(html).not.toContain(S.joinNeedsApproval);
+    expect(html).not.toContain('Needs approval');
   });
 
-  it('tags school roles as needing approval for a personal email', async () => {
+  it('shows only Parent/Guardian for a personal email, even if a slip link preselected Class Adviser', async () => {
     const options = roleOptions({ email: 'ana@gmail.com', selected: ['adviser'] });
     const html = await render({ options, selected: ['adviser'] });
-    expect(html).toContain(S.joinNeedsApproval);
-    // The note itself contains an apostrophe, which renderToStaticMarkup escapes.
-    expect(html).toContain('approves school roles');
+    expect(html).toContain(S.joinFamily);
+    expect(html).not.toContain(S.joinAdviser);
+    expect(html).not.toContain('Needs approval');
+    expect(html.match(/role="checkbox"/g)).toHaveLength(1);
+  });
+
+  it('keeps a held Class Adviser card visible for a personal email', async () => {
+    const options = roleOptions({ email: 'ana@gmail.com', held: ['adviser'] });
+    const html = await render({ options });
+    expect(html).toContain(S.joinAdviser);
+    expect(html).toContain(S.joinActive);
   });
 
   it('lets a teacher who is also a parent tick both cards', async () => {

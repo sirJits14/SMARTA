@@ -25,7 +25,6 @@ function RoleCard({ option, onToggle }) {
         <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
           <strong style={{ fontSize: 16 }}>{title}</strong>
           {option.active && <span style={tag}>{S.joinActive}</span>}
-          {!option.active && option.needsApproval && <span style={tag}>{S.joinNeedsApproval}</span>}
         </span>
         <span style={{ display: 'block', fontSize: 14, color: T.inkMuted, marginTop: 2 }}>{hint}</span>
       </span>
@@ -35,7 +34,6 @@ function RoleCard({ option, onToggle }) {
 
 export default function RoleChooser({ name, setName, options, selected, setSelected, onContinue, onSkip, error }) {
   const steps = joinSteps(options);
-  const anyApproval = options.some((o) => o.state === 'selected' && o.needsApproval);
   const ready = name.trim().length >= 2 && steps.length > 0;
   return (
     <Card>
@@ -48,7 +46,6 @@ export default function RoleChooser({ name, setName, options, selected, setSelec
       <div role="group" aria-label={S.joinRolesLabel} style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
         {options.map((o) => <RoleCard key={o.key} option={o} onToggle={() => setSelected(toggleRole(selected, o.key, options))} />)}
       </div>
-      {anyApproval && <p style={{ fontSize: 13, color: T.inkMuted }}>{S.joinNeedsApprovalNote}</p>}
       <Btn onClick={onContinue} disabled={!ready} style={{ width: '100%' }}>
         {ready ? `${S.joinContinue} · ${steps.length} ${steps.length === 1 ? S.joinStep : S.joinSteps}` : S.joinContinue}
       </Btn>

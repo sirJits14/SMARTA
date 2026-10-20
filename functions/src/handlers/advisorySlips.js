@@ -97,7 +97,7 @@ export async function listAdvisoryStatus(deps) {
 }
 
 const GENERIC = 'That advisory slip could not be used. Ask the school to issue a new one.';
-const DEPED = 'Advisory slips need a DepEd email. Request the role instead.';
+const DEPED = 'Advisory slips need a DepEd email.';
 
 // Only verified DepEd accounts may use a slip; this refusal describes the
 // caller's own account, so it is safe to say. Everything else is generic.
