@@ -3,12 +3,13 @@ import { useCollectionResource } from '../hooks/useCollection.js';
 import { staffUsers } from '../data/staffUsers.js';
 import { ROLE_VALUES, ROLE_LABELS, ALL_GRADES, roleOf, roleLabel } from '../../shared/staffRoles.js';
 import { T, S } from '../styles.js';
-import { Btn, Inp, Sel, Field, Card, Modal, EmptyState, ResourceState, EditorResources } from '../components/ui.jsx';
+import { Badge, Btn, Inp, Sel, Field, Card, Modal, EmptyState, ResourceState, EditorResources, RowMenu } from '../components/ui.jsx';
 
 // Admin-only account management. Every change goes through a callable that
 // enforces the safeguards (no self-demote/disable/reset/delete, at least one
 // active admin) server-side; the disabled buttons here only mirror them.
 const statusOf = (u) => u.disabled ? 'Disabled' : u.mustChangePassword ? 'Must change password' : 'Active';
+const statusTone = (u) => u.disabled ? 'danger' : u.mustChangePassword ? 'warning' : 'success';
 const errorText = (e) => e?.message || 'The action could not be completed. Please try again.';
 const displayName = (u) => u.name || u.id;
 const actions = { display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 };
@@ -139,15 +140,19 @@ export default function AccountsPage({ me }) {
                 const self = u.id === me.email;
                 return (
                   <tr key={u.id}>
-                    <td style={{ ...S.td, fontWeight: 600 }}>{displayName(u)}{self && <span style={{ color: T.inkMuted, fontWeight: 400 }}> (you)</span>}</td>
-                    <td style={S.td}>{u.id}</td>
+                    <td style={S.tdStrong}>{displayName(u)}{self && <span style={{ color: T.inkMuted, fontWeight: 400 }}> (you)</span>}</td>
+                    <td style={{ ...S.td, color: T.inkMuted }}>{u.id}</td>
                     <td style={S.td}>{roleLabel(u)}</td>
-                    <td style={{ ...S.td, color: u.disabled ? T.absent : T.ink }}>{statusOf(u)}</td>
-                    <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <Btn variant="ghost" onClick={() => setForm(u)} style={{ marginRight: 6 }}>Change</Btn>
-                      <Btn variant="ghost" disabled={self} onClick={() => setPending({ kind: 'reset', user: u })} style={{ marginRight: 6 }}>Reset password</Btn>
-                      <Btn variant="ghost" disabled={self} onClick={() => setPending({ kind: u.disabled ? 'enable' : 'disable', user: u })} style={{ marginRight: 6 }}>{u.disabled ? 'Enable' : 'Disable'}</Btn>
-                      <Btn variant="ghost" disabled={self} onClick={() => setPending({ kind: 'delete', user: u })} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                    <td style={S.td}><Badge tone={statusTone(u)}>{statusOf(u)}</Badge></td>
+                    <td style={S.tdActions}>
+                      <span className="sims-row-actions">
+                        <Btn variant="ghost" onClick={() => setForm(u)}>Change</Btn>
+                        <RowMenu label={`More actions for ${displayName(u)}`} items={[
+                          { label: 'Reset password', disabled: self, onSelect: () => setPending({ kind: 'reset', user: u }) },
+                          { label: u.disabled ? 'Enable' : 'Disable', disabled: self, onSelect: () => setPending({ kind: u.disabled ? 'enable' : 'disable', user: u }) },
+                          { label: 'Delete', danger: true, disabled: self, onSelect: () => setPending({ kind: 'delete', user: u }) },
+                        ]} />
+                      </span>
                     </td>
                   </tr>
                 );

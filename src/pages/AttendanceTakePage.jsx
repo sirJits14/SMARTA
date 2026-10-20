@@ -140,7 +140,7 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
       ) : (
         <>
           {/* Tally ribbon */}
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div className="sims-tallies">
             <TallyChip label="Present" value={tally.present} sub={tally.late ? `${tally.late} late` : null} color={T.present} />
             <TallyChip label="Absent" value={tally.absent} color={T.absent} />
             <TallyChip label="Excused" value={tally.excused} color={T.excused} />
@@ -193,7 +193,7 @@ export default function AttendanceTakePage({ me, schoolYear, entry }) {
                   <TimeCell time={timeOut} />
                   {showPm && <><TimeCell time={pm.pmTimeIn} /><TimeCell time={pm.pmTimeOut} /></>}
                   <span style={{ width: 90, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    {mark === 'H' ? <span style={{ color: T.absent, fontWeight: 700 }}>½ day absent</span> : <StatusPill mark={mark} />}
+                    {mark === 'H' ? <span style={{ color: T.absent, fontWeight: 600 }}>½ day absent</span> : <StatusPill mark={mark} />}
                     {corrected && <span style={{ fontSize: 11 }}>AM: {sessions.am.status} · PM: {sessions.pm.status}</span>}
                     {pm.notes.map((n) => <span key={n} style={{ fontFamily: T.body, fontSize: 11, fontWeight: 600, color: T.inkMuted, whiteSpace: 'nowrap' }}>{n}</span>)}
                   </span>
@@ -220,11 +220,9 @@ function TimeCell({ time }) {
 
 function TallyChip({ label, value, sub, color }) {
   return (
-    <Card style={{ padding: '9px 16px', display: 'flex', alignItems: 'baseline', gap: 9 }}>
-      <span style={{ width: 9, height: 9, borderRadius: T.radius, background: color, display: 'inline-block', flexShrink: 0 }} />
-      <span style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.ink, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</span>
-      <span style={{ ...T.num, fontSize: 18, fontWeight: 700, color }}>{value}</span>
-      {sub && <span style={{ ...T.num, fontSize: 11, color: T.ink, color: T.inkMuted }}>({sub})</span>}
+    <Card className="sims-tally">
+      <span className="sims-tally-label"><span className="sims-dot" style={{ background: color }} />{label}</span>
+      <span className="sims-tally-value">{value}{sub && <span className="sims-tally-sub"> ({sub})</span>}</span>
     </Card>
   );
 }

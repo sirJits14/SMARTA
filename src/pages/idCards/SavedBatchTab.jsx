@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { usePrintReadiness } from '../../hooks/usePrintReadiness.js';
 import { useAsyncAction } from '../../hooks/useAsyncAction.js';
-import { ActionFeedback, Btn, Inp, Field, Card, EmptyState, Confirm } from '../../components/ui.jsx';
+import { ActionFeedback, Badge, Btn, Inp, Field, Card, EmptyState, Confirm } from '../../components/ui.jsx';
 import IdCardsPrintSheets from '../../components/IdCardsPrintable.jsx';
 import { useIdCardPrintConfirm } from '../../components/IdCardPrintConfirm.jsx';
 import { addToIdCardBatch, removeFromIdCardBatch, clearIdCardBatch, markBatchPrinted } from '../../data/idCards.js';
@@ -13,7 +13,6 @@ import { T } from '../../styles.js';
 const sectionLabel = (s) => `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}`;
 const SEARCH_LIMIT = 8;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const printedTag = { fontSize: 11, fontWeight: 600, color: T.primary, border: `1px solid ${T.primary}`, borderRadius: T.pill, padding: '1px 8px' };
 const row = { display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 13, flexWrap: 'wrap' };
 
 export default function SavedBatchTab({ me, students, enrollments, sections, schoolYear, batchDocs }) {
@@ -60,7 +59,7 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
                     <span style={{ ...T.num, color: T.inkMuted }}>{student.lrn}</span>{' '}
                     <span style={{ color: T.inkMuted }}>· {sectionLabel(section)}</span>
                   </span>
-                  {isIdCardPrinted(student) && <span style={printedTag}>Printed</span>}
+                  {isIdCardPrinted(student) && <Badge tone="accent">Printed</Badge>}
                   <Btn variant="ghost" disabled={action.busy} onClick={() => add(student.id)} aria-label={`Add ${fullName(student)}`}>Add</Btn>
                 </li>
               ))}
@@ -89,13 +88,13 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
 
             {groups.map(({ section, entries }) => (
               <Card key={section.id} style={{ padding: 16, marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{sectionLabel(section)} · {entries.length}</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{sectionLabel(section)} · {entries.length}</div>
                 <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
                   {entries.map(({ student }) => (
                     <li key={student.id} style={row}>
                       <span style={{ flex: 1 }}>{fullName(student)}{' '}
                         <span style={{ ...T.num, color: T.inkMuted, fontSize: 12 }}>{student.lrn}</span></span>
-                      {isIdCardPrinted(student) && <span style={printedTag}>Printed</span>}
+                      {isIdCardPrinted(student) && <Badge tone="accent">Printed</Badge>}
                       <Btn variant="ghost" disabled={action.busy} onClick={() => remove(student.id)} aria-label={`Remove ${fullName(student)}`}>Remove</Btn>
                     </li>
                   ))}
@@ -105,7 +104,7 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
 
             {notPrintable.length > 0 && (
               <Card style={{ padding: 16, marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Not enrolled — won't print · {notPrintable.length}</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>Not enrolled — won't print · {notPrintable.length}</div>
                 <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
                   {notPrintable.map(({ id, student }) => {
                     const name = student ? fullName(student) : 'Learner record not found';

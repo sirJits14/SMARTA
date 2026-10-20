@@ -95,9 +95,9 @@ export default function SessionReviewPage({ me, schoolYear }) {
     {roster && <Card style={{ padding: 0, overflow: 'hidden' }}>
       <div role="region" aria-label="Session attendance" tabIndex={0} style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-          <thead><tr>{['Learner', ...sessions.map((session) => sessionName(session, sessions))].map((label) => <th key={label} scope="col" style={{ ...cellStyle, textAlign: 'left', fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', color: T.inkMuted }}>{label}</th>)}</tr></thead>
+          <thead><tr>{['Learner', ...sessions.map((session) => sessionName(session, sessions))].map((label) => <th key={label} scope="col" style={{ ...cellStyle, textAlign: 'left', fontSize: 12, fontWeight: 500, color: T.inkMuted }}>{label}</th>)}</tr></thead>
           <tbody>{roster.rows.map((row) => <tr key={row.studentId}>
-            <th scope="row" style={{ ...cellStyle, textAlign: 'left', fontWeight: 600 }}>{row.displayName}</th>
+            <th scope="row" style={{ ...cellStyle, textAlign: 'left', fontWeight: 500 }}>{row.displayName}</th>
             {sessions.map((session) => {
               const cell = sessionCell(row, session);
               const canChange = canCorrect && (cell.flagged || row[session]?.status !== 'A');

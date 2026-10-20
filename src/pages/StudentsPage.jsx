@@ -6,7 +6,7 @@ import { buildLearnerIndex, searchLearners } from '../lib/search.js';
 import { deleteStudent } from '../data/students.js';
 import { STUDENT_STATUS, UNASSIGNED } from '../lib/constants.js';
 import { T, S } from '../styles.js';
-import { Btn, Inp, Sel, Field, Card, Confirm, EmptyState } from '../components/ui.jsx';
+import { Badge, Btn, Inp, Sel, Field, Card, Confirm, EmptyState, RowMenu } from '../components/ui.jsx';
 import StudentForm from './StudentForm.jsx';
 import ImportStudentsWizard from './ImportStudentsWizard.jsx';
 import { currentEnrollmentByStudent } from '../lib/enrollmentChange.js';
@@ -111,16 +111,16 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
                 return (
                   <tr key={s.id}>
                     <td style={{ ...S.td, ...T.num }}>{s.lrn}</td>
-                    <td style={{ ...S.td, fontWeight: 600 }}>{fullName(s)}</td>
+                    <td style={S.tdStrong}>{fullName(s)}</td>
                     <td style={S.td}>{s.sex}</td>
-                    <td style={S.td}>{s.status}</td>
+                    <td style={S.td}>{s.status ? <Badge tone={{ active: 'success', dropped: 'warning' }[s.status] || 'neutral'}>{s.status[0].toUpperCase() + s.status.slice(1)}</Badge> : '—'}</td>
                     <td style={S.td}>{en ? `Grade ${en.gradeLevel}` : 'Unassigned'}</td>
                     <td style={S.td}>{sec ? sec.name : 'Unassigned'}</td>
-                    <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      {admin && <>
-                        <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
-                        <Btn variant="ghost" onClick={() => setConfirm(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
-                      </>}
+                    <td style={S.tdActions}>
+                      {admin && <span className="sims-row-actions">
+                        <Btn variant="ghost" onClick={() => setForm(s)}>Edit</Btn>
+                        <RowMenu label={`More actions for ${fullName(s)}`} items={[{ label: 'Delete', danger: true, onSelect: () => setConfirm(s) }]} />
+                      </span>}
                     </td>
                   </tr>
                 );

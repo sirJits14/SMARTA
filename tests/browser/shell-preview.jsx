@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Shell from '/src/components/Shell.jsx';
 import Login from '/src/components/Login.jsx';
@@ -47,6 +47,18 @@ function Sample() {
   </>;
 }
 const params = new URLSearchParams(location.search);
+const me = { role: 'admin', name: 'Maria Clara Santos', email: 'preview@example.test' };
+// ?page=students|sections|dashboard|attendance renders the real page on the harness's synthetic rows.
+const PAGES = {
+  students: lazy(() => import('/src/pages/StudentsPage.jsx')),
+  sections: lazy(() => import('/src/pages/SectionsPage.jsx')),
+  dashboard: lazy(() => import('/src/pages/DashboardPage.jsx')),
+  attendance: lazy(() => import('/src/pages/AttendanceTakePage.jsx')),
+};
+const page = params.get('page');
+const Page = PAGES[page];
 createRoot(document.getElementById('root')).render(params.has('login')
   ? <Login notice={params.get('login') || ''} />
-  : <Shell me={{ role: 'admin', name: 'Maria Clara Santos', email: 'preview@example.test' }} page="students" setPage={() => {}} schoolYear="2026-2027" onLogout={() => {}}><Sample /></Shell>);
+  : <Shell me={me} page={Page ? page : 'students'} setPage={() => {}} schoolYear="2026-2027" onLogout={() => {}}>
+    {Page ? <Suspense fallback={null}><Page me={me} schoolYear="2026-2027" setPage={() => {}} /></Suspense> : <Sample />}
+  </Shell>);

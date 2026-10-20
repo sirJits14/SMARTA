@@ -38,5 +38,10 @@ export const S = {
   h2: { fontFamily: T.display, color: T.ink, margin: '0 0 12px', fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em' },
   thead: { textAlign: 'left' },
   th: { padding: '10px 16px', borderBottom: `1px solid ${T.border}`, fontFamily: T.body, fontSize: 12, fontWeight: 500, color: T.inkMuted, whiteSpace: 'nowrap' },
-  td: { padding: '12px 16px', borderBottom: `1px solid ${T.border}` },
+  // Ordinary cells read one step softer than the row's primary cell, as in the reference tables.
+  td: { padding: '12px 16px', borderBottom: `1px solid ${T.border}`, color: 'var(--t-subtle)' },
+  // The row's primary cell (usually the name): medium weight, ink color.
+  tdStrong: { padding: '12px 16px', borderBottom: `1px solid ${T.border}`, fontWeight: 500, color: T.ink },
+  // Trailing row-actions cell.
+  tdActions: { padding: '6px 12px', borderBottom: `1px solid ${T.border}`, textAlign: 'right', whiteSpace: 'nowrap', width: 1 },
 };

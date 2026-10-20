@@ -53,25 +53,10 @@ function AttendanceArea({ me, schoolYear, entry }) {
   const [tab, setTab] = useState('take');
   return (
     <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
-        {[['take', 'Take Attendance'], ['summary', 'Monthly Summary'], ['review', 'Session Review']].map(([key, label]) => {
-          const active = tab === key;
-          return (
-            <button
-              key={key}
-              className="sims-tab"
-              aria-pressed={active}
-              onClick={() => setTab(key)}
-              style={{
-                fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
-                cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-                background: active ? T.primary : 'transparent',
-                color: active ? T.onPrimary : T.inkMuted,
-                transition: 'background 0.16s ease-out, color 0.16s ease-out, box-shadow 0.16s ease-out, transform 0.16s ease-out',
-              }}
-            >{label}</button>
-          );
-        })}
+      <div className="sims-tabs" role="group" aria-label="Attendance views">
+        {[['take', 'Take attendance'], ['summary', 'Monthly summary'], ['review', 'Session review']].map(([key, label]) => (
+          <button key={key} type="button" className="sims-tab" aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>
+        ))}
       </div>
       <Suspense fallback={<PageFallback />}>
         <div key={tab} className="sims-page-transition">

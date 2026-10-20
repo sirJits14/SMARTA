@@ -5,12 +5,12 @@ import { useMemo, useState } from 'react';
 import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedules.js';
 import { T, S } from '../styles.js';
-import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
+import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState, RowMenu } from '../components/ui.jsx';
 import { isAdmin } from '../lib/access.js';
 import { validateSchedule } from '../lib/schedules.js';
 import { hasPmSession } from '../../shared/scheduleSessions.js';
 
-const check = { display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.ink, marginBottom: 12 };
+const check = { marginBottom: 12 };
 
 function ScheduleForm({ editing, onClose }) {
   const action = useAsyncAction();
@@ -35,7 +35,7 @@ function ScheduleForm({ editing, onClose }) {
         <Field label={f.pm ? 'AM arrival' : 'Time in'}><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
         <Field label={f.pm ? 'AM departure' : 'Time out'}><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
       </div>
-      <label style={check}><input type="checkbox" checked={f.pm} onChange={(e) => set('pm', e.target.checked)} /> Add afternoon session (PM)</label>
+      <label className="sims-check" style={check}><input type="checkbox" checked={f.pm} onChange={(e) => set('pm', e.target.checked)} /> Add afternoon session (PM)</label>
       {f.pm && (
         <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
           <Field label="PM arrival"><Inp type="time" value={f.pmTimeIn || ''} onChange={(e) => set('pmTimeIn', e.target.value)} /></Field>
@@ -91,16 +91,16 @@ export default function SchedulesPage({ me, schoolYear }) {
             </tr></thead>
             <tbody>{rows.map((s) => (
               <tr key={s.id}>
-                <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
+                <td style={S.tdStrong}>{s.name}</td>
                 <td style={{ ...S.td, ...T.num }}>{s.timeIn}</td>
                 <td style={{ ...S.td, ...T.num }}>{s.timeOut}</td>
                 <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeIn : '—'}</td>
                 <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeOut : '—'}</td>
-                <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {admin && <>
-                    <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
-                    <Btn variant="ghost" onClick={() => requestDelete(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
-                  </>}
+                <td style={S.tdActions}>
+                  {admin && <span className="sims-row-actions">
+                    <Btn variant="ghost" onClick={() => setForm(s)}>Edit</Btn>
+                    <RowMenu label={`More actions for ${s.name}`} items={[{ label: 'Delete', danger: true, onSelect: () => requestDelete(s) }]} />
+                  </span>}
                 </td>
               </tr>))}
             </tbody>

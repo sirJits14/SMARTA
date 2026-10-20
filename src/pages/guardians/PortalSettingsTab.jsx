@@ -36,7 +36,7 @@ export default function PortalSettingsTab({ me }) {
           {paused ? `PAUSED since ${portal.pausedAt?.toDate?.().toLocaleString() || '—'} by ${portal.pausedBy || '—'}: "${portal.pauseNote}". Gate scans are still recorded and appear in parents' inboxes; pushes are not sent.` : 'Notifications are being sent. Pausing stops pushes within 30 seconds; scans and inbox items continue.'}
         </p>
         {!paused && <Field label="Reason (shown to parents)"><Inp value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Kiosk maintenance today" /></Field>}
-        <Btn onClick={() => action.run('pause', togglePause)} disabled={action.busy || (!paused && !note.trim())} style={{ background: paused ? T.primary : T.absent }}>{paused ? 'Resume notifications' : 'Pause notifications'}</Btn>
+        <Btn onClick={() => action.run('pause', togglePause)} disabled={action.busy || (!paused && !note.trim())} variant={paused ? 'solid' : 'danger'}>{paused ? 'Resume notifications' : 'Pause notifications'}</Btn>
       </Card>
       <Card style={{ padding: 20 }}>
         <h2 style={S.h2}>Portal banner and privacy notice</h2>

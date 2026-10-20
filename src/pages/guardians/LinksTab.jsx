@@ -156,7 +156,7 @@ export default function LinksTab({ schoolYear }) {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Btn variant="ghost" disabled={action.busy || !reason.trim() || student.activationRestricted} onClick={() => action.run('reissue', reissue)}>Reissue slip</Btn>
               <Btn variant="ghost" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', async () => { await call.revokeCode({ studentId: student.id, schoolYear, reason }); setReissued(null); setReissueErr(''); })}>Revoke slip</Btn>
-              <Btn variant="ghost" disabled={action.busy || !reason.trim()} style={{ color: T.absent, borderColor: T.absent }} onClick={() => action.run('action', async () => { await call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }); setReissued(null); setReissueErr(''); })}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
+              <Btn variant="ghost-danger" disabled={action.busy || !reason.trim()} onClick={() => action.run('action', async () => { await call.setActivationRestricted({ studentId: student.id, restricted: !student.activationRestricted, reason }); setReissued(null); setReissueErr(''); })}>{student.activationRestricted ? 'Lift restriction' : 'Restrict (custody) — revokes all access'}</Btn>
             </div>
             {reissueErr && <p role="alert" className="sims-feedback" style={{ marginTop: 10 }}>{reissueErr}</p>}
           </Card>

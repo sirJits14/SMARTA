@@ -4,7 +4,8 @@ import { announcements } from '../data/announcements.js';
 import { TABS, tabOf, postsForTab, audienceLabel, pushStatusText } from '../lib/announcements.js';
 import { coversPostKeys, toMillis } from '../../shared/announcements.js';
 import { T, S } from '../styles.js';
-import { Btn, Card, Confirm, EmptyState, ResourceState, EditorResources } from '../components/ui.jsx';
+import { SegmentCount } from '../components/GradePills.jsx';
+import { Badge, Btn, Card, Confirm, EmptyState, ResourceState, EditorResources, RowMenu } from '../components/ui.jsx';
 import AnnouncementForm from './announcements/AnnouncementForm.jsx';
 
 const when = (t) => {
@@ -35,17 +36,12 @@ export default function AnnouncementsPage({ me }) {
           <h1 style={S.h1}>Announcements</h1>
           <Btn onClick={() => setForm({})}>New announcement</Btn>
         </div>
-        <div role="tablist" aria-label="Announcement status" style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-          {TABS.map(([key, label]) => {
-            const active = tab === key;
-            return (
-              <button key={key} role="tab" aria-selected={active} onClick={() => setTab(key)} style={{
-                fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
-                cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-                background: active ? T.primary : 'transparent', color: active ? T.onPrimary : T.inkMuted,
-              }}>{label} ({counts[key]})</button>
-            );
-          })}
+        <div role="tablist" aria-label="Announcement status" className="sims-segmented" style={{ marginBottom: 16 }}>
+          {TABS.map(([key, label]) => (
+            <button key={key} type="button" role="tab" aria-selected={tab === key} className="sims-segment" onClick={() => setTab(key)}>
+              {label}<SegmentCount count={counts[key]} />
+            </button>
+          ))}
         </div>
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           {rows.length === 0 ? <EmptyState title={EMPTY[tab][0]} hint={EMPTY[tab][1]} /> : (
@@ -53,17 +49,21 @@ export default function AnnouncementsPage({ me }) {
               <thead><tr style={S.thead}>{['Title', 'Audience', tab === 'scheduled' ? 'Goes out' : 'Published', 'Expires', 'Author', 'Push', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}</tr></thead>
               <tbody>{rows.map((p) => (
                 <tr key={p.id}>
-                  <td style={{ ...S.td, fontWeight: 600 }}>{p.pinned && <span style={{ color: T.primary, fontWeight: 700 }}>Pinned · </span>}{p.title}{p.editedAt && <span style={{ color: T.inkMuted, fontWeight: 400 }}> (edited)</span>}</td>
+                  <td style={S.tdStrong}>{p.pinned && <><Badge tone="accent">Pinned</Badge>{' '}</>}{p.title}{p.editedAt && <span style={{ color: T.inkMuted, fontWeight: 400 }}> (edited)</span>}</td>
                   <td style={S.td}>{audienceLabel(p.audienceKeys, p.audience)}</td>
                   <td style={S.td}>{when(tab === 'scheduled' ? p.publishAt : p.publishedAt)}</td>
                   <td style={S.td}>{p.expiresAt ? when(p.expiresAt) : '—'}</td>
                   <td style={S.td}>{p.createdBy?.name || '—'}</td>
                   <td style={{ ...S.td, color: p.pushResult && ['interrupted', 'failed'].includes(p.pushResult.status) ? T.absent : T.ink }}>{pushStatusText(p)}</td>
-                  <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    {mine(p) && tab !== 'ended' && <Btn variant="ghost" onClick={() => setForm(p)} style={{ marginRight: 6 }}>Edit</Btn>}
-                    {mine(p) && tab === 'live' && <Btn variant="ghost" onClick={() => setPending({ kind: 'unpublish', post: p })} style={{ color: T.absent, borderColor: T.absent }}>Unpublish</Btn>}
-                    {mine(p) && tab === 'scheduled' && <Btn variant="ghost" onClick={() => setPending({ kind: 'delete', post: p })} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>}
-                    {!mine(p) && <span style={{ color: T.inkMuted }}>View only</span>}
+                  <td style={S.tdActions}>
+                    {mine(p) && <span className="sims-row-actions">
+                      {tab !== 'ended' && <Btn variant="ghost" onClick={() => setForm(p)}>Edit</Btn>}
+                      <RowMenu label={`More actions for ${p.title}`} items={[
+                        tab === 'live' && { label: 'Unpublish', danger: true, onSelect: () => setPending({ kind: 'unpublish', post: p }) },
+                        tab === 'scheduled' && { label: 'Delete', danger: true, onSelect: () => setPending({ kind: 'delete', post: p }) },
+                      ]} />
+                    </span>}
+                    {!mine(p) && <span style={{ color: T.inkMuted, fontSize: 13 }}>View only</span>}
                   </td>
                 </tr>
               ))}</tbody>

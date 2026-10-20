@@ -29,7 +29,7 @@ export default function SectionDetailModal({ section, roster, onClose, onEditStu
             <tbody>{roster.map((s) => (
               <tr key={s.id}>
                 <td style={{ ...S.td, ...T.num }}>{s.lrn}</td>
-                <td style={{ ...S.td, fontWeight: 600 }}>{fullName(s)}</td>
+                <td style={S.tdStrong}>{fullName(s)}</td>
                 <td style={S.td}>{s.sex}</td>
                 <td style={{ ...S.td, textAlign: 'right' }}>
                   {onEditStudent && <Btn variant="ghost" onClick={() => onEditStudent(s)}>Edit</Btn>}

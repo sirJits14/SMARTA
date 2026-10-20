@@ -143,13 +143,13 @@ export default function AttendanceSummaryPage({ me, schoolYear }) {
                       const m = markFor(docsByDate, d, s.id);
                       const scanTitle = dayScanTitle(docsByDate[d], s.id);
                       return (
-                        <td key={d} title={scanTitle} style={{ ...S.td, ...T.num, textAlign: 'center', padding: '8px 6px', color: MARK_COLOR[m], fontWeight: 700, cursor: scanTitle ? 'help' : 'default' }}>
+                        <td key={d} title={scanTitle} style={{ ...S.td, ...T.num, textAlign: 'center', padding: '8px 6px', color: MARK_COLOR[m], fontWeight: 600, cursor: scanTitle ? 'help' : 'default' }}>
                           {m === 'P' ? '' : m === 'H' ? '½A' : m}
                         </td>
                       );
                     })}
-                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 700, color: T.present }}>{t.present}</td>
-                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 700, color: T.absent }}>{t.absent}</td>
+                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 600, color: T.present }}>{t.present}</td>
+                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 600, color: T.absent }}>{t.absent}</td>
                   </tr>
                 );
               })}
