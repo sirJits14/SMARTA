@@ -13,7 +13,7 @@ export default function School({ user, navigate }) {
   const context = resource.data;
   const noAccess = Boolean(context) && !canUseSchool(context);
   const noClass = Boolean(context) && !noAccess && !hasClass(context);
-  // No school access goes Home; subject teachers have no Class tab. App.jsx owns the saved mode.
+  // No school access goes Home; Curriculum Advisers have no Class tab. App.jsx owns the saved mode.
   useEffect(() => {
     if (noAccess) navigate('/', { replace: true });
     else if (noClass) navigate('/announcements?view=school', { replace: true });

@@ -9,8 +9,7 @@ const line = (role, result) => {
   if (!result) return `${title} · ${S.summarySkipped}`;
   if (result.outcome === 'pending') return `${title} · ${S.summaryPending}`;
   if (role === 'family') return `${S.summaryLinked} ${nameCase(result.detail)}`;
-  if (role === 'adviser') return `${S.summaryAdviser} ${result.detail}`;
-  return `${result.detail.includes(',') ? S.summarySubject : S.summarySubjectOne} ${result.detail}`;
+  return `${S.summaryAdviser} ${result.detail}`;
 };
 
 export default function JoinSummary({ steps, results, onRetry, onOpen }) {

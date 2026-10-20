@@ -49,12 +49,22 @@ describe('strings', () => {
   });
   it('has the join strings', () => {
     for (const k of ['joinTitle', 'joinIntro', 'joinNameLabel', 'joinNameHint', 'joinRolesLabel', 'joinFamily', 'joinFamilyHint', 'joinAdviser', 'joinAdviserHint',
-      'joinSubject', 'joinSubjectHint', 'joinNeedsApproval', 'joinNeedsApprovalNote', 'joinActive', 'joinChooseOne', 'joinContinue', 'joinStep', 'joinSteps',
+      'joinNeedsApproval', 'joinNeedsApprovalNote', 'joinActive', 'joinContinue', 'joinStep', 'joinSteps',
       'joinStepOf', 'joinOf', 'joinPreparing', 'joinPrepareFailed', 'joinSkipStep', 'adviserSlipTitle', 'adviserSlipBody', 'adviserScan', 'adviserScanTitle',
       'adviserCodeLabel', 'adviserCheck', 'adviserConfirmTitle', 'adviserConfirm', 'adviserNotMine', 'adviserNoSlip', 'adviserUseSlip', 'adviserRequestTitle',
-      'adviserRequestBody', 'adviserWrongKind', 'familyWrongKind', 'adviserRequestInstead', 'subjectTitle', 'subjectBody', 'subjectBodyApproval', 'subjectSubmit',
-      'summaryTitle', 'summaryTitleNone', 'summarySubjectOne', 'summaryLinked', 'summaryAdviser', 'summarySubject', 'summaryPending', 'summaryRetry', 'summaryContinue', 'summarySkipped',
+      'adviserRequestBody', 'adviserWrongKind', 'familyWrongKind', 'adviserRequestInstead',
+      'summaryTitle', 'summaryTitleNone', 'summaryLinked', 'summaryAdviser', 'summaryPending', 'summaryRetry', 'summaryContinue', 'summarySkipped',
       'addRoleRow', 'addRoleRowHint', 'schoolRequestsRow', 'requestFulfilled', 'requestSuperseded'])
       expect(typeof S[k], k).toBe('string');
+  });
+  it('calls the family role Parent/Guardian and drops Subject Teacher copy', () => {
+    expect(S.joinFamily).toBe('Parent/Guardian');
+    expect(S.modeFamily).toBe('Parent/Guardian');
+    expect(S.addRoleRowHint).toBe('Parent/Guardian or Class Adviser');
+    expect(S.schoolRequestsIntro).toBe('Class Adviser requests for your grades, from any verified email. Approving gives the teacher that role right away.');
+    for (const k of ['joinSubject', 'joinSubjectHint', 'joinChooseOne', 'subjectTitle', 'subjectBody', 'subjectBodyApproval', 'subjectSubmit', 'summarySubject', 'summarySubjectOne']) {
+      expect(S[k], k).toBeUndefined();
+    }
+    expect(Object.values(S).filter((v) => typeof v === 'string' && /Subject Teacher|Family Member/.test(v))).toEqual([]);
   });
 });

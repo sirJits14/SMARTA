@@ -5,19 +5,18 @@ import S from '../strings.js';
 import { Spinner } from '../components/ui.jsx';
 import { useSchoolContext } from '../hooks/useSchoolContext.js';
 import { useLinks } from '../hooks/useLinks.js';
-import { heldRoles, pendingRoles, roleOptions, joinSteps, initialSelection, landingModeFor } from '../lib/join.js';
+import { heldRoles, roleOptions, joinSteps, initialSelection, landingModeFor } from '../lib/join.js';
 import { schoolHome } from '../lib/portalMode.js';
 import RoleChooser, { ROLE_TEXT } from './join/RoleChooser.jsx';
 import FamilyStep from './join/FamilyStep.jsx';
 import AdviserStep from './join/AdviserStep.jsx';
-import SubjectTeacherStep from './join/SubjectTeacherStep.jsx';
 import JoinSummary from './join/JoinSummary.jsx';
 import { stepLabel } from './join/StepHeader.jsx';
 
 const CONSENT_KEY = 'bnhs-parent-consent';
-const STEPS = { family: FamilyStep, adviser: AdviserStep, subject_teacher: SubjectTeacherStep };
+const STEPS = { family: FamilyStep, adviser: AdviserStep };
 
-// "Who are you?" then one step per chosen role (spec 2026-10-19). Each step
+// "Who are you?" then one step per chosen role (specs 2026-10-19, 2026-10-20). Each step
 // saves on its own; a skipped or failed step can be retried from the summary.
 export default function Join({ user, profile, route, navigate, setMode }) {
   const school = useSchoolContext(user.uid);
@@ -29,7 +28,7 @@ export default function Join({ user, profile, route, navigate, setMode }) {
   const [index, setIndex] = useState(0);
   const [results, setResults] = useState({});
   const [error, setError] = useState('');
-  const options = useMemo(() => roleOptions({ held: heldRoles(school.data, links || []), pending: pendingRoles(school.data), selected, email: user.email }),
+  const options = useMemo(() => roleOptions({ held: heldRoles(school.data, links || []), selected, email: user.email }),
     [school.data, links, selected, user.email]);
 
   // Same as Skip used to do: the name is saved and the profile exists before any
