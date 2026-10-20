@@ -4,7 +4,7 @@ Date: 2026-10-20/21 (Asia/Manila). Source: `master` at `579a2bf` (merge of PR #7
 Spec: `docs/superpowers/specs/2026-10-20-retire-subject-teacher-design.md`.
 Plan and release checklist: `docs/superpowers/plans/2026-10-20-retire-subject-teacher.md`.
 
-Status: **prepared, not yet published.** The sections below marked _pending_ are filled in after each step.
+Status: **published 2026-10-21 (Asia/Manila)**, every step verified. See "Published" below.
 
 ## Baseline (before publishing, all read-only)
 
@@ -65,15 +65,19 @@ Status: **prepared, not yet published.** The sections below marked _pending_ are
 
 Deploy config for all three: `firebase.retire-subject-teacher-release.json`.
 
-## Published — _pending_
+## Published
+
+Steps ran in this order, each from this checkout with `NODE_OPTIONS=--dns-result-order=ipv4first`.
 
 | Step | Command | Result |
 | --- | --- | --- |
-| Functions | `firebase deploy --project bnhs-sims --config firebase.retire-subject-teacher-release.json --only functions:<22 names>` | _pending_ |
-| Delete | `firebase functions:delete migrateSubjectTeachersFn --region asia-southeast1 --project bnhs-sims` | _pending_ |
-| Cleanup | `node functions/scripts/retireSubjectTeachers.mjs --project bnhs-sims --admin <admin>`, then `--apply`, then the count again | _pending_ |
-| SIMS hosting | same config, `--only hosting:sims` | _pending_ |
-| Parent hosting | same config, `--only hosting:parent` | _pending_ |
+| Functions | `firebase deploy --project bnhs-sims --config firebase.retire-subject-teacher-release.json --only functions:<22 names>` | 21 updated, `retireSubjectTeachersFn` created (`functions-deploy.log`). |
+| Delete | `firebase functions:delete migrateSubjectTeachersFn --region asia-southeast1 --project bnhs-sims --force` | Deleted (`functions-delete.log`). Still 62 live, all checked ACTIVE (`functions-after.json`). |
+| Cleanup | `node functions/scripts/retireSubjectTeachers.mjs --project bnhs-sims --admin ict@admin.com`, then the same with `--apply`, then the count again | Count: 5 accounts / 9 rows / 0 requests. Apply: 5 / 9 / 0. Recount: 0 / 0 / 0. Every result shows `"emulator": false` and `"projectId": "bnhs-sims"` (`cleanup-*.json`). A read-only check found 5 `school.roleRetired` audit rows listing all 9 removed rows, 5 "Subject Teacher access has ended" inbox notes, and the actor `ict@admin.com` (`cleanup-audit-check.json`). |
+| SIMS hosting | same config, `--only hosting:sims` | 59/59 files match (`sims-hosting-verification.json`). Main script `assets/index-D9WRJGvm.js`. |
+| Parent hosting | same config, `--only hosting:parent` | 50/50 files match (`parent-hosting-verification.json`). Main script `assets/index-Bn2A4NpX.js`. |
+
+Smoke test: `retireSubjectTeachersFn` answers an unauthenticated call with 401, and both sites serve the new main scripts.
 
 ## Rollback
 
