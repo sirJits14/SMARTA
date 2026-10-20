@@ -1,0 +1,16 @@
+{
+  "baseline": "docs/releases/2026-10-20-ui-modules/prepare.mjs",
+  "overlays": {
+    "parent/src/lib/school.js": "26dcb5c071623002f91a15caf3c8ef9c4ef121f5a38b0807db12354231e620ea",
+    "shared/announcementAudience.js": "824f31f69ef86be8fcaf68d10ea5115a50d5bd57e90a905eba02651b191921e5",
+    "shared/announcementAudience.test.js": "112aa051b1fa2f880e9d0935c00f7d2011f4699576aeb9f07a43c78451eb361c",
+    "shared/schoolAccess.js": "adfc06879d918a576b0ddb470e659765d7ee434c6b616ee326a81bc512255b71",
+    "src/lib/announcements.js": "3b35b99d9d2f27d3bb74d3f1116f01e09b07b551935344bc78a16185e9276a12",
+    "src/lib/announcements.test.js": "a7560605a2d35bbcd0c180b2846e3814f51d04727d95c512c85c7cf6389f90b3",
+    "src/lib/schoolAssignments.js": "1ad919a03b3aa46d156322c3556c17dc8303e17ccee5ac754feb282e5c9ff2a9",
+    "src/lib/schoolAssignments.test.js": "f137f87572e01315bd55dc63ffca04455bf7099e4a95b265aba0b48815db230d",
+    "src/pages/guardians/school/CoverageView.jsx": "25dc2efafa6b94984b7842fcd6fcf1f28a9fbdf1bdf0a46173ce1f564b3852a3",
+    "src/pages/guardians/school/CoverageView.test.js": "ab349c2402d409bbb9f40ffa2547d85cd5154ef46e1be5a6603e6cbefcc5f036",
+    "src/pages/guardians/school/PendingView.test.js": "cb3aa6a477f8a34dc4b2ca41b151797df494cf8524890e184c424a3e7d688926"
+  }
+}

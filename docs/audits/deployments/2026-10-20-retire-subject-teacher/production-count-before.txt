@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-10-20T20:46:52.821Z",
+  "schoolAccounts": 54,
+  "assignmentsByRole": {
+    "adviser": 48,
+    "subject_teacher": 9
+  },
+  "subjectTeacherHolders": 5,
+  "subjectTeacherRows": 9,
+  "subjectTeacherRequestsByStatus": {}
+}
+{"announcementsWithSubjectTeacher":[{"id":"S5ZG4EAeizizaT2XgVqI","status":"unpublished","roles":["adviser","subject_teacher","curriculum_adviser"]},{"id":"VcPMMOxoeCe9LgDTCsL7","status":"published","roles":["adviser","curriculum_adviser","subject_teacher"]}]}
