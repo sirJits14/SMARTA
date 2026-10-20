@@ -6,7 +6,7 @@ const STUBS = {
   '/src/hooks/useAuth.js': `export { useAuth } from "${FIXTURE}";`,
   '/src/hooks/useRoute.js': `export { useRoute } from "${FIXTURE}";`,
   '/src/hooks/useLinks.js': `export { useLinks } from "${FIXTURE}";`,
-  '/src/hooks/useDoc.js': `export { useDoc, useDocs, useQuery } from "${FIXTURE}";`,
+  '/src/hooks/useDoc.js': `export { useDoc, useDocs, useQuery } from "${FIXTURE}"; const seen = new Map(); export const recall = (k) => seen.get(k); export const remember = (k, d) => { seen.set(k, d); }; export const clearLastSeen = () => seen.clear();`,
   '/src/lib/notifications.js': `export { useDeviceStatus, onForegroundMessage, enableOnThisDevice, disableOnThisDevice } from "${FIXTURE}";`,
   '/src/lib/guardianWrites.js': `export { saveDisplayName, setGuardianPrefs, deleteMyAccount, signOutNow } from "${FIXTURE}";`,
   '/src/firebase.js': `export const app = {}, db = {}, auth = {}, googleProvider = {}; export const appCheckReady = Promise.resolve(); export { callable } from "${FIXTURE}";`,

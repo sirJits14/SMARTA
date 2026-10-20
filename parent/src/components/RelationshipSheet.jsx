@@ -6,7 +6,7 @@ import { Btn, Banner } from './ui.jsx';
 import { ADVISER, relationshipOptions, changeErrorMessage } from '../lib/relationships.js';
 
 // Lazy-loaded by useRelationshipSheet (keeps the eager bundle small). Portalled to
-// <body> so no .glass-card backdrop-filter traps the fixed overlay (see ScanSheet).
+// <body> so no ancestor transform or filter can trap the fixed overlay (see ScanSheet).
 export default function RelationshipSheet({ link, onSave, onClose }) {
   const [choice, setChoice] = useState(null);
   const [busy, setBusy] = useState(false);

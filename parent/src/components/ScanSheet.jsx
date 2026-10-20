@@ -73,9 +73,9 @@ export default function ScanSheet({ onCode, onClose, kind = 'learner', title = S
     setPhotoFailed(true);
   };
 
-  // Portalled to <body>: Activate renders inside a .glass-card whose
-  // backdrop-filter would otherwise trap this position:fixed overlay inside
-  // the card instead of covering the screen.
+  // Portalled to <body>: Activate renders inside a card, and any ancestor
+  // transform or filter would otherwise trap this position:fixed overlay
+  // inside it instead of covering the screen.
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={title}
       style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#061518', color: '#fff', display: 'grid', gridTemplateRows: 'auto 1fr auto', fontFamily: 'inherit' }}>

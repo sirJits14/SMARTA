@@ -102,7 +102,7 @@ components:
 
 The interface should disappear into the task. Expression lives in precise details (type rhythm, borders, the teal accent used sparingly), never in glows, gradients, glass or decoration.
 
-Scope: the registrar shell and shared components: Dashboard, Students, Sections, Schedules, Enrollment, Attendance, ID Cards, Guardians, Announcements, Settings and Accounts, plus Login and Change password. The Parents App shares the color tokens and font stack; its component pass is a separate phase (see the spec). Print sheets (ID cards, slips, SF2) keep their own fixed light styles and Inter.
+Scope: the registrar shell and shared components: Dashboard, Students, Sections, Schedules, Enrollment, Attendance, ID Cards, Guardians, Announcements, Settings and Accounts, plus Login and Change password. The Parents App (`parent/`) uses the same tokens, font stack and flat material; its rules are under **Parents App** below. Print sheets (ID cards, slips, SF2) keep their own fixed light styles and Inter.
 
 Specification: [SIMS UI modernization](docs/superpowers/specs/2026-10-20-sims-ui-modernization-design.md).
 Tokens: `shared/theme/theme.css` (colors, `--font-sans`), `src/registrar.css` (components and shell), `src/styles.js` (JS mirrors used by inline styles).
@@ -136,7 +136,7 @@ Fixed px scale, ratio about 1.15: page title 24px/600 (22px on phones), dialog t
 
 ## Elevation & Depth
 
-Flat. Surfaces separate by tone and 1px borders, not shadows. Shadows exist only on things that float above the page: dropdown menus, the bulk-action bar, tooltips and dialogs, each with a vertical offset and soft blur at low opacity. No blur, glass or background glows anywhere in SIMS.
+Flat. Surfaces separate by tone and 1px borders, not shadows. Shadows exist only on things that float above the page: dropdown menus, the bulk-action bar, tooltips and dialogs, each with a vertical offset and soft blur at low opacity. No blur, glass or background glows anywhere in SIMS or the Parents App.
 
 ## Shapes
 
@@ -158,6 +158,17 @@ Flat. Surfaces separate by tone and 1px borders, not shadows. Shadows exist only
 - **Tabs.** Use these for switching views within a page (Attendance, Guardians, ID Cards): 36px, 8px radius, and the selected tab uses the selected fill and hairline border. Filters use the segmented control instead.
 - **Empty and loading states.** Empty states are a centered title and one-line hint. While loading, `ResourceState` shows a three-bar skeleton (the pulse is off under reduced motion), and screen readers still hear "Loading …". It also handles errors and retry.
 - **Login / Change password.** A single 380px card on the page background: wordmark, title, one-line subtitle, alert, fields, a full-width primary button. Real `<form>` submission so Enter and password managers work.
+
+## Parents App
+
+A phone-first PWA built on the same system. Styles live in `parent/src/app.css`, and components in `parent/src/components/ui.jsx`.
+
+- **Kept from before:** the floating pill nav, the iOS-style settings groups, the Messages-style learner list, chat bubbles for history and inbox, and the collapsing page header.
+- **Material:** flat `.card` surfaces with a 1px border. The pill nav and the class select bar sit on `--t-sidebar` with one soft shadow, because they float. The collapsed page header is a solid page-tone bar with a hairline.
+- **Controls:** buttons (`p-btn`: solid, ghost, danger) are 48px tall with a 12px radius. Inputs (`p-input`) are 48px with 16px text, so iOS doesn't zoom on focus, and get the same teal focus ring as SIMS. Banners (`p-banner`) use the info, warning and danger token pairs.
+- **Restrained accent:** teal marks the screen's main action, the active nav icon and switches that are on. Settings icon tiles are neutral, a hover fill with an outline icon, rather than the old iOS rainbow. The current nav tab uses the selected fill.
+- **Type:** headings are 600, never 800. Group headers are sentence case. The page title is 30px/600.
+- **Theme color:** the browser bar uses the page color (#F5F7FA light, #0B0F19 dark), and so do the manifest's `theme_color` and `background_color`.
 
 ## Do's and Don'ts
 

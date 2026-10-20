@@ -11,7 +11,7 @@ import { hasUnread } from '../lib/announcements.js';
 
 const LABEL = { home: S.navHome, class: S.navClass, notices: S.navNotices, inbox: S.navInbox, settings: S.navSettings };
 
-// Frosted floating pill. One chip slides behind the active tab; its target is
+// Floating pill nav. One chip slides behind the active tab; its target is
 // measured from the active button after layout (the layout itself switches
 // instantly, only the chip and label animate).
 function GlassNav({ route, navigate, unread, view, hasClass }) {
@@ -81,7 +81,7 @@ export default function Shell({ route, navigate, profile, view = 'family', hasCl
     <div style={{ fontFamily: T.font, color: T.ink, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <header style={{ position: 'relative', padding: '14px 16px 0', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 11 }}><ThemeMenuButton /></div>
-        {titleRow && <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10, minHeight: 44, display: 'flex', alignItems: 'center', paddingRight: 56 }}>{S.appName}</div>}
+        {titleRow && <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, minHeight: 44, display: 'flex', alignItems: 'center', paddingRight: 56 }}>{S.appName}</div>}
         {!titleRow && hasBanner && <div aria-hidden="true" style={{ minHeight: 44, marginBottom: 10 }} />}
         {!online && <Banner tone="warn">{S.offlineBanner}</Banner>}
         {portal?.notificationsPaused && <Banner tone="warn">{S.pausedBanner}{portal.pauseNote ? `: ${portal.pauseNote}` : ''}</Banner>}

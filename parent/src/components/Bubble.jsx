@@ -10,7 +10,7 @@ const MARK = { in: 'arrive', out: 'leave', school: 'notices' };
 // `tone` picks the mark: 'in' (green arrow into a doorway), 'out' (slate
 // arrow out of one), 'school' (teal megaphone); the title says the same
 // thing in words. `onClick` makes the bubble a button; `actionLabel` tells
-// screen readers what it opens. Styles in glass.css.
+// screen readers what it opens. Styles in app.css.
 export function Bubble({ id, tone, title, time, meta, body, first = true, last = true, unread, struck, highlight, onClick, actionLabel }) {
   const className = ['bubble', first && 'bubble--first', last && 'bubble--last', unread && 'bubble--unread',
     highlight && 'bubble--highlight', struck && 'bubble--struck'].filter(Boolean).join(' ');

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../../../shared/theme/theme.css';
-import '../../src/glass.css';
+import '../../src/app.css';
 import RelationshipRow from '../../src/components/RelationshipRow.jsx';
 import RelationshipSheet from '../../src/components/RelationshipSheet.jsx';
 import { ADVISER, isDepedEmail } from '../../src/lib/relationships.js';

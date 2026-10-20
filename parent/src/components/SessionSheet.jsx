@@ -5,7 +5,7 @@ import { T } from '../styles.js';
 import { Btn } from './ui.jsx';
 
 // Bottom sheet for a learner's session attendance. Portalled to <body> so no
-// .glass-card backdrop-filter traps the fixed overlay (see ScanSheet).
+// ancestor transform or filter can trap the fixed overlay (see ScanSheet).
 export default function SessionSheet({ onClose, children }) {
   const dialog = useRef(null);
   // Focus moves into the sheet on open and back to the Sessions button on close.

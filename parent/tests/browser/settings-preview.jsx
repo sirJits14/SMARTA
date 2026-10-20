@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../../../shared/theme/theme.css';
-import '../../src/glass.css';
+import '../../src/app.css';
 import Settings from '../../src/screens/Settings.jsx';
 import { T } from '../../src/styles.js';
 import { matchRoute } from '../../src/lib/router.js';

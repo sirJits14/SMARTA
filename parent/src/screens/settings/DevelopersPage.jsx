@@ -17,7 +17,7 @@ export default function DevelopersPage({ back }) {
       <PageHeader title={S.settingsDevelopers} onBack={back} />
       <div className="developers-list">
         {DEVELOPERS.map(({ name, position, role, photo }, index) => (
-          <figure className="glass-card settings-group developers-person" key={name}>
+          <figure className="card settings-group developers-person" key={name}>
             <img className="developers-portrait" src={photo} alt={name} width="360" height="450"
               loading={index === 0 ? 'eager' : 'lazy'} decoding="async" />
             <figcaption className="developers-caption">

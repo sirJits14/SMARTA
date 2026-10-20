@@ -8,7 +8,7 @@ const current = () => matchRoute(window.location.pathname, window.location.searc
 let latestTransition = 0;
 
 // Swaps screens inside a View Transition so the change slides or fades
-// (html[data-nav=...] styles in glass.css). Falls back to an instant swap
+// (html[data-nav=...] styles in app.css). Falls back to an instant swap
 // where View Transitions are unsupported, when the page is hidden, or when
 // there's no direction (same screen).
 function swap(dir, update) {

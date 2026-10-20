@@ -1,20 +1,21 @@
 import Icon from './Icon.jsx';
 
 // iPhone Settings-style building blocks: a rounded group of rows, each with an
-// optional colored icon tile, a value and a chevron. Styles in glass.css.
+// optional colored icon tile, a value and a chevron. Styles in app.css.
 
 export function SettingsGroup({ header, footer, children }) {
   return (
     <section className="settings-group-wrap">
       {header && <h2 className="settings-group-header">{header}</h2>}
-      <div className="glass-card settings-group">{children}</div>
+      <div className="card settings-group">{children}</div>
       {footer && <p className="settings-group-footer">{footer}</p>}
     </section>
   );
 }
 
 export const IconTile = ({ tile, icon }) => (
-  <span className="settings-tile" style={{ background: `var(--tile-${tile})` }} aria-hidden="true"><Icon name={icon} size={18} /></span>
+  // Neutral outline tiles for every row (restrained palette, see DESIGN.md); `tile` only says a tile is shown.
+  <span className="settings-tile" aria-hidden="true"><Icon name={icon} size={18} /></span>
 );
 
 // Rows without a tile or avatar get a hairline that starts at the text, not past the tile.

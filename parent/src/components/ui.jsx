@@ -1,44 +1,34 @@
 import { T } from '../styles.js';
 import loadingGif from '../assets/loading.gif';
-const font = { fontFamily: T.font };
 
-export const Btn = ({ variant = 'solid', style, ...p }) => (
-  <button {...p} style={{ ...font, minHeight: T.tap, borderRadius: T.pill, padding: '10px 18px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
-    background: variant === 'solid' ? T.primary : variant === 'danger' ? T.danger : 'transparent',
-    color: variant === 'ghost' ? T.primary : variant === 'danger' ? T.onStatus : T.onPrimary,
-    border: variant === 'ghost' ? `1.5px solid ${T.primary}` : 'none', opacity: p.disabled ? 0.6 : 1, ...style }} />
+// Buttons: solid = the screen's main action, ghost = secondary (bordered), danger = destructive.
+// States (hover, active, focus, disabled) live in app.css; `style` is for layout only.
+export const Btn = ({ variant = 'solid', className = '', ...p }) => (
+  <button {...p} className={`p-btn p-btn--${variant} ${className}`} />
 );
-// Surface (translucent white, hairline, blur, no-blur fallback) comes from .glass-card in glass.css.
-export const Card = ({ style, className, ...p }) => <section {...p} className={className ? `glass-card ${className}` : 'glass-card'} style={{ borderRadius: T.radius, padding: 16, marginBottom: 12, ...style }} />;
+// Flat bordered surface (.card in app.css).
+export const Card = ({ style, className, ...p }) => <section {...p} className={className ? `card ${className}` : 'card'} style={{ borderRadius: T.radius, padding: 16, marginBottom: 12, ...style }} />;
 export const Field = ({ label, children, hint }) => (
-  <label style={{ ...font, display: 'block', marginBottom: 14 }}>
-    <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T.inkMuted, marginBottom: 6 }}>{label}</span>
+  <label className="p-field">
+    <span className="p-field-label">{label}</span>
     {children}
-    {hint && <span style={{ display: 'block', fontSize: 12, color: T.inkMuted, marginTop: 4 }}>{hint}</span>}
+    {hint && <span className="p-field-hint">{hint}</span>}
   </label>
 );
-const inputStyle = { ...font, width: '100%', boxSizing: 'border-box', minHeight: T.tap, fontSize: 16, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${T.border}`, background: T.surface, color: T.ink };
-export const Inp = (p) => <input {...p} style={{ ...inputStyle, ...p.style }} />;
-export const Sel = (p) => <select {...p} style={{ ...inputStyle, ...p.style }} />;
-export const Banner = ({ tone = 'info', children, action }) => {
-  const tint = tone === 'danger' ? 'rgba(220,38,38,0.08)' : tone === 'warn' ? 'rgba(180,83,9,0.10)' : 'rgba(var(--t-primary-rgb),0.08)';
-  const textColor = tone === 'danger' ? T.dangerText : tone === 'warn' ? T.warnText : T.primaryDeep;
-  return (
-    <div role={tone === 'danger' ? 'alert' : 'status'} className="glass" style={{ ...font, fontSize: 14, borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between',
-      border: '1px solid var(--t-glass-edge)',
-      background: `linear-gradient(${tint}, ${tint}), rgba(var(--t-glass-rgb),0.85)`,
-      color: textColor }}>
-      <span>{children}</span>{action}
-    </div>
-  );
-};
+export const Inp = ({ className = '', ...p }) => <input {...p} className={`p-input ${className}`} />;
+export const Sel = ({ className = '', ...p }) => <select {...p} className={`p-input ${className}`} />;
+export const Banner = ({ tone = 'info', children, action }) => (
+  <div role={tone === 'danger' ? 'alert' : 'status'} className={`p-banner p-banner--${tone}`}>
+    <span>{children}</span>{action}
+  </div>
+);
 export const Spinner = ({ label }) => (
   <div role="status" style={{ display: 'grid', placeItems: 'center', padding: 24 }}>
     <img src={loadingGif} alt={label} width={48} height={48} />
   </div>
 );
 export const EmptyState = ({ title, hint }) => (
-  <div style={{ ...font, textAlign: 'center', color: T.inkMuted, padding: '40px 16px' }}>
-    <div style={{ fontWeight: 700, color: T.ink, marginBottom: 6 }}>{title}</div>{hint && <div style={{ fontSize: 13 }}>{hint}</div>}
+  <div className="p-empty">
+    <div className="p-empty-title">{title}</div>{hint && <div className="p-empty-hint">{hint}</div>}
   </div>
 );

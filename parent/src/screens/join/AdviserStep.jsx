@@ -39,7 +39,7 @@ export default function AdviserStep({ user, school, query, label, onDone, onSkip
     <Card>
       <StepHeader label={label} title={S.adviserConfirmTitle} />
       {err && <Banner tone="danger">{err.text}</Banner>}
-      <p style={{ fontSize: 22, fontWeight: 700, margin: '8px 0 16px' }}>{preview.sectionLabel}</p>
+      <p style={{ fontSize: 22, fontWeight: 600, margin: '8px 0 16px' }}>{preview.sectionLabel}</p>
       <div style={{ display: 'grid', gap: 10 }}>
         <Btn onClick={redeem} disabled={busy}>{S.adviserConfirm}</Btn>
         <Btn variant="ghost" onClick={() => { setPreview(null); setCode(''); }} disabled={busy}>{S.adviserNotMine}</Btn>
