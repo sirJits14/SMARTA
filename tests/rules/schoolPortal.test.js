@@ -28,7 +28,7 @@ it('staff preserve session overrides when editing base marks and cannot erase th
 it('never serves role-targeted announcements through the legacy cached guardian audience', async () => {
   await seed(env, async db => {
     await db.doc('guardians/gA').update({ audienceKeys: ['all', 'g7'] });
-    await db.doc('announcements/staff').set({ status: 'published', audience: { all: true, roles: ['subject_teacher'] }, audienceKeys: ['all'] });
+    await db.doc('announcements/staff').set({ status: 'published', audience: { all: true, roles: ['curriculum_adviser'] }, audienceKeys: ['all'] });
   });
   await denied(as(env, GUARDIAN_A).doc('announcements/staff').get());
 });

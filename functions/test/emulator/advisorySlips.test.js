@@ -144,10 +144,10 @@ describe('redeeming advisory slips', () => {
     await assignSchoolRole({ db: db(), auth: teacherAuth, now, uid: 'admin', email: 'admin@school.test' }, { email: 't2@deped.gov.ph', role: 'adviser', sectionId: 'SEC1' });
     await expect(redeemAdvisorySlip(tdeps('t1'), { code })).rejects.toMatchObject({ code: 'already-exists' });
   });
-  it('refuses a teacher who is already a Subject Teacher this year', async () => {
-    await requestSchoolRole(tdeps('t1'), { role: 'subject_teacher', gradeLevels: [8] });
+  it('lets a teacher with a leftover Subject Teacher row redeem a slip', async () => {
+    await db().doc('school_accounts/t1').set({ email: 't1@deped.gov.ph', assignments: [{ role: 'subject_teacher', schoolYear: year, gradeLevel: 8 }] });
     const code = await issue();
-    await expect(redeemAdvisorySlip(tdeps('t1'), { code })).rejects.toMatchObject({ code: 'failed-precondition' });
+    await expect(redeemAdvisorySlip(tdeps('t1'), { code })).resolves.toMatchObject({ sectionId: 'SEC1' });
   });
   it('closes pending adviser requests for the section', async () => {
     const mine = await requestSchoolRole(tdeps('t1'), { role: 'adviser', sectionId: 'SEC1' });

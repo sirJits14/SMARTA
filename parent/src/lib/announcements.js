@@ -22,7 +22,7 @@ export function linkify(text) {
 }
 
 export function audienceText(keys = [], audience) {
-  if (audience?.roles) return `${audience.roles.map(role => ANNOUNCEMENT_ROLE_LABELS[role]).join(', ')} · ${keys.includes('all') ? 'All grades' : keys.map(key => `Grade ${key.slice(1)}`).join(', ')}${audience.sectionIds?.length ? ' · Selected sections' : ''}`;
+  if (audience?.roles) return `${audience.roles.filter(role => ANNOUNCEMENT_ROLE_LABELS[role]).map(role => ANNOUNCEMENT_ROLE_LABELS[role]).join(', ')} · ${keys.includes('all') ? 'All grades' : keys.map(key => `Grade ${key.slice(1)}`).join(', ')}${audience.sectionIds?.length ? ' · Selected sections' : ''}`;
   if (keys.includes('all')) return S.audienceAll;
   const grades = keys.map((k) => k.slice(1));
   if (grades.length === 1) return `${S.audienceGrade} ${grades[0]}`;
