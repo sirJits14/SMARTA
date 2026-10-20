@@ -1,0 +1,30 @@
+{
+  "baseline": "docs/releases/2026-10-20-ui-foundation/prepare.mjs",
+  "overlays": {
+    "src/App.jsx": "3a59b65cb610d806e3165b2b177ac0ba5c50ad426d36e7f9fbca6943ab669b64",
+    "src/components/GradePills.jsx": "84dddb058e3a0de02b7d6b7d8ea6e3a8d00f22200d277e6253f1f8bb73f2d0b0",
+    "src/components/NavIcon.jsx": "df06733477b97bd9930dfa9ab4f65d74bca47b7ad6f30849d2fc89edc9def8ac",
+    "src/components/sectionControls.test.js": "90428e019c43dcd1144a318606ae5222d465ca7aac304185c0b63db964851949",
+    "src/components/ui.jsx": "7ac68d68b8be21cc058cb795222ec47c5b1d027b9db43a850f5a7d2c93c7a0a3",
+    "src/enrollment.css": "1ba7c31b062f5d6135042971d4af2d7912843b998f1e49dbf3fd2f6e07a20ad1",
+    "src/pages/AccountsPage.jsx": "da829c3db1eaa03b2c0902480df05d2092d66812d1c88ec0750ebb120096817f",
+    "src/pages/announcements/AnnouncementForm.jsx": "6c9caa9f98736e076f71a1b3e9d21d08ebfc5e8ef2281ef2391958dc0a34da6b",
+    "src/pages/AnnouncementsPage.jsx": "01f1dc7a0848b7311bf6bb8776864f923591cc037138065bcb9e6404e8207360",
+    "src/pages/AttendanceSummaryPage.jsx": "a64d842bc40ddf2ba9f02cddbe4d2b108fc9dc8bc39ebd9ff1ed8254ca114020",
+    "src/pages/AttendanceTakePage.jsx": "a16408d67e52776ec35d4b3cdefc06ced2e1eceb7ea569736a02dc9184bc7481",
+    "src/pages/DashboardPage.jsx": "91c68fa16618e97943ad7b674b19a82eb6f8f457c9ee475c420068d090ae3e85",
+    "src/pages/EnrollPage.jsx": "e7243c682462404a3a028c14c9c4329a1af1ebb7d5caa3d8a4163c13111bea2d",
+    "src/pages/guardians/LinksTab.jsx": "a9a77f4d9d5911bf622d13f3e17a867304cae1e00f242c672ac7676ba853fdde",
+    "src/pages/guardians/PortalSettingsTab.jsx": "188a1da59a56e29698408c79272488ec39c210a3ede03d1295a0a08a13dd0e45",
+    "src/pages/idCards/SavedBatchTab.jsx": "4da84676e7ff0678ad50a1935d12d30510e964f1399c119b030958fd8654dd5d",
+    "src/pages/ImportStudentsWizard.jsx": "0be4231beca39af0cc6ba6141ae00c352714747c0d733087d77ade19f1441cab",
+    "src/pages/SchedulesPage.jsx": "3d83004e604d1086e4b954c2e4eef4b08c9a27d4bc77819199e007523ae7ba00",
+    "src/pages/SectionDetailModal.jsx": "ae60956ea9b32c71c2da6d859056d33edca87b76d6cb13256030b4607c9e10b5",
+    "src/pages/SectionsPage.jsx": "be0b5e50904fe25a62f186f91fec566669af9f259181db7b9dc0ed92c8e217dc",
+    "src/pages/SessionReviewPage.jsx": "e3e0e5e80bfaa439b57142f79d1185098a9c23ebd924c73c86edb1a3974dc126",
+    "src/pages/StudentForm.jsx": "552e29067ba9e9c3aa4f55effec24e744eec7b9c8b6b473f78e29c1f95e88a98",
+    "src/pages/StudentsPage.jsx": "b48a1a79931ae79c7496d7cc269cb875728926c161818b1436a5a791712b4296",
+    "src/registrar.css": "d055e2982bcd845985f930e31934746307dbe7269a22d61eca1da233cc67fae9",
+    "src/styles.js": "47f3f852c7fd4695543e6fe5c61a3ce8e64fd6601d1f57f9d959caa79ef9c6c7"
+  }
+}
