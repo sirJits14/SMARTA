@@ -1202,6 +1202,8 @@ Follow the 2026-10-19 registration release for the mechanics (`docs/audits/deplo
    - Apply: the same command with `--apply`.
    - Count again and expect zeros.
    Run it after `node scripts/syncShared.mjs` and after the functions deploy. Save each JSON result in the deployment record. The callable stays deployed for parity, but App Check blocks console calls, so the runner is the production route.
+   - Run it in a shell where `FIRESTORE_EMULATOR_HOST` is unset, with `NODE_OPTIONS=--dns-result-order=ipv4first`.
+   - Check that every result shows `"emulator": false` and `"projectId": "bnhs-sims"`. Otherwise the run hit an emulator, so stop.
 5. **SIMS.**
    - Create a new overlay `docs/releases/2026-10-2x-retire-subject-teacher/prepare.mjs` that wraps the ui-modules preparer.
    - Carry the files changed under `src/`, `shared/` and `parent/src/lib/school.js`. Hand-port any file whose copy in the tree differs from master, and list the differences in the README.
