@@ -39,12 +39,13 @@ const tests=[['Section details have a keyboard button',async()=>{await scenario(
   await click(button('Clear batch'));
   assert(dialogText().includes('Remove all 5 learners from the batch? Nothing is marked printed.'),'Clear confirm missing');
   await click(button('Cancel'));assert(!host.querySelector('dialog[open]'),'Confirm stayed open after Cancel');}]
-,['Coordinator section print never asks to mark',async()=>{const print=stubPrint();try{await scenario('normal');
+,['Coordinator section details are view-only, with no QR print or mark prompt',async()=>{await scenario('normal');
   await render(<SectionsPage me={{role:'jhs_coord'}} schoolYear="2026-2027"/>);
   await click(host.querySelector('button[aria-label="View Acacia section details"]'));
-  await waitFor(()=>button('Print QR Codes')&&!button('Print QR Codes').disabled,'Section print never became ready');
-  await click(button('Print QR Codes'));assert(print.calls()===1,'window.print not called');
-  assert(!dialogText().includes('print correctly'),'Coordinator was asked to mark cards');}finally{print.restore()}}]
+  assert(dialogText().includes('999000000000'),'Coordinator does not see the Acacia roster');
+  assert(!button('Print QR Codes')&&!button('Preparing QR codes…'),'Coordinator was offered section QR printing');
+  assert(!host.querySelector('.id-cards-print-only'),'Coordinator page rendered ID card print sheets');
+  assert(!dialogText().includes('print correctly'),'Coordinator was asked to mark cards');}]
 ,['Section name is a full-width bordered button with an arrow',async()=>{await scenario('normal');
   await render(<div className="sims-ui"><SectionsPage me={admin} schoolYear="2026-2027"/></div>);
   const control=host.querySelector('button[aria-label="View Acacia section details"]');assert(control,'Section detail button absent');

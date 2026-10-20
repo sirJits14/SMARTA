@@ -7,7 +7,7 @@ npm exec vite -- --config tests/browser/registrar.config.mjs
 ```
 
 Open http://127.0.0.1:5187/tests/browser/registrar-recovery.html.
-The visible result must show twelve PASS lines. This uses the real React components and DOM with synthetic resource hooks and intercepted data/Firebase modules. It never calls production services. Covers learner/section/schedule draft retention on retrieval error, keyboard section access, the bordered section button, and QR readiness on DOM detachment/remount, the ID card saved batch (merged sheets in print order, unenrolled learners set aside, fill meter, search and add, confirm-after-print, clear), coordinators never being asked to mark cards, and the SMARTA sidebar brand (wordmark expanded, S mark collapsed).
+The visible result must show twelve PASS lines. This uses the real React components and DOM with synthetic resource hooks and intercepted data/Firebase modules. It never calls production services. Covers learner/section/schedule draft retention on retrieval error, keyboard section access, the bordered section button, and QR readiness on DOM detachment/remount, the ID card saved batch (merged sheets in print order, unenrolled learners set aside, fill meter, search and add, confirm-after-print, clear), view-only section details for coordinators (roster shown, no QR print, never asked to mark cards), and the SMARTA sidebar brand (wordmark expanded, S mark collapsed). Use a window at least 768px wide: a narrower or hidden window renders the mobile shell, and the sidebar brand check fails.
 
 These browser checks are separate from `npm test`. The fixture does not validate authentication, real queries or production writes.
 
