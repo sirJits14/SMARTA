@@ -1186,7 +1186,7 @@ Note the results, including any copy problems, in the PR description. Fix any de
 Follow the 2026-10-19 registration release for the mechanics (`docs/audits/deployments/2026-10-19-registration/README.md`).
 
 1. **Baseline.**
-   - Run a read-only production count of `subject_teacher` rows and requests.
+   - Run a read-only production count of `subject_teacher` rows and requests, and a read-only count of `announcements` whose `audience.roles` contains `subject_teacher`, with their status (scheduled or published). Old SIMS can't save these once the functions are deployed. Deploy SIMS right after the functions, and re-target or note any scheduled ones.
    - Byte-check live SIMS against the newest release tree (`docs/releases/2026-10-20-ui-modules/prepare.mjs`).
    - Byte-check the live Parent App against its last record.
 2. **Functions, by name, from the backend preparer** (`docs/releases/2026-10-18-school-family/prepareBackend.mjs`, wrapped as in the registration release). The set:
@@ -1195,16 +1195,17 @@ Follow the 2026-10-19 registration release for the mechanics (`docs/audits/deplo
    - `getPortalAnnouncementsFn`, `getPortalAnnouncementFn`, `savePortalAnnouncementFn`;
    - `announcementAudienceCountFn`, `onAnnouncementWritten`, `publishAnnouncementsJob`;
    - `retireSubjectTeachersFn`.
-   Before deploying, confirm with `git grep -l "shared/schoolAccess.js\|shared/announcementAudience.js" functions/src` that no other handler's behaviour changed.
+   Before deploying, confirm with `git grep -l "shared/schoolAccess.js\|shared/announcementAudience.js" functions/src` that no other handler's behaviour changed. It also lists `guardianAudience.js`, `reports.js` (only `isFamilyLink`) and `sessionAttendance.js` (`canReviewSection`, which never covered Subject Teacher). Their behaviour is unchanged, so they stay out of the deploy set.
 3. **Delete `migrateSubjectTeachersFn`** by name: `firebase functions:delete migrateSubjectTeachersFn --region asia-southeast1`.
 4. **Cleanup in production.**
-   - Run `retireSubjectTeachersFn` with `{}`. Expect 5 accounts and 9 rows, or the newer count from step 1.
-   - Run it with `{ apply: true }`.
-   - Run it with `{}` again and expect zeros.
-   Save each JSON result in the deployment record.
+   - Count: `node functions/scripts/retireSubjectTeachers.mjs --project bnhs-sims --admin <administrator email>`. Expect 5 accounts and 9 rows, or the newer count from step 1.
+   - Apply: the same command with `--apply`.
+   - Count again and expect zeros.
+   Run it after `node scripts/syncShared.mjs` and after the functions deploy. Save each JSON result in the deployment record. The callable stays deployed for parity, but App Check blocks console calls, so the runner is the production route.
 5. **SIMS.**
    - Create a new overlay `docs/releases/2026-10-2x-retire-subject-teacher/prepare.mjs` that wraps the ui-modules preparer.
    - Carry the files changed under `src/`, `shared/` and `parent/src/lib/school.js`. Hand-port any file whose copy in the tree differs from master, and list the differences in the README.
+   - The 2026-10-19 registration overlay carries old copies of `shared/schoolAccess.js`, `shared/announcementAudience.js` and `parent/src/lib/school.js`. The new overlay must replace all three. Check the tree diff.
    - Test the tree, build, byte-verify the deploy (`hosting:sims`), and deploy.
 6. **Parent App.** Build from master with the main checkout's `parent/.env`, deploy `hosting:parent`, and byte-verify.
 7. **Record.** Open a deployment record PR with the counts, logs, verifications and rollback notes.

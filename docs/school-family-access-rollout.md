@@ -10,7 +10,7 @@ This change is implemented for local review. It does not deploy services or migr
 - Firestore rules: 134 passed; 6 existing password-only release compatibility tests skipped under the normal rules configuration.
 - Functions with local Auth/Firestore emulators: 283 passed across 18 suites.
 - Both application builds passed; parent initial JavaScript is 259.9 KB gzip, within the 260 KB limit.
-- Independent review findings were fixed and re-reviewed. Browser checks with synthetic data covered the adviser AM correction/restoration, unaffected PM status, mobile Family details, administrator management. Real notification delivery and production rollout are not part of these local checks.
+- Independent review findings were fixed and re-reviewed. Browser checks with synthetic data covered the adviser AM correction/restoration, unaffected PM status, mobile Family details and administrator management. Real notification delivery and production rollout are not part of these local checks.
 
 ## Account management
 

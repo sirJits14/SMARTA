@@ -18,7 +18,7 @@ export async function retireSubjectTeachers(deps, input = {}) {
   const holders = (await db.collection('school_accounts').get()).docs.filter(snap => subjectRows(snap.data()).length);
   const requests = (await db.collection('school_role_requests').where('role', '==', ROLE).where('status', '==', 'pending').get()).docs;
   if (input.apply !== true) {
-    return { dryRun: true, accounts: holders.length, rows: holders.reduce((n, snap) => n + subjectRows(snap.data()).length, 0), requests: requests.length };
+    return { dryRun: true, accounts: holders.length, rows: holders.reduce((n, snap) => n + subjectRows(snap.data()).length, 0), requests: requests.filter(snap => snap.data().uid).length };
   }
   let accounts = 0; let rows = 0; let closed = 0;
   for (const snap of holders) {
@@ -38,7 +38,7 @@ export async function retireSubjectTeachers(deps, input = {}) {
   for (const snap of requests) {
     const done = await db.runTransaction(async tx => {
       const request = (await tx.get(snap.ref)).data();
-      if (request?.status !== 'pending' || request.role !== ROLE) return false;
+      if (request?.status !== 'pending' || request.role !== ROLE || !request.uid) return false;
       tx.update(snap.ref, { status: 'rejected', reason: REASON, reviewedBy: actor.uid, reviewedAt: FieldValue.serverTimestamp() });
       tx.set(inboxRef(db, request.uid, `rejected:${snap.id}`), { type: 'school_access', rejected: true,
         title: 'School access request not approved', body: `Reason: ${REASON}`, createdAt: FieldValue.serverTimestamp() });

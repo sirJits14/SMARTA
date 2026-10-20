@@ -80,6 +80,9 @@ describe('school access tracking', () => {
     expect(historyLine({ action: 'school.roleRetired', actorUid: 'admin@school.test', targetId: 'u2', at,
       details: { role: 'subject_teacher', teacherName: 'Ben Dy', removed: [{ gradeLevel: 7 }, { gradeLevel: 8 }] } }, sections))
       .toMatchObject({ text: 'admin@school.test ended Ben Dy\'s Subject Teacher access (role retired) · Grades 7, 8' });
+    expect(historyLine({ action: 'school.roleRetired', actorUid: 'admin@school.test', targetId: 'u2', at,
+      details: { role: 'subject_teacher', teacherName: 'Ben Dy', removed: [{ gradeLevel: 7 }, { gradeLevel: 7 }] } }, sections))
+      .toMatchObject({ text: 'admin@school.test ended Ben Dy\'s Subject Teacher access (role retired) · Grade 7' });
     expect(historyLine({ action: 'school.requested', actorUid: 'ana@deped.gov.ph', targetId: 'u1', at: null,
       details: { role: 'adviser', sectionId: 'A', teacherName: 'Ana Cruz' } }, sections))
       .toEqual({ when: '—', text: 'Ana Cruz requested Adviser · Grade 7 · Rizal', reason: '' });

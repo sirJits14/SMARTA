@@ -57,6 +57,13 @@ describe('retireSubjectTeachers', () => {
     expect(await inbox('t3')).toEqual([expect.objectContaining({ type: 'school_access', rejected: true, body: 'Reason: The Subject Teacher role was retired.' })]);
     expect(await audit('school.requestRejected')).toEqual([expect.objectContaining({ targetId: 't3' })]);
   });
+  it('skips a pending Subject Teacher request that has no uid', async () => {
+    await db().doc('school_role_requests/r3').set({ email: 'nouid@gmail.com', role: 'subject_teacher',
+      schoolYear: year, gradeLevel: 8, status: 'pending', createdAt: new Date() });
+    expect(await retireSubjectTeachers(admin(), { apply: true })).toEqual({ dryRun: false, accounts: 3, rows: 4, requests: 1 });
+    expect((await db().doc('school_role_requests/r3').get()).data().status).toBe('pending');
+    expect((await db().doc('school_role_requests/r1').get()).data().status).toBe('rejected');
+  });
   it('changes nothing on a second run', async () => {
     await retireSubjectTeachers(admin(), { apply: true });
     expect(await retireSubjectTeachers(admin(), { apply: true })).toEqual({ dryRun: false, accounts: 0, rows: 0, requests: 0 });

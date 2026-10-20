@@ -87,6 +87,11 @@ export function coverageCsvRows(groups) {
 }
 
 const VERBS = { 'school.requestApproved': 'approved', 'school.requestRejected': 'rejected the request from', 'school.assigned': 'assigned', 'school.revoked': 'revoked' };
+function retiredGrades(removed = []) {
+  const grades = [...new Set(removed.map(a => a.gradeLevel).filter(g => g != null))].sort((a, b) => a - b);
+  return grades.length ? ` · Grade${grades.length > 1 ? 's' : ''} ${grades.join(', ')}` : '';
+}
+
 export function historyLine(row, sections = []) {
   const d = row.details || {};
   const teacher = d.teacherName || d.teacherEmail || row.targetId;
@@ -100,7 +105,7 @@ export function historyLine(row, sections = []) {
     : row.action === 'school.slipIssued' ? `${row.actorUid} issued an advisory slip · ${scope}`
     : row.action === 'school.slipRevoked' ? `${row.actorUid} revoked the advisory slip · ${scope}`
     : row.action === 'school.slipRedeemed' ? `${teacher} became Class Adviser with a slip from ${d.issuedBy} · ${what}`
-    : row.action === 'school.roleRetired' ? `${row.actorUid} ended ${teacher}'s ${HISTORY_ROLE_LABELS[d.role] || d.role} access (role retired) · Grades ${(d.removed || []).map(a => a.gradeLevel).join(', ')}`
+    : row.action === 'school.roleRetired' ? `${row.actorUid} ended ${teacher}'s ${HISTORY_ROLE_LABELS[d.role] || d.role} access (role retired)${retiredGrades(d.removed)}`
     : `${row.actorUid} ${VERBS[row.action] || row.action} ${teacher} · ${what}`;
   return { when, text, reason: d.reason && d.reason !== 'Approved' ? d.reason : '' };
 }
