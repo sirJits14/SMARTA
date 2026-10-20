@@ -81,15 +81,25 @@ describe('advisory slips on the Sections page', () => {
       const html = render(me);
       expect(html).toContain('>Advisory slip<');
       expect(html).toContain('No adviser in app');
-      expect(html).toContain('Print slips for sections without an adviser');
+      expect(html).toContain('aria-label="Select Mabini for an advisory slip"');
+      expect(html).toContain('Select 1 section without a slip');
     }
-    expect(render({ role: 'glc', gradeLevel: 7 })).not.toContain('>Advisory slip<');
+    const outOfScope = render({ role: 'glc', gradeLevel: 7 });
+    expect(outOfScope).not.toContain('>Advisory slip<');
+    expect(outOfScope).not.toContain('type="checkbox"');
+  });
+  it('lets a section with an unused slip be ticked but leaves it out of the select shortcut', () => {
+    fixture.advisory = new Map([['s8', { sectionId: 's8', adviser: null, slip: { issuedAt: 0, issuedBy: 'x' } }]]);
+    const html = render({ role: 'admin' });
+    expect(html).toContain('aria-label="Select Mabini for an advisory slip"');
+    expect(html).not.toContain('without a slip');
   });
   it('shows the app adviser and hides the slip action once a section has one', () => {
     fixture.advisory = new Map([['s8', { sectionId: 's8', adviser: { name: 'Ana Cruz', email: 'a@deped.gov.ph' }, slip: null }]]);
     const html = render({ role: 'admin' });
     expect(html).toContain('In app: Ana Cruz');
     expect(html).not.toContain('>Advisory slip<');
+    expect(html).not.toContain('type="checkbox"');
   });
   it('offers Revoke while a slip is outstanding', () => {
     fixture.advisory = new Map([['s8', { sectionId: 's8', adviser: null, slip: { issuedAt: Date.parse('2026-10-19T02:00:00Z'), issuedBy: 'x' } }]]);
