@@ -30,7 +30,11 @@
    code or type its code.
 4. Check the section name on the confirm screen, then confirm. You become the
    adviser at once; no approval is needed. The slip works once.
-5. **No DepEd email, or no slip yet?** Request your section instead, with your
-   grade and section. An Administrator or your grade's Curriculum Adviser
-   approves it, and the request shows as *Waiting for approval* until then.
+5. **No slip yet?** Request your section instead, with your grade and
+   section. An Administrator or your grade's Curriculum Adviser approves it,
+   and the request shows as *Waiting for approval* until then.
 6. Already using the app? Open **Settings → Add a role**.
+
+**No DepEd email?** The Class Adviser option appears only for
+**@deped.gov.ph** accounts. An Administrator can still make any account a
+class adviser under **School access** in SIMS.
