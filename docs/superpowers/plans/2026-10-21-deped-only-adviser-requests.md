@@ -31,7 +31,7 @@
 
 ## Spec adjustments made while planning
 
-- PR #77 (merged on master before this work started) closes Class Adviser requests unless `settings/app.advisoryRequestsEnabled` is true. The new DepEd check runs first, so a non-DepEd account always gets the DepEd message, whether requests are open or closed. #77 changed no tests, so seven emulator tests in `schoolAccess.test.js` and `advisorySlips.test.js` already fail on master; Task 1 Step 2b repairs the fixtures. Quoted text, not line numbers, is the anchor for every edit below, because #77 shifted some lines.
+- PR #77 (merged on master before this work started) closes Class Adviser requests unless `settings/app.advisoryRequestsEnabled` is true. The new DepEd check runs first, so a non-DepEd account always gets the DepEd message, whether requests are open or closed. #77 changed no tests, so eight emulator tests (seven in `schoolAccess.test.js`, one in `advisorySlips.test.js`) already fail on master; Task 1 Step 2b repairs the fixtures. Quoted text, not line numbers, is the anchor for every edit below, because #77 shifted some lines.
 - The spec's release section listed `requestSchoolRoleFn` only. The shortened slip message also changes `previewAdvisorySlipFn` and `redeemAdvisorySlipFn`, so the spec now lists all three. This plan's release set is those three functions.
 
 ---
@@ -560,20 +560,66 @@ Note the results, including any copy problems, in the PR description. Fix any de
 
 ---
 
+### Task 5: Settings row hint and the closed-gate test
+
+Added after the final whole-branch review. Both parts are done; this section records them.
+
+**Files:**
+- Modify: `parent/src/strings.js` (new `addRoleRowHintParent` after `addRoleRowHint`)
+- Modify: `parent/src/lib/join.js` (new `addRoleHint` after `roleOptions`)
+- Modify: `parent/src/screens/Settings.jsx` (import `addRoleHint`; the Add a role row subtitle)
+- Test: `parent/src/lib/join.test.js`, `parent/src/lib/strings.test.js`
+- Test: `functions/test/emulator/schoolAccess.test.js`
+
+**Interfaces:**
+- Produces: `addRoleHint(email, strings)` returns `strings.addRoleRowHint` ("Parent/Guardian or Class Adviser") when `isDepedEmail(email)` is true, and `strings.addRoleRowHintParent` ("Parent/Guardian") otherwise, including for a missing email.
+
+- [x] **Step 1: Pin the DepEd check before the request gate**
+
+In `describe('teacher requests')` of `schoolAccess.test.js`, after `refuses a non-DepEd account and writes nothing`, add `gives a non-DepEd account the DepEd message even when requests are closed`. With `advisoryRequestsEnabled` set to false, `personal` gets `permission-denied` with the DepEd message, `teacher` gets `failed-precondition` with "Advisory section requests are not open yet. Please check back later.", and no request row is written. In `removes old-year access and refuses ended-year changes`, the last assertion now also checks the message "This school year has ended.", because the gate throws the same `failed-precondition` code.
+- `schoolAccess.test.js` alone: 31/31 PASS. With the DepEd check commented out of `requestSchoolRole`, the new test and `refuses a non-DepEd account and writes nothing` FAIL; restored, 31/31 PASS.
+
+- [x] **Step 2: Settings row hint (tests first)**
+
+Settings › Add a role showed "Parent/Guardian or Class Adviser" to every account, including accounts that can no longer become advisers.
+- `join.test.js`: `addRoleHint` returns the Class Adviser wording for `a@deped.gov.ph` and "Parent/Guardian" for `p@gmail.com` and for an undefined email. `strings.test.js` lists `addRoleRowHintParent` with the other join strings. Both failed first (`addRoleHint is not a function`, then the missing string).
+- Implement the string, `addRoleHint`, and `subtitle={addRoleHint(user.email, S)}` in `Settings.jsx` (`user` is already in scope in `SettingsHome`).
+- `parent/`: `npx vitest run src/lib/join.test.js` PASS, then the full `npx vitest run` PASS (186 tests, 24 files).
+
+- [x] **Step 3: Commit**
+
+Two commits: `Pin the DepEd check before the request gate in a test` (the test file) and `Keep Class Adviser out of the Settings row for non-DepEd accounts` (the five Parent App files).
+
+---
+
 ## Release (after the PR is merged; each production write needs the user's go-ahead in the releasing session)
 
-Follow the Subject Teacher release for the mechanics (`docs/audits/deployments/2026-10-20-retire-subject-teacher/README.md`). This release has no SIMS deploy and no data cleanup.
+Follow the advisory-toggle release for the mechanics (`docs/releases/2026-10-21-advisory-toggle/README.md`) and the Subject Teacher record for the evidence format (`docs/audits/deployments/2026-10-20-retire-subject-teacher/README.md`). This release has no SIMS deploy and no data cleanup.
 
-0. **Check PR #77 first (advisory request gate).** It is merged on master but was not part of the Subject Teacher release. Check whether it is live: `setAdvisoryRequestsEnabledFn` in the live function list, and the live SIMS and Parent App against their newest records. If it is not live, a Parent App built from master ships #77's "requests are closed" banner while the live `getSchoolContextFn` does not return `advisoryRequestsEnabled`, so every adviser request would read as closed and no administrator could reopen it. Stop and ask the user whether to release #77 together with this (functions `getSchoolContextFn` and `setAdvisoryRequestsEnabledFn`, plus the SIMS School Access tab) or to build this release without it.
+0. **Check the advisory-toggle release first.** PR #80 (`docs/releases/2026-10-21-advisory-toggle/`) already published the PR #77 gate to production: SIMS, the Parent App, and the functions `getSchoolContextFn`, `requestSchoolRoleFn` and `setAdvisoryRequestsEnabledFn`. Confirm it is live and that its deployment record is merged on master. If its record is not merged yet, stop and ask the user. That release's preparers are pinned to source revision `ee8a5e4`: never re-run its `prepare.mjs` or `build.mjs` from master after this PR merges, because that would ship this branch's changes under that release's record.
 1. **Baseline.**
-   - Byte-check the live Parent App against its last record (`docs/audits/deployments/2026-10-20-retire-subject-teacher/parent-hosting-verification.json`). Expect 50/50 before anything is deployed.
+   - Byte-check the live Parent App against the advisory-toggle release's Parent hosting verification (in its deployment record), not the Subject Teacher retirement record: the two no longer match. Expect every file to match before anything is deployed.
    - Read-only count in production of `school_role_requests` with `status == 'pending'` whose `email` is not `@deped.gov.ph`, and of `school_accounts` adviser rows held by non-DepEd emails. Save the counts (numbers only, no emails) in the record. They are expected to stay as they are.
-2. **Functions, by name, from the backend preparer.** Run `node docs/releases/2026-10-18-school-family/prepareBackend.mjs .superpowers/releases/deped-adviser/backend`. Run the backend's unit tests (`npm test`) and the emulator tests for `schoolAccess` and `advisorySlips`, one file at a time. Deploy only:
-   - `requestSchoolRoleFn`, `previewAdvisorySlipFn`, `redeemAdvisorySlipFn`.
-   Use a `firebase.deped-adviser-release.json` copied from `firebase.retire-subject-teacher-release.json`: functions source `.superpowers/releases/deped-adviser/backend/functions`, predeploy that backend's `syncShared.mjs`, and only the `parent` hosting target pointing at the new Parent App build. Run with `NODE_OPTIONS=--dns-result-order=ipv4first`. Afterwards list the live functions: all must be ACTIVE and the count unchanged.
-3. **Parent App.** Build from master with the main checkout's `parent/.env` loaded into the build process only, from a `git archive` export with `index.html` and `manifest.webmanifest` normalized to LF. Deploy `hosting:parent` and byte-verify the live site against the build.
-4. **Smoke test.**
+   - `previewAdvisorySlipFn` and `redeemAdvisorySlipFn` were not part of the advisory-toggle deploy, so they also go live with PR #77's `loadSchoolActor` change (one extra `settings/app` read) as well as the shortened slip message. The record should say so.
+2. **Functions, by name, from the backend preparer.**
+   - Run `node docs/releases/2026-10-18-school-family/prepareBackend.mjs .superpowers/releases/deped-adviser/backend` from the merged master.
+   - Put `PORTAL_URL=https://bnhs-parent.web.app` in the prepared backend's ignored Functions `.env` (`.superpowers/releases/deped-adviser/backend/functions/.env`), as the advisory-toggle release does.
+   - Run the backend's unit tests (`npm test`) and the emulator tests for `schoolAccess` and `advisorySlips`, one file at a time.
+   - Use a `firebase.deped-adviser-release.json` copied from `firebase.advisory-toggle-release.json`: functions source `.superpowers/releases/deped-adviser/backend/functions`, predeploy that backend's `syncShared.mjs`, and only the `parent` hosting target pointing at the new Parent App build.
+   - Deploy with `NODE_OPTIONS=--dns-result-order=ipv4first` and `FUNCTIONS_DISCOVERY_TIMEOUT=120`, and only these functions: `requestSchoolRoleFn`, `previewAdvisorySlipFn`, `redeemAdvisorySlipFn`.
+   - Afterwards list the live functions: all must be ACTIVE and the count unchanged.
+3. **Parent App.**
+   - Build with the same pattern as the advisory-toggle `build.mjs`, as this release's own copy (do not invoke the advisory-toggle one): load the production `VITE_` configuration from the main checkout's `parent/.env` into the build process only, check `VITE_FIREBASE_PROJECT_ID` is `bnhs-sims`, force `VITE_USE_EMULATORS=false`, and drop `VITE_APPCHECK_DEBUG_TOKEN`.
+   - Build from a `git archive` export of merged master, with `index.html` and `manifest.webmanifest` normalized to LF.
+   - Before deploying, check that the built main chunk contains the `VITE_RECAPTCHA_SITE_KEY` value (test for it without printing it) and contains neither `FIREBASE_APPCHECK_DEBUG_TOKEN` nor the emulator connection wiring from `src/firebase.js`.
+   - Why: `src/firebase.js` starts App Check only when the site key is set. A Parent build without it deploys cleanly, then refuses every sign-in because Auth enforces App Check. A byte-check against the same build cannot catch it (see `docs/audits/deployments/2026-10-21-sims-appcheck-key-fix/README.md`).
+   - Deploy `hosting:parent` and byte-verify the live site against the build.
+4. **Right before deploying anything,** check the live Hosting release list for both sites (`bnhs-parent` and `bnhs-sims`). Stop and ask the user if a release newer than the baseline appears: other sessions also deploy.
+5. **Smoke test.**
    - Unauthenticated call to `requestSchoolRoleFn` answers 401.
    - The live site serves the new main script.
-   - With a personal test account, the chooser shows only Parent/Guardian. With a DepEd account it shows both. Do not submit a request from either.
-5. **Record.** Open a deployment record PR under `docs/audits/deployments/2026-10-2x-deped-adviser-requests/` with the counts, logs, verifications and rollback notes. Rollback: the Hosting console for the Parent App, and the backend preparer for the three functions.
+   - The signed-in check is done by the user on their own device: a personal account shows only Parent/Guardian in the chooser and "Parent/Guardian" as the Settings › Add a role subtitle; a DepEd account shows both cards and the "Parent/Guardian or Class Adviser" subtitle. The built-in browser gets an App Check 403, and the releasing agent must not type production passwords. Do not submit a request from either account.
+6. **Record and rollback.**
+   - Open a deployment record PR under `docs/audits/deployments/2026-10-2x-deped-adviser-requests/` with the counts, logs, verifications and rollback notes.
+   - Rollback for the three functions: re-prepare the backend from the master commit just before this PR merged (name that commit in the record) and redeploy the same three functions.
+   - Rollback for the Parent App: the Hosting console version from the advisory-toggle release.

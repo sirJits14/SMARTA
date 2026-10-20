@@ -18,7 +18,7 @@ An Administrator can still make any account a Class Adviser in SIMS, so a teache
 | --- | --- |
 | Who is blocked | Self-service Class Adviser requests from a non-DepEd email. |
 | Administrator route | Unchanged. Assign role, and approving a request, still work for any email. |
-| Requests already waiting | Left alone. They stay in the review queue with the "Non-DepEd email" flag for an Administrator to approve or reject. No cleanup step. |
+| Requests already waiting | Left alone. They stay in the review queue with the "Non-DepEd email" flag for an Administrator or the grade's Curriculum Adviser to approve or reject. No cleanup step. |
 | Non-DepEd account that already holds Class Adviser | Its card stays visible and locked as "Active", so a working adviser does not look as if the role was lost. |
 | What the account sees instead | Only the Parent/Guardian card. No hint or explanation where the Class Adviser card was. |
 | Approach | Hide the card in the Parent App and refuse the request on the server. Both ship together. |
@@ -40,9 +40,14 @@ Dead copy removed, because every remaining Class Adviser card now belongs to a D
 - the "Needs approval" tag and the note under the cards in `RoleChooser.jsx`;
 - the `joinNeedsApproval` and `joinNeedsApprovalNote` strings.
 
+Settings › Add a role row hint:
+- The row subtitle names Class Adviser only for DepEd accounts. A non-DepEd account sees "Parent/Guardian" instead of
+  "Parent/Guardian or Class Adviser". `addRoleHint(email, strings)` in `parent/src/lib/join.js` picks the string; the new
+  string is `addRoleRowHintParent`.
+
 Not changed:
 - `AdviserStep.jsx`. Its non-DepEd branches become unreachable but are harmless, and the step stays out of the diff.
-- Settings › Add a role, which opens the same chooser.
+- The chooser that Settings › Add a role opens: it is the same chooser, so the rules above apply. The row's subtitle, above, is the only Settings change.
 - Settings › School access, which still lists a person's own earlier requests.
 
 ## 2. Server
@@ -74,12 +79,14 @@ Everything else is unchanged:
   - a Gmail account gets only the Parent/Guardian option;
   - a Gmail account that holds Class Adviser keeps the locked card;
   - a DepEd account still gets both;
-  - preselection from `?a=` is ignored for Gmail.
+  - preselection from `?a=` is ignored for Gmail;
+  - the Settings › Add a role subtitle names Class Adviser for a DepEd account only (`addRoleHint`).
 - The two tests that assert the "Needs approval" tag are replaced.
 
 **Server emulator tests** (`functions/test/emulator/schoolAccess.test.js`, `advisorySlips.test.js`):
 - A Gmail request is refused with `permission-denied` and writes no request, audit row or rate-limit row.
 - A DepEd request still works.
+- With requests closed, a Gmail request still gets the DepEd message and a DepEd request gets the gate message.
 - The slip refusal test in `advisorySlips.test.js` expects the shortened message.
 - Several existing tests create their waiting requests by calling `requestSchoolRole` as the Gmail fixtures `personal`
   and `other`. They cover the conflict flag, section ordering and the review queue. Those requests can no longer be made
