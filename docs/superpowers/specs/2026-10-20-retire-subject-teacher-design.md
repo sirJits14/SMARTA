@@ -75,7 +75,7 @@ Teacher), its next visit opens `/join`, as for any new account. "Skip for now" s
 **Callables** (`functions/src/handlers/schoolAccess.js`)
 - **`requestSchoolRole`:**
   - The `gradeLevels` path and the DepEd instant grant (`source: 'self'`) are removed, since they existed only for Subject Teacher.
-  - Any role outside `REQUESTABLE_ROLES` fails with `invalid-argument`: "Subject Teacher is no longer offered. Choose Class Adviser, or Parent/Guardian to link a learner." The message names Subject Teacher only when that was the requested role; otherwise it uses the existing "Choose a school role." message.
+  - A `subject_teacher` request fails with `invalid-argument`: "Subject Teacher is no longer offered. Choose Class Adviser, or Parent/Guardian to link a learner." A Curriculum Adviser request keeps its existing `permission-denied` message.
 - **`assignSchoolRole`, `revokeSchoolRole`, `replaceAdviser`:** these validate against `SCHOOL_ROLES`, so they refuse the role.
 - **`assignmentFrom`:** the legacy section-to-grade conversion for Subject Teacher is deleted.
 - **`getSchoolContext`:**
@@ -87,7 +87,7 @@ Teacher), its next visit opens `/join`, as for any new account. "Skip for now" s
   - The comment at `portalAnnouncements.js:44` is updated.
 
 **Cleanup: `retireSubjectTeachersFn`** (new `functions/src/handlers/retireSubjectTeachers.js`)
-- **Who can call it:** administrators only, through `staffCall`, with `scopedGrades(profile) === null`. It runs with a 540-second timeout and is safe to re-run.
+- **Who can call it:** administrators only. It uses school identity, like the migration it replaces, and checks `loadSchoolActor(deps).isAdmin`. It runs with a 540-second timeout and is safe to re-run.
 - **`{}` is a dry run:** it returns `{ dryRun: true, accounts, rows, requests }` and changes nothing.
 - **`{ apply: true }` processes each `school_accounts` doc holding any `subject_teacher` row, in its own transaction.** All reads happen before writes. For each account it:
   - removes every `subject_teacher` row, in any school year;
