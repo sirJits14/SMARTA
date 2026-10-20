@@ -47,7 +47,7 @@ export default function PageHeader({ title, subtitle, status, logo, avatarName, 
   // page rather than scrolling away with the expanded header.
   return (
     <>
-      <div ref={barRef} className={`page-header-bar${collapsed ? ' page-header-bar--collapsed' : ''}${action ? ' page-header-bar--action' : ''}`}>
+      <div ref={barRef} className={`page-header-bar${collapsed ? ' page-header-bar--collapsed' : ''}`}>
         {onBack && (
           <button type="button" className="page-header-back" aria-label={S.back} onClick={onBack}>
             <Icon name="back" size={22} />

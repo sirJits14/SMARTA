@@ -3,7 +3,6 @@ import S from '../strings.js';
 import { T } from '../styles.js';
 import { Banner } from './ui.jsx';
 import Icon from './Icon.jsx';
-import ThemeMenuButton from './ThemeMenuButton.jsx';
 import { useDoc } from '../hooks/useDoc.js';
 import { navTabs, activeTab, showsAppTitle } from '../lib/nav.js';
 import { useAnnouncements } from '../hooks/useAnnouncements.js';
@@ -76,13 +75,10 @@ export default function Shell({ route, navigate, profile, view = 'family', hasCl
   }, []);
   // Gate screens (Verify, Consent, Activate) have no PageHeader of their own, so they get the title row too.
   const titleRow = gate || showsAppTitle(route.name);
-  const hasBanner = !online || portal?.notificationsPaused || portal?.announcement;
   return (
     <div style={{ fontFamily: T.font, color: T.ink, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <header style={{ position: 'relative', padding: '14px 16px 0', maxWidth: 560, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
-        <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 11 }}><ThemeMenuButton /></div>
-        {titleRow && <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, minHeight: 44, display: 'flex', alignItems: 'center', paddingRight: 56 }}>{S.appName}</div>}
-        {!titleRow && hasBanner && <div aria-hidden="true" style={{ minHeight: 44, marginBottom: 10 }} />}
+        {titleRow && <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, minHeight: 44, display: 'flex', alignItems: 'center' }}>{S.appName}</div>}
         {!online && <Banner tone="warn">{S.offlineBanner}</Banner>}
         {portal?.notificationsPaused && <Banner tone="warn">{S.pausedBanner}{portal.pauseNote ? `: ${portal.pauseNote}` : ''}</Banner>}
         {portal?.announcement && <Banner>{portal.announcement}</Banner>}

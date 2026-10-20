@@ -36,9 +36,8 @@ function Case({ c }) {
 
 createRoot(document.getElementById('root')).render(<main style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
   <div style={{ position: 'relative', padding: '14px 16px 0' }}>
-    <div aria-hidden="true" style={{ position: 'absolute', top: 14, right: 16, width: 44, height: 44, borderRadius: 999, border: '1px solid var(--t-border)' }} />
     <PageHeader title="Ella Marie Austral Dela Cruz" avatarName="Ella Marie Austral Dela Cruz" subtitle="Grade 7 – AMIABLE · Gate scans" status="No entry recorded today"
-      onBack={() => {}} action={<button type="button" className="page-header-pill"><Icon name="calendar" size={18} />Sessions</button>} />
+      onBack={() => {}} action={<button type="button" className="page-header-icon-btn" aria-label="Sessions" title="Sessions"><Icon name="calendar" size={22} /></button>} />
   </div>
   <aside style={{ padding: 12, textAlign: 'center', fontSize: 12 }}>Synthetic attendance · no Firebase access</aside>
   {CASES.map((c) => <Case key={c.id} c={c} />)}
