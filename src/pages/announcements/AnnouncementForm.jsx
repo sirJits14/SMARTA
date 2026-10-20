@@ -9,7 +9,7 @@ import { ANNOUNCEMENT_ROLES, ANNOUNCEMENT_ROLE_LABELS } from '../../../shared/an
 
 const hint = { fontFamily: T.body, fontSize: 12, color: T.inkMuted, margin: '-8px 0 14px' };
 const row = { display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14, fontFamily: T.body, fontSize: 13 };
-const check = { display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer' };
+
 
 // Create (editing = null) or edit an announcement. A live post's audience,
 // push and timing are shown but locked (spec: change them by unpublishing
@@ -68,12 +68,12 @@ export default function AnnouncementForm({ me, editing, posts, onClose }) {
       <fieldset disabled={live} style={{ border: 0, padding: 0, margin: 0 }}>
         <legend style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.inkMuted, marginBottom: 6 }}>Audience</legend>
         <div style={row}>
-          {ANNOUNCEMENT_ROLES.map(role => <label key={role} style={check}><input type="checkbox" checked={roles.includes(role)} onChange={() => set('roles', roles.includes(role) ? roles.filter(value => value !== role) : [...roles, role])} />{ANNOUNCEMENT_ROLE_LABELS[role]}</label>)}
+          {ANNOUNCEMENT_ROLES.map(role => <label key={role} className="sims-check"><input type="checkbox" checked={roles.includes(role)} onChange={() => set('roles', roles.includes(role) ? roles.filter(value => value !== role) : [...roles, role])} />{ANNOUNCEMENT_ROLE_LABELS[role]}</label>)}
         </div>
         <div style={row}>
-          {canPostToAll(me) && <label style={check}><input type="checkbox" checked={f.all} onChange={(e) => { set('all', e.target.checked); set('sectionIds', []); }} /> All grades</label>}
+          {canPostToAll(me) && <label className="sims-check"><input type="checkbox" checked={f.all} onChange={(e) => { set('all', e.target.checked); set('sectionIds', []); }} /> All grades</label>}
           {!f.all && grades.map((g) => (
-            <label key={g} style={check}><input type="checkbox" checked={f.grades.includes(g)} disabled={lockedGrade} onChange={() => toggleGrade(g)} /> Grade {g}</label>
+            <label key={g} className="sims-check"><input type="checkbox" checked={f.grades.includes(g)} disabled={lockedGrade} onChange={() => toggleGrade(g)} /> Grade {g}</label>
           ))}
         </div>
         <Field label="Sections (optional)">
@@ -85,8 +85,8 @@ export default function AnnouncementForm({ me, editing, posts, onClose }) {
         {!!f.sectionIds?.length && <Btn variant="ghost" onClick={() => set('sectionIds', [])}>Clear sections</Btn>}
         <div style={{ fontFamily: T.body, fontSize: 12, fontWeight: 600, color: T.inkMuted, marginBottom: 6 }}>When</div>
         <div style={row}>
-          <label style={check}><input type="radio" name="when" checked={f.when === 'now'} onChange={() => set('when', 'now')} disabled={!!editing} /> Publish now</label>
-          <label style={check}><input type="radio" name="when" checked={f.when === 'schedule'} onChange={() => set('when', 'schedule')} disabled={!!editing} /> Schedule</label>
+          <label className="sims-check"><input type="radio" name="when" checked={f.when === 'now'} onChange={() => set('when', 'now')} disabled={!!editing} /> Publish now</label>
+          <label className="sims-check"><input type="radio" name="when" checked={f.when === 'schedule'} onChange={() => set('when', 'schedule')} disabled={!!editing} /> Schedule</label>
           {f.when === 'schedule' && <>
             <Inp type="date" aria-label="Publish date" value={f.date} onChange={(e) => set('date', e.target.value)} style={{ width: 160 }} />
             <Inp type="time" aria-label="Publish time" value={f.time} onChange={(e) => set('time', e.target.value)} style={{ width: 120 }} />
@@ -94,16 +94,16 @@ export default function AnnouncementForm({ me, editing, posts, onClose }) {
         </div>
         {f.when === 'schedule' && !live && <p style={hint}>Philippine time. Scheduled posts go out within 5 minutes of the set time.</p>}
         <div style={row}>
-          <label style={check}><input type="checkbox" checked={f.push} onChange={(e) => set('push', e.target.checked)} /> Send push notification</label>
+          <label className="sims-check"><input type="checkbox" checked={f.push} onChange={(e) => set('push', e.target.checked)} /> Send push notification</label>
         </div>
         <p style={hint}>Use for urgent or time-sensitive notices.</p>
       </fieldset>
       {live && <p style={hint}>The audience, timing and push of a published announcement can't change. Unpublish it and post a new one instead.</p>}
 
       <div style={row}>
-        <label style={check}>Expires on <Inp type="date" value={f.expires} onChange={(e) => set('expires', e.target.value)} style={{ width: 160 }} /></label>
+        <label className="sims-check">Expires on <Inp type="date" value={f.expires} onChange={(e) => set('expires', e.target.value)} style={{ width: 160 }} /></label>
         {f.expires && <Btn variant="ghost" onClick={() => set('expires', '')}>Clear</Btn>}
-        <label style={check}><input type="checkbox" checked={f.pinned} onChange={(e) => set('pinned', e.target.checked)} /> Pin to top</label>
+        <label className="sims-check"><input type="checkbox" checked={f.pinned} onChange={(e) => set('pinned', e.target.checked)} /> Pin to top</label>
       </div>
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>

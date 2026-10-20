@@ -137,7 +137,7 @@ export default function EnrollPage({ me, schoolYear }) {
               <tbody>{classList.map((student, index) => <tr key={student.id}>
                 <td className="sims-enrollment-row-number">{index + 1}</td>
                 <td><strong>{fullName(student)}</strong>{student.lrn && <small>LRN {student.lrn}</small>}</td>
-                <td className="sims-enrollment-row-action"><Btn variant="ghost" style={{ color: T.absent, borderColor: T.absent }} onClick={() => setConfirmWithdraw({ student, section: selectedSection })}>Withdraw</Btn></td>
+                <td className="sims-enrollment-row-action"><Btn variant="ghost-danger" onClick={() => setConfirmWithdraw({ student, section: selectedSection })}>Withdraw</Btn></td>
               </tr>)}</tbody>
             </table>
           </div>}

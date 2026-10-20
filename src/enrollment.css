@@ -10,7 +10,6 @@
   .sims-enrollment-panel-heading p { margin: 6px 0 0; font-size: 13px; color: var(--sims-muted); }
   .sims-enrollment-panel-heading > span { color: var(--sims-muted); font-size: 12px; white-space: nowrap; }
   .sims-enrollment-grades { margin-bottom: 20px; }
-  .sims-enrollment-grades button { min-height: 44px; padding: 9px 12px !important; letter-spacing: 0 !important; text-transform: none !important; }
   .sims-enrollment-directory-heading { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0 12px; color: var(--sims-muted); font-size: 12px; }
   .sims-enrollment-directory-heading > :first-child { font-weight: 600; color: var(--sims-ink); }
   .sims-enrollment-section-list { display: grid; align-content: start; gap: 4px; flex: 1 1 auto; min-height: 140px; max-height: 480px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 4px; margin: -4px; }

@@ -94,7 +94,7 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
               <tbody>{plan.results.map((r) => (
                 <tr key={r.rowNumber}>
                   <td style={S.td}>{r.rowNumber}</td>
-                  <td style={{ ...S.td, color: KIND_COLOR[r.kind], fontWeight: 700 }}>{KIND_LABEL[r.kind]}</td>
+                  <td style={{ ...S.td, color: KIND_COLOR[r.kind], fontWeight: 600 }}>{KIND_LABEL[r.kind]}</td>
                   <td style={{ ...S.td, ...T.num }}>{r.student?.lrn || '—'}</td>
                   <td style={S.td}>{r.student ? `${r.student.lastName}, ${r.student.firstName}` : '—'}</td>
                   <td style={S.td}>{r.gradeLevel ?? '—'}</td>

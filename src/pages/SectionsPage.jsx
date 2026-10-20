@@ -10,7 +10,7 @@ import { GRADES, isSHS, TRACKS, STRANDS } from '../lib/constants.js';
 import { alphabeticalSort, depedSort } from '../lib/roster.js';
 import { sectionMatches } from '../lib/search.js';
 import { T, S } from '../styles.js';
-import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
+import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState, RowMenu } from '../components/ui.jsx';
 import StudentForm from './StudentForm.jsx';
 import SectionDetailModal from './SectionDetailModal.jsx';
 import IdCardsPrintSheets from '../components/IdCardsPrintable.jsx';
@@ -277,7 +277,7 @@ export default function SectionsPage({ me, schoolYear }) {
                       {slipTargetIds.has(s.id) && <input type="checkbox" aria-label={`Select ${s.name} for an advisory slip`} checked={slipSelection.has(s.id)}
                         onChange={() => toggleSlip(s.id)} style={{ width: 18, height: 18, cursor: 'pointer' }} />}
                     </td>}
-                    <td style={{ ...S.td, fontWeight: 600 }}>{canViewRoster ? <button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}><span>{s.name}</span><span aria-hidden="true">›</span></button> : s.name}</td>
+                    <td style={S.tdStrong}>{canViewRoster ? <button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}><span>{s.name}</span><span aria-hidden="true">›</span></button> : s.name}</td>
                     <td style={S.td}>{s.strand || '—'}</td>
                     <td style={S.td}>
                       <div>{s.adviserName || '—'}</div>
@@ -285,17 +285,20 @@ export default function SectionsPage({ me, schoolYear }) {
                     </td>
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
                     {canViewRoster && <td style={{ ...S.td, ...T.num }}>{enrolledCountBySection.get(s.id) || 0}</td>}
-                    <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      {canViewRoster && canIssueAdvisorySlip(me, s) && advisory.bySection.has(s.id) && !advisory.bySection.get(s.id).adviser &&
-                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setSlipConfirm({ kind: 'issue', sections: [s] }); }} style={{ marginRight: 6 }}>Advisory slip</Btn>}
-                      {canViewRoster && canIssueAdvisorySlip(me, s) && advisory.bySection.get(s.id)?.slip &&
-                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setSlipConfirm({ kind: 'revoke', sections: [s] }); }} style={{ marginRight: 6 }}>Revoke slip</Btn>}
-                      {canEditSection(me, s, schoolYear) &&
-                        <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setForm(s); }} style={{ marginRight: 6 }}>Edit</Btn>
-                      }
-                      {admin && <>
-                        <Btn variant="ghost" disabled={!!s.schoolAdviserUid} title={s.schoolAdviserUid ? 'Revoke the Class Adviser assignment in School Access before deleting this section.' : undefined} onClick={(e) => { e.stopPropagation(); setConfirm(s); }} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
-                      </>}
+                    <td style={S.tdActions}>
+                      <span className="sims-row-actions">
+                        {canEditSection(me, s, schoolYear) &&
+                          <Btn variant="ghost" onClick={(e) => { e.stopPropagation(); setForm(s); }}>Edit</Btn>}
+                        <RowMenu label={`More actions for ${s.name}`} items={[
+                          canViewRoster && canIssueAdvisorySlip(me, s) && advisory.bySection.has(s.id) && !advisory.bySection.get(s.id).adviser &&
+                            { label: 'Advisory slip', onSelect: () => setSlipConfirm({ kind: 'issue', sections: [s] }) },
+                          canViewRoster && canIssueAdvisorySlip(me, s) && advisory.bySection.get(s.id)?.slip &&
+                            { label: 'Revoke slip', danger: true, onSelect: () => setSlipConfirm({ kind: 'revoke', sections: [s] }) },
+                          admin && { label: 'Delete', danger: true, disabled: !!s.schoolAdviserUid,
+                            hint: s.schoolAdviserUid ? 'Revoke the Class Adviser assignment in School Access before deleting this section.' : undefined,
+                            onSelect: () => setConfirm(s) },
+                        ]} />
+                      </span>
                     </td>
                   </tr>))}
                 </tbody>

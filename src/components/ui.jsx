@@ -1,13 +1,14 @@
-import { createContext, useContext, Children, cloneElement, isValidElement, useId, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, Children, cloneElement, isValidElement, useId, useRef, useState } from 'react';
 import DialogFrame from './DialogFrame.jsx';
 import NavIcon from './NavIcon.jsx';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, MARK_COLOR } from '../styles.js';
 
 // Button variants: solid = primary action, ghost = secondary (bordered),
-// danger = destructive, quiet = text-only, icon = square icon button (needs aria-label).
+// danger = destructive, ghost-danger = bordered with red text (less final destructive steps),
+// quiet = text-only, icon = square icon button (needs aria-label).
 // Hover, focus, active, disabled and loading states live in registrar.css.
-const BTN_VARIANT = { solid: 'primary', ghost: 'secondary', danger: 'danger', quiet: 'quiet', icon: 'icon' };
+const BTN_VARIANT = { solid: 'primary', ghost: 'secondary', 'ghost-danger': 'secondary is-danger', danger: 'danger', quiet: 'quiet', icon: 'icon' };
 export const Btn = ({ className = '', variant = 'solid', loading = false, disabled, children, ...p }) => (
   <button {...p} disabled={disabled || loading} aria-busy={loading || undefined}
     className={`sims-btn sims-btn--${BTN_VARIANT[variant] || 'primary'} ${className}`}>
@@ -72,7 +73,8 @@ export function Confirm({ message, onYes, onNo, label = 'Delete', cancelLabel = 
     <p className="sims-dialog-body">{message}</p>
     {error && <p role="alert" className="sims-feedback">{error}</p>}
     <div className="sims-dialog-actions">
-      <Btn disabled={pending} variant="ghost" onClick={onNo}>{cancelLabel}</Btn>
+      {/* Start on the safe choice so Enter never confirms by accident. */}
+      <Btn disabled={pending} variant="ghost" onClick={onNo} autoFocus>{cancelLabel}</Btn>
       <Btn loading={pending} variant={danger ? 'danger' : 'solid'} onClick={confirm}>{pending ? 'Working…' : label}</Btn>
     </div>
   </Modal>;
@@ -80,7 +82,7 @@ export function Confirm({ message, onYes, onNo, label = 'Delete', cancelLabel = 
 export function ResourceState({ resources, children, label = 'records' }) {
   const failed = resources.filter(r => r.error);
   if (failed.length) return <Card style={{ padding:24 }}><p role="alert" className="sims-feedback">Could not load {label}. Please try again.</p><Btn onClick={() => failed.forEach(r => r.retry())}>Try again</Btn></Card>;
-  if (resources.some(r => r.loading)) return <div className="sims-loading" role="status">Loading {label}…</div>;
+  if (resources.some(r => r.loading)) return <div className="sims-loading" role="status"><span className="sims-sr-only">Loading {label}…</span><div className="sims-skeleton" aria-hidden="true"><span /><span /><span /></div></div>;
   return children;
 }
 export const EmptyState = ({ title, hint }) => (
@@ -94,6 +96,62 @@ export const EmptyState = ({ title, hint }) => (
 export const CountBadge = ({ count, label }) => (
   <span className="sims-count-badge"><span aria-hidden="true">{count}</span><span className="sims-sr-only">{`${count} ${label}`}</span></span>
 );
+
+// Subtle status label. tone: success | warning | danger | info | accent | neutral.
+export const Badge = ({ tone = 'neutral', children }) => <span className={`sims-badge sims-badge--${tone}`}>{children}</span>;
+
+// Row actions: a ⋯ button that opens a menu of secondary actions. The menu is
+// fixed-positioned so table scroll containers never clip it, flips above the
+// button near the bottom of the window, and supports arrow keys, Home/End and
+// Escape. Items stay mounted (hidden) so server-rendered markup still lists them.
+// items: [{ label, onSelect, danger, disabled }] (falsy entries are skipped).
+export function RowMenu({ label, items }) {
+  const shown = items.filter(Boolean);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+  const menuId = useId();
+  const enabled = () => [...(menuRef.current?.querySelectorAll('[role="menuitem"]:not(:disabled)') ?? [])];
+  useEffect(() => {
+    if (!open) return undefined;
+    const box = buttonRef.current.getBoundingClientRect();
+    const height = menuRef.current?.offsetHeight || 0;
+    const below = box.bottom + 4 + height <= window.innerHeight - 8;
+    setPos({ top: below ? box.bottom + 4 : Math.max(8, box.top - 4 - height), right: Math.max(8, window.innerWidth - box.right) });
+    const away = (event) => { if (!menuRef.current?.contains(event.target) && !buttonRef.current?.contains(event.target)) setOpen(false); };
+    const close = (event) => { if (!menuRef.current?.contains(event.target)) setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    return () => { document.removeEventListener('pointerdown', away); window.removeEventListener('resize', close); window.removeEventListener('scroll', close, true); };
+  }, [open]);
+  // Focus the first item once the menu is placed (an invisible element cannot take focus).
+  useEffect(() => { if (open && pos) enabled()[0]?.focus({ preventScroll: true }); }, [open, pos]);
+  if (!shown.length) return null;
+  const onKeyDown = (event) => {
+    if (event.key === 'Escape') { event.preventDefault(); setOpen(false); buttonRef.current?.focus(); return; }
+    if (event.key === 'Tab') { setOpen(false); return; }
+    const list = enabled();
+    const at = list.indexOf(document.activeElement);
+    const next = event.key === 'ArrowDown' ? (at + 1) % list.length : event.key === 'ArrowUp' ? (at - 1 + list.length) % list.length
+      : event.key === 'Home' ? 0 : event.key === 'End' ? list.length - 1 : -1;
+    if (next >= 0 && list.length) { event.preventDefault(); list[next].focus({ preventScroll: true }); }
+  };
+  // Row clicks open details on some tables; the menu's clicks and keys are its own.
+  return <span className="sims-row-menu-wrap" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+    <button ref={buttonRef} type="button" className="sims-btn sims-btn--icon sims-row-menu-button" aria-label={label} title={label}
+      aria-haspopup="menu" aria-expanded={open} aria-controls={menuId} onClick={() => { setPos(null); setOpen((o) => !o); }}>
+      <NavIcon name="more" size={18} />
+    </button>
+    <div id={menuId} ref={menuRef} role="menu" aria-label={label} hidden={!open} className="sims-menu sims-row-menu"
+      style={pos ? { top: pos.top, right: pos.right } : { visibility: 'hidden' }} onKeyDown={onKeyDown}>
+      {shown.map((item) => <button key={item.label} type="button" role="menuitem" tabIndex={-1} disabled={item.disabled}
+        className={`sims-menu-item ${item.danger ? 'is-danger' : ''}`} title={item.hint}
+        onClick={() => { buttonRef.current?.focus(); setOpen(false); item.onSelect(); }}>{item.label}</button>)}
+    </div>
+  </span>;
+}
 
 // --- Signature components -------------------------------------------------
 

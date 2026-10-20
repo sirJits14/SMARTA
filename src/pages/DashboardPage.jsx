@@ -40,7 +40,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
         onUnassigned={()=>setPage('students',{gradeFilter:UNASSIGNED,status:'active'})}
         onSection={section=>setPage('attendance',{attendanceEntry:{sectionId:section.id,date:today}})}/>
       <div className="sims-dashboard-totals">{stats.map(([label,value,icon])=><Card surface="summary" className="sims-stat" key={label}>
-        <div><div className="sims-stat-label">{label}</div><strong>{value.toLocaleString()}</strong></div><NavIcon name={icon} size={28}/>
+        <div className="sims-stat-label"><NavIcon name={icon} size={16}/>{label}</div><strong>{value.toLocaleString()}</strong>
       </Card>)}</div>
       <div className="sims-dashboard-charts">
         <Card surface="summary" className="sims-chart-card"><h2>Enrollment by grade</h2><p>{admin ? 'Current school-year enrollment, across all sections' : 'Current school-year enrollment in your grade levels'}</p>

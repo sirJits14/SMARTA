@@ -17,7 +17,7 @@ describe('GradePills', () => {
 
     expect(html).toContain('role="group"');
     expect(html).toContain('aria-label="Grade level"');
-    expect(html).toContain('Grade 7 (4)');
+    expect(html.replace(/<[^>]+>/g, '')).toContain('Grade 7 (4)');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('type="button"');
   });

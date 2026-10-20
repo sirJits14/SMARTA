@@ -27,8 +27,8 @@ validation, calculations and print layouts are unchanged.
 
 ## Delivery
 
-1. **Foundation and shell** (this phase): tokens and font stack, buttons (primary, secondary, danger, quiet, icon; hover, focus, active, disabled, loading), fields, cards, dialogs, sidebar and account menu, inline page header, mobile bar and drawer, Login and Change password, DESIGN.md.
-2. **SIMS modules**: tables with ⋯ row menus, stat cards, tabs, dropdowns, empty and loading states, applied across every page; replace remaining inline styles that fight the tokens.
+1. **Foundation and shell** (PR 1, released 2026-10-20): tokens and font stack, buttons (primary, secondary, danger, quiet, icon; hover, focus, active, disabled, loading), fields, cards, dialogs, sidebar and account menu, inline page header, mobile bar and drawer, Login and Change password, DESIGN.md.
+2. **SIMS modules** (done in PR 2): tables with ⋯ row menus, stat cards, tabs, dropdowns, empty and loading states, applied across every page; replace remaining inline styles that fight the tokens.
 3. **Parents App**: shared components and the sign-in flows, retiring its glass layer.
 
 Each phase ships as its own PR. SIMS hosting deploys from the release tree, so each SIMS
