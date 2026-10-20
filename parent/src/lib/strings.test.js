@@ -49,7 +49,7 @@ describe('strings', () => {
   });
   it('has the join strings', () => {
     for (const k of ['joinTitle', 'joinIntro', 'joinNameLabel', 'joinNameHint', 'joinRolesLabel', 'joinFamily', 'joinFamilyHint', 'joinAdviser', 'joinAdviserHint',
-      'joinNeedsApproval', 'joinNeedsApprovalNote', 'joinActive', 'joinContinue', 'joinStep', 'joinSteps',
+      'joinActive', 'joinContinue', 'joinStep', 'joinSteps',
       'joinStepOf', 'joinOf', 'joinPreparing', 'joinPrepareFailed', 'joinSkipStep', 'adviserSlipTitle', 'adviserSlipBody', 'adviserScan', 'adviserScanTitle',
       'adviserCodeLabel', 'adviserCheck', 'adviserConfirmTitle', 'adviserConfirm', 'adviserNotMine', 'adviserNoSlip', 'adviserUseSlip', 'adviserRequestTitle',
       'adviserRequestBody', 'adviserWrongKind', 'familyWrongKind', 'adviserRequestInstead',

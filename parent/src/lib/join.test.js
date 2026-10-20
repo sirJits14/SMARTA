@@ -18,20 +18,28 @@ describe('join rules', () => {
   });
   it('keeps Parent/Guardian addable for parents who already linked a learner', () => {
     const options = roleOptions({ held: ['family'], selected: ['family'], email: 'p@gmail.com' });
-    expect(state(options, 'family')).toMatchObject({ state: 'selected', active: true, needsApproval: false });
+    expect(state(options, 'family')).toMatchObject({ state: 'selected', active: true });
   });
-  it('locks a held Class Adviser card and tags approval for personal emails only', () => {
+  it('offers Class Adviser to DepEd accounts only, and keeps a held card locked', () => {
+    expect(state(roleOptions({ held: [], selected: [], email: 'p@deped.gov.ph' }), 'adviser')).toMatchObject({ state: 'available', active: false });
+    expect(roleOptions({ held: [], selected: [], email: 'p@gmail.com' }).map((o) => o.key)).toEqual(['family']);
+    expect(roleOptions({ held: [], selected: [], email: '' }).map((o) => o.key)).toEqual(['family']);
     expect(state(roleOptions({ held: ['adviser'], selected: [], email: 'a@deped.gov.ph' }), 'adviser')).toMatchObject({ state: 'held', active: true });
-    expect(state(roleOptions({ held: [], selected: [], email: 'p@gmail.com' }), 'adviser').needsApproval).toBe(true);
-    expect(state(roleOptions({ held: [], selected: [], email: 'p@deped.gov.ph' }), 'adviser').needsApproval).toBe(false);
+    expect(state(roleOptions({ held: ['adviser'], selected: [], email: 'p@gmail.com' }), 'adviser')).toMatchObject({ state: 'held', active: true });
+  });
+  it('ignores a slip-link preselection for an account that cannot be an adviser', () => {
+    const selected = initialSelection({ a: 'ABCD2345' });
+    expect(joinSteps(roleOptions({ held: [], selected, email: 'p@gmail.com' }))).toEqual([]);
+    expect(joinSteps(roleOptions({ held: [], selected, email: 'a@deped.gov.ph' }))).toEqual(['adviser']);
   });
   it('toggles only roles that can change, and steps follow role order', () => {
-    const options = roleOptions({ held: [], selected: ['adviser'], email: '' });
+    const email = 'a@deped.gov.ph';
+    const options = roleOptions({ held: [], selected: ['adviser'], email });
     expect(toggleRole(['adviser'], 'family', options)).toEqual(['adviser', 'family']);
     expect(toggleRole(['adviser'], 'adviser', options)).toEqual([]);
     expect(toggleRole(['adviser'], 'subject_teacher', options)).toEqual(['adviser']);
-    expect(joinSteps(roleOptions({ held: [], selected: ['adviser', 'family'], email: '' }))).toEqual(['family', 'adviser']);
-    const held = roleOptions({ held: ['adviser'], selected: ['adviser'], email: '' });
+    expect(joinSteps(roleOptions({ held: [], selected: ['adviser', 'family'], email }))).toEqual(['family', 'adviser']);
+    const held = roleOptions({ held: ['adviser'], selected: ['adviser'], email });
     expect(toggleRole(['adviser'], 'adviser', held)).toEqual(['adviser']);
     expect(joinSteps(held)).toEqual([]);
   });

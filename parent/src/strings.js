@@ -258,8 +258,6 @@ const S = {
   joinFamilyHint: "I'm a parent or guardian of a BNHS learner.",
   joinAdviser: 'Class Adviser',
   joinAdviserHint: 'I have an advisory slip for my section.',
-  joinNeedsApproval: 'Needs approval',
-  joinNeedsApprovalNote: "Your account isn't a DepEd email, so an Administrator or Curriculum Adviser approves school roles.",
   joinActive: 'Active',
   joinContinue: 'Continue',
   joinStep: 'step',
