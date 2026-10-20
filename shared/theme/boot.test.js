@@ -21,7 +21,7 @@ describe('pre-paint theme script', () => {
     for (const page of [SIMS, PARENT]) {
       expect(page.indexOf('name="theme-color"')).toBeGreaterThan(-1);
       expect(page.indexOf('name="theme-color"')).toBeLessThan(page.indexOf('id="theme-boot"'));
-      expect(page).toMatch(/name="theme-color"[^>]*data-light="#[0-9a-fA-F]{6}"[^>]*data-dark="#0e1c1f"/);
+      expect(page).toMatch(/name="theme-color"[^>]*data-light="#[0-9a-fA-F]{6}"[^>]*data-dark="#0B0F19"/);
     }
   });
   const run = (env) => new Function('window', 'document', 'localStorage', bootOf(SIMS))(env.win, env.doc, env.storage);

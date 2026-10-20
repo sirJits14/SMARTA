@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase.js';
 import { signInErrorMessage } from '../lib/authErrors.js';
-import { T, S } from '../styles.js';
 import { Btn, Inp, Field } from './ui.jsx';
-import smartaWordmark from '../assets/smarta-wordmark.png';
-import smartaWordmarkDark from '../assets/smarta-wordmark-dark.png';
+import smartaWordmark from '../assets/smarta-wordmark-sidebar.png';
+import smartaWordmarkDark from '../assets/smarta-wordmark-sidebar-dark.png';
 
 // Profile checks (missing, disabled, role) happen in App's live profile
 // subscription, which signs the user back out and hands us `notice`.
@@ -19,19 +18,19 @@ export default function Login({ notice = '', onAttempt }) {
     setBusy(false);
   };
   const shown = err || notice;
+  const submit = (e) => { e.preventDefault(); if (!busy) go(); };
   return (
-    <div style={{ ...S.page, display: 'grid', placeItems: 'center' }}>
-      <div style={{ ...S.card, width: 360 }}>
-        <h1 style={{ margin: '0 0 6px', lineHeight: 0 }}>
-          <img className="theme-light-only" src={smartaWordmark} alt="SMARTA" width={240} height={71} style={{ display: 'block' }} />
-          <img className="theme-dark-only" src={smartaWordmarkDark} alt="SMARTA" width={240} height={71} style={{ display: 'block' }} />
-        </h1>
-        <p style={{ fontFamily: T.body, color: T.inkMuted, fontSize: 12, marginTop: 0, marginBottom: 20 }}>Staff sign-in</p>
-        {shown && <div role="alert" style={{ fontFamily: T.body, background: 'rgba(220,38,38,0.08)', color: T.absent, borderRadius: 10, padding: '9px 12px', fontSize: 12, marginBottom: 14 }}>{shown}</div>}
-        <Field label="Email"><Inp type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && go()} /></Field>
-        <Field label="Password"><Inp type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && go()} /></Field>
-        <Btn onClick={go} disabled={busy} style={{ width: '100%', marginTop: 6, opacity: busy ? 0.6 : 1 }}>{busy ? 'Signing in…' : 'Sign in'}</Btn>
-      </div>
-    </div>
+    <main className="sims-auth">
+      <form className="sims-auth-card" onSubmit={submit} noValidate>
+        <img className="sims-auth-logo theme-light-only" src={smartaWordmark} alt="SMARTA" width={188} height={54} />
+        <img className="sims-auth-logo theme-dark-only" src={smartaWordmarkDark} alt="SMARTA" width={188} height={54} />
+        <h1 className="sims-auth-title">Staff sign-in</h1>
+        <p className="sims-auth-sub">BNHS Learner Records</p>
+        {shown && <div role="alert" className="sims-auth-alert">{shown}</div>}
+        <Field label="Email"><Inp type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+        <Field label="Password"><Inp type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
+        <Btn type="submit" loading={busy} className="sims-btn--block sims-auth-submit">{busy ? 'Signing in…' : 'Sign in'}</Btn>
+      </form>
+    </main>
   );
 }

@@ -4,10 +4,9 @@ import { auth } from '../firebase.js';
 import { endSession } from '../session.js';
 import { staffUsers } from '../data/staffUsers.js';
 import { passwordProblem, waitForPasswordSession, MIN_PASSWORD } from '../lib/password.js';
-import { T, S } from '../styles.js';
 import { Btn, Inp, Field } from './ui.jsx';
-import smartaWordmark from '../assets/smarta-wordmark.png';
-import smartaWordmarkDark from '../assets/smarta-wordmark-dark.png';
+import smartaWordmark from '../assets/smarta-wordmark-sidebar.png';
+import smartaWordmarkDark from '../assets/smarta-wordmark-sidebar-dark.png';
 
 // Shown instead of the app while users/{email}.mustChangePassword is true
 // (new account or admin reset). The live profile clears it on success.
@@ -37,22 +36,25 @@ export default function ChangePassword({ me, onLogout, onChanging, onReauthentic
     catch { await endSession(); }
     finally { onChanging?.(false); }
   };
-  const enter = (e) => e.key === 'Enter' && go();
+  const submit = (e) => { e.preventDefault(); if (!busy) go(); };
   return (
-    <div style={{ ...S.page, display: 'grid', placeItems: 'center' }}>
-      <div style={{ ...S.card, width: 380 }}>
-        <img className="theme-light-only" src={smartaWordmark} alt="SMARTA" width={200} height={59} style={{ display: 'block', marginBottom: 16 }} />
-        <img className="theme-dark-only" src={smartaWordmarkDark} alt="SMARTA" width={200} height={59} style={{ display: 'block', marginBottom: 16 }} />
-        <h1 style={{ fontFamily: T.display, color: T.ink, fontSize: 20, margin: '0 0 2px', fontWeight: 700 }}>Set a new password</h1>
-        <p style={{ fontFamily: T.body, color: T.inkMuted, fontSize: 12, marginTop: 0, marginBottom: 20 }}>
+    <main className="sims-auth">
+      <form className="sims-auth-card" onSubmit={submit} noValidate>
+        <img className="sims-auth-logo theme-light-only" src={smartaWordmark} alt="SMARTA" width={188} height={54} />
+        <img className="sims-auth-logo theme-dark-only" src={smartaWordmarkDark} alt="SMARTA" width={188} height={54} />
+        <h1 className="sims-auth-title">Set a new password</h1>
+        <p className="sims-auth-sub">
           {me.email} is using a temporary password. Choose your own ({MIN_PASSWORD}+ characters) to continue.
         </p>
-        {err && <div role="alert" style={{ fontFamily: T.body, background: 'rgba(220,38,38,0.08)', color: T.absent, borderRadius: 10, padding: '9px 12px', fontSize: 12, marginBottom: 14 }}>{err}</div>}
-        <Field label="New password"><Inp type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={enter} /></Field>
-        <Field label="Confirm new password"><Inp type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} onKeyDown={enter} /></Field>
-        <Btn onClick={go} disabled={busy} style={{ width: '100%', marginTop: 6, opacity: busy ? 0.6 : 1 }}>{busy ? 'Saving…' : 'Save password'}</Btn>
-        <Btn variant="ghost" onClick={onLogout} disabled={busy} style={{ width: '100%', marginTop: 8 }}>Sign out</Btn>
-      </div>
-    </div>
+        {err && <div role="alert" className="sims-auth-alert">{err}</div>}
+        <input type="email" autoComplete="username" value={me.email} readOnly hidden />
+        <Field label="New password"><Inp type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
+        <Field label="Confirm new password"><Inp type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /></Field>
+        <div className="sims-auth-actions">
+          <Btn type="submit" loading={busy} className="sims-btn--block">{busy ? 'Saving…' : 'Save password'}</Btn>
+          <Btn type="button" variant="ghost" onClick={onLogout} disabled={busy} className="sims-btn--block">Sign out</Btn>
+        </div>
+      </form>
+    </main>
   );
 }
