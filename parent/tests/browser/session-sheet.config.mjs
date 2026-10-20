@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Renders SessionSheet + SessionRows and the History header pill with synthetic
+// Renders SessionSheet + SessionRows and the History header Sessions button with synthetic
 // attendance. None of them import Firebase, so nothing needs stubbing.
 export default defineConfig({
   plugins: [react()],

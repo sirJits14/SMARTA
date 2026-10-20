@@ -167,6 +167,8 @@ A phone-first PWA built on the same system. Styles live in `parent/src/app.css`,
 - **Material:** flat `.card` surfaces with a 1px border. The pill nav and the class select bar sit on `--t-sidebar` with one soft shadow, because they float. The collapsed page header is a solid page-tone bar with a hairline.
 - **Controls:** buttons (`p-btn`: solid, ghost, danger) are 48px tall with a 12px radius. Inputs (`p-input`) are 48px with 16px text, so iOS doesn't zoom on focus, and get the same teal focus ring as SIMS. Banners (`p-banner`) use the info, warning and danger token pairs.
 - **Restrained accent:** teal marks the screen's main action, the active nav icon and switches that are on. Settings icon tiles are neutral, a hover fill with an outline icon, rather than the old iOS rainbow. The current nav tab uses the selected fill.
+- **Header actions:** a page header's action is a 44px round icon button (`.page-header-icon-btn`), tinted teal and matched in size to the back button, with the label as its accessible name. On Gate scans, Sessions opens from a calendar icon at the bar's right end, so back, the scrolled-in name and Sessions share one row.
+- **Theme:** Auto / Light / Dark is set only in Settings › Appearance. There is no header shortcut, and the sign-in screen follows the device setting.
 - **Type:** headings are 600, never 800. Group headers are sentence case. The page title is 30px/600.
 - **Theme color:** the browser bar uses the page color (#F5F7FA light, #0B0F19 dark), and so do the manifest's `theme_color` and `background_color`.
 

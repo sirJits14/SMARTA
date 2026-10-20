@@ -73,8 +73,9 @@ export default function History({ user, studentId, navigate, route }) {
       <PageHeader title={nameCase(learner?.displayName)} avatarName={learner?.displayName} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
         status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')}
         action={learner && !error && (
-          <button type="button" className="page-header-pill" aria-haspopup="dialog" aria-expanded={sessionsOpen} onClick={() => setSessionsOpen(true)}>
-            <Icon name="calendar" size={18} />{S.sessionButton}
+          <button type="button" className="page-header-icon-btn" aria-label={S.sessionButton} title={S.sessionButton}
+            aria-haspopup="dialog" aria-expanded={sessionsOpen} onClick={() => setSessionsOpen(true)}>
+            <Icon name="calendar" size={22} />
           </button>
         )} />
       {deped && learner && <RelationshipRow link={link} onChange={() => relationship.show(link)} />}
