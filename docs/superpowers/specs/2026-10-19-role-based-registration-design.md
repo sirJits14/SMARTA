@@ -1,5 +1,7 @@
 # Role-based registration and advisory slips — design
 
+> **Update 2026-10-20:** Subject Teacher was retired and "Family Member" became "Parent/Guardian". See `2026-10-20-retire-subject-teacher-design.md`.
+
 Date: 2026-10-19
 Surface: Parent App onboarding (`/join`) and Settings → Add a role; SIMS → Sections; Cloud Functions.
 

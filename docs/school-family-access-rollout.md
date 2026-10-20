@@ -10,7 +10,7 @@ This change is implemented for local review. It does not deploy services or migr
 - Firestore rules: 134 passed; 6 existing password-only release compatibility tests skipped under the normal rules configuration.
 - Functions with local Auth/Firestore emulators: 283 passed across 18 suites.
 - Both application builds passed; parent initial JavaScript is 259.9 KB gzip, within the 260 KB limit.
-- Independent review findings were fixed and re-reviewed. Browser checks with synthetic data covered the adviser AM correction/restoration, unaffected PM status, mobile Family details, administrator management and subject-teacher view without a roster. Real notification delivery and production rollout are not part of these local checks.
+- Independent review findings were fixed and re-reviewed. Browser checks with synthetic data covered the adviser AM correction/restoration, unaffected PM status, mobile Family details, administrator management. Real notification delivery and production rollout are not part of these local checks.
 
 ## Account management
 
@@ -19,7 +19,6 @@ The parent app has separate Family and School views on the same account. Approve
 | Role | Scope | Capabilities |
 | --- | --- | --- |
 | Adviser | Assigned section | Announcements, roster, AM/PM absence corrections on the same Manila school day |
-| Subject Teacher | Assigned teaching sections | Announcements; no learner tracking |
 | Curriculum Adviser | Assigned grades | Announcements, attendance review and corrections including earlier dates; no role assignment |
 | SIMS Administrator | School-wide | Assign and revoke school roles; attendance review and corrections |
 
@@ -43,7 +42,7 @@ AM and PM corrections are independent. Reports count one absent session as half 
 
 ## Announcements
 
-Authors choose Families, Advisers, Subject Teachers and Curriculum Advisers independently, then optionally narrow by grade or section. Existing author grade restrictions still apply. Recipient access uses current approved links and assignments. An account qualifying through multiple roles receives one notification. Existing announcements without explicit roles remain Family notices.
+Authors choose Families, Advisers and Curriculum Advisers independently, then optionally narrow by grade or section. Existing author grade restrictions still apply. Recipient access uses current approved links and assignments. An account qualifying through multiple roles receives one notification. Existing announcements without explicit roles remain Family notices.
 
 The new app reads all notices through authenticated callables. The new rules deny direct guardian announcement reads because cached audience keys can outlive approved access. Older installed clients need to refresh after rollout.
 
@@ -57,12 +56,12 @@ The new app reads all notices through authenticated callables. The new rules den
 6. Release these Functions together with the Parent app update that adds School mode in Settings; the school-access inbox note tells teachers to switch to School in Settings.
 7. Coordinate the rules and both app releases in a controlled release window. Deploy restrictive rules before enabling staff-targeted announcements, then publish the clients immediately; old notice queries will be unavailable until users refresh. Avoid publishing new role-targeted posts while old rules remain active.
 8. In SIMS, inspect **Legacy adviser links to verify**. Independently verify each teacher and section, then explicitly assign school roles. Old adviser slips/links grant neither family learner access nor School access. Preserve genuine family relationships and do not convert legacy adviser links into family access as a migration shortcut.
-9. In the release environment, with designated test accounts, verify: an administrator assigning an adviser to a personal-email account; a subject-teacher notice; an AM correction and restoration, including that undoing within two minutes sends families nothing; and that an unrelated teacher cannot read the roster.
+9. In the release environment, with designated test accounts, verify: an administrator assigning an adviser to a personal-email account; an Adviser notice; an AM correction and restoration, including that undoing within two minutes sends families nothing; and that an unrelated teacher cannot read the roster.
 
 ## Registration rollout order
 
 1. Deploy the Functions and Firestore rules.
-2. Call `migrateSubjectTeachersFn` once as an administrator. It converts section-based Subject Teacher assignments to grade levels. Resolve every conflict it reports (accounts holding or requesting both Class Adviser and Subject Teacher).
+2. Call `retireSubjectTeachersFn` once as an administrator: first with `{}` to count, then with `{ apply: true }`. It removes Subject Teacher rows, rejects pending Subject Teacher requests, and leaves each current holder an inbox note. A second run returns zeros.
 3. Deploy SIMS, respecting the current release-tree hold.
 4. Deploy the Parent App.
 
