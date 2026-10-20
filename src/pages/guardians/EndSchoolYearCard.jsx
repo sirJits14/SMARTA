@@ -79,7 +79,7 @@ export default function EndSchoolYearCard({ schoolYear }) {
           {err && <p role="alert" className="sims-feedback">{err}</p>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
             <Btn variant="ghost" disabled={busy} onClick={() => setConfirming(false)}>Cancel</Btn>
-            <Btn disabled={busy || typed.trim() !== sy} onClick={end} style={{ background: T.absent }}>{busy ? 'Ending…' : `End SY ${sy}`}</Btn>
+            <Btn disabled={busy || typed.trim() !== sy} onClick={end} variant="danger">{busy ? 'Ending…' : `End SY ${sy}`}</Btn>
           </div>
         </Modal>
       )}

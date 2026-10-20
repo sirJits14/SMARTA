@@ -18,3 +18,6 @@ export function useSchoolYearEnrollments(schoolYear){const r=useCollectionResour
 export const useCollection=p=>useCollectionResource(p).data;
 export const useDoc=p=>useDocResource(p).data;
 export const useQueryRows=(q,d)=>useQueryResource(q,d).data;
+
+// Role-scoped reads (added to the app after this fixture): same synthetic rows.
+export function useStaffCollectionResource(path){return useCollectionResource(path);}

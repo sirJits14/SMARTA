@@ -19,7 +19,9 @@ const paths = {
   theme: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18 M12 3v18 M12 8h5 M12 12h6 M12 16h5',
   check: 'M5 12l5 5 9-11',
   close: 'M6 6l12 12 M6 18L18 6',
+  chevrons: 'M7 15l5 5 5-5 M7 9l5-5 5 5',
+  panel: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2 M9 3v18',
 };
 export default function NavIcon({ name, size = 20 }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.dashboard} /></svg>;
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.dashboard} /></svg>;
 }

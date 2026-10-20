@@ -20,14 +20,19 @@ const ratio = (a, b) => { const [x, y] = [luminance(a), luminance(b)].sort((p, q
 
 const TEXT = [
   ...['ink', 'muted', 'subtle', 'nav-ink', 'placeholder', 'primary', 'primary-deep', 'danger-text', 'warn-text']
-    .flatMap((fg) => ['bg', 'surface', 'dialog'].map((bg) => [fg, bg])),
+    .flatMap((fg) => ['bg', 'surface', 'sidebar', 'dialog', 'menu'].map((bg) => [fg, bg])),
+  ...['info', 'ink', 'muted'].map((fg) => [fg, 'input-bg']),
+  ['info', 'surface'], ['info', 'bg'],
   ...['present', 'late', 'absent', 'excused'].flatMap((fg) => ['surface', 'dialog'].map((bg) => [fg, bg])),
-  ['on-primary', 'primary'], ['on-primary', 'absent'],
+  ['on-primary', 'primary'], ['on-primary', 'primary-hover'], ['on-primary', 'primary-active'], ['on-primary', 'absent'],
+  ['on-primary', 'danger'], ['on-primary', 'danger-hover'], ['danger-text', 'feedback-bg'],
   ...['present', 'late', 'absent', 'excused'].map((bg) => ['on-status', bg]),
   ['feedback-ink', 'feedback-bg'], ['success-ink', 'success-bg'], ['primary-deep', 'tint'], ['primary-deep', 'tint-strong'], ['nav-ink', 'tint'],
+  ['ink', 'selected'], ['primary-deep', 'selected'], ['nav-ink', 'hover'], ['ink', 'hover-strong'], ['ink', 'row-hover'],
+  ['warn-ink', 'warn-bg'], ['info-ink', 'info-bg'],
   ['tooltip-ink', 'tooltip-bg'], ['primary-deep', 'bevel-top'], ['primary-deep', 'bevel-bottom'],
 ];
-const NON_TEXT = [['control-border', 'surface'], ['control-border', 'dialog'], ['focus', 'bg'], ['focus', 'surface'], ['focus', 'dialog']];
+const NON_TEXT = [['control-border', 'surface'], ['control-border', 'dialog'], ['control-border', 'input-bg'], ['primary', 'sidebar'], ['focus', 'sidebar'], ['focus', 'bg'], ['focus', 'surface'], ['focus', 'dialog']];
 
 describe.each(Object.entries(PALETTES))('%s palette', (name, t) => {
   it.each(TEXT)('text %s on %s is at least 4.5:1', (fg, bg) => {

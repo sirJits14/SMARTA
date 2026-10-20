@@ -1,34 +1,21 @@
 import { createContext, useContext, Children, cloneElement, isValidElement, useId, useRef, useState } from 'react';
 import DialogFrame from './DialogFrame.jsx';
+import NavIcon from './NavIcon.jsx';
 import { MARK_LABEL } from '../lib/constants.js';
 import { T, MARK_COLOR } from '../styles.js';
-const font = { fontFamily: T.body };
 
-export const Btn = ({ style, className = '', variant = 'solid', ...p }) => (
-  <button {...p} className={`sims-btn ${className}`} style={{ ...font, cursor: 'pointer', borderRadius: T.pill, padding: '10px 20px',
-    fontWeight: 600, fontSize: 'var(--sims-field-font, 13px)',
-    background: variant === 'solid' ? T.primary : 'transparent',
-    color: variant === 'solid' ? T.onPrimary : T.primary,
-    border: variant === 'solid' ? 'none' : `1.5px solid ${T.primary}`,
-    transition: 'background 0.16s ease-out, color 0.16s ease-out, opacity 0.16s ease-out, box-shadow 0.16s ease-out, transform 0.16s ease-out',
-    ...style }} />
+// Button variants: solid = primary action, ghost = secondary (bordered),
+// danger = destructive, quiet = text-only, icon = square icon button (needs aria-label).
+// Hover, focus, active, disabled and loading states live in registrar.css.
+const BTN_VARIANT = { solid: 'primary', ghost: 'secondary', danger: 'danger', quiet: 'quiet', icon: 'icon' };
+export const Btn = ({ className = '', variant = 'solid', loading = false, disabled, children, ...p }) => (
+  <button {...p} disabled={disabled || loading} aria-busy={loading || undefined}
+    className={`sims-btn sims-btn--${BTN_VARIANT[variant] || 'primary'} ${className}`}>
+    {loading && <span className="sims-btn-spinner" aria-hidden="true" />}{children}
+  </button>
 );
-export const Inp = ({ style, className = '', ...p }) => (
-  <input {...p} className={`sims-input ${className}`} style={{ ...font, border: `1.5px solid var(--sims-control-border, ${T.border})`, borderRadius: 'var(--sims-field-radius, 10px)',
-    background: T.surface, padding: '10px 14px', fontSize: 'var(--sims-field-font, 13px)', width: '100%', boxSizing: 'border-box',
-    color: T.ink, transition: 'border-color 0.15s ease-out', ...style }}
-    onFocus={(e) => { e.target.style.borderColor = T.primary; p.onFocus?.(e); }}
-    onBlur={(e) => { e.target.style.borderColor = `var(--sims-control-border, ${T.border})`; p.onBlur?.(e); }}
-  />
-);
-export const Sel = ({ style, className = '', ...p }) => (
-  <select {...p} className={`sims-input ${className}`} style={{ ...font, border: `1.5px solid var(--sims-control-border, ${T.border})`, borderRadius: 'var(--sims-field-radius, 10px)',
-    background: T.surface, padding: '10px 14px', fontSize: 'var(--sims-field-font, 13px)', width: '100%', boxSizing: 'border-box',
-    color: T.ink, transition: 'border-color 0.15s ease-out', ...style }}
-    onFocus={(e) => { e.target.style.borderColor = T.primary; p.onFocus?.(e); }}
-    onBlur={(e) => { e.target.style.borderColor = `var(--sims-control-border, ${T.border})`; p.onBlur?.(e); }}
-  />
-);
+export const Inp = ({ className = '', ...p }) => <input {...p} className={`sims-input ${className}`} />;
+export const Sel = ({ className = '', ...p }) => <select {...p} className={`sims-input sims-select ${className}`} />;
 export function Field({ label, error, children }) {
   const generated = useId();
   const errorId = generated + '-error';
@@ -45,10 +32,10 @@ export function Field({ label, error, children }) {
     return node.props.children ? cloneElement(node, {}, Children.map(node.props.children, attach)) : node;
   };
   const content = Children.map(children, attach);
-  return <div style={{ display:'block', marginBottom:14 }}>
-    <label htmlFor={assigned ? targetId : undefined} style={{ ...font, display:'block', fontSize:12, fontWeight:600, color:T.inkMuted, marginBottom:6 }}>{label}</label>
+  return <div className="sims-field">
+    <label htmlFor={assigned ? targetId : undefined} className="sims-field-label">{label}</label>
     {content}
-    {error && <span id={errorId} style={{ ...font, display:'block', color:T.absent, fontSize:12, marginTop:4 }}>{error}</span>}
+    {error && <span id={errorId} className="sims-field-error">{error}</span>}
   </div>;
 }
 
@@ -61,8 +48,11 @@ export function Modal({ children, onClose, width = 520, overlayClassName = '', t
   const unavailable = resources.some(r => r.loading || r.error);
   return <DialogFrame label={title ? undefined : 'Dialog'} labelledBy={labelledBy || (title ? titleId : undefined)}
     onClose={onClose} dismissible={dismissible} className={overlayClassName}
-    style={{ width, maxWidth:'calc(100vw - 32px)', fontFamily:T.body }}>
-    {title && <h2 id={titleId} style={{ margin:'0 0 20px', fontSize:20 }}>{title}</h2>}
+    style={{ width, maxWidth:'calc(100vw - 32px)' }}>
+    {title && <div className="sims-dialog-head">
+      <h2 id={titleId} className="sims-dialog-title">{title}</h2>
+      {dismissible && <button type="button" className="sims-btn sims-btn--icon sims-dialog-close" aria-label="Close dialog" onClick={onClose}><NavIcon name="close" size={18} /></button>}
+    </div>}
     {unavailable && <><ResourceState resources={resources}/>{dismissible && <Btn variant="ghost" onClick={onClose}>Close dialog</Btn>}</>}
     <fieldset disabled={unavailable} style={{border:0,padding:0,margin:0,minWidth:0}}>{children}</fieldset>
   </DialogFrame>;
@@ -79,11 +69,11 @@ export function Confirm({ message, onYes, onNo, label = 'Delete', cancelLabel = 
     finally { lock.current = false; setPending(false); }
   };
   return <Modal title={title} onClose={onNo} dismissible={!pending}>
-    <p style={{ ...font, color:T.ink, fontSize:14, lineHeight:1.6 }}>{message}</p>
+    <p className="sims-dialog-body">{message}</p>
     {error && <p role="alert" className="sims-feedback">{error}</p>}
-    <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:16 }}>
+    <div className="sims-dialog-actions">
       <Btn disabled={pending} variant="ghost" onClick={onNo}>{cancelLabel}</Btn>
-      <Btn disabled={pending} onClick={confirm} style={{ background:danger ? T.absent : T.primary }}>{pending ? 'Working…' : label}</Btn>
+      <Btn loading={pending} variant={danger ? 'danger' : 'solid'} onClick={confirm}>{pending ? 'Working…' : label}</Btn>
     </div>
   </Modal>;
 }
@@ -94,9 +84,9 @@ export function ResourceState({ resources, children, label = 'records' }) {
   return children;
 }
 export const EmptyState = ({ title, hint }) => (
-  <div style={{ ...font, textAlign: 'center', color: T.inkMuted, padding: '48px 20px' }}>
-    <div style={{ fontWeight: 700, color: T.ink, marginBottom: 6 }}>{title}</div>
-    <div style={{ fontSize: 13 }}>{hint}</div>
+  <div className="sims-empty">
+    <div className="sims-empty-title">{title}</div>
+    <div className="sims-empty-hint">{hint}</div>
   </div>
 );
 
@@ -107,9 +97,10 @@ export const CountBadge = ({ count, label }) => (
 
 // --- Signature components -------------------------------------------------
 
-export const Card = ({ as: Tag = 'div', surface = 'working', className = '', style, children, ...p }) => (
-  <Tag {...p} className={`sims-surface sims-surface--${surface} ${className}`} style={{ background: `var(--sims-surface-fill, ${T.surface})`, border: `1px solid var(--sims-surface-border, ${T.border})`, borderRadius: 'var(--sims-radius, 14px)',
-    boxShadow: `var(--sims-surface-shadow, ${T.cardShadow})`, ...style }}>{children}</Tag>
+// Flat bordered surface. `surface` (working / summary / navigation) is kept as a
+// modifier class for layout hooks; every surface shares one material.
+export const Card = ({ as: Tag = 'div', surface = 'working', className = '', children, ...p }) => (
+  <Tag {...p} className={`sims-surface sims-surface--${surface} ${className}`}>{children}</Tag>
 );
 
 // StatusPill: the attendance/status control. Renders as a real <button> when
@@ -140,5 +131,5 @@ export const StatusPill = ({ mark, onClick }) => {
 export function ActionFeedback({ action }) {
   const message = Object.values(action.errors)[0];
   return <>{message && <p role="alert" className="sims-feedback">{message}</p>}
-    {action.busy && <p role="status" style={{fontSize:13,color:T.inkMuted}}>Saving changes…</p>}</>;
+    {action.busy && <p role="status" className="sims-saving">Saving changes…</p>}</>;
 }

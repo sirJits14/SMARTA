@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Btn, Card, CountBadge, Modal } from './ui.jsx';
+import { CountBadge } from './ui.jsx';
+import AccountMenu from './AccountMenu.jsx';
 import DialogFrame from './DialogFrame.jsx';
 import NavIcon from './NavIcon.jsx';
-import ThemeControl from './ThemeControl.jsx';
-import ThemeMenuButton from './ThemeMenuButton.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
 import { canOpen, isAdmin } from '../lib/access.js';
 import { useSchoolPendingCount } from '../hooks/useSchoolPendingCount.js';
-import { roleLabel } from '../../shared/staffRoles.js';
 import smartaWordmark from '../assets/smarta-wordmark-sidebar.png';
 import smartaWordmarkDark from '../assets/smarta-wordmark-sidebar-dark.png';
 import smartaMark from '../assets/smarta-mark.png';
@@ -19,7 +17,6 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const [preference, setPreference] = useState(readPreference);
   const [drawer, setDrawer] = useState(false);
   const [tooltip, setTooltip] = useState(null);
-  const [appearance, setAppearance] = useState(false);
   const menuRef = useRef(null);
   const mainRef = useRef(null);
   const mobile = width < 768;
@@ -35,55 +32,56 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   }, []);
   const toggle = () => { const next = !collapsed; setPreference(next); setTooltip(null); try { localStorage.setItem(STORAGE, String(next)); } catch { /* navigation works without storage */ } };
   const navigate = key => { setPage(key); setDrawer(false); setTooltip(null); };
-  const showLabel = (event, label) => { if (collapsed) setTooltip({ label, top: event.currentTarget.getBoundingClientRect().top }); };
-  const sidebar = <Card as="aside" surface="navigation" className="app-sidebar">
+  // Icon-only controls (the collapsed rail, the collapse toggle) name themselves in a tooltip beside the control.
+  const showLabel = (event, label, always) => {
+    if (!collapsed && !always) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    setTooltip({ label, top: box.top + box.height / 2, left: box.right + 10 });
+  };
+  const hint = (label, always = false) => ({ onMouseEnter: e => showLabel(e, label, always), onMouseLeave: () => setTooltip(null), onFocus: e => showLabel(e, label, always), onBlur: () => setTooltip(null) });
+  const pageLabel = NAV_ITEMS.find(item => item.key === page)?.label || 'BNHS SIMS';
+  const sidebar = <aside className="app-sidebar">
     <div className="sims-brand">{collapsed
-      ? <img src={smartaMark} alt="SMARTA" width="32" height="32" />
+      ? <img src={smartaMark} alt="SMARTA" width="28" height="28" />
       : <><img className="sims-wordmark theme-light-only" src={smartaWordmark} alt="SMARTA" width="188" height="54" />
-        <img className="sims-wordmark theme-dark-only" src={smartaWordmarkDark} alt="SMARTA" width="188" height="54" /></>}</div>
+        <img className="sims-wordmark theme-dark-only" src={smartaWordmarkDark} alt="SMARTA" width="188" height="54" /></>}
+      {!mobile && <button type="button" className="sims-btn sims-btn--icon sims-collapse" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-expanded={!collapsed} onClick={toggle} {...hint(collapsed ? 'Expand sidebar' : 'Collapse sidebar', true)}>
+        <NavIcon name="panel" size={18} /></button>}
+    </div>
     <nav className="sims-nav" aria-label="Main navigation">
       {items.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
-        aria-label={collapsed ? navLabel(item) : undefined} onClick={() => navigate(item.key)}
-        onMouseEnter={e => showLabel(e,item.label)} onMouseLeave={() => setTooltip(null)}
-        onFocus={e => showLabel(e,item.label)} onBlur={() => setTooltip(null)}>
-        <NavIcon name={item.icon}/><span className={collapsed ? 'sims-nav-tooltip' : ''}>{item.label}</span>
+        aria-label={collapsed ? navLabel(item) : undefined} onClick={() => navigate(item.key)} {...hint(item.label)}>
+        <NavIcon name={item.icon} size={18}/><span className={collapsed ? 'sims-nav-tooltip' : ''}>{item.label}</span>
         {item.key === 'guardians' && pendingSchool > 0 && <CountBadge count={pendingSchool} label={badgeLabel} />}
       </button>)}
     </nav>
-    <div className="sims-account">
-      {!collapsed && <><div className="sims-account-name">{me.name}</div><div className="sims-account-role">{roleLabel(me)}</div></>}
-      <button className="sims-nav-item" aria-label={collapsed ? 'Appearance' : undefined} onClick={() => { setTooltip(null); setAppearance(true); }}
-        onMouseEnter={e => showLabel(e,'Appearance')} onMouseLeave={() => setTooltip(null)} onFocus={e => showLabel(e,'Appearance')} onBlur={() => setTooltip(null)}>
-        <NavIcon name="theme"/><span className={collapsed ? 'sims-nav-tooltip' : ''}>Appearance</span></button>
-      <button className="sims-nav-item" aria-label={collapsed ? `Sign out, ${me.name}` : undefined} onClick={onLogout}
-        onMouseEnter={e => showLabel(e,'Sign out')} onMouseLeave={() => setTooltip(null)} onFocus={e => showLabel(e,'Sign out')} onBlur={() => setTooltip(null)}>
-        <NavIcon name="logout"/><span className={collapsed ? 'sims-nav-tooltip' : ''}>Sign out</span></button>
-      {!mobile && <button className="sims-nav-item" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} onClick={toggle}>
-        <span style={{ display:'flex', transform:collapsed ? 'rotate(180deg)' : undefined }}><NavIcon name="collapse"/></span>
-        {!collapsed && <span>Collapse sidebar</span>}</button>}
-    </div>
-  </Card>;
+    <AccountMenu me={me} collapsed={collapsed} onLogout={onLogout} hint={hint} />
+  </aside>;
   return <div className={`app-shell sims-ui ${collapsed ? 'is-collapsed' : ''}`}>
     <style>{'body { margin:0; }'}</style>
     <a className="sims-skip" href="#sims-main" onClick={() => mainRef.current?.focus()}>Skip to content</a>
     {!mobile && sidebar}
     {mobile && drawer && <DialogFrame label="Main navigation" className="sims-drawer" onClose={() => setDrawer(false)} fallbackFocus={() => menuRef.current || mainRef.current}>
-      <button className="sims-icon-button" style={{ position:'absolute', right:8, top:8, zIndex:1 }} onClick={() => setDrawer(false)} aria-label="Close navigation"><NavIcon name="close" /></button>
-      <div id="sims-mobile-nav">{sidebar}</div>
+      <button type="button" className="sims-btn sims-btn--icon sims-drawer-close" onClick={() => setDrawer(false)} aria-label="Close navigation"><NavIcon name="close" size={18} /></button>
+      <div id="sims-mobile-nav" style={{ height: '100%' }}>{sidebar}</div>
     </DialogFrame>}
     <div className="sims-content">
-      <Card surface="navigation" className="app-topbar">
-        <div className="sims-topbar-title">{mobile && <button ref={menuRef} className="sims-icon-button" aria-label="Open navigation" aria-expanded={drawer} aria-controls="sims-mobile-nav" onClick={() => setDrawer(true)}><NavIcon name="menu"/></button>}
-          <span>{NAV_ITEMS.find(item => item.key === page)?.label || 'BNHS SIMS'}</span></div>
-        <div className="sims-topbar-actions"><ThemeMenuButton /><span className="sims-school-year">SY {schoolYear}</span></div>
-      </Card>
-      <main id="sims-main" ref={mainRef} tabIndex={-1}><div key={page} className="sims-page-transition">{children}</div></main>
+      {mobile && <header className="sims-mobilebar">
+        <button ref={menuRef} type="button" className="sims-btn sims-btn--icon" aria-label="Open navigation" aria-expanded={drawer} aria-controls="sims-mobile-nav" onClick={() => setDrawer(true)}><NavIcon name="menu" size={20}/></button>
+        <span className="sims-mobilebar-title">{pageLabel}</span>
+        <span className="sims-school-year">SY {schoolYear}</span>
+      </header>}
+      <main id="sims-main" ref={mainRef} tabIndex={-1}>
+        <div className="sims-page">
+          <div className="sims-pagebar">
+            <nav aria-label="Breadcrumb"><ol className="sims-crumbs"><li>BNHS SIMS</li><li aria-current="page">{pageLabel}</li></ol></nav>
+            <span className="sims-school-year" title="Current school year">SY {schoolYear}</span>
+          </div>
+          <div key={page} className="sims-page-transition">{children}</div>
+        </div>
+      </main>
     </div>
-    {appearance && <Modal title="Appearance" width={400} onClose={() => setAppearance(false)}>
-      <ThemeControl />
-      <p className="sims-theme-note">Saved on this device.</p>
-      <div style={{ display:'flex', justifyContent:'flex-end', marginTop:20 }}><Btn variant="ghost" onClick={() => setAppearance(false)}>Done</Btn></div>
-    </Modal>}
-    {tooltip && <div role="tooltip" className="sims-rail-tooltip" style={{ top:tooltip.top }}>{tooltip.label}</div>}
+    {tooltip && <div role="tooltip" className="sims-rail-tooltip" style={{ top:tooltip.top, left:tooltip.left }}>{tooltip.label}</div>}
   </div>;
 }

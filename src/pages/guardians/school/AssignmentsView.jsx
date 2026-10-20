@@ -59,7 +59,7 @@ export default function AssignmentsView({ school }) {
             <p style={{ fontSize: 13, margin: '0 0 8px' }}>Revoke {item.displayName || item.email}'s {ROLE_LABELS[item.role]} role for {scope(item)}? Access ends immediately.</p>
             <Field label="Reason"><Inp autoFocus required maxLength={500} value={reason} disabled={pending} onChange={e => setReason(e.target.value)} /></Field>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Btn type="submit" disabled={pending || !reason.trim()} style={{ background: T.absent }}>{pending ? 'Working…' : 'Revoke assignment'}</Btn>
+              <Btn type="submit" disabled={pending || !reason.trim()} variant="danger">{pending ? 'Working…' : 'Revoke assignment'}</Btn>
               <Btn variant="ghost" type="button" disabled={pending} onClick={() => setRevoking(null)}>Cancel</Btn>
             </div>
           </form></td></tr>}

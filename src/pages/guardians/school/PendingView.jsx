@@ -75,7 +75,7 @@ export default function PendingView({ school, onUseLegacy, focusId }) {
                 </div>
               </form> : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                 {r.conflict
-                  ? <Btn disabled={disabled} style={{ background: T.absent }} onClick={() => startReason(r.id, 'replace')}>{`Replace ${who(r.conflict)}`}</Btn>
+                  ? <Btn disabled={disabled} variant="danger" onClick={() => startReason(r.id, 'replace')}>{`Replace ${who(r.conflict)}`}</Btn>
                   : <Btn disabled={disabled} onClick={() => approve(r)}>Approve</Btn>}
                 <Btn variant="ghost" disabled={disabled} onClick={() => startReason(r.id, 'reject')}>Reject</Btn>
               </div>}

@@ -93,7 +93,7 @@ function ActionConfirm({ title, message, label, danger = false, typeToConfirm, o
       {err && <p role="alert" className="sims-feedback">{err}</p>}
       <div style={actions}>
         <Btn variant="ghost" disabled={busy} onClick={onClose}>Cancel</Btn>
-        <Btn disabled={busy || blocked} onClick={yes} style={{ background: danger ? T.absent : T.primary }}>{busy ? 'Working…' : label}</Btn>
+        <Btn disabled={busy || blocked} onClick={yes} variant={danger ? 'danger' : 'solid'}>{busy ? 'Working…' : label}</Btn>
       </div>
     </Modal>
   );
