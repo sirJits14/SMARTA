@@ -10,6 +10,7 @@ a { color: var(--t-primary); text-underline-offset: 3px; }
 a:focus-visible { outline: 2px solid var(--t-focus); outline-offset: 2px; border-radius: 4px; }
 
 .card {
+  box-sizing: border-box; /* a width: 100% card stays inside the screen, padding included */
   background: var(--t-surface);
   border: 1px solid var(--t-border);
 }
