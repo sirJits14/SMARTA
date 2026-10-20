@@ -84,7 +84,8 @@ Everything else is unchanged:
   The assertions about what the queue and approvers see stay as they are.
 
 **Release** follows the Subject Teacher pattern, with a record PR:
-- Functions: `requestSchoolRoleFn` only, deployed by name from `docs/releases/2026-10-18-school-family/prepareBackend.mjs`.
+- Functions: `requestSchoolRoleFn`, plus `previewAdvisorySlipFn` and `redeemAdvisorySlipFn` for the shortened slip message,
+  deployed by name from `docs/releases/2026-10-18-school-family/prepareBackend.mjs`.
   Backend unit and emulator tests run on the prepared backend.
 - Parent App: built from master, byte-checked against the deployed site.
 - No SIMS deploy and no data cleanup.
