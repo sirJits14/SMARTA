@@ -17,6 +17,7 @@ export default function AdviserStep({ user, school, query, label, onDone, onSkip
   const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
   const scan = useScanSheet();
   const sections = school.data?.sections || [];
+  const requestsEnabled = school.data?.advisoryRequestsEnabled === true;
   const run = async (fn) => {
     if (busy) return;
     setBusy(true); setErr(null);
@@ -26,6 +27,8 @@ export default function AdviserStep({ user, school, query, label, onDone, onSkip
   const check = () => run(async () => setPreview((await callable('previewAdvisorySlipFn')({ code })).data));
   const redeem = () => run(async () => { const r = (await callable('redeemAdvisorySlipFn')({ code })).data; onDone({ outcome: 'active', detail: r.sectionLabel }); });
   const request = () => run(async () => {
+    const current = await school.refresh({ force: true });
+    if (current?.advisoryRequestsEnabled !== true) { setErr({ text: S.adviserRequestsClosed }); return; }
     await callable('requestSchoolRoleFn')({ role: 'adviser', sectionId });
     onDone({ outcome: 'pending', detail: sectionLabel(sections.find((s) => s.id === sectionId)) });
   });
@@ -50,6 +53,7 @@ export default function AdviserStep({ user, school, query, label, onDone, onSkip
   if (mode === 'slip') return (
     <Card>
       <StepHeader label={label} title={S.adviserSlipTitle}>{S.adviserSlipBody}</StepHeader>
+      {!requestsEnabled && <Banner tone="warn">{S.adviserRequestsClosedSlip}</Banner>}
       {(err || scan.error) && <Banner tone="danger" action={err?.deped ? <Btn variant="ghost" onClick={toRequest}>{S.adviserRequestInstead}</Btn> : undefined}>{err?.text || scan.error}</Banner>}
       <Btn variant="ghost" onClick={scan.open} disabled={scan.loading || busy} style={{ width: '100%', marginBottom: 14 }}>{S.adviserScan}</Btn>
       <Field label={S.adviserCodeLabel}><Inp inputMode="text" autoCapitalize="characters" autoComplete="one-time-code" value={prettyCode(code)}
@@ -65,6 +69,11 @@ export default function AdviserStep({ user, school, query, label, onDone, onSkip
     <Card>
       <StepHeader label={label} title={S.adviserRequestTitle}>{S.adviserRequestBody}</StepHeader>
       {err && <Banner tone="danger">{err.text}</Banner>}
+      {!requestsEnabled ? <>
+        <Banner tone="warn">{S.adviserRequestsClosed}</Banner>
+        {deped && <p style={{ textAlign: 'center' }}><a href="#slip" onClick={(e) => { e.preventDefault(); setMode('slip'); setErr(null); }}>{S.adviserUseSlip}</a></p>}
+        <Btn variant="ghost" onClick={onSkip} disabled={busy} style={{ width: '100%' }}>{S.joinSkipStep}</Btn>
+      </> : <>
       <Field label={S.schoolAccessSection}><Sel required value={sectionId} disabled={busy} onChange={(e) => setSectionId(e.target.value)}>
         <option value="">{S.schoolAccessChooseSection}</option>
         {sectionsByGrade(sections).map((g) => <optgroup key={g.grade} label={`${S.schoolAccessGrade} ${g.grade}`}>
@@ -72,6 +81,7 @@ export default function AdviserStep({ user, school, query, label, onDone, onSkip
       <Btn onClick={request} disabled={busy || !sectionId} style={{ width: '100%' }}>{S.schoolAccessSubmit}</Btn>
       {deped && <p style={{ textAlign: 'center' }}><a href="#slip" onClick={(e) => { e.preventDefault(); setMode('slip'); setErr(null); }}>{S.adviserUseSlip}</a></p>}
       <Btn variant="ghost" onClick={onSkip} disabled={busy} style={{ width: '100%' }}>{S.joinSkipStep}</Btn>
+      </>}
     </Card>
   );
 }

@@ -282,6 +282,8 @@ const S = {
   adviserUseSlip: 'I have an advisory slip',
   adviserRequestTitle: 'Request your advisory section',
   adviserRequestBody: 'An Administrator or the Curriculum Adviser for the grade reviews this. A request gives no access until it is approved.',
+  adviserRequestsClosed: 'Advisory section requests are not open yet. Please check back later.',
+  adviserRequestsClosedSlip: 'Requests are not open yet, but you can still activate your advisory slip.',
   adviserRequestInstead: 'Request the section instead',
   adviserWrongKind: 'This is a learner activation slip. Scan the advisory slip for your section.',
   familyWrongKind: 'This is an advisory slip for a class adviser. Scan the learner activation slip.',

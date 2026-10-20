@@ -41,6 +41,18 @@ export default function SchoolAccessTab() {
     {!context && loading && <p role="status">Loading school access…</p>}
     {context && !context.isAdmin && <p role="status">An administrator assigns school roles here in SIMS.</p>}
     {context?.isAdmin && view && <>
+      <section aria-labelledby="advisory-requests-heading" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 0', marginBottom: 12, borderBottom: `1px solid ${T.border}` }}>
+        <div>
+          <h3 id="advisory-requests-heading" style={{ margin: 0, fontSize: 15, color: T.ink }}>Advisory section requests</h3>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: T.inkMuted }}>
+            {context.advisoryRequestsEnabled ? 'Open to teachers in the parent app. Advisory slips remain available either way.' : 'Closed in the parent app until you enable requests. Advisory slips remain available.'}
+          </p>
+        </div>
+        <Btn variant={context.advisoryRequestsEnabled ? 'ghost-danger' : 'solid'} disabled={school.pending || context.ended}
+          onClick={() => school.run('setAdvisoryRequestsEnabledFn', { enabled: !context.advisoryRequestsEnabled }, context.advisoryRequestsEnabled ? 'Advisory requests are closed.' : 'Advisory requests are open.') }>
+          {context.advisoryRequestsEnabled ? 'Disable requests' : 'Enable requests'}
+        </Btn>
+      </section>
       {draft && <AssignRoleForm school={school} prefill={draft} onClose={() => setDraft(null)} />}
       <SubTabs id="school" label="School access views" tabs={tabs} value={view} onChange={setView} />
       <div role="tabpanel" id="school-panel" aria-labelledby={`school-tab-${view}`}>
