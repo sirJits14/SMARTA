@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../../../shared/theme/theme.css';
-import '../../src/glass.css';
+import '../../src/app.css';
 import '../../src/components/FamilySessionDetails.css';
 import SessionSheet from '../../src/components/SessionSheet.jsx';
 import SessionRows from '../../src/components/SessionRows.jsx';
@@ -36,7 +36,7 @@ function Case({ c }) {
 
 createRoot(document.getElementById('root')).render(<main style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
   <div style={{ position: 'relative', padding: '14px 16px 0' }}>
-    <div aria-hidden="true" style={{ position: 'absolute', top: 14, right: 16, width: 44, height: 44, borderRadius: 999, border: '1px solid var(--t-glass-edge)' }} />
+    <div aria-hidden="true" style={{ position: 'absolute', top: 14, right: 16, width: 44, height: 44, borderRadius: 999, border: '1px solid var(--t-border)' }} />
     <PageHeader title="Ella Marie Austral Dela Cruz" avatarName="Ella Marie Austral Dela Cruz" subtitle="Grade 7 – AMIABLE · Gate scans" status="No entry recorded today"
       onBack={() => {}} action={<button type="button" className="page-header-pill"><Icon name="calendar" size={18} />Sessions</button>} />
   </div>

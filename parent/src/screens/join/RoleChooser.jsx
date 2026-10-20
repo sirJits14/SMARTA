@@ -8,7 +8,7 @@ export const ROLE_TEXT = {
   adviser: [S.joinAdviser, S.joinAdviserHint],
   subject_teacher: [S.joinSubject, S.joinSubjectHint],
 };
-const tag = { fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 999, border: `1px solid ${T.border}`, color: T.inkMuted };
+const tag = { fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 999, border: `1px solid ${T.border}`, color: T.inkMuted };
 
 function RoleCard({ option, onToggle }) {
   const checked = option.state === 'selected' || option.state === 'held';
@@ -20,9 +20,9 @@ function RoleCard({ option, onToggle }) {
     <button type="button" role="checkbox" aria-checked={checked} aria-disabled={locked} onClick={locked ? undefined : onToggle}
       style={{ display: 'grid', gridTemplateColumns: '28px 1fr', gap: 12, alignItems: 'start', width: '100%', minHeight: 64, textAlign: 'left',
         padding: '12px 14px', borderRadius: T.radius, font: 'inherit', color: T.ink, cursor: locked ? 'default' : 'pointer',
-        background: checked ? 'rgba(var(--t-primary-rgb),0.10)' : T.surface,
-        border: `1.5px solid ${checked ? T.primary : T.border}` }}>
-      <span aria-hidden="true" style={{ width: 24, height: 24, marginTop: 2, borderRadius: 7, display: 'grid', placeItems: 'center', fontWeight: 800,
+        background: checked ? 'var(--t-selected)' : T.surface,
+        border: `1px solid ${checked ? T.primary : T.border}` }}>
+      <span aria-hidden="true" style={{ width: 24, height: 24, marginTop: 2, borderRadius: 7, display: 'grid', placeItems: 'center', fontWeight: 700,
         border: `2px solid ${checked ? T.primary : T.border}`, background: checked ? T.primary : 'transparent', color: T.onPrimary, opacity: dim }}>{checked ? '✓' : ''}</span>
       <span>
         <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>

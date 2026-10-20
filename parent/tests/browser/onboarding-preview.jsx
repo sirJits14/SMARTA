@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import '../../../shared/theme/theme.css';
-import '../../src/glass.css';
+import '../../src/app.css';
 import App from '../../src/App.jsx';
 import { reset, failNextSkip, updateNotice } from './onboarding-fixture.js';
 

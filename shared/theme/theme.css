@@ -6,9 +6,7 @@
    shared/theme/theme.js) switches the screen palette. The dark set exists only
    for screen media, so printing is always light. .paper re-applies the light
    set to on-screen previews of printed documents.
-   shared/theme/contrast.test.js checks the text and control pairs.
-   --t-glass-*, --t-nav-highlight and --t-pglow-* still serve the Parents App's
-   frosted layer; the SIMS screens no longer use them. */
+   shared/theme/contrast.test.js checks the text and control pairs. */
 :root, .paper {
   color-scheme: light;
   --t-bg: #F5F7FA;
@@ -73,13 +71,6 @@
   --t-hover-strong: #E9EDF2;
   --t-row-hover: #F7F9FB;
   --t-overlay: rgba(23,33,47,.4);
-  --t-glass-edge: rgba(255,255,255,.8);
-  --t-glass-highlight: rgba(255,255,255,.65);
-  --t-nav-highlight: rgba(255,255,255,.9);
-  --t-pglow-1: rgba(8,127,140,.16);
-  --t-pglow-2: rgba(36,169,181,.16);
-  --t-pglow-3: rgba(23,33,47,.08);
-  --t-glass-rgb: 255,255,255;
   --t-primary-rgb: 7,118,131;
   --t-shadow-rgb: 23,33,47;
   --t-ink-rgb: 23,33,47;
@@ -92,18 +83,10 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", Inter, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
-/* Settings icon tiles and switches (Parents App): the same in both themes,
-   as on iPhone. Kept out of the --t-* palettes above on purpose, so
-   contrast.test.js's light/dark token parity doesn't apply to them. */
+/* Settings switch knob (Parents App): the same in both themes, as on iPhone.
+   Kept out of the --t-* palettes above on purpose, so contrast.test.js's
+   light/dark token parity doesn't apply to it. */
 :root {
-  --tile-red: #FF3B30;
-  --tile-indigo: #5856D6;
-  --tile-blue: #007AFF;
-  --tile-green: #34C759;
-  --tile-orange: #FF9500;
-  --tile-teal: #077683;
-  --tile-grey: #8E8E93;
-  --on-tile: #FFFFFF;
   --switch-knob: #FFFFFF;
   --switch-shadow: rgba(0,0,0,.25);
 }
@@ -172,13 +155,6 @@
     --t-hover-strong: #232B3B;
     --t-row-hover: #141A28;
     --t-overlay: rgba(0,0,0,.6);
-    --t-glass-edge: rgba(255,255,255,.08);
-    --t-glass-highlight: rgba(255,255,255,.04);
-    --t-nav-highlight: rgba(255,255,255,.04);
-    --t-pglow-1: rgba(36,169,181,.10);
-    --t-pglow-2: rgba(36,169,181,.05);
-    --t-pglow-3: rgba(21,26,38,.6);
-    --t-glass-rgb: 21,26,38;
     --t-primary-rgb: 36,169,181;
     --t-shadow-rgb: 0,0,0;
     --t-ink-rgb: 0,0,0;

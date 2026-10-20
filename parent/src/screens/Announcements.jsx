@@ -13,8 +13,8 @@ function PostCard({ post, isNew, onOpen }) {
     <Card style={{ padding: 0 }}>
       <button type="button" className="notice-card" onClick={onOpen} style={{ background: 'none', border: 0, margin: 0, textAlign: 'left', color: 'inherit', font: 'inherit', display: 'block', width: '100%', boxSizing: 'border-box', padding: 16, cursor: 'pointer', borderRadius: T.radius, fontFamily: T.font }}>
         <span style={{ display: 'flex', gap: 8, alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <strong style={{ fontSize: 16, color: T.ink }}>{post.title}</strong>
-          {isNew && <span style={{ flex: 'none', fontSize: 11, fontWeight: 700, color: T.onPrimary, background: T.primary, borderRadius: T.pill, padding: '2px 8px' }}>{S.announcementsNew}</span>}
+          <strong style={{ fontSize: 16, fontWeight: 600, color: T.ink }}>{post.title}</strong>
+          {isNew && <span className="p-badge">{S.announcementsNew}</span>}
         </span>
         <span style={{ display: '-webkit-box', fontSize: 14, color: T.ink, marginTop: 6, WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{post.body}</span>
         <span style={{ display: 'block', fontSize: 12, color: T.inkMuted, marginTop: 8 }}>{postDateLabel(post.publishedAt)} · {audienceText(post.audienceKeys, post.audience)}</span>
@@ -45,7 +45,7 @@ export default function Announcements({ user, profile, navigate, view = 'family'
   return (
     <>
       {header}
-      {pinned.length > 0 && <h2 style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em', color: T.inkMuted, margin: '4px 0 8px' }}>{S.announcementsPinned}</h2>}
+      {pinned.length > 0 && <h2 className="p-section-title">{S.announcementsPinned}</h2>}
       {pinned.map(card)}
       {pinned.length > 0 && rest.length > 0 && <div style={{ height: 8 }} />}
       {rest.map(card)}

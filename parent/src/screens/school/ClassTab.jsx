@@ -121,7 +121,7 @@ export default function ClassTab({ sections, ended }) {
           {sections.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}
         </Sel>
       )}
-      <section className="class-summary glass-card" aria-labelledby="class-session">
+      <section className="class-summary card" aria-labelledby="class-session">
         <div className="class-summary-top">
           <h2 id="class-session">{session.toUpperCase()} · {isToday ? 'Today' : formatDateLabel(date)}</h2>
           {twoSessions && (

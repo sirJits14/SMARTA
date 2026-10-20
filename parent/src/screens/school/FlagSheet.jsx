@@ -4,7 +4,7 @@ import { Btn, Banner, Inp } from '../../components/ui.jsx';
 import { FLAG_REASONS, RESTORE_REASONS, reasonText } from '../../lib/classSession.js';
 
 // Two taps to flag: the learner, then a reason. Portalled to <body> so no
-// glass card's backdrop-filter traps the fixed overlay (see ScanSheet).
+// ancestor's transform or filter can trap the fixed overlay (see ScanSheet).
 export default function FlagSheet({ rows, session, mode, busy, error, onConfirm, onClose }) {
   const [note, setNote] = useState('');
   const [other, setOther] = useState(false);
