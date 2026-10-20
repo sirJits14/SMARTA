@@ -7,7 +7,7 @@ const context = {
   schoolYear: '2026-2027', ended: false,
   sections: [{ id: 'A', name: 'Rizal', gradeLevel: 7 }, { id: 'B', name: 'Bonifacio', gradeLevel: 7 }],
   managedAssignments: [{ uid: 'u1', displayName: 'Ana Cruz', email: 'ana@deped.gov.ph', role: 'adviser', sectionId: 'A', gradeLevel: 7, assignedAt: 1, lastSchoolOpenAt: null },
-    { uid: 'u2', displayName: 'Eve Tan', email: 'eve@deped.gov.ph', role: 'subject_teacher', gradeLevel: 7, assignedAt: 1, lastSchoolOpenAt: null }],
+    { uid: 'u2', displayName: 'Eve Tan', email: 'eve@deped.gov.ph', role: 'curriculum_adviser', gradeLevel: 7, assignedAt: 1, lastSchoolOpenAt: null }],
   pendingRequests: [{ id: 'r1', role: 'adviser', sectionId: 'B', displayName: 'Dan' }],
 };
 
@@ -15,10 +15,10 @@ describe('CoverageView', () => {
   it('shows coverage per grade, gaps, opened status and the pending request', () => {
     const html = renderToStaticMarkup(React.createElement(CoverageView, { context, onAssign: () => {}, onOpenRequest: () => {} }));
     expect(html).toContain('1 of 2 sections have an adviser');
-    expect(html).toContain('Curriculum Adviser: None');
+    expect(html).toContain('Curriculum Adviser: Eve Tan');
     expect(html).toContain('Not opened yet');
     expect(html).toContain('No adviser');
     expect(html).toContain('Review Dan');
-    expect(html).toContain('Subject Teachers: 1');
+    expect(html).not.toContain('Subject Teacher');
   });
 });
