@@ -142,7 +142,7 @@ describe('school request lifecycle', () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
     await db().doc(`school_years/${year}`).set({ endedAt: new Date() });
     expect((await loadSchoolActor(deps('teacher'))).assignments).toEqual([]);
-    await expect(requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' })).rejects.toMatchObject({ code: 'failed-precondition' });
+    await expect(requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' })).rejects.toMatchObject({ code: 'failed-precondition', message: 'This school year has ended.' });
   });
   it('tells a newly assigned teacher where to switch to School', async () => {
     await assignSchoolRole(deps('admin'), { email: users.teacher.email, role: 'adviser', sectionId: 'SEC1' });
@@ -186,6 +186,14 @@ describe('teacher requests', () => {
     expect((await db().collection('school_role_requests').get()).size).toBe(0);
     expect((await db().collection('audit_log').get()).size).toBe(0);
     expect((await db().doc('rate_limits/personal').get()).exists).toBe(false);
+  });
+  it('gives a non-DepEd account the DepEd message even when requests are closed', async () => {
+    await db().doc('settings/app').set({ advisoryRequestsEnabled: false }, { merge: true });
+    await expect(requestSchoolRole(deps('personal'), { role: 'adviser', sectionId: 'SEC1' }))
+      .rejects.toMatchObject({ code: 'permission-denied', message: 'Class Adviser requests need a @deped.gov.ph account.' });
+    await expect(requestSchoolRole(deps('teacher'), { role: 'adviser', sectionId: 'SEC1' }))
+      .rejects.toMatchObject({ code: 'failed-precondition', message: 'Advisory section requests are not open yet. Please check back later.' });
+    expect((await db().collection('school_role_requests').get()).size).toBe(0);
   });
   it('still lets an Administrator assign a non-DepEd account and approve its waiting request', async () => {
     await assignSchoolRole(deps('admin'), { email: users.personal.email, role: 'adviser', sectionId: 'SEC1' });
