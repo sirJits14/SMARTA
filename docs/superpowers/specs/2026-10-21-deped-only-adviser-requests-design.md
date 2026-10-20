@@ -56,6 +56,9 @@ role and `liveUser` checks, before the rate limit and transaction:
 The check reads `user.email` from the Auth record, which is verified, not anything the app sends. This closes the gap for
 an old cached copy of the app and for a direct call.
 
+Order with the request gate from PR #77: this DepEd check runs first, then the gate (`advisoryRequestsEnabled`, inside the
+transaction). A non-DepEd account therefore always gets the DepEd message, whether requests are open or closed.
+
 Everything else is unchanged:
 - `redeemAdvisorySlip` and `previewAdvisorySlip` already refuse non-DepEd accounts, but their message ends "Request the
   role instead." That advice is now wrong, so the message becomes "Advisory slips need a DepEd email." The code stays

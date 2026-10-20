@@ -31,6 +31,7 @@
 
 ## Spec adjustments made while planning
 
+- PR #77 (merged on master before this work started) closes Class Adviser requests unless `settings/app.advisoryRequestsEnabled` is true. The new DepEd check runs first, so a non-DepEd account always gets the DepEd message, whether requests are open or closed. #77 changed no tests, so seven emulator tests in `schoolAccess.test.js` and `advisorySlips.test.js` already fail on master; Task 1 Step 2b repairs the fixtures. Quoted text, not line numbers, is the anchor for every edit below, because #77 shifted some lines.
 - The spec's release section listed `requestSchoolRoleFn` only. The shortened slip message also changes `previewAdvisorySlipFn` and `redeemAdvisorySlipFn`, so the spec now lists all three. This plan's release set is those three functions.
 
 ---
@@ -128,6 +129,16 @@ to:
 ```js
     const theirs = await seedRequest('personal', 'SEC1');
 ```
+
+- [ ] **Step 2b: Open advisory requests in the fixtures**
+
+PR #77 refuses a Class Adviser request unless `settings/app.advisoryRequestsEnabled` is true, and `seedSchool()` never sets it. In the top-level `beforeEach` of both test files, add this line right after `await clearAll(); await seedSchool();`:
+
+```js
+  await db().doc('settings/app').set({ advisoryRequestsEnabled: true }, { merge: true });
+```
+
+Do not change `helpers.js`; other suites share it.
 
 - [ ] **Step 3: Run both files; they still pass**
 
@@ -245,7 +256,7 @@ Message: `Refuse Class Adviser requests from non-DepEd accounts`, with a body sa
 **Files:**
 - Modify: `parent/src/lib/join.js:12-21`
 - Modify: `parent/src/screens/join/RoleChooser.jsx:28,38,51`
-- Modify: `parent/src/strings.js:261-262`
+- Modify: `parent/src/strings.js` (the two `joinNeedsApproval*` entries)
 - Test: `parent/src/lib/join.test.js`
 - Test: `parent/src/screens/join/screens.test.js`
 - Test: `parent/src/lib/strings.test.js:52`
@@ -429,7 +440,7 @@ In `parent/src/screens/join/RoleChooser.jsx`:
 ```
 `tag` is still used by the "Active" tag, and `T` by other styles, so no import changes.
 
-In `parent/src/strings.js`, delete lines 261-262:
+In `parent/src/strings.js`, delete these two entries (find them by name):
 ```js
   joinNeedsApproval: 'Needs approval',
   joinNeedsApprovalNote: "Your account isn't a DepEd email, so an Administrator or Curriculum Adviser approves school roles.",
@@ -553,6 +564,7 @@ Note the results, including any copy problems, in the PR description. Fix any de
 
 Follow the Subject Teacher release for the mechanics (`docs/audits/deployments/2026-10-20-retire-subject-teacher/README.md`). This release has no SIMS deploy and no data cleanup.
 
+0. **Check PR #77 first (advisory request gate).** It is merged on master but was not part of the Subject Teacher release. Check whether it is live: `setAdvisoryRequestsEnabledFn` in the live function list, and the live SIMS and Parent App against their newest records. If it is not live, a Parent App built from master ships #77's "requests are closed" banner while the live `getSchoolContextFn` does not return `advisoryRequestsEnabled`, so every adviser request would read as closed and no administrator could reopen it. Stop and ask the user whether to release #77 together with this (functions `getSchoolContextFn` and `setAdvisoryRequestsEnabledFn`, plus the SIMS School Access tab) or to build this release without it.
 1. **Baseline.**
    - Byte-check the live Parent App against its last record (`docs/audits/deployments/2026-10-20-retire-subject-teacher/parent-hosting-verification.json`). Expect 50/50 before anything is deployed.
    - Read-only count in production of `school_role_requests` with `status == 'pending'` whose `email` is not `@deped.gov.ph`, and of `school_accounts` adviser rows held by non-DepEd emails. Save the counts (numbers only, no emails) in the record. They are expected to stay as they are.
