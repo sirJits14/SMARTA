@@ -20,7 +20,7 @@ import { handleAnnouncementWrite, publishDueAnnouncements, announcementAudienceC
 import { getCoordinatorSectionOptions, updateCoordinatorSection } from './src/handlers/sections.js';
 import { issueAdvisorySlips, revokeAdvisorySlip, listAdvisoryStatus, previewAdvisorySlip, redeemAdvisorySlip } from './src/handlers/advisorySlips.js';
 import { activateFamilyCode } from './src/handlers/portalAccess.js';
-import { getSchoolContext, requestSchoolRole, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, markSchoolOpened, getSchoolPendingCount } from './src/handlers/schoolAccess.js';
+import { getSchoolContext, requestSchoolRole, setAdvisoryRequestsEnabled, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, markSchoolOpened, getSchoolPendingCount } from './src/handlers/schoolAccess.js';
 import { retireSubjectTeachers } from './src/handlers/retireSubjectTeachers.js';
 import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
@@ -105,6 +105,7 @@ export const listAdvisoryStatusFn = staffCall(listAdvisoryStatus);
 
 export const getSchoolContextFn = schoolCall(getSchoolContext);
 export const requestSchoolRoleFn = schoolCall(requestSchoolRole);
+export const setAdvisoryRequestsEnabledFn = schoolCall(setAdvisoryRequestsEnabled);
 export const resolveSchoolRoleFn = schoolCall(resolveSchoolRole);
 export const assignSchoolRoleFn = schoolCall(assignSchoolRole);
 export const revokeSchoolRoleFn = schoolCall(revokeSchoolRole);

@@ -55,7 +55,7 @@ export async function loadSchoolActor(deps, reader = deps.db) {
   // SIMS coordinators review their grades' sessions without a separate school assignment.
   const simsGrades = !ended && role && role !== 'admin' ? (scopedGrades(profile) || []) : [];
   return { uid, email: email.toLowerCase(), displayName: deps.displayName || account.data()?.displayName || profile?.name || email,
-    isAdmin: role === 'admin', schoolYear, ended: Boolean(ended), assignments, simsGrades };
+    isAdmin: role === 'admin', schoolYear, ended: Boolean(ended), advisoryRequestsEnabled: settings.data()?.advisoryRequestsEnabled === true, assignments, simsGrades };
 }
 
 async function assignmentFrom(deps, reader, actor, input) {
@@ -89,6 +89,7 @@ export async function requestSchoolRole(deps, input) {
   await enforceRateLimit(deps.db, deps.uid, 'schoolRoleRequest', { windowMs: 3600000, max: 30 }, (deps.now || (() => new Date()))().getTime());
   return deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
+    if (input.role === 'adviser' && !actor.advisoryRequestsEnabled) fail('failed-precondition', 'Advisory section requests are not open yet. Please check back later.');
     const assignment = await assignmentFrom(deps, tx, actor, input);
     const requests = deps.db.collection('school_role_requests');
     const pending = await tx.get(requests.where('uid', '==', deps.uid).where('status', '==', 'pending'));
@@ -101,6 +102,16 @@ export async function requestSchoolRole(deps, input) {
       tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'school.requested', deps.uid, { ...assignment, ...teacherOf(user) }));
     }
     return { status: 'pending', id: ref.id, ids: [ref.id] };
+  });
+}
+
+export async function setAdvisoryRequestsEnabled(deps, input) {
+  if (typeof input.enabled !== 'boolean') fail('invalid-argument', 'Choose whether advisory requests are enabled.');
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    if (!actor.isAdmin) fail('permission-denied', 'Administrators only.');
+    tx.set(deps.db.doc('settings/app'), { advisoryRequestsEnabled: input.enabled }, { merge: true });
+    return { advisoryRequestsEnabled: input.enabled };
   });
 }
 
@@ -366,7 +377,7 @@ export async function getSchoolContext(deps) {
       tx.get(deps.db.collection('sections').where('schoolYear', '==', actor.schoolYear)),
       tx.get(requests.where('uid', '==', deps.uid)),
     ]);
-    const result = { schoolYear: actor.schoolYear, ended: actor.ended, isAdmin: actor.isAdmin, assignments: actor.assignments.map(plainAssignment),
+    const result = { schoolYear: actor.schoolYear, ended: actor.ended, isAdmin: actor.isAdmin, advisoryRequestsEnabled: actor.advisoryRequestsEnabled, assignments: actor.assignments.map(plainAssignment),
       sections: sections.docs.map(s => ({ id: s.id, name: s.data().name || '', gradeLevel: s.data().gradeLevel, schoolYear: s.data().schoolYear }))
         .sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
       myRequests: mine.docs.map(row).filter(r => r.schoolYear === actor.schoolYear && SCHOOL_ROLES.includes(r.role))
