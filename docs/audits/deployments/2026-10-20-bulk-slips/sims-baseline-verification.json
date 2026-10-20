@@ -1,0 +1,311 @@
+{
+  "origin": "https://bnhs-sims.web.app",
+  "checkedAt": "2026-10-20T00:47:27.041Z",
+  "files": [
+    {
+      "path": "assets/AccountsPage-CV-zJK5X.js",
+      "sha256": "9e1cccff42361b7aa63148c9b9e0ca25de3b0706e4fe055a7a646458ef707689",
+      "matches": true
+    },
+    {
+      "path": "assets/AnnouncementsPage-DDbAsqeL.js",
+      "sha256": "ee822291f415740d5b6287d0976535a66ab06a96d9de9055e855b7b54452dd55",
+      "matches": true
+    },
+    {
+      "path": "assets/attendance-BvbS_mzU.js",
+      "sha256": "1a6b609b3ba52664efa3b934eee80c125ba9e526261c33515be3c89251331093",
+      "matches": true
+    },
+    {
+      "path": "assets/AttendanceSummaryPage-DWlt9TpM.js",
+      "sha256": "326c068956699c0a7ef139149862a3b7b4b3227e0bdd336d74fe2a2bfd5737fa",
+      "matches": true
+    },
+    {
+      "path": "assets/AttendanceTakePage-CNv68hcn.js",
+      "sha256": "96d6a8e40d5c7a45f60adfbbdadfac0d69d607086df95bfa219c2a35a3b4c0ce",
+      "matches": true
+    },
+    {
+      "path": "assets/AuditTab-qGEeTHC1.js",
+      "sha256": "7640efd554ff3696b8daa37b4dbcfe72c17ab398052d430946a4f92a35d16c5e",
+      "matches": true
+    },
+    {
+      "path": "assets/browser-DTyPVqKv.js",
+      "sha256": "96af05d9ae1d586ef6ba8328cf47e80f31a4796fd389975a154c254b08faec2f",
+      "matches": true
+    },
+    {
+      "path": "assets/CodesTab-BEMecnOM.js",
+      "sha256": "f2003e5f018448b08081499896a528726680e2f60ef9a92f2a555009b34ac245",
+      "matches": true
+    },
+    {
+      "path": "assets/DashboardPage-CJJDAzUs.js",
+      "sha256": "004f6b397bba0b1723eca08b8112514c1e01817034efe71e209288253decfd08",
+      "matches": true
+    },
+    {
+      "path": "assets/dates-BA2cdwe2.js",
+      "sha256": "8ac7f7815b4f928f661c4ed033b5f59f647913c8e7fdcb0ddd5a1bf5750b54df",
+      "matches": true
+    },
+    {
+      "path": "assets/dates-BmMLuwUb.js",
+      "sha256": "2f0606a6da4bacf7a7c6a14b3945c9359552c53b847aaea8a58fe3adb8725adc",
+      "matches": true
+    },
+    {
+      "path": "assets/DevicesTab-Y9rfqqQb.js",
+      "sha256": "00dcdcf1a60136a1c6e9ef32de0fd7a3fa2ae6722f4df2d46d5c71800b6a62ba",
+      "matches": true
+    },
+    {
+      "path": "assets/downloadWorkbook-BJ0LSd0U.js",
+      "sha256": "ab0aaa80e0022891fe5212d40619e1529272653987369304f7ed6e0b3cd9a4b7",
+      "matches": true
+    },
+    {
+      "path": "assets/enrollmentChange-OWFtda_x.js",
+      "sha256": "91d1764dea0df92436c351fa64c2bf0c9b37f314cdd18184d789c6c2bb543be3",
+      "matches": true
+    },
+    {
+      "path": "assets/enrollments-8ISlvltj.js",
+      "sha256": "a8666f16c10e9f63664a1b9ac51739e55a87a070941a0e2a20e449b14672d58f",
+      "matches": true
+    },
+    {
+      "path": "assets/EnrollPage-BzeYSIUQ.js",
+      "sha256": "2a63fa4cdee294b60254201bbb4f8a4eb6b33dc4037fbe293896b1929b7ac00d",
+      "matches": true
+    },
+    {
+      "path": "assets/EnrollPage-LPkYNRCj.css",
+      "sha256": "8b4b580ee5413d140f7826d86658e14b354590774986fdcfa9291180dc2c0620",
+      "matches": true
+    },
+    {
+      "path": "assets/GradePills-DJXdwmj0.js",
+      "sha256": "632d75c13ebab9102c650838a6ee02a8586c7542c0f0ffb0d27d8de0930d88bc",
+      "matches": true
+    },
+    {
+      "path": "assets/guardians-B8pJQe64.js",
+      "sha256": "9aa84fe3c0122cc2742c468f6834c0a1438fa50994ffec2de13e17102c5e722c",
+      "matches": true
+    },
+    {
+      "path": "assets/GuardiansPage-oJymVr4l.js",
+      "sha256": "e9b39fbea08ff7df2ce51111031657e7e9bcfa608512c062e1298a10a8e0fc66",
+      "matches": true
+    },
+    {
+      "path": "assets/IdCardPrintConfirm-DUnStzBQ.js",
+      "sha256": "831851d086455aa08eb747b96680d4f9ff654b78b880eec2f75b47e1c0b2617b",
+      "matches": true
+    },
+    {
+      "path": "assets/IDCardsPage-2a7mS0EY.js",
+      "sha256": "c086139c72c8f0681b1f25c0d18e26d1a89dc84588d9acb3901160ed3e9bc972",
+      "matches": true
+    },
+    {
+      "path": "assets/index-9CtqkeDm.css",
+      "sha256": "c841450cfadca24ac2b6e7ff9ddc24d71f8cd935f53704a4d4a77bae18a45df9",
+      "matches": true
+    },
+    {
+      "path": "assets/index-DA7LcfDk.js",
+      "sha256": "5d14263cb979c6c82ad8a418c3e613dd8774389c2a7719a26f81ee7ebad3ab9b",
+      "matches": true
+    },
+    {
+      "path": "assets/LinksTab-YQpwbjMx.js",
+      "sha256": "1719ba63a8d7b7341076944b07f7a5be42ef59ead84fa8d11e5373d5487bd47d",
+      "matches": true
+    },
+    {
+      "path": "assets/loading-CRLLHZYw.gif",
+      "sha256": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "matches": true
+    },
+    {
+      "path": "assets/PortalSettingsTab-C76PnFxy.js",
+      "sha256": "29c0c0576d8bb3ddba76c6bdf182fca06bd4eed30c477ffc395f6b5b1c356244",
+      "matches": true
+    },
+    {
+      "path": "assets/ReportsTab-3nfdE2zm.js",
+      "sha256": "2fc8cced95f403fb7eda1abb4879716193d547d0be6a6dcf0a75628e0c980e06",
+      "matches": true
+    },
+    {
+      "path": "assets/RequestsTab-DtY0pvVZ.js",
+      "sha256": "2f46b159c683ad4fa3193291d3a735b660c170769a82856526a383a2c64267df",
+      "matches": true
+    },
+    {
+      "path": "assets/rolldown-runtime-aKtaBQYM.js",
+      "sha256": "cb2fb01f2064eb36487466778d2ffc4c97ad86af89be1635209de18f0b5b2236",
+      "matches": true
+    },
+    {
+      "path": "assets/roster-Cj9pryRC.js",
+      "sha256": "1a1b7a305e430e7a7667f3a8c678ca455df1374abc88ce4996a9c915a49bc6ba",
+      "matches": true
+    },
+    {
+      "path": "assets/ScanLogTab-DfL7GPWc.js",
+      "sha256": "5671a5e719c28ced37350901312738866de91733e8f07018d4c2d0a20685e810",
+      "matches": true
+    },
+    {
+      "path": "assets/scheduleSessions-D6cHsNJm.js",
+      "sha256": "bcb23e44f44accd487db1c70812e52de7e53140d769ff4b5ef690782eed6b292",
+      "matches": true
+    },
+    {
+      "path": "assets/SchedulesPage-kTm_9WmL.js",
+      "sha256": "446fa6123fa3170ea017e24aac384c5989c6e086ea57976ddc2eeeaed2090374",
+      "matches": true
+    },
+    {
+      "path": "assets/school-DKX_-w4f.js",
+      "sha256": "2b4bff078ac7b2e978cf67aee190a4a65c659f09ea22e5347c1f904ee731ba76",
+      "matches": true
+    },
+    {
+      "path": "assets/SchoolAccessTab-vKsn6S1C.js",
+      "sha256": "579c2ac547186062f49990f644d6c624e3e265969e47891434c87913ef2105a6",
+      "matches": true
+    },
+    {
+      "path": "assets/schoolAssignments-CqgRpCHr.js",
+      "sha256": "46dfc91fd10b441007061b0a78f6df6b5eac50e00f58b86486870a4f51159848",
+      "matches": true
+    },
+    {
+      "path": "assets/search-BFFQz6fc.js",
+      "sha256": "154cdad295794accd313d7248b4c5c51ef3d106961568355ffa2c8a6c87b13d1",
+      "matches": true
+    },
+    {
+      "path": "assets/SectionPicker-WNRTDRhU.js",
+      "sha256": "3d9155f765a0738a461471fe0a14672bcf9397b65bc01f7134de08ecb5db75a3",
+      "matches": true
+    },
+    {
+      "path": "assets/SectionsPage-C-Xq1Unf.js",
+      "sha256": "48e21f5ca691afbf4d852bf20175b5c3d1bbd10d567a3686d7efa37881929f39",
+      "matches": true
+    },
+    {
+      "path": "assets/SessionReviewPage-uNlFQHvt.js",
+      "sha256": "8f15fa8c8e248b0bedcc820df99fc6248f887f322f77690e7542b02d5d96da37",
+      "matches": true
+    },
+    {
+      "path": "assets/SettingsPage-DpLbuJDF.js",
+      "sha256": "ce81261958d27d075ef12acf35da31a2667f94ee9091b06e71167223d03520a3",
+      "matches": true
+    },
+    {
+      "path": "assets/sf2-template-BDOGBomb.xlsx",
+      "sha256": "2fe5668f6fd86ce7cb7a1cc2f76ac2e6e35bc20d3b80d779ce459000c0c9d4ba",
+      "matches": true
+    },
+    {
+      "path": "assets/sims-favicon-cSZ_7KH-.png",
+      "sha256": "7a36b7f1843f0e852289d83e019cdc3dc49732702131f65df7c24f3865c6cc68",
+      "matches": true
+    },
+    {
+      "path": "assets/slipIssue-BzzZC7xm.js",
+      "sha256": "467ade2879e4816e543c2a077c142cbda70d86079f39652c9812c4f953f3c5c6",
+      "matches": true
+    },
+    {
+      "path": "assets/SlipPrintControls-GNLZodMy.js",
+      "sha256": "90db19da5a049bf79c4a5c18197bd8395de307b7711390c094311378352b3b3d",
+      "matches": true
+    },
+    {
+      "path": "assets/smarta-mark-CjebIss0.png",
+      "sha256": "506c234045fc059129e1077c50807e158795d417b460cb8090a67ed172e228c5",
+      "matches": true
+    },
+    {
+      "path": "assets/smarta-wordmark-BNciHWgA.png",
+      "sha256": "ce9ba147ae6cc0ddc09028f72df5e1ae01cd810cff25133eb0b3c00a06471d8f",
+      "matches": true
+    },
+    {
+      "path": "assets/smarta-wordmark-dark-QXjUkZJv.png",
+      "sha256": "f913ba8aec858849e9939fa710d688104390b02b7e818a3fdffeab1c4a6c0764",
+      "matches": true
+    },
+    {
+      "path": "assets/smarta-wordmark-sidebar-CRgRiWJ2.png",
+      "sha256": "9666f11f7ccadd7763a2951fffc46913eb8d940c1f883da2e957163077b9adb1",
+      "matches": true
+    },
+    {
+      "path": "assets/smarta-wordmark-sidebar-dark-CUOzCjZz.png",
+      "sha256": "7409f535c27959d997c19b61a31f0e0f705da0e96bfac7765492d23ace99879d",
+      "matches": true
+    },
+    {
+      "path": "assets/StudentForm-4jGycKQk.js",
+      "sha256": "f333085f0ea8995ff5e28b360a8c98cb14a5d4ad52187bdc1c4a1a19097a3b10",
+      "matches": true
+    },
+    {
+      "path": "assets/StudentsPage-DPyFHWdr.js",
+      "sha256": "0390e40bba8677e74bc42e77d4763383da264263f08236c5de0d38a2c8efd11e",
+      "matches": true
+    },
+    {
+      "path": "assets/useAsyncAction-BzEg0qB2.js",
+      "sha256": "fca6651c52c1f2901d15142901f98aa99d1a25be43567050a9f5197f17fb718e",
+      "matches": true
+    },
+    {
+      "path": "icons/apple-touch-icon.png",
+      "sha256": "8d728917cea43e3b8fe64244ba2500b754434d45188153c85632a1aeb599d216",
+      "matches": true
+    },
+    {
+      "path": "icons/icon-192.png",
+      "sha256": "b4b63b43a1db1cba796148902e5b965c8b48e80b056925ab79b84893293e33c8",
+      "matches": true
+    },
+    {
+      "path": "icons/icon-512.png",
+      "sha256": "9174f4f7b85634b268d2dfebda14901aa82826078ef9878370533708b8d9f1e3",
+      "matches": true
+    },
+    {
+      "path": "icons/icon-maskable-512.png",
+      "sha256": "654bf10f07ea14a25bf762451f2ced38bb480df536496dc900d3e062bb26d3c7",
+      "matches": true
+    },
+    {
+      "path": "index.html",
+      "sha256": "1b7ec12ac1d24303e238dc85321ed9ac7f797a723a07bcbcd9f4301ac9539d5f",
+      "matches": true
+    },
+    {
+      "path": "manifest.webmanifest",
+      "sha256": "8d24c2da6fce91070f2bff4ad1ae0937533b75bb236727aa9a9db038fe533f35",
+      "matches": true
+    },
+    {
+      "path": "sw.js",
+      "sha256": "a40726e5fb84f1022c7fed955823bc4ecf3e3f102b9844731cce8ca649fd9b04",
+      "matches": true
+    }
+  ]
+}
