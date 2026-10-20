@@ -1,0 +1,201 @@
+/* Color tokens for the SIMS and the Parents App.
+   Spec: docs/superpowers/specs/2026-10-20-sims-ui-modernization-design.md
+   Light: cool white surfaces on #F5F7FA with a deep teal accent. Dark: charcoal
+   navy (#0B0F19 page, #151A26 sidebar, #101522 cards) with a bright teal accent.
+   <html data-theme="dark"> (set by the pre-paint script in index.html and by
+   shared/theme/theme.js) switches the screen palette. The dark set exists only
+   for screen media, so printing is always light. .paper re-applies the light
+   set to on-screen previews of printed documents.
+   shared/theme/contrast.test.js checks the text and control pairs.
+   --t-glass-*, --t-nav-highlight and --t-pglow-* still serve the Parents App's
+   frosted layer; the SIMS screens no longer use them. */
+:root, .paper {
+  color-scheme: light;
+  --t-bg: #F5F7FA;
+  --t-canvas: #F5F7FA;
+  --t-surface: #FFFFFF;
+  --t-sidebar: #FFFFFF;
+  --t-dialog: #FFFFFF;
+  --t-menu: #FFFFFF;
+  --t-input-bg: #FFFFFF;
+  --t-border: #E3E8EF;
+  --t-border-strong: #CDD4DE;
+  --t-control-border: #848FA0;
+  --t-ink: #17212F;
+  --t-muted: #5F6E83;
+  --t-subtle: #3F4C5E;
+  --t-nav-ink: #4A586C;
+  --t-placeholder: #5F6E83;
+  --t-primary: #077683;
+  --t-primary-hover: #06636E;
+  --t-primary-active: #05555E;
+  --t-primary-deep: #05616B;
+  --t-on-primary: #FFFFFF;
+  --t-focus: #077683;
+  --t-present: #15803D;
+  --t-late: #B45309;
+  --t-absent: #DC2626;
+  --t-excused: #64748B;
+  --t-on-status: #FFFFFF;
+  --t-danger: #DC2626;
+  --t-danger-hover: #B91C1C;
+  --t-danger-text: #B91C1C;
+  --t-warn-text: #92400E;
+  --t-info: #1D4ED8;
+  --t-selected: #E7F3F4;
+  --t-tint: #E7F3F4;
+  --t-tint-strong: #D5ECEE;
+  --t-tint-hover: #F0F3F7;
+  --t-feedback-bg: #FEF2F2;
+  --t-feedback-ink: #991B1B;
+  --t-success-bg: #ECFDF3;
+  --t-success-ink: #166534;
+  --t-warn-bg: #FFFBEB;
+  --t-warn-ink: #92400E;
+  --t-info-bg: #EFF6FF;
+  --t-info-ink: #1E40AF;
+  --t-disabled-bg: #EEF1F5;
+  --t-disabled-ink: #8A94A3;
+  --t-tooltip-bg: #17212F;
+  --t-tooltip-ink: #FFFFFF;
+  --t-stat-icon: #5F6E83;
+  --t-decor: #087F8C;
+  --t-decor-mid: #24A9B5;
+  --t-decor-soft: #9ED6DC;
+  --t-chart-track: #E3E8EF;
+  --t-bevel-top: #FFFFFF;
+  --t-bevel-bottom: #FFFFFF;
+  --t-bevel-hover-top: #F0F3F7;
+  --t-bevel-hover-bottom: #F0F3F7;
+  --t-bevel-edge: #E3E8EF;
+  --t-bevel-hi: #FFFFFF;
+  --t-hover: #F0F3F7;
+  --t-hover-strong: #E9EDF2;
+  --t-row-hover: #F7F9FB;
+  --t-overlay: rgba(23,33,47,.4);
+  --t-glass-edge: rgba(255,255,255,.8);
+  --t-glass-highlight: rgba(255,255,255,.65);
+  --t-nav-highlight: rgba(255,255,255,.9);
+  --t-pglow-1: rgba(8,127,140,.16);
+  --t-pglow-2: rgba(36,169,181,.16);
+  --t-pglow-3: rgba(23,33,47,.08);
+  --t-glass-rgb: 255,255,255;
+  --t-primary-rgb: 7,118,131;
+  --t-shadow-rgb: 23,33,47;
+  --t-ink-rgb: 23,33,47;
+  --t-line-rgb: 23,33,47;
+}
+/* Type: Apple devices render SF Pro natively; a machine with SF Pro installed
+   locally picks it up by name; everything else falls back to Inter. SF Pro is
+   never bundled or served (Apple's license limits it to Apple platforms). */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", Inter, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+/* Settings icon tiles and switches (Parents App): the same in both themes,
+   as on iPhone. Kept out of the --t-* palettes above on purpose, so
+   contrast.test.js's light/dark token parity doesn't apply to them. */
+:root {
+  --tile-red: #FF3B30;
+  --tile-indigo: #5856D6;
+  --tile-blue: #007AFF;
+  --tile-green: #34C759;
+  --tile-orange: #FF9500;
+  --tile-teal: #077683;
+  --tile-grey: #8E8E93;
+  --on-tile: #FFFFFF;
+  --switch-knob: #FFFFFF;
+  --switch-shadow: rgba(0,0,0,.25);
+}
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --t-bg: #0B0F19;
+    --t-canvas: #0B0F19;
+    --t-surface: #101522;
+    --t-sidebar: #151A26;
+    --t-dialog: #151A26;
+    --t-menu: #1A2030;
+    --t-input-bg: #0E1320;
+    --t-border: #283040;
+    --t-border-strong: #343D50;
+    --t-control-border: #626F85;
+    --t-ink: #F5F7FA;
+    --t-muted: #939CAC;
+    --t-subtle: #B8C0CC;
+    --t-nav-ink: #A1AABA;
+    --t-placeholder: #8E97A8;
+    --t-primary: #24A9B5;
+    --t-primary-hover: #3BB8C3;
+    --t-primary-active: #1C96A1;
+    --t-primary-deep: #7DDDE5;
+    --t-on-primary: #061418;
+    --t-focus: #5CCFD9;
+    --t-present: #4CC38A;
+    --t-late: #F0A35A;
+    --t-absent: #F27B7B;
+    --t-excused: #A3B1C2;
+    --t-on-status: #0B0F19;
+    --t-danger: #F27B7B;
+    --t-danger-hover: #F59595;
+    --t-danger-text: #F5A3A3;
+    --t-warn-text: #F5C27A;
+    --t-info: #8AB4FF;
+    --t-selected: #232B3B;
+    --t-tint: #232B3B;
+    --t-tint-strong: #2A3446;
+    --t-tint-hover: #1A2130;
+    --t-feedback-bg: #2A1418;
+    --t-feedback-ink: #F5A3A3;
+    --t-success-bg: #0F2A1E;
+    --t-success-ink: #9FE0B8;
+    --t-warn-bg: #2B2111;
+    --t-warn-ink: #F5C27A;
+    --t-info-bg: #141F38;
+    --t-info-ink: #A9C7FF;
+    --t-disabled-bg: #1A2030;
+    --t-disabled-ink: #5D6677;
+    --t-tooltip-bg: #F5F7FA;
+    --t-tooltip-ink: #0B0F19;
+    --t-stat-icon: #939CAC;
+    --t-decor: #24A9B5;
+    --t-decor-mid: #1C8C96;
+    --t-decor-soft: #17636B;
+    --t-chart-track: #232B3B;
+    --t-bevel-top: #101522;
+    --t-bevel-bottom: #101522;
+    --t-bevel-hover-top: #1A2130;
+    --t-bevel-hover-bottom: #1A2130;
+    --t-bevel-edge: #283040;
+    --t-bevel-hi: #101522;
+    --t-hover: #1A2130;
+    --t-hover-strong: #232B3B;
+    --t-row-hover: #141A28;
+    --t-overlay: rgba(0,0,0,.6);
+    --t-glass-edge: rgba(255,255,255,.08);
+    --t-glass-highlight: rgba(255,255,255,.04);
+    --t-nav-highlight: rgba(255,255,255,.04);
+    --t-pglow-1: rgba(36,169,181,.10);
+    --t-pglow-2: rgba(36,169,181,.05);
+    --t-pglow-3: rgba(21,26,38,.6);
+    --t-glass-rgb: 21,26,38;
+    --t-primary-rgb: 36,169,181;
+    --t-shadow-rgb: 0,0,0;
+    --t-ink-rgb: 0,0,0;
+    --t-line-rgb: 147,156,172;
+  }
+  :root[data-theme="dark"] .theme-light-only { display: none !important; }
+  /* A printed document previewed on a dark page reads as a sheet of paper on a dark desk. */
+  :root[data-theme="dark"] .paper { background: var(--t-surface); color: var(--t-ink); border-radius: 12px; padding: 16px; }
+}
+:root:not([data-theme="dark"]) .theme-dark-only, .paper .theme-dark-only { display: none !important; }
+@media print { .theme-dark-only { display: none !important; } }
+
+body { background: var(--t-bg); color: var(--t-ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+/* Cross-fade while the store switches themes (shared/theme/theme.js adds the class for 250ms). */
+@media screen and (prefers-reduced-motion: no-preference) {
+  :root.theme-switching, :root.theme-switching *, :root.theme-switching *::before, :root.theme-switching *::after {
+    transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, fill 200ms ease, stroke 200ms ease !important;
+  }
+}

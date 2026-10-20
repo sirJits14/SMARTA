@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#F5F7FA" data-light="#F5F7FA" data-dark="#0B0F19" />
+    <script id="theme-boot">
+      // Applies the saved theme before first paint so the page never flashes the wrong
+      // colors. Same rules as shared/theme/theme.js; shared/theme/boot.test.js keeps them in step.
+      (function () {
+        var pref = 'auto', dark = false;
+        try { var v = localStorage.getItem('bnhs-theme'); if (v === 'auto' || v === 'light' || v === 'dark') pref = v; } catch (e) {}
+        try { dark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) {}
+        var theme = pref === 'dark' || (pref === 'auto' && dark) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        var color = meta && meta.getAttribute('data-' + theme);
+        if (color) meta.setAttribute('content', color);
+      })();
+    </script>
+    <title>BNHS Learner Records</title>
+    <link rel="icon" type="image/png" href="/src/assets/sims-favicon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <!-- iOS "Add to Home Screen" ignores the manifest's name and uses <title> unless this is set. -->
+    <meta name="apple-mobile-web-app-title" content="BNHS SIMS" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
