@@ -530,7 +530,7 @@ export default function AdviserSessionDetails({ sectionId, studentId, displayNam
 }
 ```
 
-Implementation notes for the engineer: (a) `Banner` tones — confirm `tone="info"` exists in `parent/src/components/ui.jsx`; if not use `tone="warn"`. (b) `lastKey` is declared after `undo` uses it only at call time, which is fine, but move the `useRef` above `undo` for readability. (c) Undo after Flag must send the new revision: `data.revision` is refreshed by the `setRetry` reload, and `undo` runs after the reload only if the user waits; to be safe have `undo` call `getSchoolLearnerAttendanceFn` first — simpler: disable the Undo button while `loading` (`disabled={loading}`), and render it only when `data.revision` has advanced. Use `disabled={loading}` on the Undo `Btn`.
+The Undo button is disabled while `loading`, so it always sends the revision that the post-save reload fetched.
 
 `LearnerHistory.jsx`:
 
