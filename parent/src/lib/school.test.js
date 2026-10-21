@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { callableMessage, schoolError, attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, ROLE_LABELS, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened, scopeLabel } from './school.js';
+import { callableMessage, schoolError, attendanceSections, correctionError, inboxDestination, sessionAction, correctionTime, REQUESTABLE_ROLES, ROLE_LABELS, REQUEST_STATUS, sectionsByGrade, manilaDay, openedToday, rememberOpened, scopeLabel, learnerPath } from './school.js';
 import { portalView, notificationDestination } from './nav.js';
 import { matchRoute } from './router.js';
 describe('school access presentation', () => {
@@ -82,5 +82,9 @@ describe('callableMessage', () => {
     expect(callableMessage({ message: 'Grade [7] only' })).toBe('Grade [7] only');
     expect(callableMessage({})).toBe('');
     expect(callableMessage(undefined)).toBe('');
+  });
+  it('builds the adviser learner history path with encoded ids', () => {
+    expect(learnerPath('SEC1', 'S1')).toBe('/school/learner/SEC1/S1');
+    expect(learnerPath('a b', 'c/d')).toBe('/school/learner/a%20b/c%2Fd');
   });
 });

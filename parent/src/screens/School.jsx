@@ -25,7 +25,7 @@ export default function School({ user, navigate }) {
       {resource.loading && !context && <Spinner label="Loading your class" />}
       {resource.error && <Banner tone="danger" action={<Btn variant="ghost" onClick={resource.refresh}>Try again</Btn>}>{resource.error}</Banner>}
       {context && hasClass(context) && sections.length === 0 && <EmptyState title="No advisory class yet" hint="An administrator assigns your class in SIMS." />}
-      {context && sections.length > 0 && <ClassTab key={context.schoolYear} sections={sections} ended={context.ended} />}
+      {context && sections.length > 0 && <ClassTab key={context.schoolYear} sections={sections} ended={context.ended} navigate={navigate} />}
     </>
   );
 }

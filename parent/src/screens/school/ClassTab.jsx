@@ -5,7 +5,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { auth, callable } from '../../firebase.js';
 import { recall, remember } from '../../hooks/useDoc.js';
 import { manilaDate, manilaTime, formatScanTime, formatDateLabel } from '../../../../shared/dates.js';
-import { schoolError, sectionLabel } from '../../lib/school.js';
+import { learnerPath, schoolError, sectionLabel } from '../../lib/school.js';
 import { groupRoster, enteredFor, sessionNow, hasTwoSessions, rosterSummary, runLimited, correctionInput, UNDO_REASON } from '../../lib/classSession.js';
 import { initials } from '../../lib/format.js';
 import { Banner, Btn, Inp, Sel, Spinner, EmptyState } from '../../components/ui.jsx';
@@ -18,7 +18,7 @@ const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
 const rosterKey = (sectionId, date) => `roster:${auth.currentUser?.uid || ''}:${sectionId}:${date}`;
 
-export default function ClassTab({ sections, ended }) {
+export default function ClassTab({ sections, ended, navigate }) {
   const today = manilaDate();
   const [sectionId, setSectionId] = useState(sections[0]?.id || '');
   const [date, setDate] = useState(today);
@@ -113,6 +113,8 @@ export default function ClassTab({ sections, ended }) {
     setSheetError(''); setSheet({ rows: [row], mode });
   };
 
+  const open = (row) => navigate(learnerPath(validSection, row.studentId));
+
   if (!validSection) return <EmptyState title="No advisory class yet" hint="An administrator assigns your class in SIMS." />;
   return (
     <div className="class-tab">
@@ -147,10 +149,10 @@ export default function ClassTab({ sections, ended }) {
       {roster && ended && <p className="class-note">This school year has ended. Attendance is view-only.</p>}
       {roster && (
         <>
-          <RowGroup title="In school" hint={groups.inSchool.length ? (canCorrect ? (selecting ? 'Tick each learner who isn’t in class, then Flag.' : 'Tap a learner who isn’t in class.') : null) : 'No gate entries yet for this session.'}
-            rows={groups.inSchool} session={session} selecting={selecting} selected={selected} onPick={canCorrect ? (row) => pick(row, 'flag') : null} />
-          <RowGroup title="Flagged" rows={groups.flagged} session={session} onPick={canCorrect ? (row) => pick(row, 'restore') : null} collapsible />
-          <RowGroup title="Absent or no gate entry" rows={groups.noEntry} session={session} collapsible />
+          <RowGroup title="In school" hint={groups.inSchool.length ? (canCorrect ? (selecting ? 'Tick each learner who isn’t in class, then Flag.' : 'Tap a learner for history, or Flag one who isn’t in class.') : null) : 'No gate entries yet for this session.'}
+            rows={groups.inSchool} session={session} selecting={selecting} selected={selected} onPick={canCorrect ? (row) => pick(row, 'flag') : null} onOpen={open} flagLabel="Flag" />
+          <RowGroup title="Flagged" rows={groups.flagged} session={session} onPick={canCorrect ? (row) => pick(row, 'restore') : null} onOpen={open} flagLabel="Restore" collapsible />
+          <RowGroup title="Absent or no gate entry" rows={groups.noEntry} session={session} onOpen={open} collapsible />
         </>
       )}
       {selecting && (
@@ -169,11 +171,11 @@ export default function ClassTab({ sections, ended }) {
   );
 }
 
-function RowGroup({ title, hint, rows, session, selecting = false, selected, onPick, collapsible = false }) {
+function RowGroup({ title, hint, rows, session, selecting = false, selected, onPick, onOpen, flagLabel, collapsible = false }) {
   if (collapsible && !rows.length) return null;
   const list = (
     <ul className="learner-list class-list" aria-label={title}>
-      {rows.map((row) => <ClassRow key={row.studentId} row={row} session={session} selecting={selecting} checked={Boolean(selected?.has(row.studentId))} onPick={onPick ? () => onPick(row) : null} />)}
+      {rows.map((row) => <ClassRow key={row.studentId} row={row} session={session} selecting={selecting} checked={Boolean(selected?.has(row.studentId))} onPick={onPick ? () => onPick(row) : null} onOpen={() => onOpen(row)} flagLabel={flagLabel} />)}
     </ul>
   );
   if (collapsible) {
@@ -190,7 +192,7 @@ function RowGroup({ title, hint, rows, session, selecting = false, selected, onP
 
 const flagReason = (reason) => (reason || '').replace(/^Not in class(?::\s*|$)/, '');
 
-function ClassRow({ row, session, selecting, checked, onPick }) {
+function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel }) {
   const status = row[session] || {};
   const entered = enteredFor(row, session);
   const preview = status.overrideActive
@@ -211,6 +213,12 @@ function ClassRow({ row, session, selecting, checked, onPick }) {
       </span>
     </>
   );
-  if (!onPick) return <li className="learner-row">{body}</li>;
-  return <li><button type="button" className="learner-row" aria-pressed={selecting ? checked : undefined} onClick={onPick}>{body}</button></li>;
+  // Selecting: the row toggles. Otherwise it opens the history, with a trailing single-learner Flag/Restore.
+  if (selecting && onPick) return <li><button type="button" className="learner-row" aria-pressed={checked} onClick={onPick}>{body}</button></li>;
+  return (
+    <li className="class-row">
+      <button type="button" className="learner-row" onClick={onOpen} aria-label={`${row.displayName} history`}>{body}</button>
+      {onPick && <button type="button" className="class-link class-row-flag" onClick={onPick} aria-label={`${flagLabel} ${row.displayName}`}>{flagLabel}</button>}
+    </li>
+  );
 }
