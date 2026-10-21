@@ -4,9 +4,10 @@ import { T, S } from '../../../styles.js';
 import { ROLE_LABELS, scopeLabel, sectionLabel } from '../../../../parent/src/lib/school.js';
 import { assignmentFromLegacy, legacyAdviserRows, relativeAge, requestFlags } from '../../../lib/schoolAssignments.js';
 import LegacyAdvisers from '../LegacyAdvisers.jsx';
+import { capsName, personLabel } from '../../../lib/roster.js';
 
 const muted = { fontSize: 13, color: T.inkMuted };
-const who = person => person.displayName || person.email;
+const who = personLabel;
 
 // Oldest first. Conflicting requests offer Replace instead of Approve and cannot be bulk-selected.
 export default function PendingView({ school, onUseLegacy, focusId }) {
@@ -92,7 +93,7 @@ export default function PendingView({ school, onUseLegacy, focusId }) {
       <h3 style={S.h2}>Old adviser slips to confirm{legacyOpen ? ` (${legacyOpen})` : ''}</h3>
       <p style={muted}>Old adviser links grant no school access. Confirm each teacher's class, then assign.</p>
       <LegacyAdvisers rows={legacy} sections={sections} disabled={disabled}
-        onUse={row => onUseLegacy({ ...assignmentFromLegacy(row), source: 'legacy', name: row.name || row.email })} />
+        onUse={row => onUseLegacy({ ...assignmentFromLegacy(row), source: 'legacy', name: row.name ? capsName(row.name) : row.email })} />
     </Card>
   </>;
 }

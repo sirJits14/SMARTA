@@ -11,6 +11,7 @@ import { manilaDate, formatScanTime, schoolYearStartDate } from '../../shared/da
 import { sectionLabel, schoolError } from '../../parent/src/lib/school.js';
 import { FLAG_REASONS, RESTORE_REASONS, reasonText, correctionInput } from '../../parent/src/lib/classSession.js';
 import { reasonDetail, reviewSections, reviewSessions, sessionCell, sessionName } from '../lib/sessionReview.js';
+import { capsName } from '../lib/roster.js';
 
 const invoke = async (name, data) => (await httpsCallable(functions, name)(data)).data;
 const cellStyle = { padding: '12px 16px', verticalAlign: 'top', borderBottom: `1px solid ${T.border}` };
@@ -71,7 +72,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
     try {
       await invoke('setSessionAbsenceFn', correctionInput({ sectionId: activeSection, date, session: edit.session, row: edit.row, absent: edit.absent,
         reason: reasonText(chosen, note), operationId: crypto.randomUUID() }));
-      setNotice(`${edit.row.displayName} · ${sessionName(edit.session, sessions)} ${edit.absent ? 'marked not in class' : 'restored'}. If the change stands, families get a neutral update after two minutes.`);
+      setNotice(`${capsName(edit.row.displayName)} · ${sessionName(edit.session, sessions)} ${edit.absent ? 'marked not in class' : 'restored'}. If the change stands, families get a neutral update after two minutes.`);
       setEdit(null); setReload((n) => n + 1);
     } catch (e) { setError(schoolError(e)); setEdit(null); setReload((n) => n + 1); } finally { setSaving(false); }
   };
@@ -97,7 +98,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead><tr>{['Learner', ...sessions.map((session) => sessionName(session, sessions))].map((label) => <th key={label} scope="col" style={{ ...cellStyle, textAlign: 'left', fontSize: 12, fontWeight: 500, color: T.inkMuted }}>{label}</th>)}</tr></thead>
           <tbody>{roster.rows.map((row) => <tr key={row.studentId}>
-            <th scope="row" style={{ ...cellStyle, textAlign: 'left', fontWeight: 500 }}>{row.displayName}</th>
+            <th scope="row" style={{ ...cellStyle, textAlign: 'left', fontWeight: 500 }}>{capsName(row.displayName)}</th>
             {sessions.map((session) => {
               const cell = sessionCell(row, session);
               const canChange = canCorrect && (cell.flagged || row[session]?.status !== 'A');
@@ -113,7 +114,7 @@ export default function SessionReviewPage({ me, schoolYear }) {
     </Card>}
     {edit && <Card ref={formCard} style={{ padding: 20, marginTop: 18 }}>
       <form onSubmit={submit} aria-labelledby="session-edit-title">
-        <h3 id="session-edit-title" style={{ margin: '0 0 12px' }}>{edit.row.displayName} · {sessionName(edit.session, sessions)} · {edit.absent ? 'Not in class' : 'Restore'}</h3>
+        <h3 id="session-edit-title" style={{ margin: '0 0 12px' }}>{capsName(edit.row.displayName)} · {sessionName(edit.session, sessions)} · {edit.absent ? 'Not in class' : 'Restore'}</h3>
         <Field label="Reason"><Sel value={reason} onChange={(e) => setReason(e.target.value)}>{(edit.absent ? FLAG_REASONS : RESTORE_REASONS).map((r) => <option key={r} value={r}>{r}</option>)}<option value="other">Other reason…</option></Sel></Field>
         {reason === 'other' && <Field label="Other reason"><Inp autoFocus required maxLength={200} value={other} onChange={(e) => setOther(e.target.value)} /></Field>}
         <Field label="Note (optional)"><Inp maxLength={250} value={note} onChange={(e) => setNote(e.target.value)} /></Field>

@@ -1,5 +1,5 @@
 import { Modal, Btn, EmptyState } from '../components/ui.jsx';
-import { fullName } from '../lib/roster.js';
+import { capsName, fullName } from '../lib/roster.js';
 import { T, S } from '../styles.js';
 
 const sectionLabel = (s) => `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}`;
@@ -10,7 +10,7 @@ export default function SectionDetailModal({ section, roster, onClose, onEditStu
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
         <div>
           <h2 id="section-detail-title" style={{ fontFamily: T.display, color: T.ink, margin: 0, fontSize: 17, fontWeight: 600 }}>{sectionLabel(section)}</h2>
-          <div style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, marginTop: 4 }}>{section.adviserName || 'No adviser assigned'} · {roster.length} enrolled</div>
+          <div style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, marginTop: 4 }}>{capsName(section.adviserName) || 'No adviser assigned'} · {roster.length} enrolled</div>
         </div>
         {onPrint && roster.length > 0 && (
           <Btn onClick={onPrint} disabled={!printReady}>

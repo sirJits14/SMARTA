@@ -5,6 +5,7 @@ import { commitImportPlan } from '../data/studentImport.js';
 import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S } from '../styles.js';
 import { Btn, Modal, EmptyState } from '../components/ui.jsx';
+import { capsName } from '../lib/roster.js';
 
 const KIND_LABEL = { new: 'New', update: 'Update', error: 'Error' };
 const KIND_COLOR = { new: T.present, update: T.primary, error: T.absent };
@@ -96,7 +97,7 @@ export default function ImportStudentsWizard({ students, sections, schoolYear, o
                   <td style={S.td}>{r.rowNumber}</td>
                   <td style={{ ...S.td, color: KIND_COLOR[r.kind], fontWeight: 600 }}>{KIND_LABEL[r.kind]}</td>
                   <td style={{ ...S.td, ...T.num }}>{r.student?.lrn || '—'}</td>
-                  <td style={S.td}>{r.student ? `${r.student.lastName}, ${r.student.firstName}` : '—'}</td>
+                  <td style={S.td}>{r.student ? capsName(`${r.student.lastName}, ${r.student.firstName}`) : '—'}</td>
                   <td style={S.td}>{r.gradeLevel ?? '—'}</td>
                   <td style={S.td}>{r.sectionName ?? '—'}</td>
                   <td style={{ ...S.td, color: T.inkMuted }}>{r.errors ? Object.values(r.errors).join(' ') : ''}</td>

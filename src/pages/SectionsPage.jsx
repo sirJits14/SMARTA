@@ -7,7 +7,7 @@ import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { createSection, updateSection, deleteSection } from '../data/sections.js';
 import { getCoordinatorSectionOptions, updateCoordinatorSection } from '../data/coordinatorSections.js';
 import { GRADES, isSHS, TRACKS, STRANDS } from '../lib/constants.js';
-import { alphabeticalSort, depedSort } from '../lib/roster.js';
+import { alphabeticalSort, capsName, depedSort } from '../lib/roster.js';
 import { sectionMatches } from '../lib/search.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Sel, Field, Modal, Card, Confirm, EmptyState, RowMenu } from '../components/ui.jsx';
@@ -89,7 +89,7 @@ export function SectionForm({ editing, schoolYear, schedules, onClose, restricte
           </Field>
         </div>
       )}
-      <Field label="Adviser name"><Inp readOnly={adviserManaged} aria-describedby={adviserManaged ? 'section-adviser-source' : undefined} value={adviserManaged ? editing.adviserName || '' : f.adviserName || ''} onChange={(e) => set('adviserName', e.target.value)} /></Field>
+      <Field label="Adviser name"><Inp className="sims-caps" readOnly={adviserManaged} aria-describedby={adviserManaged ? 'section-adviser-source' : undefined} value={adviserManaged ? editing.adviserName || '' : f.adviserName || ''} onChange={(e) => set('adviserName', e.target.value)} /></Field>
       {adviserManaged && <p id="section-adviser-source" style={{ color: T.inkMuted, fontSize: 12 }}>Synced from School Access. Change the Class Adviser assignment there.</p>}
       <ResourceState resources={restricted ? [{ ...options, retry: () => setOptionsAttempt(value => value + 1) }] : []} label="available schedules">
       <Field label="Schedule / shift">
@@ -280,7 +280,7 @@ export default function SectionsPage({ me, schoolYear }) {
                     <td style={S.tdStrong}>{canViewRoster ? <button className="sims-section-link" aria-label={`View ${s.name} section details`} onClick={(event) => { event.stopPropagation(); setDetailSection(s); }}><span>{s.name}</span><span aria-hidden="true">›</span></button> : s.name}</td>
                     <td style={S.td}>{s.strand || '—'}</td>
                     <td style={S.td}>
-                      <div>{s.adviserName || '—'}</div>
+                      <div>{capsName(s.adviserName) || '—'}</div>
                       {canViewRoster && <div style={{ fontSize: 12, color: T.inkMuted }}>{adviserStatusText(advisory.bySection.get(s.id))}</div>}
                     </td>
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>

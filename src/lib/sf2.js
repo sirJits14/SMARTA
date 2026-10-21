@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import sf2TemplateUrl from '../assets/sf2-template.xlsx?url';
-import { fullName } from './roster.js';
+import { capsName, fullName } from './roster.js';
 import { splitByGender, rowsFor, dailyTallies, summaryFigures, mondayAlignmentOffset } from './sf2Template.js';
 
 const DAY_LETTER = ['S', 'M', 'T', 'W', 'TH', 'F', 'S']; // Date#getDay() index 0=Sun..6=Sat
@@ -139,7 +139,7 @@ function fillSheet(ws, { section, male, female, schoolDays, docsByDate, monthLab
   cell('AC64').value = monthLabelText;
   cell('AG64').value = schoolDays.length;
 
-  cell('AD88').value = section.adviserName || '';
+  cell('AD88').value = capsName(section.adviserName);
 }
 
 export async function buildSF2Workbook({ section, roster, schoolDays, docsByDate, monthLabelText, schoolId, schoolName, enrolledAsOfCutoff }) {

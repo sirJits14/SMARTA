@@ -24,9 +24,9 @@ const tests=[['Section details have a keyboard button',async()=>{await scenario(
   assert([...host.querySelectorAll('span')].filter(n=>n.textContent==='Printed').length===1,'Expected one Printed tag (s0)');}]
 ,['Search offers enrolled learners not in the batch, and Add clears the search',async()=>{await openBatch();
   await fill(input('Add a learner'),'Learner 004');
-  const add=host.querySelector('button[aria-label="Add Synthetic, Learner 004"]');assert(add,'Search did not offer Learner 004');
-  await fill(input('Add a learner'),'Learner 003');assert(!host.querySelector('button[aria-label="Add Synthetic, Learner 003"]'),'Search offered a learner already in the batch');
-  await fill(input('Add a learner'),'Learner 004');await click(host.querySelector('button[aria-label="Add Synthetic, Learner 004"]'));
+  const add=host.querySelector('button[aria-label="Add SYNTHETIC, LEARNER 004"]');assert(add,'Search did not offer Learner 004');
+  await fill(input('Add a learner'),'Learner 003');assert(!host.querySelector('button[aria-label="Add SYNTHETIC, LEARNER 003"]'),'Search offered a learner already in the batch');
+  await fill(input('Add a learner'),'Learner 004');await click(host.querySelector('button[aria-label="Add SYNTHETIC, LEARNER 004"]'));
   assert(input('Add a learner').value==='','Add did not clear the search');}]
 ,['Printing the batch asks before marking, and both answers close the dialog',async()=>{const print=stubPrint();try{await openBatch();
   await waitFor(()=>button('Print')&&!button('Print').disabled,'Print never became ready');

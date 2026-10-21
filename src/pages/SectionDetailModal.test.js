@@ -10,7 +10,7 @@ const roster = [{ id: 'a', lrn: '123456789012', firstName: 'Ana', lastName: 'Cru
 describe('SectionDetailModal', () => {
   it('is view-only without print or edit actions (coordinators)', () => {
     const html = renderToStaticMarkup(h(SectionDetailModal, { section, roster, onClose: vi.fn() }));
-    expect(html).toContain('Cruz');
+    expect(html).toContain('CRUZ');
     expect(html).not.toContain('Print QR Codes');
     expect(html).not.toContain('>Edit<');
   });

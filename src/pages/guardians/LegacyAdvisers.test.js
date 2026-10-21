@@ -10,7 +10,7 @@ const row = { guardianUid: 't1', email: 't1@deped.gov.ph', name: 'Ana Cruz', lea
 describe('LegacyAdvisers', () => {
   it('shows one row per teacher with the likely section and a form shortcut', () => {
     const html = renderToStaticMarkup(h(LegacyAdvisers, { rows: [row], sections, disabled: false, onUse: () => {} }));
-    expect(html).toContain('Ana Cruz');
+    expect(html).toContain('ANA CRUZ');
     expect(html).toContain('38 learner links');
     expect(html).toContain('Likely Grade 8 · Mabini');
     expect(html).toContain('Use in form');

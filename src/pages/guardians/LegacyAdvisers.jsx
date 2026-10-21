@@ -1,6 +1,7 @@
 import { Btn } from '../../components/ui.jsx';
 import { T } from '../../styles.js';
 import { sectionLabel } from '../../../parent/src/lib/school.js';
+import { capsName } from '../../lib/roster.js';
 
 // Old adviser slips grant nothing now. Each teacher who used one appears once,
 // with the class most of their learners are in, so an administrator can
@@ -15,7 +16,7 @@ export default function LegacyAdvisers({ rows, sections, disabled, onUse }) {
         return (
           <li key={row.guardianUid} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 0', borderTop: `1px solid ${T.border}` }}>
             <span style={{ minWidth: 0 }}>
-              <strong>{row.name || row.email || 'Unnamed account'}</strong><br />
+              <strong>{row.name ? capsName(row.name) : row.email || 'Unnamed account'}</strong><br />
               <span style={{ fontSize: 13, color: T.inkMuted, overflowWrap: 'anywhere' }}>{details.filter(Boolean).join(' · ')}</span>
             </span>
             {row.assigned
