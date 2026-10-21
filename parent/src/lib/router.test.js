@@ -10,6 +10,8 @@ describe('matchRoute', () => {
     expect(matchRoute('/activate', '?c=K7M4P2XQ')).toEqual({ name: 'activate', params: {}, query: { c: 'K7M4P2XQ' } });
     expect(matchRoute('/join', '?a=ABCD2345')).toEqual({ name: 'join', params: {}, query: { a: 'ABCD2345' } });
     expect(matchRoute('/learner/S1', '')).toEqual({ name: 'learner', params: { id: 'S1' }, query: {} });
+    expect(matchRoute('/school/learner/SEC1/S1', '')).toEqual({ name: 'schoolLearner', params: { sectionId: 'SEC1', studentId: 'S1' }, query: {} });
+    expect(matchRoute('/school', '').name).toBe('school');
     expect(matchRoute('/inbox', '?item=k1_S1_202609210712')).toEqual({ name: 'inbox', params: {}, query: { item: 'k1_S1_202609210712' } });
     expect(matchRoute('/report/k1_S1_202609210712', '?student=S1').params).toEqual({ eventId: 'k1_S1_202609210712' });
     expect(matchRoute('/request-access', '').name).toBe('requestAccess');

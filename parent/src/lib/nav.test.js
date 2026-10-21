@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NAV_TABS, navTabs, activeTab, showsAppTitle } from './nav.js';
+import { NAV_TABS, navTabs, portalView, activeTab, showsAppTitle } from './nav.js';
 import { matchRoute } from './router.js';
 
 describe('NAV_TABS', () => {
@@ -59,6 +59,14 @@ describe('route drift guard', () => {
     for (const tab of NAV_TABS) {
       expect(activeTab(matchRoute(tab.path).name)).toBe(tab.key);
     }
+  });
+});
+
+describe('adviser learner history', () => {
+  it('treats the adviser learner history as part of the Class tab', () => {
+    expect(portalView({ name: 'schoolLearner', query: {} })).toBe('school');
+    expect(activeTab('schoolLearner')).toBe('class');
+    expect(showsAppTitle('schoolLearner')).toBe(false);
   });
 });
 
