@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, auth, clearAll, clearAllAuthUsers, seedSchool, fakeMessaging, scanDoc } from './helpers.js';
-import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from '../../src/handlers/sessionAttendance.js';
+import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from '../../src/handlers/sessionAttendance.js';
 import { applyScanAttendance } from '../../src/handlers/scanAttendance.js';
 
 const now = () => new Date('2026-09-21T10:00:00+08:00');
@@ -159,5 +159,34 @@ describe('session corrections', () => {
       .toEqual({ timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:30' });
     await db().doc('sections/SEC1').update({ scheduleId: 'MISSING' });
     expect((await getSchoolRoster(deps(), { sectionId: 'SEC1', date: '2026-09-21' })).schedule).toBeNull();
+  });
+});
+
+describe('adviser learner attendance', () => {
+  const day = (uid = 'teacher', over = {}) => getSchoolLearnerAttendance(deps(uid), { sectionId: 'SEC1', studentId: 'S1', date: '2026-09-21', ...over });
+  it('returns the family shape plus canCorrect for the section adviser', async () => {
+    const result = await day();
+    expect(result).toMatchObject({ studentId: 'S1', date: '2026-09-21', sectionId: 'SEC1', schoolYear: '2026-2027', gate: { timeIn: '08:12' }, am: { status: 'L' }, canCorrect: true, revision: 0 });
+  });
+  it('is view-only for past days and shows an active flag with its actor', async () => {
+    await setSessionAbsence(deps(), input());
+    const today = await day();
+    expect(today.am).toMatchObject({ status: 'A', overrideActive: true, reason: 'Left class after arrival' });
+    expect(today.revision).toBe(1);
+    await db().doc('student_attendance/SEC1_2026-09-20').set({ sectionId: 'SEC1', schoolYear: '2026-2027', gradeLevel: 7, date: '2026-09-20', marks: { S1: 'P' } });
+    expect((await day('teacher', { date: '2026-09-20' })).canCorrect).toBe(false);
+  });
+  it('rejects advisers of other sections, subject accounts and learners not enrolled in the section', async () => {
+    for (const uid of ['other', 'subject']) await expect(day(uid)).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(day('teacher', { studentId: 'S2' })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(day('teacher', { studentId: 'bad id' })).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+  it('lets admins and the grade curriculum adviser read it', async () => {
+    expect((await day('admin')).studentId).toBe('S1');
+    expect((await day('curriculum')).studentId).toBe('S1');
+  });
+  it('matches the guardian projection for the same learner and day', async () => {
+    const { canCorrect, ...adviser } = await day();
+    expect(adviser).toEqual(await getFamilyAttendance(deps('gA'), { studentId: 'S1', date: '2026-09-21' }));
   });
 });

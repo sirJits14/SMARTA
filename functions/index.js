@@ -22,7 +22,7 @@ import { issueAdvisorySlips, revokeAdvisorySlip, listAdvisoryStatus, previewAdvi
 import { activateFamilyCode } from './src/handlers/portalAccess.js';
 import { getSchoolContext, requestSchoolRole, setAdvisoryRequestsEnabled, withdrawSchoolRequest, resolveSchoolRole, resolveSchoolRoles, replaceAdviser, assignSchoolRole, revokeSchoolRole, markSchoolOpened, getSchoolPendingCount } from './src/handlers/schoolAccess.js';
 import { retireSubjectTeachers } from './src/handlers/retireSubjectTeachers.js';
-import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
+import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
@@ -119,6 +119,7 @@ export const redeemAdvisorySlipFn = schoolCall(redeemAdvisorySlip);
 export const getSchoolRosterFn = schoolCall(getSchoolRoster);
 export const setSessionAbsenceFn = schoolCall(setSessionAbsence);
 export const getFamilyAttendanceFn = guardianCall(getFamilyAttendance);
+export const getSchoolLearnerAttendanceFn = schoolCall(getSchoolLearnerAttendance);
 export const getPortalAnnouncementsFn = schoolCall(getPortalAnnouncements);
 export const getPortalAnnouncementFn = schoolCall(getPortalAnnouncement);
 export const savePortalAnnouncementFn = staffCall(savePortalAnnouncement);
