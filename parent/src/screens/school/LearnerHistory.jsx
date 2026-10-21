@@ -30,30 +30,40 @@ export default function LearnerHistory({ sectionId, studentId, navigate }) {
   const [rows, setRows] = useState([]);
   const [cursor, setCursor] = useState(null); // opaque; passed back unchanged
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // fatal: nothing loaded yet
+  const [warning, setWarning] = useState(null); // { text, after }: a refresh or older page failed
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const keepFromBottom = useRef(null);
   const sequence = useRef(0);
+  const loaded = useRef(false);
 
   const load = useCallback(async (after) => {
     const request = ++sequence.current;
     setBusy(true);
     try {
       const { data } = await callable('getSchoolLearnerHistoryFn')({ sectionId, studentId, cursor: after });
-      if (request !== sequence.current) return;
+      if (request !== sequence.current) { keepFromBottom.current = null; return; }
+      loaded.current = true;
       setLearner(data.learner);
       setRows((current) => (after ? [...current, ...data.events] : data.events));
       setCursor(data.nextCursor);
       setError('');
+      setWarning(null);
     } catch (e) {
+      keepFromBottom.current = null;
       if (request === sequence.current) {
-        setError(['functions/permission-denied', 'functions/not-found'].includes(e?.code) ? S.adviserNotInClass : schoolError(e));
-        setLearner(null);
+        const text = ['functions/permission-denied', 'functions/not-found'].includes(e?.code) ? S.adviserNotInClass : schoolError(e);
+        if (loaded.current) setWarning({ text, after });
+        else { setError(text); setLearner(null); }
       }
     }
     finally { if (request === sequence.current) setBusy(false); }
   }, [sectionId, studentId]);
-  useEffect(() => { setLearner(undefined); setRows([]); load(null); return () => { ++sequence.current; }; }, [load]);
+  useEffect(() => {
+    loaded.current = false; keepFromBottom.current = null;
+    setLearner(undefined); setRows([]); setCursor(null); setError(''); setWarning(null);
+    load(null); return () => { ++sequence.current; };
+  }, [load]);
 
   const loadOlder = () => { keepFromBottom.current = document.documentElement.scrollHeight - window.scrollY; load(cursor); };
   useLayoutEffect(() => {
@@ -82,6 +92,7 @@ export default function LearnerHistory({ sectionId, studentId, navigate }) {
       {error ? <Banner tone="warn" action={<Btn variant="ghost" onClick={back}>Back to class</Btn>}>{error}</Banner>
         : learner === undefined ? <Spinner label={S.loading} />
           : <div className="learner-history">
+            {warning && <Banner tone="warn" action={<Btn variant="ghost" disabled={busy} onClick={() => load(warning.after)}>Retry</Btn>}>{warning.text}</Banner>}
             {cursor && rows.length > 0 && <Btn variant="ghost" disabled={busy} onClick={loadOlder} style={{ width: '100%' }}>{S.historyLoadOlder}</Btn>}
             {rows.length === 0 && !busy && <EmptyState title={S.historyEmpty} />}
             {historyThread(rows, today).map((day) => (

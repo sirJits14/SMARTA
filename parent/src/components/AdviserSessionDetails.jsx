@@ -21,7 +21,8 @@ export default function AdviserSessionDetails({ sectionId, studentId, displayNam
   const [sheet, setSheet] = useState(null); // { key, mode }
   const [saving, setSaving] = useState(false);
   const [sheetError, setSheetError] = useState('');
-  const [notice, setNotice] = useState(null); // { key, text, undoable }
+  const [notice, setNotice] = useState(null); // { key, date, text, undoable }
+  const [actionError, setActionError] = useState(''); // survives reloads, unlike `error`
   const sequence = useRef(0);
   const saveLock = useRef(false);
   useEffect(() => {
@@ -35,17 +36,20 @@ export default function AdviserSessionDetails({ sectionId, studentId, displayNam
     return () => { ++sequence.current; };
   }, [sectionId, studentId, date, retry]);
 
-  const save = useCallback((key, absent, reason) => callable('setSessionAbsenceFn')(
-    correctionInput({ sectionId, date, session: key, row: { studentId, revision: data.revision }, absent, reason, operationId: crypto.randomUUID() }),
-  ), [sectionId, studentId, date, data]);
+  const save = useCallback((day, key, absent, reason) => callable('setSessionAbsenceFn')(
+    correctionInput({ sectionId, date: day, session: key, row: { studentId, revision: data.revision }, absent, reason, operationId: crypto.randomUUID() }),
+  ), [sectionId, studentId, data]);
+
+  // A different day starts clean: no stale rows, revision, notice or error.
+  const changeDate = (value) => { setDate(value); setData(null); setNotice(null); setActionError(''); };
 
   const confirm = async (reason) => {
     if (!sheet || saveLock.current) return;
-    saveLock.current = true; setSaving(true); setSheetError('');
+    saveLock.current = true; setSaving(true); setSheetError(''); setActionError('');
     const absent = sheet.mode === 'flag';
     try {
-      await save(sheet.key, absent, reason);
-      setNotice({ key: sheet.key, text: absent ? 'Flagged. Families are told after two minutes unless you undo.' : 'Restored.', undoable: absent });
+      await save(date, sheet.key, absent, reason);
+      setNotice({ key: sheet.key, date, text: absent ? 'Flagged. Families are told after two minutes unless you undo.' : 'Restored.', undoable: absent });
       setSheet(null);
       setRetry(n => n + 1); onChanged?.();
     } catch (e) {
@@ -56,8 +60,9 @@ export default function AdviserSessionDetails({ sectionId, studentId, displayNam
 
   // Undo is offered only after the reload has brought back the new revision.
   const undo = async () => {
-    const key = notice.key; setNotice(null);
-    try { await save(key, false, UNDO_REASON); } catch (e) { setError(schoolError(e)); }
+    const pending = notice; setNotice(null); setActionError('');
+    try { await save(pending.date, pending.key, false, UNDO_REASON); }
+    catch (e) { setActionError(schoolError(e)); setNotice(pending); }
     setRetry(n => n + 1); onChanged?.();
   };
 
@@ -70,9 +75,10 @@ export default function AdviserSessionDetails({ sectionId, studentId, displayNam
   };
 
   return <>
-    <Field label="School day · Manila"><Inp type="date" value={date} max={manilaDate()} onChange={e => setDate(e.target.value)} /></Field>
+    <Field label="School day · Manila"><Inp type="date" value={date} max={manilaDate()} onChange={e => changeDate(e.target.value)} /></Field>
     {loading && !data && <Spinner label="Loading session attendance" />}
     {error && <Banner tone="danger" action={<Btn variant="ghost" onClick={() => setRetry(n => n + 1)}>Try again</Btn>}>{error}</Banner>}
+    {actionError && <Banner tone="danger">{actionError}</Banner>}
     {notice && <Banner tone="warn" action={notice.undoable ? <Btn variant="ghost" disabled={loading} onClick={undo}>Undo</Btn> : null}>{notice.text}</Banner>}
     {data && <SessionRows data={data} renderAction={renderAction} />}
     {data && !data.canCorrect && date !== manilaDate() && <p className="family-session-note">{S.adviserViewOnly}</p>}
