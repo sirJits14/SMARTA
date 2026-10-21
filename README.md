@@ -143,6 +143,17 @@ manage kiosk devices and guardian access, and review reports.
    device in at its `/setup` route — the parent app has no `/setup` route
    of its own, that page only exists in the kiosk app.
 
+**Parent production deployment:**
+
+Fetch and check out the latest merged `origin/master`, then run `npm run deploy:parent`.
+The Hosting predeploy hook requires that exact revision, verifies it includes PR #74's
+UI/UX, and rebuilds `parent/dist` with production configuration before uploading.
+It also checks the initial-load size budget. Never reuse a bundle built from an older
+commit for a text-only change. In a worktree, set `PARENT_ENV_DIR` to the directory
+containing the existing production Parent `.env`; otherwise `parent/` is used.
+After publication, compare the live HTML and assets against the fresh build and record
+the source revision under `docs/audits/deployments/`.
+
 **Testing:**
 - Run all tests (root, functions, parent, and emulator-backed rules tests):
   ```bash

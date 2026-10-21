@@ -20,6 +20,7 @@
     {
       "target": "parent",
       "public": "parent/dist",
+      "predeploy": ["node scripts/buildParentRelease.mjs"],
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [{ "source": "**", "destination": "/index.html" }],
       "headers": [
