@@ -11,11 +11,11 @@ export const navTabs = (view, hasClass = true) => view === 'school' ? [
   { key: 'notices', path: '/announcements?view=school' },
   { key: 'settings', path: '/settings?view=school' },
 ] : NAV_TABS;
-export const portalView = (route) => route.name === 'school' || (['announcements', 'announcement', 'settings'].includes(route.name) && route.query?.view === 'school') ? 'school' : 'family';
+export const portalView = (route) => route.name === 'school' || route.name === 'schoolLearner' || (['announcements', 'announcement', 'settings'].includes(route.name) && route.query?.view === 'school') ? 'school' : 'family';
 export const notificationDestination = (data) => data?.announcementId ? `/announcements/${encodeURIComponent(data.announcementId)}${data.view === 'school' ? '?view=school' : ''}` : '/inbox';
 
 const ROUTE_TAB = {
-  home: 'home', school: 'class', learner: 'home', report: 'home', // a report is opened from a learner's history
+  home: 'home', school: 'class', schoolLearner: 'class', learner: 'home', report: 'home', // a report is opened from a learner's history
   announcements: 'notices', announcement: 'notices',
   inbox: 'inbox',
   settings: 'settings',
@@ -24,5 +24,5 @@ const ROUTE_TAB = {
 export const activeTab = (routeName) => ROUTE_TAB[routeName] ?? null;
 
 // Screens that draw their own PageHeader drop the app-name line above it.
-const OWN_HEADER = new Set(['home', 'school', 'learner', 'inbox', 'settings', 'announcements', 'announcement']);
+const OWN_HEADER = new Set(['home', 'school', 'schoolLearner', 'learner','inbox', 'settings', 'announcements', 'announcement']);
 export const showsAppTitle = (routeName) => !OWN_HEADER.has(routeName);

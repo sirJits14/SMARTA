@@ -40,13 +40,14 @@ const RequestAccess = routeScreen(() => import('./screens/RequestAccess.jsx'));
 const Settings = routeScreen(() => import('./screens/Settings.jsx'));
 const Announcements = routeScreen(() => import('./screens/Announcements.jsx'));
 const AnnouncementDetail = routeScreen(() => import('./screens/AnnouncementDetail.jsx'));
+const LearnerHistory = routeScreen(() => import('./screens/school/LearnerHistory.jsx'));
 const School = routeScreen(() => import('./screens/School.jsx'));
 const APP_SCREENS = [Home, History, Inbox, Report, Settings, Announcements, AnnouncementDetail];
 
 const CONSENT_KEY = 'bnhs-parent-consent';
 const hasLocalConsent = () => { try { return localStorage.getItem(CONSENT_KEY) !== null; } catch { return false; } };
 // App routes an account without a profile cannot open yet; it registers through /join first.
-const GATED = ['home', 'school', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'];
+const GATED = ['home', 'school', 'schoolLearner', 'learner', 'inbox', 'settings', 'report', 'announcements', 'announcement'];
 
 export default function App() {
   const { route, navigate } = useRoute();
@@ -161,6 +162,7 @@ export default function App() {
     case 'school': screen = <School {...props} />; break;
     case 'consent': screen = <Consent {...props} onAccepted={toJoin} />; break;
     case 'join': case 'activate': screen = <Join {...props} />; break;
+    case 'schoolLearner': screen = <LearnerHistory {...props} sectionId={route.params.sectionId} studentId={route.params.studentId} />; break;
     case 'learner': screen = <History {...props} studentId={route.params.id} />; break;
     case 'inbox': screen = <Inbox {...props} />; break;
     case 'announcements': screen = <Announcements {...props} />; break;

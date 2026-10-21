@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { loadSchoolActor } from './schoolAccess.js';
 import { canReviewSection, canCorrectSession } from '../../shared/schoolAccess.js';
@@ -10,6 +10,8 @@ import { logWarn } from '../log.js';
 import { nextNotice, NOTIFY_DELAY_MS } from '../lib/attendanceNotice.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
+// A document id used only as a startAfter value (never a path): any non-empty id without '/'.
+const cursorId = value => typeof value === 'string' && value.length > 0 && value.length <= 1500 && !value.includes('/');
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 function validateDate(date) {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)
@@ -53,6 +55,24 @@ function historicalScope(actor, section, attendance) {
   if (attendance && !canReviewSection(actor, { ...section, gradeLevel: attendance.gradeLevel })) {
     fail('permission-denied', 'The saved attendance grade is outside your scope.');
   }
+}
+
+// Both the family and the adviser screens read a day the same way, so they cannot drift.
+async function dayAttendance(tx, deps, section, studentId, date) {
+  const [attendanceSnap, scheduleSnap] = await Promise.all([
+    tx.get(deps.db.doc(`student_attendance/${section.id}_${date}`)),
+    identifier(section.scheduleId) ? tx.get(deps.db.doc(`schedules/${section.scheduleId}`)) : null,
+  ]);
+  const attendance = attendanceSnap.data();
+  validAttendance(attendance, section, date);
+  return { attendance, body: { ...projection(attendance, studentId), date, sectionId: section.id, schoolYear: section.schoolYear, schedule: bellTimes(scheduleSnap?.data()) } };
+}
+async function enrolledLearner(deps, tx, section, studentId) {
+  const [enrollment, student] = await Promise.all([
+    tx.get(deps.db.doc(`enrollments/${studentId}_${section.schoolYear}`)), tx.get(deps.db.doc(`students/${studentId}`)),
+  ]);
+  if (!student.exists || enrollment.data()?.status !== 'enrolled' || enrollment.data()?.sectionId !== section.id) fail('permission-denied', 'Learner is not enrolled in this section.');
+  return student;
 }
 
 export async function getSchoolRoster(deps, input) {
@@ -147,15 +167,58 @@ export async function getFamilyAttendance(deps, { studentId, date }) {
     const sectionSnap = await tx.get(deps.db.doc(`sections/${sectionId}`));
     const section = { ...sectionSnap.data(), id: sectionId };
     if (!sectionSnap.exists || section.schoolYear !== schoolYear) fail('permission-denied', 'Learner section is unavailable.');
-    const [attendanceSnap, scheduleSnap] = await Promise.all([
-      tx.get(deps.db.doc(`student_attendance/${sectionId}_${date}`)),
-      identifier(section.scheduleId) ? tx.get(deps.db.doc(`schedules/${section.scheduleId}`)) : null,
-    ]);
-    const attendance = attendanceSnap.data();
-    validAttendance(attendance, section, date);
+    const { body } = await dayAttendance(tx, deps, section, studentId, date);
     // Families get the bell times so the Parent app can label AM/PM or the shift.
-    return { ...projection(attendance, studentId), date, sectionId, schoolYear, schedule: bellTimes(scheduleSnap?.data()) };
+    return body;
   });
+}
+
+export async function getSchoolLearnerAttendance(deps, input) {
+  validateSectionDate(input);
+  if (!identifier(input.studentId)) fail('invalid-argument', 'Choose a learner.');
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const section = await sectionFor(deps, tx, input.sectionId, actor);
+    await enrolledLearner(deps, tx, section, input.studentId);
+    const { attendance, body } = await dayAttendance(tx, deps, section, input.studentId, input.date);
+    historicalScope(actor, section, attendance);
+    const canCorrect = await correctionAllowed(deps, tx, actor, section, input.date);
+    return { ...body, revision: attendance?.sessionOverrides?.[input.studentId]?.revision || 0, canCorrect };
+  });
+}
+
+const HISTORY_PAGE = 30;
+// Callable payloads are JSON: Firestore timestamps become epoch milliseconds.
+const plain = value => value?.toMillis ? value.toMillis()
+  : Array.isArray(value) ? value.map(plain)
+    : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, plain(v)])) : value;
+
+export async function getSchoolLearnerHistory(deps, { sectionId, studentId, cursor }) {
+  if (!identifier(sectionId) || !identifier(studentId)) fail('invalid-argument', 'Choose a learner.');
+  // Composite cursor { ms, id }: scans can share one effectiveAt, so the document id breaks ties.
+  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms) && cursorId(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
+  const { section, student } = await deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const section = await sectionFor(deps, tx, sectionId, actor);
+    return { section, student: await enrolledLearner(deps, tx, section, studentId) };
+  });
+  const learnerRef = deps.db.doc(`learners/${studentId}`);
+  let events = deps.db.collection(`learners/${studentId}/events`).orderBy('effectiveAt', 'desc').orderBy(FieldPath.documentId(), 'desc');
+  if (cursor != null) events = events.startAfter(Timestamp.fromMillis(cursor.ms), cursor.id);
+  const [learnerSnap, eventsSnap] = await Promise.all([learnerRef.get(), events.limit(HISTORY_PAGE).get()]);
+  const summary = learnerSnap.data() || {};
+  const rows = eventsSnap.docs.map(d => {
+    const e = d.data();
+    return { id: d.id, kind: e.kind, scannedDate: e.scannedDate, scannedTime: e.scannedTime, status: e.status || 'recorded',
+      voidReason: e.voidReason || '', deviceLabel: e.deviceLabel || '', delayedSync: e.delayedSync === true, source: e.source || 'kiosk',
+      effectiveAtMs: e.effectiveAt?.toMillis?.() ?? 0 };
+  });
+  return {
+    learner: { displayName: summary.displayName || fullName(student.data()), sectionLabel: summary.sectionLabel || section.name || '',
+      today: plain(summary.today) || null, recent: plain(summary.recent) || [] },
+    events: rows,
+    nextCursor: rows.length === HISTORY_PAGE ? { ms: rows[rows.length - 1].effectiveAtMs, id: rows[rows.length - 1].id } : null,
+  };
 }
 
 // Per-recipient claims are at most once: the inbox item is created in the

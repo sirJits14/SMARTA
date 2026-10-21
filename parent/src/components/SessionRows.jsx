@@ -8,7 +8,7 @@ const GATE = { am: ['timeIn', 'timeOut'], pm: ['pmTimeIn', 'pmTimeOut'] };
 
 // One row per session in the learner's SIMS schedule, from a
 // getFamilyAttendanceFn result. No Firebase here, so previews can render it.
-export default function SessionRows({ data, requestedSession }) {
+export default function SessionRows({ data, requestedSession, renderAction }) {
   const rows = sessionRows(data.schedule);
   // A single-session day keeps its data in `am`, so any requested session is that row.
   const highlight = requestedSession && rows.length === 1 ? 'am' : requestedSession;
@@ -22,6 +22,7 @@ export default function SessionRows({ data, requestedSession }) {
         {session?.reason && <p style={{ margin: '8px 0', fontSize: 14 }}>{session.reason}</p>}
         {(session?.actorName || session?.changedAt) && <p className="family-session-note">{[session.actorName && `Updated by ${session.actorName}`, correctionTime(session.changedAt)].filter(Boolean).join(' · ')}</p>}
         <p className="family-session-note">Gate: {formatScanTime(data.gate?.[inKey])} – {formatScanTime(data.gate?.[outKey])}</p>
+        {renderAction?.(key)}
       </div>;
     })}
     <p className="family-session-note">{sessionFootnote(rows)}</p>
