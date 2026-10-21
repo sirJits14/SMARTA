@@ -182,6 +182,11 @@ describe('adviser learner attendance', () => {
     await expect(day('teacher', { studentId: 'S2' })).rejects.toMatchObject({ code: 'permission-denied' });
     await expect(day('teacher', { studentId: 'bad id' })).rejects.toMatchObject({ code: 'invalid-argument' });
   });
+  it('rejects a learner enrolled in a different section', async () => {
+    await db().doc('sections/SEC2').set({ name: 'Mabini', gradeLevel: 7, schoolYear: '2026-2027' });
+    await db().doc('enrollments/S2_2026-2027').set({ studentId: 'S2', sectionId: 'SEC2', schoolYear: '2026-2027', status: 'enrolled' });
+    await expect(day('teacher', { studentId: 'S2' })).rejects.toMatchObject({ code: 'permission-denied' });
+  });
   it('lets admins and the grade curriculum adviser read it', async () => {
     expect((await day('admin')).studentId).toBe('S1');
     expect((await day('curriculum')).studentId).toBe('S1');
@@ -233,9 +238,25 @@ describe('adviser learner history', () => {
     expect(ids).toEqual(expected);
   });
   it('rejects malformed cursors', async () => {
-    for (const cursor of ['x', 0, 5, {}, { ms: 1.5, id: 'a' }, { ms: 1, id: 'bad id' }, [], { ms: 1 }, { id: 'a' }, { ms: '1', id: 'a' }]) {
+    for (const cursor of ['x', 0, 5, {}, { ms: 1.5, id: 'a' }, { ms: 1, id: '' }, { ms: 1, id: 'a/b' }, { ms: 1, id: 5 }, [], { ms: 1 }, { id: 'a' }, { ms: '1', id: 'a' }]) {
       await expect(history('teacher', { cursor })).rejects.toMatchObject({ code: 'invalid-argument' });
     }
+  });
+  it('pages on event ids containing dots and long ids', async () => {
+    const ids = ['k1.dev_S1_x', `k2.${'x'.repeat(200)}`, 'k3.plain'];
+    for (const [i, id] of ids.entries()) await db().doc(`learners/S1/events/${id}`).set({
+      kind: 'in', scannedDate: '2026-09-21', scannedTime: '07:00', status: 'recorded', deviceLabel: 'Main Gate',
+      delayedSync: false, source: 'kiosk', effectiveAt: ts(Date.UTC(2026, 8, 21) + i * 60000) });
+    for (let i = 0; i < 28; i++) await event(i, { effectiveAt: ts(Date.UTC(2026, 8, 20) + i * 60000) });
+    const first = await history();
+    expect(first.events.slice(0, 3).map(e => e.id)).toEqual(['k3.plain', ids[1], 'k1.dev_S1_x']);
+    const second = await history('teacher', { cursor: first.nextCursor });
+    expect(first.events).toHaveLength(30);
+    expect(second.events).toHaveLength(1);
+    expect(second.nextCursor).toBeNull();
+    // the cursor itself carries a dotted id
+    const tiny = await history('teacher', { cursor: { ms: Date.UTC(2026, 8, 21) + 60000, id: ids[1] } });
+    expect(tiny.events[0].id).toBe('k1.dev_S1_x');
   });
   it('keeps voided scans visible with their reason', async () => {
     await event(1, { status: 'voided', voidReason: 'Wrong learner' });
@@ -247,6 +268,9 @@ describe('adviser learner history', () => {
   });
   it('rejects other sections, subjects, non-enrolled learners and bad cursors', async () => {
     for (const uid of ['other', 'subject']) await expect(history(uid)).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(history('teacher', { studentId: 'S2' })).rejects.toMatchObject({ code: 'permission-denied' });
+    await db().doc('sections/SEC2').set({ name: 'Mabini', gradeLevel: 7, schoolYear: '2026-2027' });
+    await db().doc('enrollments/S2_2026-2027').set({ studentId: 'S2', sectionId: 'SEC2', schoolYear: '2026-2027', status: 'enrolled' });
     await expect(history('teacher', { studentId: 'S2' })).rejects.toMatchObject({ code: 'permission-denied' });
     await expect(history('teacher', { cursor: 'x' })).rejects.toMatchObject({ code: 'invalid-argument' });
   });

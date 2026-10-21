@@ -10,6 +10,8 @@ import { logWarn } from '../log.js';
 import { nextNotice, NOTIFY_DELAY_MS } from '../lib/attendanceNotice.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
+// A document id used only as a startAfter value (never a path): any non-empty id without '/'.
+const cursorId = value => typeof value === 'string' && value.length > 0 && value.length <= 1500 && !value.includes('/');
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 function validateDate(date) {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)
@@ -194,7 +196,7 @@ const plain = value => value?.toMillis ? value.toMillis()
 export async function getSchoolLearnerHistory(deps, { sectionId, studentId, cursor }) {
   if (!identifier(sectionId) || !identifier(studentId)) fail('invalid-argument', 'Choose a learner.');
   // Composite cursor { ms, id }: scans can share one effectiveAt, so the document id breaks ties.
-  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms) && identifier(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
+  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms) && cursorId(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
   const { section, student } = await deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
     const section = await sectionFor(deps, tx, sectionId, actor);

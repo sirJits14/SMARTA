@@ -217,7 +217,7 @@ function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel 
   if (selecting && onPick) return <li><button type="button" className="learner-row" aria-pressed={checked} onClick={onPick}>{body}</button></li>;
   return (
     <li className="class-row">
-      <button type="button" className="learner-row" onClick={onOpen} aria-label={`${row.displayName} history`}>{body}</button>
+      <button type="button" className="learner-row" onClick={onOpen}>{body}</button>
       {onPick && <button type="button" className="class-link class-row-flag" onClick={onPick} aria-label={`${flagLabel} ${row.displayName}`}>{flagLabel}</button>}
     </li>
   );

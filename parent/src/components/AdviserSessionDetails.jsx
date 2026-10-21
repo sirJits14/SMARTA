@@ -25,6 +25,8 @@ export default function AdviserSessionDetails({ sectionId, studentId, displayNam
   const [actionError, setActionError] = useState(''); // survives reloads, unlike `error`
   const sequence = useRef(0);
   const saveLock = useRef(false);
+  const dateRef = useRef(date); // the selected day now, readable after an await
+  dateRef.current = date;
   useEffect(() => {
     const request = ++sequence.current;
     setError('');
@@ -62,7 +64,7 @@ export default function AdviserSessionDetails({ sectionId, studentId, displayNam
   const undo = async () => {
     const pending = notice; setNotice(null); setActionError('');
     try { await save(pending.date, pending.key, false, UNDO_REASON); }
-    catch (e) { setActionError(schoolError(e)); setNotice(pending); }
+    catch (e) { if (pending.date === dateRef.current) { setActionError(schoolError(e)); setNotice(pending); } }
     setRetry(n => n + 1); onChanged?.();
   };
 
