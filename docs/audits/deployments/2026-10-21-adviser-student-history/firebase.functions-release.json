@@ -1,0 +1,10 @@
+{
+  "functions": [
+    {
+      "source": ".superpowers/releases/backend/functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "predeploy": ["node \".superpowers/releases/backend/scripts/syncShared.mjs\""]
+    }
+  ]
+}
