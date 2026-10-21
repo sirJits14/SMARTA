@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { Timestamp } from 'firebase-admin/firestore';
 import { db, auth, clearAll, clearAllAuthUsers, seedSchool, fakeMessaging, scanDoc } from './helpers.js';
-import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, handleAttendanceCorrection, sendDueAttendanceUpdates } from '../../src/handlers/sessionAttendance.js';
+import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, getSchoolLearnerHistory, handleAttendanceCorrection, sendDueAttendanceUpdates } from '../../src/handlers/sessionAttendance.js';
 import { applyScanAttendance } from '../../src/handlers/scanAttendance.js';
 
 const now = () => new Date('2026-09-21T10:00:00+08:00');
@@ -188,5 +189,41 @@ describe('adviser learner attendance', () => {
   it('matches the guardian projection for the same learner and day', async () => {
     const { canCorrect, ...adviser } = await day();
     expect(adviser).toEqual(await getFamilyAttendance(deps('gA'), { studentId: 'S1', date: '2026-09-21' }));
+  });
+});
+
+describe('adviser learner history', () => {
+  const ts = ms => Timestamp.fromMillis(ms);
+  const history = (uid = 'teacher', over = {}) => getSchoolLearnerHistory(deps(uid), { sectionId: 'SEC1', studentId: 'S1', ...over });
+  const event = (i, over = {}) => db().doc(`learners/S1/events/e${String(i).padStart(3, '0')}`).set({
+    kind: i % 2 ? 'out' : 'in', scannedDate: '2026-09-21', scannedTime: '07:00', status: 'recorded', deviceLabel: 'Main Gate',
+    delayedSync: false, source: 'kiosk', effectiveAt: ts(Date.UTC(2026, 8, 21, 0, 0, 0) + i * 60000), ...over });
+  beforeEach(async () => {
+    await db().doc('learners/S1').set({ displayName: 'CRUZ, ANA B.', sectionLabel: 'Grade 7 - Rizal', today: { date: '2026-09-21', events: [] }, recent: [], updatedAt: ts(Date.now()) });
+  });
+  it('pages newest first with JSON-safe fields', async () => {
+    for (let i = 0; i < 35; i++) await event(i);
+    const first = await history();
+    expect(first.events).toHaveLength(30);
+    expect(first.events[0].id).toBe('e034');
+    expect(typeof first.events[0].effectiveAtMs).toBe('number');
+    expect(JSON.parse(JSON.stringify(first))).toEqual(first);
+    expect(first.learner).toMatchObject({ displayName: 'CRUZ, ANA B.', sectionLabel: 'Grade 7 - Rizal' });
+    const second = await history('teacher', { cursor: first.nextCursor });
+    expect(second.events.map(e => e.id)).toEqual(['e004', 'e003', 'e002', 'e001', 'e000']);
+    expect(second.nextCursor).toBeNull();
+  });
+  it('keeps voided scans visible with their reason', async () => {
+    await event(1, { status: 'voided', voidReason: 'Wrong learner' });
+    expect((await history()).events[0]).toMatchObject({ status: 'voided', voidReason: 'Wrong learner' });
+  });
+  it('falls back to the student and section when there is no learner summary yet', async () => {
+    await db().doc('learners/S1').delete();
+    expect((await history()).learner).toMatchObject({ displayName: expect.stringContaining('Cruz'), sectionLabel: expect.stringContaining('Rizal') });
+  });
+  it('rejects other sections, subjects, non-enrolled learners and bad cursors', async () => {
+    for (const uid of ['other', 'subject']) await expect(history(uid)).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(history('teacher', { studentId: 'S2' })).rejects.toMatchObject({ code: 'permission-denied' });
+    await expect(history('teacher', { cursor: 'x' })).rejects.toMatchObject({ code: 'invalid-argument' });
   });
 });

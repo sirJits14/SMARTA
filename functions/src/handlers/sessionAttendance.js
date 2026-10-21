@@ -185,6 +185,39 @@ export async function getSchoolLearnerAttendance(deps, input) {
   });
 }
 
+const HISTORY_PAGE = 30;
+// Callable payloads are JSON: Firestore timestamps become epoch milliseconds.
+const plain = value => value?.toMillis ? value.toMillis()
+  : Array.isArray(value) ? value.map(plain)
+    : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, plain(v)])) : value;
+
+export async function getSchoolLearnerHistory(deps, { sectionId, studentId, cursor }) {
+  if (!identifier(sectionId) || !identifier(studentId)) fail('invalid-argument', 'Choose a learner.');
+  if (cursor !== undefined && cursor !== null && !Number.isSafeInteger(cursor)) fail('invalid-argument', 'Choose a valid page.');
+  const { section, student } = await deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const section = await sectionFor(deps, tx, sectionId, actor);
+    return { section, student: await enrolledLearner(deps, tx, section, studentId) };
+  });
+  const learnerRef = deps.db.doc(`learners/${studentId}`);
+  let events = deps.db.collection(`learners/${studentId}/events`).orderBy('effectiveAt', 'desc');
+  if (cursor) events = events.startAfter(Timestamp.fromMillis(cursor));
+  const [learnerSnap, eventsSnap] = await Promise.all([learnerRef.get(), events.limit(HISTORY_PAGE).get()]);
+  const summary = learnerSnap.data() || {};
+  const rows = eventsSnap.docs.map(d => {
+    const e = d.data();
+    return { id: d.id, kind: e.kind, scannedDate: e.scannedDate, scannedTime: e.scannedTime, status: e.status || 'recorded',
+      voidReason: e.voidReason || '', deviceLabel: e.deviceLabel || '', delayedSync: e.delayedSync === true, source: e.source || 'kiosk',
+      effectiveAtMs: e.effectiveAt?.toMillis?.() ?? 0 };
+  });
+  return {
+    learner: { displayName: summary.displayName || fullName(student.data()), sectionLabel: summary.sectionLabel || section.name || '',
+      today: plain(summary.today) || null, recent: plain(summary.recent) || [] },
+    events: rows,
+    nextCursor: rows.length === HISTORY_PAGE ? rows[rows.length - 1].effectiveAtMs : null,
+  };
+}
+
 // Per-recipient claims are at most once: the inbox item is created in the
 // same transaction that decides to push, so a retry never pushes twice.
 async function notifyFamilies(deps, data, inboxId) {
