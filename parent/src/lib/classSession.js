@@ -55,3 +55,6 @@ export async function runLimited(items, limit, fn) {
   }));
   return results;
 }
+
+// What the adviser can do to one session of a learner's day: Flag it, Restore a flag, or nothing.
+export const flagAction = (data, key) => (!data?.canCorrect ? null : data[key]?.overrideActive ? 'restore' : 'flag');

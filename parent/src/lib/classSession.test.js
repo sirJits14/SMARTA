@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FLAG_REASONS, RESTORE_REASONS, UNDO_REASON, hasTwoSessions, sessionNow, enteredFor, groupRoster, rosterSummary, reasonText, correctionInput, runLimited } from './classSession.js';
+import { FLAG_REASONS, RESTORE_REASONS, UNDO_REASON, hasTwoSessions, sessionNow, enteredFor, groupRoster, rosterSummary, reasonText, correctionInput, runLimited, flagAction } from './classSession.js';
 
 const split = { timeIn: '07:30', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:30' };
 const row = (studentId, gate = {}, am = { status: 'P' }, pm = { status: 'P' }) => ({ studentId, displayName: studentId, revision: 0, gate, am, pm });
@@ -59,5 +59,17 @@ describe('class session', () => {
     expect(results.map(r => r.ok)).toEqual([true, true, true, false, true]);
     expect(results[0].value).toBe(10);
     expect(results[3].error.message).toBe('nope');
+  });
+});
+
+describe('flagAction', () => {
+  const data = (over = {}) => ({ canCorrect: true, am: { status: 'P' }, pm: { status: 'A', overrideActive: true }, ...over });
+  it('offers Flag for a normal session and Restore for an active flag', () => {
+    expect(flagAction(data(), 'am')).toBe('flag');
+    expect(flagAction(data(), 'pm')).toBe('restore');
+  });
+  it('offers nothing when the day cannot be corrected', () => {
+    expect(flagAction(data({ canCorrect: false }), 'am')).toBeNull();
+    expect(flagAction(null, 'am')).toBeNull();
   });
 });
