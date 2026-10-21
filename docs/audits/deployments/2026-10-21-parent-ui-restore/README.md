@@ -47,3 +47,26 @@ Any other session that deploys the Parents App from an older checkout overwrites
 
 Roll back in the Hosting console. The previous release is the unmessaged 00:45 UTC one with the old UI, so rollback is
 not recommended.
+
+## Deployment safeguard
+
+The stale bundle was confirmed to have been rebuilt from `fa9c2cf`, the October 18
+source snapshot. To prevent this on future Parent releases:
+
+- `npm run deploy:parent` uses the Parent Hosting predeploy hook in `firebase.json`.
+- `scripts/buildParentRelease.mjs` fetches master, requires the current merged
+  revision and PR #74 ancestry, and rejects uncommitted Parent/shared source.
+- It loads existing production configuration without copying secrets, forces
+  emulator/debug mode off, validates the project and App Check key, then rebuilds
+  and checks the initial-load size budget before upload.
+- `AGENTS.md` records the requirement to preserve the latest merged Parent UI/UX.
+
+The guarded Parent-only deployment from `99371bb` completed on 2026-10-21 at
+00:55 UTC. All 51 live files match the fresh build by SHA-256; compiled-asset
+checks also confirm the Sessions icon, Settings theme controls, absence of the
+floating theme button, and `Lead Researcher and Product Developer` title.
+See `guard-hosting-verification.json` for this verification. Build size was
+219.0 KB gzip of the 260 KB budget; Parent tests passed 186/186. An unmerged
+checkout was separately rejected before the guard changed the built bundle.
+Signed-in screens were verified through the published assets rather than an
+authenticated device session.
