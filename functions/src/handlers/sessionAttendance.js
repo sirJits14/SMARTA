@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { CallableError } from '../errors.js';
 import { loadSchoolActor } from './schoolAccess.js';
 import { canReviewSection, canCorrectSession } from '../../shared/schoolAccess.js';
@@ -193,15 +193,16 @@ const plain = value => value?.toMillis ? value.toMillis()
 
 export async function getSchoolLearnerHistory(deps, { sectionId, studentId, cursor }) {
   if (!identifier(sectionId) || !identifier(studentId)) fail('invalid-argument', 'Choose a learner.');
-  if (cursor !== undefined && cursor !== null && !Number.isSafeInteger(cursor)) fail('invalid-argument', 'Choose a valid page.');
+  // Composite cursor { ms, id }: scans can share one effectiveAt, so the document id breaks ties.
+  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms) && identifier(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
   const { section, student } = await deps.db.runTransaction(async tx => {
     const actor = await loadSchoolActor(deps, tx);
     const section = await sectionFor(deps, tx, sectionId, actor);
     return { section, student: await enrolledLearner(deps, tx, section, studentId) };
   });
   const learnerRef = deps.db.doc(`learners/${studentId}`);
-  let events = deps.db.collection(`learners/${studentId}/events`).orderBy('effectiveAt', 'desc');
-  if (cursor) events = events.startAfter(Timestamp.fromMillis(cursor));
+  let events = deps.db.collection(`learners/${studentId}/events`).orderBy('effectiveAt', 'desc').orderBy(FieldPath.documentId(), 'desc');
+  if (cursor != null) events = events.startAfter(Timestamp.fromMillis(cursor.ms), cursor.id);
   const [learnerSnap, eventsSnap] = await Promise.all([learnerRef.get(), events.limit(HISTORY_PAGE).get()]);
   const summary = learnerSnap.data() || {};
   const rows = eventsSnap.docs.map(d => {
@@ -214,7 +215,7 @@ export async function getSchoolLearnerHistory(deps, { sectionId, studentId, curs
     learner: { displayName: summary.displayName || fullName(student.data()), sectionLabel: summary.sectionLabel || section.name || '',
       today: plain(summary.today) || null, recent: plain(summary.recent) || [] },
     events: rows,
-    nextCursor: rows.length === HISTORY_PAGE ? rows[rows.length - 1].effectiveAtMs : null,
+    nextCursor: rows.length === HISTORY_PAGE ? { ms: rows[rows.length - 1].effectiveAtMs, id: rows[rows.length - 1].id } : null,
   };
 }
 

@@ -209,9 +209,33 @@ describe('adviser learner history', () => {
     expect(typeof first.events[0].effectiveAtMs).toBe('number');
     expect(JSON.parse(JSON.stringify(first))).toEqual(first);
     expect(first.learner).toMatchObject({ displayName: 'CRUZ, ANA B.', sectionLabel: 'Grade 7 - Rizal' });
+    expect(first.nextCursor).toEqual({ ms: first.events[29].effectiveAtMs, id: first.events[29].id });
     const second = await history('teacher', { cursor: first.nextCursor });
     expect(second.events.map(e => e.id)).toEqual(['e004', 'e003', 'e002', 'e001', 'e000']);
     expect(second.nextCursor).toBeNull();
+  });
+  it('pages through scans sharing one effectiveAt without skipping or repeating any', async () => {
+    // 29, 30, 31 and 4 share one instant that straddles the 30-row page boundary.
+    const tied = ts(Date.UTC(2026, 8, 21, 0, 0, 0) + 4 * 60000);
+    for (let i = 0; i < 35; i++) await event(i, [4, 29, 30, 31].includes(i) ? { effectiveAt: tied } : {});
+    const ids = [];
+    let cursor = null;
+    do {
+      const page = await history('teacher', { cursor });
+      ids.push(...page.events.map(e => e.id));
+      cursor = page.nextCursor;
+    } while (cursor);
+    const all = Array.from({ length: 35 }, (_, i) => `e${String(i).padStart(3, '0')}`);
+    expect(ids).toHaveLength(35);
+    expect(new Set(ids)).toEqual(new Set(all));
+    const ms = i => Date.UTC(2026, 8, 21, 0, 0, 0) + ([29, 30, 31].includes(i) ? 4 : i) * 60000;
+    const expected = [...all.keys()].sort((a, b) => ms(b) - ms(a) || (all[b] < all[a] ? -1 : 1)).map(i => all[i]);
+    expect(ids).toEqual(expected);
+  });
+  it('rejects malformed cursors', async () => {
+    for (const cursor of ['x', 0, 5, {}, { ms: 1.5, id: 'a' }, { ms: 1, id: 'bad id' }, [], { ms: 1 }, { id: 'a' }, { ms: '1', id: 'a' }]) {
+      await expect(history('teacher', { cursor })).rejects.toMatchObject({ code: 'invalid-argument' });
+    }
   });
   it('keeps voided scans visible with their reason', async () => {
     await event(1, { status: 'voided', voidReason: 'Wrong learner' });
