@@ -33,7 +33,7 @@ describe('school access tracking', () => {
   });
   it('flags conflicts, personal emails and stale requests', () => {
     const request = { email: 'x@gmail.com', createdAt: now - 3 * DAY_MS, conflict: { displayName: 'Ana Cruz' } };
-    expect(requestFlags(request, now).map(f => f.label)).toEqual(['Section has an adviser (Ana Cruz)', 'Non-DepEd email', 'Waiting 3+ days']);
+    expect(requestFlags(request, now).map(f => f.label)).toEqual(['Section has an adviser (ANA CRUZ)', 'Non-DepEd email', 'Waiting 3+ days']);
     expect(requestFlags({ email: 'y@deped.gov.ph', createdAt: now }, now)).toEqual([]);
   });
   it('describes ages briefly', () => {
@@ -64,31 +64,31 @@ describe('school access tracking', () => {
   it('exports assignments and coverage rows', () => {
     const rows = assignmentCsvRows([ana], sections);
     expect(rows[0]).toEqual(['Name', 'Email', 'Responsibility', 'Grade', 'Section', 'Assigned on', 'Assigned by', 'Source', 'Status']);
-    expect(rows[1]).toEqual(['Ana Cruz', 'ana@deped.gov.ph', 'Adviser', 7, 'Rizal', shortDate(now - DAY_MS), 'admin@school.test', 'direct', 'Opened']);
+    expect(rows[1]).toEqual(['ANA CRUZ', 'ana@deped.gov.ph', 'Adviser', 7, 'Rizal', shortDate(now - DAY_MS), 'admin@school.test', 'direct', 'Opened']);
     const coverage = coverageCsvRows(coverageByGrade(sections, [ana, ben], [dan]));
     expect(coverage[0]).toEqual(['Grade', 'Section', 'Adviser', 'Adviser email', 'Opened', 'Pending request']);
-    expect(coverage.slice(1, 3)).toEqual([[7, 'Rizal', 'Ana Cruz', 'ana@deped.gov.ph', 'Yes', ''], [7, 'Bonifacio', '', '', '', 'Dan']]);
+    expect(coverage.slice(1, 3)).toEqual([[7, 'Rizal', 'ANA CRUZ', 'ana@deped.gov.ph', 'Yes', ''], [7, 'Bonifacio', '', '', '', 'DAN']]);
   });
   it('turns audit rows into readable history', () => {
     const at = { toDate: () => new Date(now) };
     expect(historyLine({ action: 'school.requestApproved', actorUid: 'admin@school.test', targetId: 'u1', at,
       details: { role: 'adviser', sectionId: 'A', teacherName: 'Ana Cruz', reason: 'Approved' } }, sections))
-      .toMatchObject({ text: 'admin@school.test approved Ana Cruz · Adviser · Grade 7 · Rizal', reason: '' });
+      .toMatchObject({ text: 'admin@school.test approved ANA CRUZ · Adviser · Grade 7 · Rizal', reason: '' });
     expect(historyLine({ action: 'school.revoked', actorUid: 'admin@school.test', targetId: 'u2', at,
       details: { role: 'subject_teacher', sectionId: 'Z', reason: 'Left school' } }, sections))
       .toMatchObject({ text: 'admin@school.test revoked u2 · Subject Teacher · Section Z', reason: 'Left school' });
     expect(historyLine({ action: 'school.roleRetired', actorUid: 'admin@school.test', targetId: 'u2', at,
       details: { role: 'subject_teacher', teacherName: 'Ben Dy', removed: [{ gradeLevel: 7 }, { gradeLevel: 8 }] } }, sections))
-      .toMatchObject({ text: 'admin@school.test ended Ben Dy\'s Subject Teacher access (role retired) · Grades 7, 8' });
+      .toMatchObject({ text: 'admin@school.test ended BEN DY\'s Subject Teacher access (role retired) · Grades 7, 8' });
     expect(historyLine({ action: 'school.roleRetired', actorUid: 'admin@school.test', targetId: 'u2', at,
       details: { role: 'subject_teacher', teacherName: 'Ben Dy', removed: [{ gradeLevel: 7 }, { gradeLevel: 7 }] } }, sections))
-      .toMatchObject({ text: 'admin@school.test ended Ben Dy\'s Subject Teacher access (role retired) · Grade 7' });
+      .toMatchObject({ text: 'admin@school.test ended BEN DY\'s Subject Teacher access (role retired) · Grade 7' });
     expect(historyLine({ action: 'school.requested', actorUid: 'ana@deped.gov.ph', targetId: 'u1', at: null,
       details: { role: 'adviser', sectionId: 'A', teacherName: 'Ana Cruz' } }, sections))
-      .toEqual({ when: '—', text: 'Ana Cruz requested Adviser · Grade 7 · Rizal', reason: '' });
+      .toEqual({ when: '—', text: 'ANA CRUZ requested Adviser · Grade 7 · Rizal', reason: '' });
     expect(historyLine({ action: 'school.replaced', actorUid: 'admin@school.test', targetId: 'u9', at: null,
       details: { role: 'adviser', sectionId: 'A', teacherName: 'Eve Tan', previousEmail: 'ana@deped.gov.ph', reason: 'Moved' } }, sections).text)
-      .toBe('admin@school.test replaced ana@deped.gov.ph with Eve Tan · Adviser · Grade 7 · Rizal');
+      .toBe('admin@school.test replaced ana@deped.gov.ph with EVE TAN · Adviser · Grade 7 · Rizal');
   });
 });
 
@@ -102,6 +102,6 @@ describe('historyLine for advisory slips', () => {
       .toBe('admin@x revoked the advisory slip · Grade 7 · Rizal');
     expect(historyLine({ action: 'school.slipRedeemed', actorUid: 'ana@deped.gov.ph', at,
       details: { role: 'adviser', sectionId: 'A', gradeLevel: 7, issuedBy: 'admin@x', teacherName: 'Ana' } }, sections).text)
-      .toBe('Ana became Class Adviser with a slip from admin@x · Adviser · Grade 7 · Rizal');
+      .toBe('ANA became Class Adviser with a slip from admin@x · Adviser · Grade 7 · Rizal');
   });
 });

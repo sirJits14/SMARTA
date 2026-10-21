@@ -175,6 +175,7 @@ A phone-first PWA built on the same system. Styles live in `parent/src/app.css`,
 ## Do's and Don'ts
 
 - Do use the `--t-*` tokens and the shared components; never hard-code a color in JSX or the themed stylesheets.
+- Do show every learner and adviser name in capitals through `capsName` / `fullName` / `personLabel` (`src/lib/roster.js`), on screen and on printed slips and ID cards. Stored names keep their entered case; name inputs use `.sims-caps`. Emails are never capitalised.
 - Do keep attendance status readable without color: every status carries its text label.
 - Do keep 44px touch targets on coarse pointers and a visible focus ring everywhere.
 - Do respect `prefers-reduced-motion`; motion is limited to 120–200ms state changes.

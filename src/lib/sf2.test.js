@@ -65,7 +65,7 @@ describe('SF2 workbook export', () => {
       for (let i = 0; i < count; i++) {
         const row = startRow + i;
         expect(ws.getCell(`A${row}`).value).toBe(i + 1);
-        expect(ws.getCell(`B${row}`).value).toBe(`${sex}${String(i + 1).padStart(3, '0')}, Learner`);
+        expect(ws.getCell(`B${row}`).value).toBe(`${sex}${String(i + 1).padStart(3, '0')}, LEARNER`);
         expect(ws.getCell(`C${row}`).master.address).toBe(`B${row}`);
         expect(ws.getCell(`AJ${row}`).master.address).toBe(`AE${row}`);
         expect(ws.getRow(row).height).toBe(21.95);
@@ -91,7 +91,7 @@ describe('SF2 workbook export', () => {
     expect(ws.getCell(`AJ${summaryRow}`).value).toBe(maleCount + femaleCount);
     expect(ws.getCell(`AJ${summaryRow + 4}`).value).toBe((maleCount + femaleCount) - 0.5 * Number(maleCount > 0) - 0.5 * Number(femaleCount > 0));
     expect(ws.getCell(`AH${summaryRow + 5}`).numFmt ?? 'General').toBe('General');
-    expect(ws.getCell(`AD${adviserRow}`).value).toBe('Test Adviser');
+    expect(ws.getCell(`AD${adviserRow}`).value).toBe('TEST ADVISER');
     expect(ws.getCell(`A${summaryRow - 6}`).value).toBe('GUIDELINES:');
     expect(ws.getCell('F11').value).toBe(1);
     expect(ws.getCell('G11').value).toBe(2);

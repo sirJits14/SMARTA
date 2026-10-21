@@ -1,4 +1,5 @@
 import { ROLE_LABELS, sectionLabel } from '../../parent/src/lib/school.js';
+import { capsName, personLabel } from './roster.js';
 
 // Audit history still names roles that were retired (Subject Teacher, spec 2026-10-20).
 const HISTORY_ROLE_LABELS = { ...ROLE_LABELS, subject_teacher: 'Subject Teacher' };
@@ -13,7 +14,7 @@ export function legacyAdviserRows(advisers = [], managedAssignments = []) {
 export const assignmentFromLegacy = (adviser) => ({ email: adviser.email || '', role: 'adviser', sectionId: adviser.suggestedSectionId || '', gradeLevel: '' });
 
 export const DAY_MS = 86400000;
-const who = person => person?.displayName || person?.email || '';
+const who = personLabel;
 
 // Opened means School mode was used after this particular assignment was made.
 export function openedStatus(item) {
@@ -94,7 +95,7 @@ function retiredGrades(removed = []) {
 
 export function historyLine(row, sections = []) {
   const d = row.details || {};
-  const teacher = d.teacherName || d.teacherEmail || row.targetId;
+  const teacher = d.teacherName ? capsName(d.teacherName) : d.teacherEmail || row.targetId;
   const section = sections.find(s => s.id === d.sectionId);
   const scope = d.sectionId ? (section ? sectionLabel(section) : `Section ${d.sectionId}`) : d.gradeLevel ? `Grade ${d.gradeLevel}` : '';
   const what = [HISTORY_ROLE_LABELS[d.role], scope].filter(Boolean).join(' · ');

@@ -6,6 +6,7 @@ import { assignmentCsvRows, filterAssignments, shortDate } from '../../../lib/sc
 import { Table } from '../RequestsTab.jsx';
 import { downloadCsv } from './downloadCsv.js';
 import OpenedTag from './OpenedTag.jsx';
+import { personLabel } from '../../../lib/roster.js';
 
 const keyOf = item => `${item.uid}-${item.role}-${item.sectionId || item.gradeLevel}`;
 
@@ -46,7 +47,7 @@ export default function AssignmentsView({ school }) {
         const key = keyOf(item);
         return <Fragment key={key}>
           <tr>
-            <td style={S.td}><strong>{item.displayName || item.email || item.uid}</strong><br />
+            <td style={S.td}><strong>{personLabel(item) || item.uid}</strong><br />
               <span style={{ fontSize: 12, color: T.inkMuted, overflowWrap: 'anywhere' }}>{item.email}</span></td>
             <td style={S.td}>{ROLE_LABELS[item.role]}</td>
             <td style={S.td}>{scope(item)}</td>
@@ -56,7 +57,7 @@ export default function AssignmentsView({ school }) {
               onClick={() => { setRevoking(revoking === key ? null : key); setReason(''); }}>Revoke</Btn></td>
           </tr>
           {revoking === key && <tr><td colSpan={6} style={S.td}><form onSubmit={e => revoke(e, item)}>
-            <p style={{ fontSize: 13, margin: '0 0 8px' }}>Revoke {item.displayName || item.email}'s {ROLE_LABELS[item.role]} role for {scope(item)}? Access ends immediately.</p>
+            <p style={{ fontSize: 13, margin: '0 0 8px' }}>Revoke {personLabel(item)}'s {ROLE_LABELS[item.role]} role for {scope(item)}? Access ends immediately.</p>
             <Field label="Reason"><Inp autoFocus required maxLength={500} value={reason} disabled={pending} onChange={e => setReason(e.target.value)} /></Field>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Btn type="submit" disabled={pending || !reason.trim()} variant="danger">{pending ? 'Working…' : 'Revoke assignment'}</Btn>

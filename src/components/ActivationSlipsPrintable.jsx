@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
+import { capsName } from '../lib/roster.js';
 import { chunkSlips, activationUrl, formatCodeForPrint, slipInstructions, slipPrintStyles } from '../lib/slipLayout.js';
 
 // The QR is generated at 200px and shown at 26mm so it stays sharp on paper.
@@ -11,7 +12,7 @@ function Slip({ slip, portalUrl }) {
     <div className="slip">
       {qr ? <img className="slip-qr" src={qr} alt="" /> : <div className="slip-qr" />}
       <div className="slip-text">
-        <div className="slip-name">{slip.name}</div>
+        <div className="slip-name">{capsName(slip.name)}</div>
         <div className="slip-meta">{slip.sectionLabel} · LRN {slip.lrn}</div>
         <div className="slip-code">{formatCodeForPrint(slip.code)}</div>
         <div className="slip-note">{slipInstructions(portalUrl, slip.schoolYear)}</div>

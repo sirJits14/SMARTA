@@ -15,8 +15,8 @@ const render = context => renderToStaticMarkup(h(PendingView, { school: { contex
 describe('PendingView', () => {
   it('offers Replace for a conflict and checkboxes only for clean requests', () => {
     const html = render({ ...base, pendingRequests: requests });
-    expect(html).toContain('Replace Ana Cruz');
-    expect(html).toContain('Section has an adviser (Ana Cruz)');
+    expect(html).toContain('Replace ANA CRUZ');
+    expect(html).toContain('Section has an adviser (ANA CRUZ)');
     expect(html).toContain('Non-DepEd email');
     expect(html.match(/type="checkbox"/g)).toHaveLength(2); // select-all + Eve
     expect(html).toContain('Select all without conflicts (1)');

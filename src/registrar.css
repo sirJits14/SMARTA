@@ -329,3 +329,6 @@
   .sims-ui .sims-tally-value { font-size:24px; font-weight:600; line-height:1.1; letter-spacing:-.01em; font-variant-numeric:tabular-nums; color:var(--t-ink); }
   .sims-ui .sims-tally-sub { font-size:13px; font-weight:400; color:var(--t-muted); }
 }
+
+/* Name fields show capitals as they are typed; the stored value keeps its case (see capsName in lib/roster.js). */
+.sims-caps { text-transform: uppercase; }

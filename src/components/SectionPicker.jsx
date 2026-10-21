@@ -3,6 +3,7 @@ import { sectionMatches } from '../lib/search.js';
 import { T } from '../styles.js';
 import { Field, Inp } from './ui.jsx';
 import GradePills from './GradePills.jsx';
+import { capsName } from '../lib/roster.js';
 
 export default function SectionPicker({ sections, value, onChange, disabled = false, label = 'Section' }) {
   const selectedSection = useMemo(() => sections.find((section) => section.id === value) || null, [sections, value]);
@@ -71,7 +72,7 @@ export default function SectionPicker({ sections, value, onChange, disabled = fa
         <div style={{ display: 'grid', gap: 6 }}>
           {matchingSections.map((section) => {
             const selected = section.id === value;
-            const details = [section.strand, section.adviserName ? `Adviser: ${section.adviserName}` : ''].filter(Boolean).join(' · ');
+            const details = [section.strand, section.adviserName ? `Adviser: ${capsName(section.adviserName)}` : ''].filter(Boolean).join(' · ');
             return (
               <button
                 key={section.id}

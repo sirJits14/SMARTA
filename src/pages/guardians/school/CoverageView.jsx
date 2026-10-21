@@ -4,8 +4,9 @@ import { T, S } from '../../../styles.js';
 import { coverageByGrade, coverageCsvRows } from '../../../lib/schoolAssignments.js';
 import { downloadCsv } from './downloadCsv.js';
 import OpenedTag from './OpenedTag.jsx';
+import { personLabel } from '../../../lib/roster.js';
 
-const who = person => person.displayName || person.email;
+const who = personLabel;
 
 // Which sections still need an adviser, grade by grade.
 export default function CoverageView({ context, onAssign, onOpenRequest }) {

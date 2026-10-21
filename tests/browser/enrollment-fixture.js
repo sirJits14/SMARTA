@@ -39,3 +39,5 @@ export async function withdrawEnrollment(studentId, year, status) {
   writes.push({ kind: 'withdraw', studentId, schoolYear: year, status });
   enrollments = enrollments.map(enrollment => enrollment.studentId === studentId && enrollment.schoolYear === year ? { ...enrollment, status } : enrollment); notify();
 }
+
+export function useStaffCollectionResource(path) { return useCollectionResource(path); }

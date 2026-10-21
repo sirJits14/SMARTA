@@ -15,10 +15,10 @@ describe('CoverageView', () => {
   it('shows coverage per grade, gaps, opened status and the pending request', () => {
     const html = renderToStaticMarkup(React.createElement(CoverageView, { context, onAssign: () => {}, onOpenRequest: () => {} }));
     expect(html).toContain('1 of 2 sections have an adviser');
-    expect(html).toContain('Curriculum Adviser: Eve Tan');
+    expect(html).toContain('Curriculum Adviser: EVE TAN');
     expect(html).toContain('Not opened yet');
     expect(html).toContain('No adviser');
-    expect(html).toContain('Review Dan');
+    expect(html).toContain('Review DAN');
     expect(html).not.toContain('Subject Teacher');
   });
 });
