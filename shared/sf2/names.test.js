@@ -13,8 +13,18 @@ describe('SF2 names', () => {
       { lastName: 'Cruz', firstName: 'Ana', middleName: 'B' },
       { lastName: 'Reyes', firstName: 'Mark', middleName: ' ', extName: 'III' },
       { lastName: 'Ñato', firstName: 'Zoë', middleName: 'ñandú' },
+      { lastName: 'Dy', firstName: 'Ben' },
+      { lastName: 'Dy', firstName: 'Ben', middleName: undefined, extName: undefined },
+      { lastName: 'Dy', firstName: 'Ben', middleName: null, extName: null },
+      { lastName: 'Dy', firstName: 'Ben', middleName: '', extName: '' },
+      { lastName: 'Dy', firstName: 'Ben', middleName: '   ', extName: '   ' },
+      { lastName: 'dela cruz', firstName: 'juan', middleName: 'santos', extName: 'jr' },
+      { lastName: 'McDonald', firstName: 'Ana', middleName: 'De la Paz' },
+      { lastName: 'Yılmaz', firstName: 'İlker', middleName: 'istanbul' },
+      { lastName: 'Garcia-Lopez', firstName: 'Jose', middleName: 'Reyes', extName: 'Jr.' },
+      { lastName: '  Cruz  ', firstName: '  Ana  ', middleName: '  B  ', extName: '  III  ' },
     ];
     for (const sample of samples) expect(fullName(sample)).toBe(roster.fullName(sample));
-    expect(capsName('teacher tina')).toBe(roster.capsName('teacher tina'));
+    for (const input of [undefined, null, '', 'teacher tina', 'Ñandú', 'istanbul', 123]) expect(capsName(input)).toBe(roster.capsName(input));
   });
 });
