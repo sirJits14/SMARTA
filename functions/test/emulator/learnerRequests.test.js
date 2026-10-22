@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db, clearAll, seedSchool } from './helpers.js';
-import { requestLearnerAdd, requestLearnerRemoval, withdrawLearnerRequest, getLearnerRequests } from '../../src/handlers/learnerRequests.js';
+import {
+  requestLearnerAdd, requestLearnerRemoval, withdrawLearnerRequest, getLearnerRequests, listLearnerRequests, getLearnerRequestCount,
+} from '../../src/handlers/learnerRequests.js';
 import { deleteSchoolAccess } from '../../src/handlers/schoolAccess.js';
 
 const year = '2026-2027';
@@ -24,6 +27,7 @@ const removal = (over = {}) => ({ sectionId: 'SEC1', studentId: 'S1', reasonCode
 const file = (uid = 'teacher', over = {}) => requestLearnerAdd(deps(uid), addInput(over));
 const get = async (path) => (await db().doc(path).get()).data();
 const allRequests = async () => (await db().collection('learner_change_requests').get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+const waitingIds = async (uid) => (await listLearnerRequests(deps(uid), { view: 'waiting' })).requests.map((r) => r.id);
 
 beforeEach(async () => {
   await clearAll(); await seedSchool();
@@ -178,4 +182,57 @@ describe('account deletion', () => {
     expect(saved).toMatchObject({ status: 'withdrawn', decisionReason: 'Account deleted' });
     expect(saved.student).not.toHaveProperty('address');
   });
+});
+
+describe('what reviewers see', () => {
+  it('scopes the waiting list and the count to the grades a reviewer covers', async () => {
+    const grade7 = await file('teacher');
+    const grade8 = await requestLearnerAdd(deps('eight'), addInput({ sectionId: 'SEC8', student: form({ lrn: '200000000002' }) }));
+    expect(await waitingIds('admin')).toEqual([grade7.id, grade8.id]);
+    expect(await waitingIds('coord7')).toEqual([grade7.id]);
+    expect(await waitingIds('ca7')).toEqual([grade7.id]);
+    expect(await waitingIds('coord8')).toEqual([grade8.id]);
+    expect(await waitingIds('teacher')).toEqual([]);
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 2 });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1 });
+    expect(await getLearnerRequestCount(deps('teacher'))).toEqual({ count: 0 });
+  });
+  it('flags an LRN already in SIMS and shows whose it is only to reviewers who may see it', async () => {
+    const inOtherSection = await file('teacher', { student: form({ lrn: '100000000002' }) }); // S2, Grade 7, Mabini
+    const unassigned = await file('teacher', { student: form({ lrn: '100000000003' }) }); // S3, no enrollment
+    const find = (rows, id) => rows.find((r) => r.id === id);
+    const coordinator = (await listLearnerRequests(deps('coord7'), { view: 'waiting' })).requests;
+    expect(find(coordinator, inOtherSection.id)).toMatchObject({ decidable: true,
+      existing: { exists: true, needsAdmin: false, displayName: 'Ben Dy', currentGrade: 7, currentSection: 'Mabini', learnerStatus: 'active' } });
+    expect(find(coordinator, unassigned.id)).toMatchObject({ decidable: false, existing: { exists: true, needsAdmin: true } });
+    expect(find(coordinator, unassigned.id).existing).not.toHaveProperty('displayName');
+    const admin = (await listLearnerRequests(deps('admin'), { view: 'waiting' })).requests;
+    expect(find(admin, unassigned.id)).toMatchObject({ decidable: true,
+      existing: { needsAdmin: false, displayName: 'Cara Lim', currentGrade: null, learnerStatus: 'active' } });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1 });
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 2 });
+  });
+  it('pages through decided requests for the reviewer’s grades, newest first', async () => {
+    const decided = (id, over) => db().doc(`learner_change_requests/${id}`).set({ kind: 'add', status: 'approved', schoolYear: year, sectionId: 'SEC1', gradeLevel: 7,
+      displayName: id, student: { lrn: '400000000000' }, requestedByUid: 'teacher', requestedByName: 'Tina Teacher', decidedByName: 'Ada Admin', decisionReason: 'Approved',
+      createdAt: Timestamp.fromMillis(Date.UTC(2026, 8, 1)), decidedAt: Timestamp.fromMillis(Date.UTC(2026, 9, 1)), ...over });
+    const base = Date.UTC(2026, 9, 1);
+    for (let i = 0; i < 52; i++) await decided(`d${String(i).padStart(2, '0')}`, { decidedAt: Timestamp.fromMillis(base + i * 1000) });
+    await decided('g8', { gradeLevel: 8, sectionId: 'SEC8', decidedAt: Timestamp.fromMillis(base + 60000) });
+    await decided('w1', { status: 'withdrawn', withdrawnAt: Timestamp.fromMillis(base + 61000) });
+    await db().doc('learner_change_requests/w1').update({ decidedAt: FieldValue.delete() }); // withdrawn requests have none
+    const first = await listLearnerRequests(deps('coord7'), { view: 'decided' });
+    expect(first.requests).toHaveLength(50);
+    expect(first.requests[0].id).toBe('d51');
+    expect(first.requests[49].id).toBe('d02');
+    expect(first.nextCursor).toEqual({ ms: base + 2000, id: 'd02' });
+    const second = await listLearnerRequests(deps('coord7'), { view: 'decided', cursor: first.nextCursor });
+    expect(second.requests.map((r) => r.id)).toEqual(['d01', 'd00']);
+    expect(second.nextCursor).toBeNull();
+    const admin = (await listLearnerRequests(deps('admin'), { view: 'decided' })).requests.map((r) => r.id);
+    expect(admin[0]).toBe('g8');
+    expect(admin).not.toContain('w1');
+    expect((await listLearnerRequests(deps('coord8'), { view: 'decided' })).requests.map((r) => r.id)).toEqual(['g8']);
+    expect((await listLearnerRequests(deps('teacher'), { view: 'decided' })).requests).toEqual([]);
+  }, 30000);
 });

@@ -173,3 +173,72 @@ export async function getLearnerRequests(deps, input) {
     .orderBy('createdAt', 'desc').limit(ADVISER_LIST).get();
   return { requests: snap.docs.map(adviserRow) };
 }
+
+// What a reviewer needs to know about an LRN that is already in SIMS. A learner counts as inside an
+// approver's grades only through a current enrolled enrollment (the rule scopeRoster applies), so an
+// Unassigned, Dropped or Transferred learner, or one in another grade, is for Administrators.
+async function existingLearner(deps, actor, request) {
+  const found = await deps.db.collection('students').where('lrn', '==', request.student?.lrn || '').limit(2).get();
+  if (found.empty) return null;
+  if (found.size > 1) return { exists: true, ambiguous: true, needsAdmin: !actor.isAdmin };
+  const student = found.docs[0];
+  const enrollment = (await deps.db.doc(`enrollments/${student.id}_${request.schoolYear}`).get()).data();
+  const enrolled = enrollment?.status === 'enrolled';
+  const inScope = enrolled && coversGrade(actor, enrollment.gradeLevel);
+  const flag = { exists: true, needsAdmin: !actor.isAdmin && !inScope, enrolledHere: enrolled && enrollment.sectionId === request.sectionId };
+  if (actor.isAdmin || inScope) {
+    const section = enrolled ? (await deps.db.doc(`sections/${enrollment.sectionId}`).get()).data() : null;
+    Object.assign(flag, { displayName: fullName(student.data()), learnerStatus: student.data().status || 'active',
+      currentGrade: enrolled ? enrollment.gradeLevel : null, currentSection: section?.name || '' });
+  }
+  return flag;
+}
+
+const reviewerRow = (snap, flag, actor) => {
+  const r = snap.data();
+  const row = {
+    id: snap.id, kind: r.kind, status: r.status, schoolYear: r.schoolYear, gradeLevel: r.gradeLevel, sectionId: r.sectionId,
+    sectionName: r.sectionName || '', requestedByName: r.requestedByName || r.requestedByEmail || '', requestedByEmail: r.requestedByEmail || '',
+    displayName: r.displayName || '', lrn: r.kind === 'add' ? r.student?.lrn || '' : r.lrn || '', createdAt: millis(r.createdAt),
+    decidedAt: millis(r.decidedAt), decidedByName: r.decidedByName || '', decisionReason: r.decisionReason || '',
+  };
+  if (r.kind === 'add') Object.assign(row, { student: r.student, enrollType: r.enrollType, existing: flag || null });
+  else Object.assign(row, { studentId: r.studentId, reasonCode: r.reasonCode, note: r.note });
+  row.decidable = r.status === 'pending' && (actor.isAdmin || !flag?.needsAdmin);
+  return row;
+};
+
+async function waitingRows(deps, actor) {
+  if (actor.ended || (!actor.isAdmin && !reviewGrades(actor).length)) return [];
+  const snap = await requestsOf(deps.db).where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear)
+    .orderBy('createdAt', 'asc').limit(REQUEST_LIMIT).get();
+  const mine = snap.docs.filter((d) => canDecideLearnerRequest(actor, d.data()));
+  return Promise.all(mine.map(async (d) => reviewerRow(d, d.data().kind === 'add' ? await existingLearner(deps, actor, d.data()) : null, actor)));
+}
+
+export async function listLearnerRequests(deps, input) {
+  const view = input?.view ?? 'waiting';
+  if (!['waiting', 'decided'].includes(view)) fail('invalid-argument', 'Choose waiting or decided requests.');
+  const cursor = input?.cursor ?? null;
+  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms) && cursorId(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
+  const actor = await loadSchoolActor(deps);
+  const base = { schoolYear: actor.schoolYear, ended: actor.ended };
+  if (view === 'waiting') return { ...base, requests: await waitingRows(deps, actor), nextCursor: null };
+  const grades = [...new Set(reviewGrades(actor))];
+  if (!actor.isAdmin && !grades.length) return { ...base, requests: [], nextCursor: null };
+  let query = requestsOf(deps.db).where('schoolYear', '==', actor.schoolYear);
+  if (!actor.isAdmin) query = query.where('gradeLevel', 'in', grades);
+  // Withdrawn requests have no decidedAt, so only approved and rejected ones appear here.
+  query = query.orderBy('decidedAt', 'desc').orderBy(FieldPath.documentId(), 'desc');
+  if (cursor) query = query.startAfter(Timestamp.fromMillis(cursor.ms), cursor.id);
+  const snap = await query.limit(DECIDED_PAGE).get();
+  const requests = snap.docs.map((d) => reviewerRow(d, null, actor));
+  const last = snap.docs[snap.docs.length - 1];
+  return { ...base, requests, nextCursor: snap.size === DECIDED_PAGE ? { ms: millis(last.data().decidedAt), id: last.id } : null };
+}
+
+export async function getLearnerRequestCount(deps) {
+  const actor = await loadSchoolActor(deps);
+  const rows = await waitingRows(deps, actor);
+  return { count: rows.filter((r) => r.decidable).length };
+}
