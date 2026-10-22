@@ -40,16 +40,19 @@ Defaults chosen for this spec (change during review if wrong):
 
 ### Shared builder
 
-- New `shared/sf2/` holds the builder with the template passed in as `templateBuffer` (no `fetch`, no `?url`),
-  the `sf2Template.js` helpers, `firstFridayOfJune`, and the small pure helpers they need (school days in a
-  month, month label, name formatting, the day-mark wrapper `markFor`). One template file:
+- New `shared/sf2/` holds the builder (`buildSf2Workbook.js`) with the template passed in as `templateBuffer` (no
+  `fetch`, no `?url`), the moved `sf2Template.js` helpers (which read attendance through
+  `shared/sessionAttendance.js`), and its own copies of the few pure helpers the builder needs:
+  `calendar.js` (`schoolDaysInMonth`, `monthLabel`, `firstFridayOfJune`), `names.js` (`capsName`, `fullName`) and
+  `months.js` (the month rule shared by the Parent App and the server). One template file:
   `shared/sf2/sf2-template.xlsx`.
 - SIMS keeps its public API. `src/lib/sf2.js` becomes a thin wrapper that loads the template (Vite `?url` of the
-  shared file) and calls the shared builder. `sf2Template.js`, `dates.js`, `roster.js` and `attendance.js`
-  re-export what pages and tests import today, and `AttendanceSummaryPage.jsx` imports `firstFridayOfJune` from
-  shared. SIMS behavior does not change.
-- The existing SF2 tests move with the builder. A parity test builds the same fixtures through the SIMS wrapper
-  and through the server entry point and compares cell values and merges.
+  shared file) and calls the shared builder; `src/lib/sf2Template.js` re-exports the moved helpers; and
+  `AttendanceSummaryPage.jsx` imports `firstFridayOfJune` from shared. SIMS's `dates.js`, `roster.js` and
+  `attendance.js` are left alone, because live SIMS releases are assembled from older copies of them. Parity tests
+  (`calendar.test.js`, `names.test.js`) keep the shared copies equal to SIMS's. SIMS behavior does not change.
+- The existing SF2 tests keep running through the SIMS wrapper and re-export. New tests build the workbook from the
+  real template in Node, the way Cloud Functions does.
 - `scripts/syncShared.mjs` already copies `shared/` into `functions/shared/` on every functions deploy
   (`firebase.json` predeploy), so the builder and template reach the function with no new step. `exceljs`
   (`^4.4.0`, as in the root) is added to `functions/package.json`.
@@ -112,9 +115,11 @@ The call is read-only: no audit row, no writes. The response is the file and not
 
 ## Testing
 
-- **Builder:** the existing `sf2.test.js` and `sf2Template.test.js` move with the code and still pass under Node.
-- **Parity:** SIMS wrapper and server entry point give identical cells and merges for the same fixtures, including
-  half-day marks, 50 and 60 learners, and Monday alignment offsets.
+- **Builder:** the existing `src/lib/sf2.test.js` and `sf2Template.test.js` keep passing through the SIMS wrapper
+  and re-export, and `shared/sf2/buildSf2Workbook.test.js` builds a month from the real template in Node
+  (header, boys-then-girls rows, Monday-aligned marks, half-day cell notes, totals, an ArrayBuffer template).
+- **Parity:** `calendar.test.js` and `names.test.js` keep the shared copies equal to SIMS's `dates.js` and
+  `roster.js`.
 - **Emulator** (`functions/test/emulator/sf2Export.test.js`): the section's adviser receives a workbook that
   loads and shows the expected learners, marks (including half-day), totals, school id and name, and adviser
   name; another section's adviser is denied; an Administrator, a coordinator in the grade and a Curriculum

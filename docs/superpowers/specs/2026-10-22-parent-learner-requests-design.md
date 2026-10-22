@@ -35,9 +35,10 @@ Defaults chosen for this spec (change during review if wrong):
 
 ## Existing pieces reused
 
-- Actor and authority: `loadSchoolActor`, `adviserSections` (adviser lock check), `currentAssignments`,
-  `canReviewSection` grade logic, `schoolCall` (`functions/index.js`), `enforceRateLimit`,
-  `auditRow`, `inboxRef` (`functions/src/handlers/schoolAccess.js`).
+- Actor and authority: `loadSchoolActor` and `inboxRef` (`functions/src/handlers/schoolAccess.js`),
+  `currentAssignments` and `reviewGrades` (`shared/schoolAccess.js`; `reviewGrades` becomes an export),
+  `schoolCall` (`functions/index.js`), `enforceRateLimit`. Audit rows follow the shape of School access's but use
+  their own `targetType`.
 - Student and enrollment shapes: `studentShape`, `DOCS_DEFAULT` (`src/data/students.js`), `enrollmentId`,
   `studentScopeFields` (`src/data/enrollments.js`, `src/data/coordinatorScope.js`), the transfer rule in
   `planEnrollmentChange` (keeps the original enrollment date and type), and `withdrawEnrollment`
@@ -94,15 +95,16 @@ decision:        decidedAt, decidedByUid, decidedByEmail, decidedByName, decisio
 - **Dedupe:** at most one pending request per `dedupeKey`. The check is a query inside the transaction.
 - **Limits:** 20 pending requests per adviser, 30 requests per hour per adviser (`enforceRateLimit`, action
   `learnerRequest`).
-- **Indexes:** the Waiting and Decided lists (status, schoolYear, optional gradeLevel, createdAt or decidedAt) and
-  the adviser's own list (requestedByUid, sectionId, createdAt desc). Exact entries go in
-  `firestore.indexes.json` with the plan.
+- **Indexes:** four composite entries in `firestore.indexes.json`: (requestedByUid, sectionId, createdAt desc)
+  for the adviser's list; (status, schoolYear, createdAt) for Waiting; (schoolYear, decidedAt desc) and
+  (schoolYear, gradeLevel, decidedAt desc) for Decided. A withdrawn request has no `decidedAt`, so Decided lists
+  only approved and rejected ones.
 
 ## Backend
 
 New `functions/src/handlers/learnerRequests.js` with the pure rules in `shared/learnerRequests.js`
-(`LEARNER_FIELDS`, `validateLearnerFields`, `REASON_CODES`, `canDecideLearnerRequest`). Every callable is a
-`schoolCall`.
+(`validateLearnerFields`, `validateEnrollType`, `validateRemoval`, `REMOVAL_REASONS`, `isSectionAdviser`,
+`coversGrade`, `canDecideLearnerRequest`). Every callable is a `schoolCall`.
 
 | Callable | Who | What |
 |---|---|---|
@@ -114,8 +116,8 @@ New `functions/src/handlers/learnerRequests.js` with the pure rules in `shared/l
 | `resolveLearnerRequestFn` | Reviewer | `{ requestId, approve, reason }`; the approval transaction. |
 | `getLearnerRequestCountFn` | Reviewer | How many pending requests the caller may decide. |
 
-**Who files.** The caller holds the current-year `adviser` assignment for that section and owns its lock
-(the check `adviserSections` already makes). Administrators and coordinators do not file; they use SIMS.
+**Who files.** The caller holds the current-year `adviser` assignment for that section, the same assignment the
+roster and flagging calls require. Administrators and coordinators do not file; they use SIMS.
 
 **Who decides.** `canDecideLearnerRequest(actor, request)`: the request is pending, in the current school year,
 and not the caller's own; and the caller is an Administrator, or `reviewGrades(actor)` includes
@@ -136,8 +138,9 @@ current-year enrollment.
 ### Approving an add (one transaction)
 
 1. Re-read the request (still pending), the actor, the section (same school year and grade), and the
-   requester's adviser lock. If the requester no longer holds the class, fail with "The adviser no longer holds
-   this class. Reject this request." The school year must not have ended.
+   requester's `school_accounts` assignments. If the requester no longer holds an adviser assignment for the
+   section, fail with "The adviser no longer holds this class. Reject this request." The school year must not
+   have ended.
 2. No student with that LRN: create the student (`status: 'active'`, `DOCS_DEFAULT`, `createdAt` today in
    Manila, coordinator scope fields) and the enrollment `<studentId>_<schoolYear>` (grade, section, track,
    strand from the section; `type` from the request; `dateEnrolled` today; `status: 'enrolled'`).
@@ -184,8 +187,9 @@ Written to `guardians/<requesterUid>/inbox/` with `inboxRef`, `type: 'learner_re
 
 Everything below is on the Class tab and hides once the school year has ended.
 
-- **Action row** under the summary card: **Add learner** and **Download SF2** (the SF2 spec). A "2 requests
-  waiting" line appears while any are pending and opens the Requests list.
+- **Action row** under the summary card: **Add learner** and **Download SF2** (the SF2 spec). A link beside them
+  reads "2 requests waiting for approval" while any are pending, and "Past requests" once every request is
+  decided; it opens the Requests list.
 - **Add learner sheet** (lazy, like `FlagSheet`): Learner (LRN, last, first, middle, ext, sex, birthdate),
   Enrollment type (default New), then optional address and guardian and contact details. The header shows the
   fixed class. An LRN already in this class gives "This LRN is already in your class." An LRN that exists
@@ -222,7 +226,9 @@ Everything below is on the Class tab and hides once the school year has ended.
   administrator" cards still appear in Waiting, after the others and without actions, but are not counted.
 - **Decided rows:** outcome, who decided, when, and the reason.
 - Pure helpers (labels, flag text, grouping) live in `src/lib/learnerRequests.js` with tests.
-- When the school year has ended, actions are disabled and Decided stays readable.
+- When the school year has ended, requests can no longer be decided, so Waiting is empty and the page is read
+  only. Decided stays readable for Administrators; a coordinator's or Curriculum Adviser's grade scope ends with
+  the year, as it does for session corrections.
 
 ## Errors and edge cases
 
@@ -236,6 +242,8 @@ Everything below is on the Class tab and hides once the school year has ended.
   because of the dedupe check.
 - A Curriculum Adviser without a SIMS staff account cannot reach the queue; an Administrator creates the
   account under Accounts.
+- Deleting an adviser's account withdraws their pending learner requests (and clears the address and phone
+  numbers), as it already does for their school role requests.
 
 ## Testing
 
@@ -247,18 +255,21 @@ Everything below is on the Class tab and hides once the school year has ended.
   denied; add, duplicate, same-section LRN, limits; withdraw; list and count scoping; approve add as new,
   existing and unassigned, in the same section, moved, and cross-grade (Administrator only); approve each
   removal reason with the resulting statuses and scope fields; reject needs a reason; ended year blocked; the
-  requester losing the class; audit rows; Inbox notes; address and contact fields cleared.
+  requester losing the class; audit rows; Inbox notes; address and contact fields cleared; account deletion
+  withdrawing pending requests.
 - **Rules:** a rules test that the new collection is closed to every role.
 - **Builds:** SIMS build, Parent build and `npm run size`, `npm test` in root, `parent` and `functions`.
 - **Manual:** emulator browser check of the full loop (adviser files, coordinator approves, roster updates).
 
 ## Rollout
 
-1. Functions and indexes first (backward compatible; nothing calls them yet).
+1. Functions and indexes first (backward compatible; nothing calls them yet). The production backend is deployed
+   by name from a prepared tree, so that tree needs the new function files, `shared/learnerRequests.js`, the
+   `reviewGrades` export and the account-deletion change.
 2. SIMS "Learner requests" page through the SIMS release-tree process: a new preparer wrapping
    `docs/releases/2026-10-21-caps-names/prepare.mjs`, hosting only, with `Shell.jsx`, `access.js`,
-   `navigation.js` and `App.jsx` ported onto the tree's own copies. If `reviewGrades` must be exported from
-   `shared/schoolAccess.js`, the tree's older copy gets the same one-word patch.
+   `navigation.js` and `App.jsx` ported onto the tree's own copies. `reviewGrades` becomes an export of
+   `shared/schoolAccess.js`, so the tree's older copy gets the same one-word patch.
 3. Parent App last, with `npm run deploy:parent` from fresh `origin/master` (keeps PR #74), so requests cannot
    arrive before approvers have a page.
 4. Update `docs/parent-portal-adviser-guide.md` (adding and removing learners) and record the deployment under
