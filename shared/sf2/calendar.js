@@ -1,5 +1,6 @@
-// School-calendar helpers for the SF2. SIMS keeps its own copies in src/lib/dates.js (see
-// calendar.test.js, which keeps the two in step); Cloud Functions and the Parent App use these.
+// School-calendar helpers for the SF2, used by Cloud Functions and the Parent App. SIMS keeps its own copies of
+// schoolDaysInMonth and monthLabel in src/lib/dates.js (calendar.test.js keeps those in step); firstFridayOfJune
+// lives only here, and SIMS's attendance summary page imports it from this file.
 const pad2 = (n) => String(n).padStart(2, '0');
 
 // Every weekday of a month as YYYY-MM-DD. SIMS has no holiday calendar, so each weekday counts.

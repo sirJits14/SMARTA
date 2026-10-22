@@ -32,8 +32,8 @@ beforeEach(async () => {
   // Ana (F) enrolled after the first Friday of June; Ben (M) before it.
   await d.doc('enrollments/S1_2026-2027').update({ gradeLevel: 7, dateEnrolled: '2026-07-10' });
   await d.doc('enrollments/S2_2026-2027').set({ studentId: 'S2', sectionId: 'SEC1', schoolYear: year, gradeLevel: 7, status: 'enrolled', dateEnrolled: '2026-06-01' });
-  // The 21 Sep day was saved under Grade 7, as every current writer stamps the grade. The 23 Sep day carries no
-  // grade, like an older record: it is used as it is, so one old day cannot block the month.
+  // Live kiosk days carry no grade (the live scan function never writes one), so the 23 Sep day has none and takes the
+  // section's grade. The 21 Sep day carries the section's grade (Grade 7) to cover the branch where a day has one.
   await d.doc('student_attendance/SEC1_2026-09-21').set({ sectionId: 'SEC1', schoolYear: year, gradeLevel: 7, date: '2026-09-21', marks: { S1: 'L', S2: 'A' } });
   await d.doc('student_attendance/SEC1_2026-09-23').set({ sectionId: 'SEC1', schoolYear: year, date: '2026-09-23', marks: {}, sessionOverrides: { S2: { am: { absent: true } } } });
   // A stray document under this section's id that names another section must be ignored.
@@ -118,6 +118,15 @@ describe('exportSchoolSf2', () => {
     const ws = await sheetOf(await ask('admin'));
     expect(ws.getCell('X8').value).toBe(8);
     expect(ws.getCell('S14').value).toBe('X'); // the administrator still gets the day saved under Grade 7
+  });
+  it('fails for everyone when a day carries a grade that is not a grade from 7 to 12, as the live roster does', async () => {
+    // A key that is present but invalid never falls back to the section's grade, so the data is broken for every caller.
+    for (const gradeLevel of [null, '7', 13]) {
+      await db().doc('student_attendance/SEC1_2026-09-24').set({ sectionId: 'SEC1', schoolYear: year, gradeLevel, date: '2026-09-24', marks: {} });
+      for (const uid of ['teacher', 'admin']) {
+        await expect(ask(uid)).rejects.toMatchObject({ code: 'failed-precondition', message: 'Attendance record requires administrator repair.' });
+      }
+    }
   });
   it('refuses a month outside the school year, in the future, or malformed', async () => {
     for (const month of ['2026-05', '2026-11', '2027-01', '2026-13', 'garbage', undefined]) {

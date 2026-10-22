@@ -56,18 +56,19 @@ export async function exportSchoolSf2(deps, input) {
   // SIMS counts every enrollment of the section dated on or before the first Friday of June.
   const cutoff = firstFridayOfJune(section.schoolYear);
   const enrolledAsOfCutoff = enrollments.filter((e) => e.dateEnrolled <= cutoff).length;
-  // A day document counts only when it belongs to this section, the same filter SIMS applies. Like the
-  // roster, each day keeps the grade it was saved under: a caller whose scope does not cover that grade
-  // may not read the day, even if the section has since moved. A day with no recorded grade (older
-  // records) is used as it is, so one old day cannot block the month; the roster's "requires
-  // administrator repair" check is not applied.
+  // A day document counts only when it belongs to this section, the same filter SIMS applies; days of other
+  // sections are ignored. Live kiosk scans do not write a grade, so most days have none and take the
+  // section's grade, which the caller has already passed canReviewSection for. A day that does carry a
+  // grade must be a valid one (an integer 7 to 12) that the caller may review, exactly as in the live
+  // roster (docs/releases/2026-10-18-school-family/backend-source/adaptSessionAttendance.mjs): a saved
+  // value never falls back to the section's grade.
   const docsByDate = {};
   attendance.forEach((snap, i) => {
     const data = snap.exists ? snap.data() : null;
     if (data?.sectionId !== section.id) return;
-    if (Number.isInteger(data.gradeLevel) && !canReviewSection(actor, { ...section, gradeLevel: data.gradeLevel })) {
-      fail('permission-denied', 'The saved attendance grade is outside your scope.');
-    }
+    const grade = Object.hasOwn(data, 'gradeLevel') ? data.gradeLevel : section.gradeLevel;
+    if (!Number.isInteger(grade) || grade < 7 || grade > 12) fail('failed-precondition', 'Attendance record requires administrator repair.');
+    if (!canReviewSection(actor, { ...section, gradeLevel: grade })) fail('permission-denied', 'The saved attendance grade is outside your scope.');
     docsByDate[schoolDays[i]] = data;
   });
   const settings = settingsSnap.data() || {};

@@ -129,7 +129,8 @@ export const savePortalAnnouncementFn = staffCall(savePortalAnnouncement);
 // other callable, the kiosk scan included.
 export const exportSchoolSf2Fn = schoolCall(
   async (deps, input) => (await import('./src/handlers/sf2Export.js')).exportSchoolSf2(deps, input),
-  { memory: '512MiB', timeoutSeconds: 60 });
+  // One workbook build peaks near 150 MB, so a 512 MiB instance should not take dozens of requests at once.
+  { memory: '512MiB', timeoutSeconds: 60, concurrency: 5 });
 export const onAttendanceCorrectionCreated = onDocumentCreated(
   { document: 'attendance_corrections/{id}', retry: true }, event =>
     handleAttendanceCorrection(deps(), { id: event.params.id, data: event.data?.data() }));
