@@ -40,10 +40,16 @@ describe('gradeSummary', () => {
   ];
   const schedules = new Map([['AM', { id: 'AM', name: 'Morning Shift' }]]);
   const counts = new Map([['a', { male: 21, female: 19, total: 40 }], ['e', { male: 5, female: 4, total: 10 }]]);
-  const build = (grade, withCounts = counts) => gradeSummary({ grade, sections, counts: withCounts, schedules, schoolYear: YEAR });
+  const build = (grade, withCounts = counts, list = sections) => gradeSummary({ grade, sections: list, counts: withCounts, schedules, schoolYear: YEAR });
 
   it('lists one grade and one school year in the order given', () => {
     expect(build(8).rows.map((row) => row.name)).toEqual(['Mabini', 'Rizal']);
+    expect(build(8, counts, [...sections].reverse()).rows.map((row) => row.name)).toEqual(['Rizal', 'Mabini']);
+  });
+
+  it('carries the grade as a number, even when given as text, and the school year', () => {
+    expect(build(8)).toMatchObject({ grade: 8, schoolYear: YEAR });
+    expect(build('8')).toMatchObject({ grade: 8, schoolYear: YEAR });
   });
 
   it('carries the numbers and labels the table shows', () => {

@@ -27,12 +27,16 @@ const change = (node, value) => act(async () => {
   node.dispatchEvent(new Event(node.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
 });
 
-// Downloads are captured instead of saved: the link click is swallowed and its Blob kept.
+// With ?checks, downloads are captured instead of saved: the link click is swallowed and its Blob
+// kept. Without it the page is a plain preview and Export image downloads for real.
+const checking = location.search.includes('checks');
 const downloads = [];
 const blobs = new Map();
-const createObjectURL = URL.createObjectURL.bind(URL);
-URL.createObjectURL = (blob) => { const url = createObjectURL(blob); blobs.set(url, blob); return url; };
-HTMLAnchorElement.prototype.click = function capture() { downloads.push({ filename: this.download, blob: blobs.get(this.href) }); };
+if (checking) {
+  const createObjectURL = URL.createObjectURL.bind(URL);
+  URL.createObjectURL = (blob) => { const url = createObjectURL(blob); blobs.set(url, blob); return url; };
+  HTMLAnchorElement.prototype.click = function capture() { downloads.push({ filename: this.download, blob: blobs.get(this.href) }); };
+}
 
 const reset = async (key) => { downloads.length = 0; await render(admin, SCHOOL_YEAR, key); };
 const exportAndWait = async () => {
@@ -99,12 +103,16 @@ const checks = [
     const filtered = await inspect((await exportAndWait()).blob);
     assert(filtered.height === full.height, 'The search box changed which sections were exported');
   }],
-  ['Grade 11 exports its own file, with the Strand column and the missing-sex note', async () => {
+  ['Grade 11 exports its own file, as a different image from Grade 8', async () => {
     await reset('grade-11');
+    const grade8 = await inspect((await exportAndWait()).blob);
+    downloads.length = 0;
     await click(gradeButton(11));
     assert(exportButton().getAttribute('aria-label') === 'Export image of Grade 11 sections', 'The button did not follow the grade');
     const { filename, blob } = await exportAndWait();
     assert(filename === 'BNHS-Grade-11-Sections-SY2026-2027.png', `Wrong file name: ${filename}`);
+    const grade11 = await inspect(blob);
+    assert(grade11.height !== grade8.height, `Grade 11 came out as tall as Grade 8 (${grade8.height}px)`);
     showPreview('Grade 11 (senior high: Strand column, one learner without a sex on record)', blob);
   }],
   ['A failed export shows an alert, leaves the page usable, recovers and clears when the view changes', async () => {
@@ -140,16 +148,18 @@ const checks = [
   }],
   ['Dark mode still produces a light image', async () => {
     await reset('dark');
-    document.documentElement.setAttribute('data-theme', 'dark');
+    const root = document.documentElement;
+    const theme = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', 'dark');
     try {
       const pixels = await inspect((await exportAndWait()).blob);
       assert(pixels.corner === '255,255,255,255', 'Dark mode leaked into the image');
-    } finally { document.documentElement.removeAttribute('data-theme'); }
+    } finally { if (theme === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', theme); }
   }],
 ];
 
 if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-if (location.search.includes('checks')) {
+if (checking) {
   for (const [name, run] of checks) {
     const result = document.getElementById('results').appendChild(document.createElement('p'));
     try { await run(); result.textContent = `PASS ${name}`; }
