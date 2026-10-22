@@ -11,6 +11,9 @@ const people = {
   admin: { email: 'admin@school.test', displayName: 'Ada Admin' },
   coord7: { email: 'coord7@school.test', displayName: 'Cora Seven' },
   ca7: { email: 'ca7@deped.gov.ph', displayName: 'Cleo Curriculum' },
+  ca8: { email: 'ca8@deped.gov.ph', displayName: 'Cade Eight' }, // Curriculum Adviser for Grade 8 only
+  coord8: { email: 'coord8@school.test', displayName: 'Cory Eight' }, // Grade 8 coordinator
+  nobody: { email: 'nobody@deped.gov.ph', displayName: 'Nina Nobody' }, // signed in, but holds no school role
 };
 const deps = (uid) => ({ db: db(), now, uid, email: people[uid].email, displayName: people[uid].displayName, authTime: 1792195200 });
 const ask = (uid = 'teacher', over = {}) => exportSchoolSf2(deps(uid), { sectionId: 'SEC1', month: '2026-09', ...over });
@@ -29,15 +32,19 @@ beforeEach(async () => {
   // Ana (F) enrolled after the first Friday of June; Ben (M) before it.
   await d.doc('enrollments/S1_2026-2027').update({ gradeLevel: 7, dateEnrolled: '2026-07-10' });
   await d.doc('enrollments/S2_2026-2027').set({ studentId: 'S2', sectionId: 'SEC1', schoolYear: year, gradeLevel: 7, status: 'enrolled', dateEnrolled: '2026-06-01' });
-  await d.doc('student_attendance/SEC1_2026-09-21').set({ sectionId: 'SEC1', schoolYear: year, date: '2026-09-21', marks: { S1: 'L', S2: 'A' } });
+  // The 21 Sep day was saved under Grade 7, as every current writer stamps the grade. The 23 Sep day carries no
+  // grade, like an older record: it is used as it is, so one old day cannot block the month.
+  await d.doc('student_attendance/SEC1_2026-09-21').set({ sectionId: 'SEC1', schoolYear: year, gradeLevel: 7, date: '2026-09-21', marks: { S1: 'L', S2: 'A' } });
   await d.doc('student_attendance/SEC1_2026-09-23').set({ sectionId: 'SEC1', schoolYear: year, date: '2026-09-23', marks: {}, sessionOverrides: { S2: { am: { absent: true } } } });
   // A stray document under this section's id that names another section must be ignored.
   await d.doc('student_attendance/SEC1_2026-09-22').set({ sectionId: 'SEC2', schoolYear: year, date: '2026-09-22', marks: { S2: 'A' } });
   await d.doc('school_accounts/teacher').set({ assignments: [{ role: 'adviser', schoolYear: year, sectionId: 'SEC1', gradeLevel: 7 }] });
   await d.doc('school_accounts/other').set({ assignments: [{ role: 'adviser', schoolYear: year, sectionId: 'SEC2', gradeLevel: 7 }] });
   await d.doc('school_accounts/ca7').set({ assignments: [{ role: 'curriculum_adviser', schoolYear: year, gradeLevel: 7 }] });
+  await d.doc('school_accounts/ca8').set({ assignments: [{ role: 'curriculum_adviser', schoolYear: year, gradeLevel: 8 }] });
   await d.doc('users/admin@school.test').set({ uid: 'admin', role: 'admin' });
   await d.doc('users/coord7@school.test').set({ uid: 'coord7', role: 'glc', gradeLevel: 7, name: 'Cora Seven' });
+  await d.doc('users/coord8@school.test').set({ uid: 'coord8', role: 'glc', gradeLevel: 8, name: 'Cory Eight' });
 });
 
 describe('exportSchoolSf2', () => {
@@ -62,11 +69,55 @@ describe('exportSchoolSf2', () => {
     const ws = await sheetOf(await ask());
     expect(ws.getCell('T14').value ?? '').toBe(''); // Tuesday 22 Sep stays blank (present), not an X
   });
+  it('lists only enrolled learners but counts every enrollment in the June cutoff figure', async () => {
+    const d = db();
+    // Carl dropped out. He sorts after Ben, so he would be the next male row if he were listed.
+    await d.doc('students/S3').set({ lrn: '100000000003', firstName: 'Carl', lastName: 'Ebro', sex: 'M' });
+    await d.doc('enrollments/S3_2026-2027').set({ studentId: 'S3', sectionId: 'SEC1', schoolYear: year, gradeLevel: 7, status: 'dropped', dateEnrolled: '2026-06-02' });
+    const ws = await sheetOf(await ask());
+    expect(ws.getCell('B14').value).toBe('DY, BEN');
+    expect(ws.getCell('B15').value ?? '').toBe('');
+    expect(ws.getCell('AJ70').value).toBe(2); // registered: Ana and Ben only
+    expect(ws.getCell('AJ66').value).toBe(2); // Ben and Carl were both enrolled by the first Friday of June, as SIMS counts
+  });
+  it('leaves out a learner whose sex is missing, as SIMS does', async () => {
+    const d = db();
+    // Dan would sort first in the male block if he were listed.
+    await d.doc('students/S4').set({ lrn: '100000000004', firstName: 'Dan', lastName: 'Abad' });
+    await d.doc('enrollments/S4_2026-2027').set({ studentId: 'S4', sectionId: 'SEC1', schoolYear: year, gradeLevel: 7, status: 'enrolled', dateEnrolled: '2026-06-03' });
+    const ws = await sheetOf(await ask());
+    expect(ws.getCell('B14').value).toBe('DY, BEN');
+    expect(ws.getCell('B15').value ?? '').toBe('');
+    expect(ws.getCell('AJ70').value).toBe(2); // registered: Ana and Ben only
+  });
   it('lets an administrator, a coordinator for the grade and a Curriculum Adviser export too', async () => {
     for (const uid of ['admin', 'coord7', 'ca7']) expect((await ask(uid)).filename).toBe('SF2_Rizal_2026-09.xlsx');
   });
   it('refuses an adviser of another section', async () => {
     await expect(ask('other')).rejects.toMatchObject({ code: 'permission-denied', message: 'This section is outside your attendance access.' });
+  });
+  it('refuses a Curriculum Adviser or coordinator of another grade', async () => {
+    for (const uid of ['ca8', 'coord8']) {
+      await expect(ask(uid)).rejects.toMatchObject({ code: 'permission-denied', message: 'This section is outside your attendance access.' });
+    }
+  });
+  it('refuses an account that holds no school role', async () => {
+    await expect(ask('nobody')).rejects.toMatchObject({ code: 'permission-denied' });
+  });
+  it('refuses a section of another school year, even for the administrator', async () => {
+    await db().doc('sections/OLD').set({ name: 'Luna', gradeLevel: 7, schoolYear: '2025-2026' });
+    // 2025-09 is a valid month of that older year, so only the school year can be the reason.
+    await expect(ask('admin', { sectionId: 'OLD', month: '2025-09' }))
+      .rejects.toMatchObject({ code: 'permission-denied', message: 'This section is outside your attendance access.' });
+  });
+  it('refuses days saved under a grade the caller does not cover, even after the section moved', async () => {
+    await db().doc('sections/SEC1').update({ gradeLevel: 8 }); // the 21 Sep day stays stamped Grade 7
+    for (const uid of ['ca8', 'coord8']) {
+      await expect(ask(uid)).rejects.toMatchObject({ code: 'permission-denied', message: 'The saved attendance grade is outside your scope.' });
+    }
+    const ws = await sheetOf(await ask('admin'));
+    expect(ws.getCell('X8').value).toBe(8);
+    expect(ws.getCell('S14').value).toBe('X'); // the administrator still gets the day saved under Grade 7
   });
   it('refuses a month outside the school year, in the future, or malformed', async () => {
     for (const month of ['2026-05', '2026-11', '2027-01', '2026-13', 'garbage', undefined]) {
@@ -89,4 +140,8 @@ describe('exportSchoolSf2', () => {
     await expect(ask()).rejects.toMatchObject({ code: 'resource-exhausted', message: 'Too many exports. Try again in a few minutes.' });
     expect((await ask('admin')).filename).toBe('SF2_Rizal_2026-09.xlsx');
   }, 60000);
+  it('does not count refused requests against the export limit', async () => {
+    for (let i = 0; i < 5; i++) await expect(ask('other')).rejects.toMatchObject({ code: 'permission-denied' });
+    expect((await db().doc('rate_limits/other').get()).exists).toBe(false); // enforceRateLimit keeps its counters in rate_limits/<uid>
+  });
 });

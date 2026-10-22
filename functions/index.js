@@ -24,7 +24,6 @@ import { getSchoolContext, requestSchoolRole, setAdvisoryRequestsEnabled, withdr
 import { retireSubjectTeachers } from './src/handlers/retireSubjectTeachers.js';
 import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, getSchoolLearnerHistory, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
-import { exportSchoolSf2 } from './src/handlers/sf2Export.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -126,7 +125,11 @@ export const getPortalAnnouncementsFn = schoolCall(getPortalAnnouncements);
 export const getPortalAnnouncementFn = schoolCall(getPortalAnnouncement);
 export const savePortalAnnouncementFn = staffCall(savePortalAnnouncement);
 // The SF2 workbook for a section and month, built on the server so phones never load ExcelJS (spec 2026-10-22).
-export const exportSchoolSf2Fn = schoolCall(exportSchoolSf2, { memory: '512MiB', timeoutSeconds: 60 });
+// The handler (and ExcelJS with it) loads on the first request, so it does not slow the cold start of every
+// other callable, the kiosk scan included.
+export const exportSchoolSf2Fn = schoolCall(
+  async (deps, input) => (await import('./src/handlers/sf2Export.js')).exportSchoolSf2(deps, input),
+  { memory: '512MiB', timeoutSeconds: 60 });
 export const onAttendanceCorrectionCreated = onDocumentCreated(
   { document: 'attendance_corrections/{id}', retry: true }, event =>
     handleAttendanceCorrection(deps(), { id: event.params.id, data: event.data?.data() }));

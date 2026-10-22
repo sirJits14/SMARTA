@@ -74,10 +74,13 @@ A `schoolCall` with 512 MiB and a 60-second timeout (`schoolCall` gains an optio
    enrolment figure counts those with `dateEnrolled` on or before the first Friday of June, as SIMS does. Read
    the roster's students, `student_attendance/<sectionId>_<date>` for each weekday of the month, and
    `settings/app` for `schoolId` and `schoolName`. A day document is used only when its `sectionId` matches the
-   section (SIMS's own filter). The roster callable's stricter `validAttendance` check is not used, because
-   documents written by live scans do not carry every field it requires.
+   section (SIMS's own filter). Like the roster callable, each day keeps the grade it was saved under: a day
+   whose saved `gradeLevel` the caller may not review fails the call with `permission-denied` ('The saved
+   attendance grade is outside your scope.'). A day with no recorded grade (older records) is used as it is,
+   so one old day cannot block a month; the roster's `failed-precondition` 'requires administrator repair'
+   check is not applied.
 6. An empty roster fails with `failed-precondition`: "There are no learners in this class yet."
-7. Sort with `depedSort`, build, `writeBuffer()`, and return `{ filename, contentType, contentBase64 }`.
+7. Keep the learners SIMS lists (`sex` M or F, as `depedSort` does; the builder sorts them), build, `writeBuffer()`, and return `{ filename, contentType, contentBase64 }`.
    `filename` is `SF2_<Section>_<YYYY-MM>.xlsx`, with `\ / : * ? " < > |` replaced by `-`.
 
 The call is read-only: no audit row, no writes. The response is the file and nothing else.

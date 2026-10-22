@@ -49,15 +49,27 @@ export async function exportSchoolSf2(deps, input) {
     deps.db.getAll(...enrolledIds.map((id) => deps.db.doc(`students/${id}`))),
     deps.db.getAll(...schoolDays.map((date) => deps.db.doc(`student_attendance/${section.id}_${date}`))),
   ]);
-  const roster = students.filter((s) => s.exists).map((s) => ({ id: s.id, ...s.data() }));
+  // SIMS lists only learners recorded as M or F, so the form does too.
+  const roster = students.filter((s) => s.exists).map((s) => ({ id: s.id, ...s.data() }))
+    .filter((s) => s.sex === 'M' || s.sex === 'F');
   if (!roster.length) fail('failed-precondition', 'There are no learners in this class yet.');
   // SIMS counts every enrollment of the section dated on or before the first Friday of June.
   const cutoff = firstFridayOfJune(section.schoolYear);
   const enrolledAsOfCutoff = enrollments.filter((e) => e.dateEnrolled <= cutoff).length;
-  // A day document counts only when it belongs to this section, the same filter SIMS applies. The roster
-  // call's stricter validAttendance check is not used: documents written by live scans lack some fields.
+  // A day document counts only when it belongs to this section, the same filter SIMS applies. Like the
+  // roster, each day keeps the grade it was saved under: a caller whose scope does not cover that grade
+  // may not read the day, even if the section has since moved. A day with no recorded grade (older
+  // records) is used as it is, so one old day cannot block the month; the roster's "requires
+  // administrator repair" check is not applied.
   const docsByDate = {};
-  attendance.forEach((snap, i) => { if (snap.exists && snap.data().sectionId === section.id) docsByDate[schoolDays[i]] = snap.data(); });
+  attendance.forEach((snap, i) => {
+    const data = snap.exists ? snap.data() : null;
+    if (data?.sectionId !== section.id) return;
+    if (Number.isInteger(data.gradeLevel) && !canReviewSection(actor, { ...section, gradeLevel: data.gradeLevel })) {
+      fail('permission-denied', 'The saved attendance grade is outside your scope.');
+    }
+    docsByDate[schoolDays[i]] = data;
+  });
   const settings = settingsSnap.data() || {};
   const workbook = await buildSf2Workbook({
     templateBuffer: templateBuffer(), section, roster, schoolDays, docsByDate, monthLabelText: monthLabel(input.month),
