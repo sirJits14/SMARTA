@@ -39,3 +39,12 @@
 **No DepEd email?** The Class Adviser option appears only for
 **@deped.gov.ph** accounts. An Administrator can still make any account a
 class adviser under **School access** in SIMS.
+
+## Downloading the SF2
+
+1. Open **Class** in the parent app and tap **Download SF2**.
+2. Choose the month. The list shows this school year's months up to the current one.
+3. Tap **Download**. On a phone the share sheet opens: choose **Save to Files**, **Drive**, or open the file in Excel. On a computer the file downloads.
+4. The file is the same SF2 that SIMS exports: your learners (boys first, then girls), the daily marks, the totals and your name. Check it before you print or submit it.
+
+If the button is greyed out, your class has no learners yet. If you see "Too many exports", wait a few minutes and try again.

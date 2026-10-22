@@ -92,7 +92,7 @@ The call is read-only: no audit row, no writes. The response is the file and not
   class yet." when the roster is empty.
 - **Sheet** (`Sf2Sheet.jsx`, lazy): the class label, a month picker (newest first, defaulting to the current
   month, built by a pure helper that applies the same range and first-weekday rule as the server), and a
-  **Download** button. While waiting it reads "Preparing SF2…". Errors show a banner with Try again.
+  **Download** button. While waiting it reads "Preparing SF2…". Errors show a banner above the Download button, which stays enabled so the person can try again.
 - **Saving:** decode the base64 into a `File` of type
   `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. When
   `navigator.canShare?.({ files: [file] })` is true, call `navigator.share` (on phones this offers Save to
