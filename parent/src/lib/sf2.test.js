@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { XLSX_TYPE, base64ToFile, isCoarsePointer, saveFile, sf2MonthOptions } from './sf2.js';
+import { XLSX_TYPE, base64ToFile, isCoarsePointer, saveFile, saveWithFallback, sf2MonthOptions } from './sf2.js';
 
 describe('sf2MonthOptions', () => {
   it('labels the school year’s months up to today, newest first', () => {
@@ -82,5 +82,37 @@ describe('saveFile', () => {
     const nav = { canShare: () => true, share: async () => { throw new Error('share failed'); } };
     expect(await saveFile(file, nav, doc, true)).toBe('downloaded');
     expect(link.click).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('saveWithFallback', () => {
+  const file = new File(['x'], 'SF2.xlsx', { type: XLSX_TYPE });
+  it('returns a successful share after a single attempt', async () => {
+    const save = vi.fn(async () => 'shared');
+    expect(await saveWithFallback(file, save)).toBe('shared');
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith(file);
+  });
+  it('returns "cancelled" after a single attempt, without forcing a download', async () => {
+    const save = vi.fn(async () => 'cancelled');
+    expect(await saveWithFallback(file, save)).toBe('cancelled');
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+  it('forces the plain download when the browser refuses the share again', async () => {
+    const save = vi.fn().mockResolvedValueOnce('blocked').mockResolvedValueOnce('downloaded');
+    expect(await saveWithFallback(file, save)).toBe('downloaded');
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenNthCalledWith(1, file);
+    expect(save).toHaveBeenNthCalledWith(2, file, undefined, undefined, false);
+  });
+  it('returns the fallback result as is, even when it is "blocked" too', async () => {
+    const save = vi.fn().mockResolvedValueOnce('blocked').mockResolvedValueOnce('blocked');
+    expect(await saveWithFallback(file, save)).toBe('blocked');
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+  it('lets a failing save propagate', async () => {
+    const save = vi.fn(async () => { throw new Error('disk full'); });
+    await expect(saveWithFallback(file, save)).rejects.toThrow('disk full');
+    expect(save).toHaveBeenCalledTimes(1);
   });
 });

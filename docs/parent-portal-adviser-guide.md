@@ -44,7 +44,7 @@ class adviser under **School access** in SIMS.
 
 1. Open **Class** in the parent app and tap **Download SF2**.
 2. Choose the month. The list shows this school year's months up to the current one.
-3. Tap **Download**. On a phone the share sheet opens: choose **Save to Files**, **Drive**, or open the file in Excel. If the phone asks for another tap, the button now reads **Save SF2**: tap it to open the share sheet. On a computer the file downloads.
+3. Tap **Download**. On a phone the share sheet opens: choose **Save to Files**, **Drive**, or open the file in Excel. If the phone asks for another tap, or you closed the share sheet, the button now reads **Save SF2**: tap **Save SF2** to open the share sheet again. On a computer the file downloads.
 4. The file is the same SF2 that SIMS exports: your learners (boys first, then girls), the daily marks, the totals and your name. Check it before you print or submit it.
 
 If the button is greyed out, your class has no learners yet. If you see "Too many exports", wait a few minutes and try again.

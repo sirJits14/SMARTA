@@ -58,7 +58,7 @@ describe('strings', () => {
       expect(typeof S[k], k).toBe('string');
   });
   it('has the SF2 download strings', () => {
-    for (const k of ['classActions', 'sf2Button', 'sf2Title', 'sf2Hint', 'sf2Month', 'sf2Download', 'sf2Preparing', 'sf2Close', 'sf2NoLearners', 'sf2NoMonths', 'sf2Ready', 'sf2Save', 'sf2Failed'])
+    for (const k of ['classActions', 'sf2Button', 'sf2Title', 'sf2Hint', 'sf2Month', 'sf2Download', 'sf2Preparing', 'sf2Close', 'sf2NoLearners', 'sf2NoMonths', 'sf2Ready', 'sf2Save', 'sf2Failed', 'sf2SaveFailed'])
       expect(typeof S[k], k).toBe('string');
   });
   it('calls the family role Parent/Guardian and drops Subject Teacher copy', () => {

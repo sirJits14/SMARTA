@@ -328,6 +328,7 @@ const S = {
   sf2Ready: 'Your SF2 is ready. Tap Save to keep it.',
   sf2Save: 'Save SF2',
   sf2Failed: 'Could not prepare the SF2. Try again.',
+  sf2SaveFailed: 'Could not save the SF2. Tap Save SF2 to try again.',
   sf2Close: 'Close',
   sf2NoLearners: 'No learners in this class yet.',
   sf2NoMonths: 'There are no school months to download yet.',

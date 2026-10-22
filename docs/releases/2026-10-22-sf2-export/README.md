@@ -39,4 +39,5 @@ Deploying needs the user's explicit approval in chat.
 
 - After deploying Functions, confirm the deployed source contains `functions/shared/sf2/sf2-template.xlsx` (the predeploy step copies it there). Earlier releases downloaded the published source archive read-only through the Cloud Functions v2 `generateDownloadUrl` call; see `docs/audits/deployments/2026-10-15-pm-session-functions/README.md`.
 - As a real class adviser, download a month and compare it with the SIMS export for the same section: same learners, marks and totals.
+- Test on a real iPhone (Safari and the installed web app) and an Android phone before relying on it: the share sheet opens first time or via **Save SF2**; closing it leaves the sheet open; on a computer the file downloads.
 - Record one deployment under `docs/audits/deployments/` covering both: for Functions the source revision, the exact command and the result; for the Parent App the source revision and the byte check of the live Parent assets.

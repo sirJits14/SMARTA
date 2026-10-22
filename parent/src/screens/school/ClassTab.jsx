@@ -12,7 +12,7 @@ import { Banner, Btn, Inp, Sel, Spinner, EmptyState } from '../../components/ui.
 import Icon from '../../components/Icon.jsx';
 import UndoToast from './UndoToast.jsx';
 import ClassActions from './ClassActions.jsx';
-import { sf2MonthOptions, base64ToFile, saveFile } from '../../lib/sf2.js';
+import { sf2MonthOptions, base64ToFile, saveFile, saveWithFallback } from '../../lib/sf2.js';
 import S from '../../strings.js';
 import './ClassTab.css';
 
@@ -93,7 +93,10 @@ export default function ClassTab({ sections, ended, navigate }) {
       const file = base64ToFile(data.contentBase64, data.filename, data.contentType);
       // The file is ready: do not keep the sheet locked while the share dialog is open (the ref lock stays until saveFile settles).
       setSf2File(file); setSf2Busy(false);
-      if (saved(await saveFile(file))) setSf2Open(false);
+      // From here the file exists, so a failure to save it is not a failure to prepare it.
+      try {
+        if (saved(await saveFile(file))) setSf2Open(false);
+      } catch { setSf2Error(S.sf2SaveFailed); }
     } catch (e) { setSf2Error(schoolError(e, S.sf2Failed)); }
     finally { sf2Lock.current = false; setSf2Busy(false); }
   };
@@ -102,10 +105,8 @@ export default function ClassTab({ sections, ended, navigate }) {
     if (!sf2File || sf2Lock.current) return;
     sf2Lock.current = true; setSf2Error('');
     try {
-      let outcome = await saveFile(sf2File);
-      if (outcome === 'blocked') outcome = await saveFile(sf2File, undefined, undefined, false);
-      if (saved(outcome)) setSf2Open(false);
-    } catch (e) { setSf2Error(schoolError(e, S.sf2Failed)); }
+      if (saved(await saveWithFallback(sf2File))) setSf2Open(false);
+    } catch { setSf2Error(S.sf2SaveFailed); }
     finally { sf2Lock.current = false; }
   };
 

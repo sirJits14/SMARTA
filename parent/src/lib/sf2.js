@@ -43,3 +43,10 @@ export async function saveFile(file, nav = typeof navigator === 'undefined' ? un
   setTimeout(() => URL.revokeObjectURL(url), 4000);
   return 'downloaded';
 }
+
+// The Save SF2 button is a fresh tap, so the share sheet is allowed again; if the browser still refuses it,
+// fall back to a plain download so nobody is left stuck.
+export async function saveWithFallback(file, save = saveFile) {
+  const outcome = await save(file);
+  return outcome === 'blocked' ? save(file, undefined, undefined, false) : outcome;
+}
