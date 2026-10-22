@@ -110,7 +110,9 @@ describe('filing a removal', () => {
       reasonCode: 'dropped_out', note: 'Stopped attending in September', dedupeKey: 'remove:SEC1:S1', requestedByUid: 'teacher',
     });
     const audit = (await db().collection('audit_log').where('action', '==', 'learner.removalRequested').get()).docs.map((d) => d.data());
-    expect(audit[0].details).toMatchObject({ lrn: '100000000001', name: 'Ana B. Cruz', reasonCode: 'dropped_out' });
+    // Audit rows never carry free text: the note stays on the request, so it is provably absent here.
+    expect(audit).toHaveLength(1);
+    expect(audit[0].details).toEqual({ sectionId: 'SEC1', gradeLevel: 7, lrn: '100000000001', name: 'Ana B. Cruz', reasonCode: 'dropped_out' });
   });
   it('needs a learner in this class, a known reason and a note', async () => {
     await expect(requestLearnerRemoval(deps('teacher'), removal({ studentId: 'S2' }))).rejects.toMatchObject({ code: 'permission-denied' });
@@ -136,9 +138,35 @@ describe('withdrawing and listing as the adviser', () => {
     expect(saved.student).toMatchObject({ lrn: '200000000001', birthdate: '2012-05-01', guardianName: 'Maria Dela Cruz' });
     await expect(withdrawLearnerRequest(deps('teacher'), { requestId: id })).rejects.toMatchObject({ code: 'failed-precondition' });
   });
+  it('records the withdrawal in the audit log with the section, grade, LRN and name only', async () => {
+    const { id } = await file();
+    await withdrawLearnerRequest(deps('teacher'), { requestId: id });
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.requestWithdrawn').get()).docs.map((d) => d.data());
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({ targetType: 'learner_request', targetId: id, actorUid: 'teacher@deped.gov.ph' });
+    expect(audit[0].details).toEqual({ sectionId: 'SEC1', gradeLevel: 7, lrn: '200000000001', name: 'Juan Santos Dela Cruz Jr' });
+  });
   it("hides other people's requests", async () => {
     const { id } = await file();
     await expect(withdrawLearnerRequest(deps('other'), { requestId: id })).rejects.toMatchObject({ code: 'not-found' });
+  });
+});
+
+describe('text fields must be text', () => {
+  it('refuses non-text input for both filings before the rate limit or any request is touched', async () => {
+    const refused = { code: 'invalid-argument', message: 'Check the form and try again.' };
+    const bad = [
+      () => requestLearnerAdd(deps('teacher'), addInput({ student: { ...form(), lastName: { a: 1 } } })),
+      () => requestLearnerAdd(deps('teacher'), addInput({ student: { ...form(), lrn: 200000000001 } })), // a number, not text
+      () => requestLearnerAdd(deps('teacher'), addInput({ student: 'x' })),
+      () => requestLearnerAdd(deps('teacher'), addInput({ enrollType: 5 })),
+      () => requestLearnerRemoval(deps('teacher'), removal({ note: { x: 1 } })),
+      () => requestLearnerRemoval(deps('teacher'), removal({ reasonCode: ['dropped_out'] })),
+    ];
+    for (const attempt of bad) await expect(attempt()).rejects.toMatchObject(refused);
+    expect(await allRequests()).toEqual([]);
+    expect((await db().doc('rate_limits/teacher').get()).exists).toBe(false);
+    expect((await db().collection('audit_log').get()).size).toBe(0);
   });
 });
 

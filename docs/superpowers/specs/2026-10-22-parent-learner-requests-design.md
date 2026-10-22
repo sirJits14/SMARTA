@@ -91,7 +91,8 @@ decision:        decidedAt, decidedByUid, decidedByEmail, decidedByName, decisio
 - `reasonCode` is `transferred_out`, `dropped_out` or `moved_section`; `note` is 1 to 500 characters.
 - **Minimal retention:** in the same write that decides or withdraws a request, `address`, `guardianContact`
   and `contactNumber` are removed. The request keeps the rest of the submission (so a rejected add can be sent
-  again with most of the form filled) and the facts of the decision. Audit rows carry only the LRN and name.
+  again with most of the form filled) and the facts of the decision. Audit rows carry the LRN, name, section and grade and,
+  for removals, the reason code, never free text or contact details.
 - **Dedupe:** at most one pending request per `dedupeKey`. The check is a query inside the transaction.
 - **Limits:** 20 pending requests per adviser, 30 requests per hour per adviser (`enforceRateLimit`, action
   `learnerRequest`).
@@ -169,7 +170,7 @@ current-year enrollment.
 3. In every case the learner's scope fields are cleared (`gradeLevel: null`, `scopeSchoolYear: null`).
    Attendance history and the learner record stay. Family links lose attendance access automatically because
    those calls require an *enrolled* enrollment.
-4. Mark approved, audit `learner.removalApproved` (reason code and note), Inbox note.
+4. Mark approved, audit `learner.removalApproved` (reason code; the note stays on the request), Inbox note.
 
 ### Rejecting
 

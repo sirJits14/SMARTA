@@ -19,6 +19,16 @@ const fail = (code, message) => { throw new CallableError(code, message); };
 const identifier = (value) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 const cursorId = (value) => typeof value === 'string' && value.length > 0 && value.length <= 1500 && !value.includes('/');
 const millis = (value) => (value?.toMillis ? value.toMillis() : null);
+// The shared validator turns anything into text (an object becomes "[object Object]", a number is
+// accepted), so a filing is checked here first: only strings count as text, and null or undefined
+// mean "not filled in", which the validator then reports field by field.
+const NOT_TEXT = 'Check the form and try again.';
+const isTextOrMissing = (value) => value === undefined || value === null || typeof value === 'string';
+const isPlainObject = (value) => {
+  if (value === null || typeof value !== 'object') return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+};
 const clock = (deps) => (deps.now || (() => new Date()))();
 const requestsOf = (db) => db.collection('learner_change_requests');
 const classLabel = (section) => `Grade ${section.gradeLevel} · ${section.name || section.sectionName || section.id}`;
@@ -60,6 +70,9 @@ const filing = (actor, deps, section, extra) => ({
 
 export async function requestLearnerAdd(deps, input) {
   if (!identifier(input?.sectionId)) fail('invalid-argument', 'Choose a class.');
+  if (!isPlainObject(input.student) || !Object.values(input.student).every(isTextOrMissing) || !isTextOrMissing(input.enrollType)) {
+    fail('invalid-argument', NOT_TEXT);
+  }
   const fields = validateLearnerFields(input.student, { today: manilaDate(clock(deps)) });
   if (!fields.ok) fail('invalid-argument', Object.values(fields.errors)[0]);
   const type = validateEnrollType(input.enrollType);
@@ -93,6 +106,7 @@ export async function requestLearnerAdd(deps, input) {
 
 export async function requestLearnerRemoval(deps, input) {
   if (!identifier(input?.sectionId) || !identifier(input?.studentId)) fail('invalid-argument', 'Choose a learner.');
+  if (!isTextOrMissing(input.note) || !isTextOrMissing(input.reasonCode)) fail('invalid-argument', NOT_TEXT);
   const removal = validateRemoval(input);
   if (!removal.ok) fail('invalid-argument', Object.values(removal.errors)[0]);
   await enforceRateLimit(deps.db, deps.uid, 'learnerRequest', LIMITS.learnerRequest, clock(deps).getTime(), TOO_MANY);
@@ -116,8 +130,9 @@ export async function requestLearnerRemoval(deps, input) {
     const ref = requestsOf(deps.db).doc();
     tx.set(ref, filing(actor, deps, section, { kind: 'remove', dedupeKey: key, studentId: input.studentId, lrn: student.data().lrn || '',
       displayName: name, reasonCode: removal.value.reasonCode, note: removal.value.note }));
+    // Audit rows carry the reason code only; the free-text note stays on the request.
     tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'learner.removalRequested', ref.id,
-      { sectionId: section.id, gradeLevel: section.gradeLevel, lrn: student.data().lrn || '', name, reasonCode: removal.value.reasonCode, note: removal.value.note }));
+      { sectionId: section.id, gradeLevel: section.gradeLevel, lrn: student.data().lrn || '', name, reasonCode: removal.value.reasonCode }));
     return { id: ref.id, status: 'pending' };
   });
 }
