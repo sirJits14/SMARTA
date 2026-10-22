@@ -22,6 +22,7 @@ const TOTALS_ROW = 72;
 const MAX_LINES = 2;
 const MAX_SCALE = 2;
 const MAX_PIXELS = 16_000_000; // iOS Safari's canvas area limit
+const BEST_EFFORT_MS = 3000; // the longest the logo or the fonts may delay an export
 const ELLIPSIS = '…';
 const font = (weight, size) => `${weight} ${size}px ${T.print}`;
 
@@ -196,9 +197,17 @@ function loadLogo() {
   });
 }
 
-// Renders a gradeSummary as a PNG Blob. The logo and Inter are best effort; a failure to encode rejects.
+// Resolves to `fallback` if `promise` has not settled within `ms`. The timer is cleared once the race ends.
+function within(promise, ms, fallback) {
+  let timer;
+  const timeout = new Promise((resolve) => { timer = setTimeout(() => resolve(fallback), ms); });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+// Renders a gradeSummary as a PNG Blob. The logo and Inter are best effort and each is waited for
+// at most BEST_EFFORT_MS, so a stalled request cannot hold the export; a failure to encode rejects.
 export async function renderGradeSummaryPng(summary, { schoolName, generatedOn = new Date() } = {}) {
-  const [logo] = await Promise.all([loadLogo(), loadFonts()]);
+  const [logo] = await Promise.all([within(loadLogo(), BEST_EFFORT_MS, null), within(loadFonts(), BEST_EFFORT_MS)]);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const measure = (value, spec) => { ctx.font = spec; return ctx.measureText(value).width; };

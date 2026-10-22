@@ -188,22 +188,30 @@ describe('fitScale', () => {
   });
 });
 
+// `logo` is 'load', 'fail' or 'hang' (the request neither loads nor fails).
 function fakeBrowser({ blob = new Blob(['png'], { type: 'image/png' }), logo = 'load' } = {}) {
   const ctx = {
-    measureText: (text) => ({ width: text.length * 10 }),
+    measureText: vi.fn((text) => ({ width: text.length * 10 })),
     scale: vi.fn(), fillRect: vi.fn(), fillText: vi.fn(), drawImage: vi.fn(),
   };
   const canvas = { width: 0, height: 0, getContext: () => ctx, toBlob: vi.fn((done, type) => done(type === 'image/png' ? blob : null)) };
   const fonts = { load: vi.fn(async () => []) };
   vi.stubGlobal('document', { createElement: vi.fn(() => canvas), fonts });
-  vi.stubGlobal('Image', class { set src(value) { queueMicrotask(() => (logo === 'load' ? this.onload?.() : this.onerror?.())); } });
+  vi.stubGlobal('Image', class {
+    set src(value) {
+      if (logo !== 'hang') queueMicrotask(() => (logo === 'load' ? this.onload?.() : this.onerror?.()));
+    }
+  });
   return { canvas, ctx, fonts, blob };
 }
 
 describe('renderGradeSummaryPng', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
-  it('waits for the fonts, sizes the canvas at the fitted scale and returns the PNG', async () => {
+  it('sizes the canvas at the fitted scale and returns the PNG', async () => {
     const { canvas, ctx, fonts, blob } = fakeBrowser();
     const result = await renderGradeSummaryPng(summary(), { schoolName: 'Test School', generatedOn });
     expect(result).toBe(blob);
@@ -230,5 +238,59 @@ describe('renderGradeSummaryPng', () => {
   it('rejects when the browser cannot encode a PNG', async () => {
     fakeBrowser({ blob: null });
     await expect(renderGradeSummaryPng(summary(), { generatedOn })).rejects.toThrow('PNG');
+  });
+
+  it('waits for the fonts before it measures any text', async () => {
+    const { ctx, fonts, blob } = fakeBrowser();
+    let loaded;
+    const deferred = new Promise((resolve) => { loaded = resolve; });
+    fonts.load.mockImplementation(() => deferred);
+    const pending = renderGradeSummaryPng(summary(), { generatedOn });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fonts.load).toHaveBeenCalled();
+    expect(ctx.measureText).not.toHaveBeenCalled();
+    loaded([]);
+    await expect(pending).resolves.toBe(blob);
+    expect(ctx.measureText).toHaveBeenCalled();
+  });
+
+  describe('when a request stalls', () => {
+    const stalled = async (pending) => {
+      let settled = false;
+      pending.then(() => { settled = true; }, () => { settled = true; });
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(settled).toBe(true);
+    };
+
+    it('stops waiting for the fonts after 3 seconds and renders with the fallback', async () => {
+      vi.useFakeTimers();
+      const { fonts, blob } = fakeBrowser();
+      fonts.load.mockImplementation(() => new Promise(() => {}));
+      const pending = renderGradeSummaryPng(summary(), { generatedOn });
+      await stalled(pending);
+      await expect(pending).resolves.toBe(blob);
+    });
+
+    it('stops waiting for the logo after 3 seconds and renders without it', async () => {
+      vi.useFakeTimers();
+      const { ctx, blob } = fakeBrowser({ logo: 'hang' });
+      const pending = renderGradeSummaryPng(summary(), { generatedOn });
+      await stalled(pending);
+      await expect(pending).resolves.toBe(blob);
+      expect(ctx.drawImage).not.toHaveBeenCalled();
+    });
+
+    it('renders once both the fonts and the logo are stalled', async () => {
+      vi.useFakeTimers();
+      const { ctx, fonts } = fakeBrowser({ logo: 'hang' });
+      fonts.load.mockImplementation(() => new Promise(() => {}));
+      const pending = renderGradeSummaryPng(summary(), { generatedOn });
+      await vi.advanceTimersByTimeAsync(3000);
+      await expect(pending).resolves.toBeInstanceOf(Blob);
+      expect(ctx.drawImage).not.toHaveBeenCalled();
+      expect(vi.getTimerCount()).toBe(0);
+    });
   });
 });
