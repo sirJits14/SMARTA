@@ -212,7 +212,7 @@ export default function ClassTab({ sections, ended, navigate }) {
       {sf2Open && (
         <Suspense fallback={null}>
           <Sf2Sheet sectionLabel={sectionLabel(section)} months={sf2MonthOptions(section?.schoolYear, today)} busy={sf2Busy} error={sf2Error}
-            file={sf2File} onDownload={downloadSf2} onSave={saveSf2} onMonthChange={() => setSf2File(null)} onClose={() => setSf2Open(false)} />
+            file={sf2File} onDownload={downloadSf2} onSave={saveSf2} onMonthChange={() => { setSf2File(null); setSf2Error(''); }} onClose={() => setSf2Open(false)} />
         </Suspense>
       )}
       {toast && <UndoToast key={toast.id} message={toast.message} onUndo={toast.undo} onDone={() => setToast(null)} />}
