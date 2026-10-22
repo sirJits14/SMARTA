@@ -199,7 +199,8 @@ export default function SectionsPage({ me, schoolYear, schoolName }) {
       const summary = gradeSummary({ grade: activeGrade, sections: rows, counts: countsBySection, schedules: scheduleById, schoolYear: selectedYear });
       const png = await renderGradeSummaryPng(summary, { schoolName, generatedOn: new Date() });
       downloadBlob(png, gradeImageFilename(activeGrade, selectedYear));
-    } catch {
+    } catch (error) {
+      console.warn('Grade image export failed', error);
       setExportError('Could not create the image. Please try again.');
     } finally {
       setExporting(false);
@@ -238,7 +239,7 @@ export default function SectionsPage({ me, schoolYear, schoolName }) {
         {yearOptions.length > 1 && <div style={{ maxWidth: 300 }}>
           <Field label="School year">
             <Sel value={selectedYear} onChange={event => {
-              setYearSelection(event.target.value); setForm(null); setConfirm(null); setDetailSection(null); setEditingStudent(null);
+              setYearSelection(event.target.value); setForm(null); setConfirm(null); setDetailSection(null); setEditingStudent(null); setExportError('');
             }}>
               {yearOptions.map((year, index) => <option key={year} value={year}>{year} ({index === 0 ? 'Current' : 'Next'})</option>)}
             </Sel>
@@ -255,7 +256,7 @@ export default function SectionsPage({ me, schoolYear, schoolName }) {
               <GradePills
                 options={groups.map(([grade, list]) => ({ value: grade, label: `Grade ${grade}`, count: list.length }))}
                 value={activeGrade}
-                onChange={setSelectedGrade}
+                onChange={(grade) => { setSelectedGrade(grade); setExportError(''); }}
                 label="Grade level"
               />
             </div>

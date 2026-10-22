@@ -107,19 +107,36 @@ const checks = [
     assert(filename === 'BNHS-Grade-11-Sections-SY2026-2027.png', `Wrong file name: ${filename}`);
     showPreview('Grade 11 (senior high: Strand column, one learner without a sex on record)', blob);
   }],
-  ['A failed export shows an alert, leaves the page usable and recovers', async () => {
+  ['A failed export shows an alert, leaves the page usable, recovers and clears when the view changes', async () => {
     await reset('failure');
-    const toBlob = HTMLCanvasElement.prototype.toBlob;
-    HTMLCanvasElement.prototype.toBlob = function failing(done) { done(null); };
     const alertText = () => [...host.querySelectorAll('[role="alert"]')].map((node) => node.textContent).join('|');
-    try {
-      await click(exportButton());
-      for (let i = 0; i < 100 && !alertText(); i += 1) await act(async () => { await sleep(50); });
-      assert(alertText() === 'Could not create the image. Please try again.', `Wrong or missing export error: "${alertText()}"`);
-      assert(!downloads.length && !exportButton().disabled, 'The failed export left the page unusable');
-    } finally { HTMLCanvasElement.prototype.toBlob = toBlob; }
+    // Clicks Export image with PNG encoding broken; returns what the page logged with console.warn.
+    const failedExport = async () => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      const warn = console.warn;
+      const warnings = [];
+      HTMLCanvasElement.prototype.toBlob = function failing(done) { done(null); };
+      console.warn = (...args) => warnings.push(args);
+      try {
+        await click(exportButton());
+        for (let i = 0; i < 100 && !alertText(); i += 1) await act(async () => { await sleep(50); });
+      } finally { HTMLCanvasElement.prototype.toBlob = toBlob; console.warn = warn; }
+      return warnings;
+    };
+    const warnings = await failedExport();
+    assert(alertText() === 'Could not create the image. Please try again.', `Wrong or missing export error: "${alertText()}"`);
+    assert(!downloads.length && !exportButton().disabled, 'The failed export left the page unusable');
+    assert(warnings.length === 1 && warnings[0][0] === 'Grade image export failed' && warnings[0][1] instanceof Error, 'The cause of the failure was not logged');
     await exportAndWait();
     assert(!alertText(), 'The error stayed after a successful export');
+    await failedExport();
+    assert(alertText(), 'The second failed export showed no alert');
+    await click(gradeButton(11));
+    assert(!alertText(), 'The error stayed after switching to another grade');
+    await failedExport();
+    assert(alertText(), 'The failed Grade 11 export showed no alert');
+    await change(input('School year'), '2027-2028');
+    assert(host.textContent.includes('Aquino') && !alertText(), 'The error stayed after switching school year');
   }],
   ['Dark mode still produces a light image', async () => {
     await reset('dark');
