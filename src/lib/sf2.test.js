@@ -20,7 +20,7 @@ function students(sex, count) {
 describe('SF2 workbook export', () => {
   let template;
   beforeEach(async () => {
-    const buffer = await readFile(new URL('../assets/sf2-template.xlsx', import.meta.url));
+    const buffer = await readFile(new URL('../../shared/sf2/sf2-template.xlsx', import.meta.url));
     template = new ExcelJS.Workbook();
     await template.xlsx.load(buffer);
     // Only the browser asset fetch is replaced; use the real template and exporter.
