@@ -12,6 +12,9 @@
 .class-link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--t-primary); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
 .class-link[aria-pressed="true"] { color: var(--t-ink); }
 .class-note { margin: 0 0 12px; color: var(--t-muted); font-size: 13px; line-height: 1.5; }
+.class-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: -6px 0 16px; }
+.class-actions .class-note { margin: 0; }
+.class-sheet { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; }
 .class-group { margin: 0 0 20px; }
 .class-group-title, .class-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; margin: 0 0 4px; color: var(--t-muted); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .class-group > summary { min-height: 44px; cursor: pointer; list-style: none; }
