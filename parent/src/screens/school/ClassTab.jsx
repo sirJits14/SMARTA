@@ -91,6 +91,7 @@ export default function ClassTab({ sections, ended, navigate }) {
   };
 
   useEffect(() => { import('./FlagSheet.jsx').catch(() => {}); }, []);
+  useEffect(() => { import('./Sf2Sheet.jsx').catch(() => {}); }, []);
   useEffect(() => {
     if (!canCorrect || !groups.inSchool.length) { setSelecting(false); setSelected(new Set()); }
   }, [validSection, date, canCorrect, groups.inSchool.length]);
