@@ -787,11 +787,10 @@ export function paintGradeSummary(ctx, layout, logo) {
 // 2x for crisp text, reduced so a very tall image stays under the browser's canvas area limit.
 export const fitScale = (width, height) => Math.min(MAX_SCALE, Math.sqrt(MAX_PIXELS / (width * height)));
 
+// Best effort: a face that fails to load leaves the image on the system-ui fallback.
 async function loadFonts() {
   if (!document.fonts?.load) return;
-  try {
-    await Promise.all([font(400, 26), font(600, 26), font(700, 30)].map((spec) => document.fonts.load(spec)));
-  } catch { /* the image falls back to system-ui */ }
+  await Promise.allSettled([font(400, 26), font(600, 26), font(700, 30)].map((spec) => document.fonts.load(spec)));
 }
 
 function loadLogo() {
