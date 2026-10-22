@@ -23,7 +23,7 @@
 - The image carries counts and adviser names only: no learner names, no LRNs.
 - Nothing in this plan deploys. SIMS hosting ships through its own release preparation.
 - Match surrounding code: 2-space indent, single quotes, semicolons, terse comments.
-- Commit steps below are part of the plan, but run them only after the user has approved executing it (no unprompted commits). End each commit message with the attribution line shown in the commands.
+- Commit steps below are part of the plan, but run them only after the user has approved executing it (no unprompted commits). End each commit message with a `Co-Authored-By` attribution line naming the model that makes the commit; the commands show Claude Sonnet 5.5, the controller's line, and a subagent uses its own.
 
 ## File Structure
 
@@ -111,7 +111,7 @@ describe('downloadBlob', () => {
 - [ ] **Step 4: Run it to verify it fails**
 
 Run: `npm test -- src/lib/downloadBlob.test.js`
-Expected: FAIL with `Failed to resolve import "./downloadBlob.js"`.
+Expected: FAIL because the module does not exist yet (vitest prints `Cannot find module './downloadBlob.js'`).
 
 - [ ] **Step 5: Implement the helper and use it in `downloadWorkbook`**
 
@@ -262,7 +262,7 @@ describe('gradeImageFilename', () => {
 - [ ] **Step 2: Run it to verify it fails**
 
 Run: `npm test -- src/lib/gradeSummary.test.js`
-Expected: FAIL with `Failed to resolve import "./gradeSummary.js"`.
+Expected: FAIL because the module does not exist yet (vitest prints `Cannot find module './gradeSummary.js'`).
 
 - [ ] **Step 3: Write the implementation**
 
@@ -597,7 +597,7 @@ describe('renderGradeSummaryPng', () => {
 - [ ] **Step 2: Run it to verify it fails**
 
 Run: `npm test -- src/lib/gradeSummaryImage.test.js`
-Expected: FAIL with `Failed to resolve import "./gradeSummaryImage.js"`.
+Expected: FAIL because the module does not exist yet (vitest prints `Cannot find module './gradeSummaryImage.js'`).
 
 - [ ] **Step 3: Write the implementation**
 
