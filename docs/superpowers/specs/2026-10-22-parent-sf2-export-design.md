@@ -92,12 +92,18 @@ The call is read-only: no audit row, no writes. The response is the file and not
   class yet." when the roster is empty.
 - **Sheet** (`Sf2Sheet.jsx`, lazy): the class label, a month picker (newest first, defaulting to the current
   month, built by a pure helper that applies the same range and first-weekday rule as the server), and a
-  **Download** button. While waiting it reads "Preparing SF2…". Errors show a banner above the Download button, which stays enabled so the person can try again.
+  **Download** button. While waiting it reads "Preparing SF2…". Errors show a banner above the Download button, which stays enabled so the person can try again. Unexpected errors read "Could not prepare the SF2. Try again."; the server's own messages (for example the rate limit) show as sent. Once the file is prepared the sheet keeps it, and if the share was refused (below) the main button reads **Save SF2** with a note, "Your SF2 is ready. Tap Save to keep it."; choosing another month discards the prepared file.
 - **Saving:** decode the base64 into a `File` of type
-  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. When
-  `navigator.canShare?.({ files: [file] })` is true, call `navigator.share` (on phones this offers Save to
-  Files, Drive, or opening in Excel); a cancelled share (`AbortError`) is silent. Otherwise download through an
-  object URL, as `downloadWorkbook` does in SIMS.
+  `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. The share sheet is used only on
+  touch-first devices (the primary pointer is coarse) where `navigator.canShare?.({ files: [file] })` is true:
+  call `navigator.share` (on phones this offers Save to Files, Drive, or opening in Excel). A cancelled share
+  (`AbortError`) is silent. Browsers only allow a share shortly after the tap that started it, and the file
+  arrives after the server call, so the share can be refused (`NotAllowedError`): the sheet then stays open,
+  keeps the prepared file and the main button becomes **Save SF2**, whose fresh tap is allowed to open the
+  share sheet. If that is refused again, the file downloads, so the person is never stuck. On computers (and
+  after any other share error) the file downloads through an object URL, as `downloadWorkbook` does in SIMS,
+  because a computer's system share dialog has no "Save". While the sheet is open the Class tab does not
+  reload the roster when the app regains focus (returning from the share sheet fires that event).
 - Advisers with more than one section use the Class tab's section selector; the sheet exports the selected one.
 - The sheet loads on demand and the Parent App gains no new dependency, so the 260 KB first-load budget is
   untouched (check with `npm run size`).

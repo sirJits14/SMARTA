@@ -72,6 +72,24 @@ describe('scopeLabel', () => {
   });
 });
 
+describe('schoolError', () => {
+  const GENERIC = 'Could not complete this action. Check your connection and try again.';
+  it('shows the server’s own message for the codes it chooses to send', () => {
+    expect(schoolError({ code: 'functions/resource-exhausted', message: 'Too many exports. Try again in a few minutes. [429]' })).toBe('Too many exports. Try again in a few minutes.');
+    expect(schoolError({ code: 'functions/resource-exhausted', message: 'Too many exports.' }, 'Custom fallback')).toBe('Too many exports.');
+  });
+  it('uses the generic text for anything else', () => {
+    expect(schoolError(new Error('boom'))).toBe(GENERIC);
+    expect(schoolError({ code: 'functions/internal', message: 'internal' })).toBe(GENERIC);
+    expect(schoolError(undefined)).toBe(GENERIC);
+  });
+  it('uses the caller’s fallback instead of the generic text when given', () => {
+    expect(schoolError(new Error('boom'), 'Could not prepare the SF2. Try again.')).toBe('Could not prepare the SF2. Try again.');
+    expect(schoolError({ code: 'functions/internal', message: 'internal' }, 'Could not prepare the SF2. Try again.')).toBe('Could not prepare the SF2. Try again.');
+    expect(schoolError({ code: 'functions/permission-denied' }, 'Custom fallback')).toBe('Custom fallback');
+  });
+});
+
 describe('callableMessage', () => {
   it('strips the status the SDK appends to callable errors', () => {
     expect(callableMessage({ message: 'That advisory slip could not be used. [404]' })).toBe('That advisory slip could not be used.');

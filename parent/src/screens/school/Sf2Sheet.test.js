@@ -29,4 +29,22 @@ describe('Sf2Form', () => {
     expect(html).toContain(S.sf2NoMonths);
     expect(html).not.toContain('<select');
   });
+  it('has no ready note and no Save button until a file is prepared', () => {
+    const html = render();
+    expect(html).not.toContain(S.sf2Ready);
+    expect(html).not.toContain(S.sf2Save);
+  });
+  it('offers Save instead of Download once the file is prepared', () => {
+    const html = render({ file: new File(['x'], 'SF2.xlsx'), onSave() {}, onMonthChange() {} });
+    expect(html).toContain(S.sf2Ready);
+    expect(html).toContain(`>${S.sf2Save}<`);
+    expect(html).not.toContain(`>${S.sf2Download}<`);
+    expect(html.indexOf(S.sf2Ready)).toBeLessThan(html.indexOf(`>${S.sf2Save}<`));
+    expect(html).not.toContain('disabled=""');
+  });
+  it('still reads Preparing while busy, even with a prepared file', () => {
+    const html = render({ file: new File(['x'], 'SF2.xlsx'), busy: true });
+    expect(html).toContain(S.sf2Preparing);
+    expect(html).not.toContain(`>${S.sf2Save}<`);
+  });
 });

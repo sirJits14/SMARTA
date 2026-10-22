@@ -16,15 +16,22 @@ export function base64ToFile(base64, filename, type = XLSX_TYPE) {
   return new File([bytes], filename, { type });
 }
 
-// Phones get the share sheet (Save to Files, Drive, open in Excel); other browsers get a normal
-// download. Resolves 'shared', 'downloaded' or 'cancelled' (the person closed the share sheet).
-export async function saveFile(file, nav = typeof navigator === 'undefined' ? undefined : navigator, doc = typeof document === 'undefined' ? undefined : document) {
-  if (nav?.canShare?.({ files: [file] })) {
+// True on touch-first devices (the primary pointer is a finger), where the share sheet is the right way to keep a file.
+export const isCoarsePointer = (win = typeof window === 'undefined' ? undefined : window) => Boolean(win?.matchMedia?.('(pointer: coarse)')?.matches);
+
+// Touch-first devices (phones and tablets) get the share sheet (Save to Files, Drive, open in Excel);
+// computers get a normal download, because their share dialog has no "Save". Resolves 'shared',
+// 'downloaded', 'cancelled' (the person closed the share sheet) or 'blocked' (the browser refused the
+// share because the tap that started it was too long ago: nothing was saved, ask for a fresh tap).
+// Any other share error falls through to the download.
+export async function saveFile(file, nav = typeof navigator === 'undefined' ? undefined : navigator, doc = typeof document === 'undefined' ? undefined : document, coarse = isCoarsePointer()) {
+  if (coarse && nav?.canShare?.({ files: [file] })) {
     try {
       await nav.share({ files: [file], title: file.name });
       return 'shared';
     } catch (error) {
       if (error?.name === 'AbortError') return 'cancelled';
+      if (error?.name === 'NotAllowedError') return 'blocked';
       // Any other share failure falls through to a download.
     }
   }

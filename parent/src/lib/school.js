@@ -39,8 +39,9 @@ export function inboxDestination(item) {
 }
 // The Firebase SDK appends " [<httpStatus>]" to every callable error message.
 export const callableMessage = (error) => String(error?.message ?? '').replace(/\s*\[\d{3}\]$/, '');
-export const schoolError = (error) => /(?:permission-denied|failed-precondition|already-exists|aborted|invalid-argument|not-found|resource-exhausted)$/.test(error?.code || '') && error.message
-  ? callableMessage(error) : 'Could not complete this action. Check your connection and try again.';
+// The server's own message for the codes it chooses to send; otherwise `fallback` (the generic text unless a caller gives its own).
+export const schoolError = (error, fallback = 'Could not complete this action. Check your connection and try again.') => /(?:permission-denied|failed-precondition|already-exists|aborted|invalid-argument|not-found|resource-exhausted)$/.test(error?.code || '') && error.message
+  ? callableMessage(error) : fallback;
 export const learnerPath = (sectionId, studentId) => `/school/learner/${encodeURIComponent(sectionId)}/${encodeURIComponent(studentId)}`;
 export const sectionLabel = (section) => section ? `Grade ${section.gradeLevel} · ${section.name || section.sectionName || section.label || section.id}` : 'Section unavailable';
 // Requests and assignments name a section, or only a grade for grade-level roles.

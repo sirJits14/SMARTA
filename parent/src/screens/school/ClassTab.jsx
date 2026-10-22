@@ -20,6 +20,8 @@ const FlagSheet = lazy(() => import('./FlagSheet.jsx'));
 const Sf2Sheet = lazy(() => import('./Sf2Sheet.jsx'));
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
+// A share or download that went through; 'cancelled' and 'blocked' keep the sheet open for another try.
+const saved = (outcome) => outcome === 'shared' || outcome === 'downloaded';
 const rosterKey = (sectionId, date) => `roster:${auth.currentUser?.uid || ''}:${sectionId}:${date}`;
 
 export default function ClassTab({ sections, ended, navigate }) {
@@ -40,7 +42,6 @@ export default function ClassTab({ sections, ended, navigate }) {
   const sequence = useRef(0);
   const saveLock = useRef(false);
   const sheetOpen = useRef(false);
-  sheetOpen.current = Boolean(sheet);
   const validSection = sections.some((s) => s.id === sectionId) ? sectionId : sections[0]?.id || '';
   const section = sections.find((s) => s.id === validSection);
 
@@ -74,20 +75,38 @@ export default function ClassTab({ sections, ended, navigate }) {
   const canCorrect = Boolean(roster?.canCorrect) && !ended && isToday;
   const refresh = () => setReload((n) => n + 1);
 
-  // SF2: pick a month in a sheet, the server builds the workbook, and the phone saves it.
+  // SF2: pick a month in a sheet, the server builds the workbook, and the phone saves it. The prepared
+  // file is kept (sf2File) so that, when the browser refuses the share because the tap was too long ago,
+  // a fresh tap on Save can still open the share sheet.
   const [sf2Open, setSf2Open] = useState(false);
   const [sf2Busy, setSf2Busy] = useState(false);
   const [sf2Error, setSf2Error] = useState('');
+  const [sf2File, setSf2File] = useState(null);
   const sf2Lock = useRef(false);
+  // Returning from the phone's share sheet fires focus, so the roster must not reload behind either sheet.
+  sheetOpen.current = Boolean(sheet) || sf2Open;
   const downloadSf2 = async (month) => {
     if (sf2Lock.current) return;
     sf2Lock.current = true; setSf2Busy(true); setSf2Error('');
     try {
       const { data } = await callable('exportSchoolSf2Fn')({ sectionId: validSection, month });
-      const outcome = await saveFile(base64ToFile(data.contentBase64, data.filename, data.contentType));
-      if (outcome !== 'cancelled') setSf2Open(false);
-    } catch (e) { setSf2Error(schoolError(e)); }
+      const file = base64ToFile(data.contentBase64, data.filename, data.contentType);
+      // The file is ready: do not keep the sheet locked while the share dialog is open (the ref lock stays until saveFile settles).
+      setSf2File(file); setSf2Busy(false);
+      if (saved(await saveFile(file))) setSf2Open(false);
+    } catch (e) { setSf2Error(schoolError(e, S.sf2Failed)); }
     finally { sf2Lock.current = false; setSf2Busy(false); }
+  };
+  // The Save button: a fresh tap may open the share sheet; if the browser still refuses, download so the person is never stuck.
+  const saveSf2 = async () => {
+    if (!sf2File || sf2Lock.current) return;
+    sf2Lock.current = true; setSf2Error('');
+    try {
+      let outcome = await saveFile(sf2File);
+      if (outcome === 'blocked') outcome = await saveFile(sf2File, undefined, undefined, false);
+      if (saved(outcome)) setSf2Open(false);
+    } catch (e) { setSf2Error(schoolError(e, S.sf2Failed)); }
+    finally { sf2Lock.current = false; }
   };
 
   useEffect(() => { import('./FlagSheet.jsx').catch(() => {}); }, []);
@@ -165,7 +184,7 @@ export default function ClassTab({ sections, ended, navigate }) {
           {!isToday && <Inp type="date" aria-label="School day" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ width: 'auto', minHeight: 44 }} />}
         </div>
       </section>
-      <ClassActions onSf2={ended ? undefined : () => { setSf2Error(''); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''} />
+      <ClassActions onSf2={ended ? undefined : () => { setSf2Error(''); setSf2File(null); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''} />
       {error && <Banner tone="danger" action={<Btn variant="ghost" onClick={refresh}>Try again</Btn>}>{error}</Banner>}
       {loading && !roster && <Spinner label="Loading your class" />}
       {roster && !isToday && <p className="class-note">Past days are view-only. Your coordinator corrects earlier days in SIMS.</p>}
@@ -192,7 +211,7 @@ export default function ClassTab({ sections, ended, navigate }) {
       {sf2Open && (
         <Suspense fallback={null}>
           <Sf2Sheet sectionLabel={sectionLabel(section)} months={sf2MonthOptions(section?.schoolYear, today)} busy={sf2Busy} error={sf2Error}
-            onDownload={downloadSf2} onClose={() => setSf2Open(false)} />
+            file={sf2File} onDownload={downloadSf2} onSave={saveSf2} onMonthChange={() => setSf2File(null)} onClose={() => setSf2Open(false)} />
         </Suspense>
       )}
       {toast && <UndoToast key={toast.id} message={toast.message} onUndo={toast.undo} onDone={() => setToast(null)} />}
