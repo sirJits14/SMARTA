@@ -23,6 +23,9 @@ import { issueAdvisorySlips, revokeAdvisorySlip } from '../data/advisorySlips.js
 import { adviserStatusText, slipCandidates, slipConfirmMessage, showAdvisoryPanel, withoutRevokedSlip,
   needingSlip, withSelected, selectedSections, selectionText } from '../lib/advisoryStatus.js';
 import AdvisorySlipsPanel from './sections/AdvisorySlipsPanel.jsx';
+import { sectionCounts, gradeSummary, gradeImageFilename } from '../lib/gradeSummary.js';
+import { renderGradeSummaryPng } from '../lib/gradeSummaryImage.js';
+import { downloadBlob } from '../lib/downloadBlob.js';
 
 export function SectionForm({ editing, schoolYear, schedules, onClose, restricted = false }) {
   const action = useAsyncAction();
@@ -108,7 +111,7 @@ export function SectionForm({ editing, schoolYear, schedules, onClose, restricte
   );
 }
 
-export default function SectionsPage({ me, schoolYear }) {
+export default function SectionsPage({ me, schoolYear, schoolName }) {
   const admin = isAdmin(me);
   const oneGrade = singleGrade(me);
   const yearOptions = canEditSection(me, { gradeLevel: oneGrade, schoolYear }, schoolYear)
@@ -127,13 +130,7 @@ export default function SectionsPage({ me, schoolYear }) {
     { sections: sectionsResource.data, enrollments: enrollmentsResource.data, students: studentsResource.data }, grades(me), selectedYear),
     [sectionsResource.data, enrollmentsResource.data, studentsResource.data, me, selectedYear]);
   const scheduleById = useMemo(() => new Map(schedules.map((s) => [s.id, s])), [schedules]);
-  const enrolledCountBySection = useMemo(() => {
-    const m = new Map();
-    enrollments.forEach((e) => {
-      if (e.schoolYear === selectedYear && e.status === 'enrolled') m.set(e.sectionId, (m.get(e.sectionId) || 0) + 1);
-    });
-    return m;
-  }, [enrollments, selectedYear]);
+  const countsBySection = useMemo(() => sectionCounts(enrollments, students, selectedYear), [enrollments, students, selectedYear]);
   const enrolledStudentIdsBySection = useMemo(() => {
     const m = new Map();
     enrollments.forEach((e) => {
@@ -191,6 +188,24 @@ export default function SectionsPage({ me, schoolYear }) {
   const activeList = groups.find(([g]) => g === activeGrade)?.[1] || [];
   const sectionSearchActive = sectionQuery.trim().length > 0;
   const matchingSections = useMemo(() => activeList.filter((section) => sectionMatches(sectionQuery, section)), [activeList, sectionQuery]);
+  // The grade image always covers the whole active grade, whatever the search box says, so its
+  // totals row is the grade's total.
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const exportImage = async () => {
+    setExporting(true);
+    setExportError('');
+    try {
+      const summary = gradeSummary({ grade: activeGrade, sections: rows, counts: countsBySection, schedules: scheduleById, schoolYear: selectedYear });
+      const png = await renderGradeSummaryPng(summary, { schoolName, generatedOn: new Date() });
+      downloadBlob(png, gradeImageFilename(activeGrade, selectedYear));
+    } catch (error) {
+      console.warn('Grade image export failed', error);
+      setExportError('Could not create the image. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
   const slipTargetIds = useMemo(() => new Set(slipTargets.map((s) => s.id)), [slipTargets]);
   const ticked = useMemo(() => selectedSections(slipSelection, slipTargets), [slipSelection, slipTargets]);
   const untickedNeedingSlip = useMemo(() => needingSlip(matchingSections.filter((s) => slipTargetIds.has(s.id) && !slipSelection.has(s.id)), advisory.bySection),
@@ -224,7 +239,7 @@ export default function SectionsPage({ me, schoolYear }) {
         {yearOptions.length > 1 && <div style={{ maxWidth: 300 }}>
           <Field label="School year">
             <Sel value={selectedYear} onChange={event => {
-              setYearSelection(event.target.value); setForm(null); setConfirm(null); setDetailSection(null); setEditingStudent(null);
+              setYearSelection(event.target.value); setForm(null); setConfirm(null); setDetailSection(null); setEditingStudent(null); setExportError('');
             }}>
               {yearOptions.map((year, index) => <option key={year} value={year}>{year} ({index === 0 ? 'Current' : 'Next'})</option>)}
             </Sel>
@@ -241,7 +256,7 @@ export default function SectionsPage({ me, schoolYear }) {
               <GradePills
                 options={groups.map(([grade, list]) => ({ value: grade, label: `Grade ${grade}`, count: list.length }))}
                 value={activeGrade}
-                onChange={setSelectedGrade}
+                onChange={(grade) => { setSelectedGrade(grade); setExportError(''); }}
                 label="Grade level"
               />
             </div>
@@ -255,9 +270,11 @@ export default function SectionsPage({ me, schoolYear }) {
                   placeholder={`Search Grade ${activeGrade} sections by name`}
                 />
               </div>
+              {canViewRoster && <Btn variant="ghost" loading={exporting} aria-label={`Export image of Grade ${activeGrade} sections`} onClick={exportImage}>Export image</Btn>}
               {untickedNeedingSlip.length > 0 && <Btn variant="ghost" onClick={() => setSlipSelection((prev) => withSelected(prev, untickedNeedingSlip))}>
                 {`Select ${untickedNeedingSlip.length} ${untickedNeedingSlip.length === 1 ? 'section' : 'sections'} without a slip`}</Btn>}
             </div>
+            {exportError && <p role="alert" className="sims-feedback">{exportError}</p>}
             {sectionSearchActive && (
               <div aria-live="polite" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, marginBottom: 10 }}>
                 {matchingSections.length} section{matchingSections.length === 1 ? '' : 's'} in Grade {activeGrade} match &quot;{sectionQuery}&quot;.
@@ -284,7 +301,7 @@ export default function SectionsPage({ me, schoolYear }) {
                       {canViewRoster && <div style={{ fontSize: 12, color: T.inkMuted }}>{adviserStatusText(advisory.bySection.get(s.id))}</div>}
                     </td>
                     <td style={S.td}>{scheduleById.get(s.scheduleId)?.name || '—'}</td>
-                    {canViewRoster && <td style={{ ...S.td, ...T.num }}>{enrolledCountBySection.get(s.id) || 0}</td>}
+                    {canViewRoster && <td style={{ ...S.td, ...T.num }}>{countsBySection.get(s.id)?.total || 0}</td>}
                     <td style={S.tdActions}>
                       <span className="sims-row-actions">
                         {canEditSection(me, s, schoolYear) &&
