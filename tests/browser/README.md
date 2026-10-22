@@ -55,3 +55,11 @@ npm exec vite -- --config tests/browser/school-review.config.mjs
 ```
 
 Open http://127.0.0.1:5191/tests/browser/school-review.html for the Session review page (administrator), or add `?view=access` for the Guardians School access tab. Add `&me=glc` for a Grade 8 Grade Level Coordinator and `&theme=dark` for dark mode. The real pages run against an in-memory backend (`school-review-fixture.js`) with a short delay: ten learners per section with late and missing gate entries, one AM session already flagged, and assignments, revokes and corrections that persist until the page reloads. It never calls production services.
+
+## Grade image export
+
+```powershell
+npm exec vite -- --config tests/browser/grade-export.config.mjs
+```
+
+Open http://127.0.0.1:5192/tests/browser/grade-export.html?checks (add `&theme=dark` for dark mode). Six PASS lines cover the Export image button (every role that opens Sections, current school year only), the downloaded PNG (file name, 2160 px width, light background, not blank), the whole grade being exported while the search box filters the table, the Grade 11 export, a failed export showing an alert and then recovering, and dark mode still producing a light image. Each exported image is shown below the checks so the Grade 8 (junior high) and Grade 11 (Strand column, missing-sex note) layouts can be checked by eye. The real page runs against synthetic collections; it never calls production services.
