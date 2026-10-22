@@ -2,9 +2,11 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fixture = vi.hoisted(() => ({ sections: [], advisory: new Map() }));
+const fixture = vi.hoisted(() => ({ sections: [], enrollments: [], advisory: new Map() }));
 vi.mock('../hooks/useCollection.js', () => ({
-  useStaffCollectionResource: path => ({ data: path === 'sections' ? fixture.sections : [], loading: false, error: null }),
+  useStaffCollectionResource: path => ({
+    data: path === 'sections' ? fixture.sections : path === 'enrollments' ? fixture.enrollments : [], loading: false, error: null,
+  }),
 }));
 vi.mock('../data/sections.js', () => ({ createSection: vi.fn(), updateSection: vi.fn(), deleteSection: vi.fn(),
   updateCoordinatorSection: vi.fn(), getCoordinatorSectionOptions: vi.fn() }));
@@ -20,7 +22,7 @@ const h = React.createElement;
 const glc = { role: 'glc', gradeLevel: 8 };
 const section = { id: 's8', gradeLevel: 8, name: 'Mabini', adviserName: 'Ana Cruz', schoolYear: '2026-2027', scheduleId: 'AM' };
 const render = me => renderToStaticMarkup(h(SectionsPage, { me, schoolYear: '2026-2027' }));
-beforeEach(() => { fixture.sections = [section]; fixture.advisory = new Map(); });
+beforeEach(() => { fixture.sections = [section]; fixture.enrollments = []; fixture.advisory = new Map(); });
 
 describe('coordinator section controls', () => {
   it.each([false, true])('makes an assigned adviser read-only in the section form (restricted=%s)', restricted => {
@@ -106,5 +108,19 @@ describe('advisory slips on the Sections page', () => {
     const html = render(glc);
     expect(html).toContain('>Revoke slip<');
     expect(html).toContain('Slip issued · Oct 19, 2026');
+  });
+});
+
+describe('grade image export', () => {
+  it.each([['a Grade Level Coordinator', glc], ['an administrator', { role: 'admin' }], ['an academic coordinator', { role: 'jhs_coord' }]])(
+    'offers Export image to %s', (_who, me) => {
+      const html = render(me);
+      expect(html).toContain('>Export image<');
+      expect(html).toContain('aria-label="Export image of Grade 8 sections"');
+    });
+  it('counts only current enrolled learners in the Enrolled column', () => {
+    const enrollment = (studentId, status) => ({ studentId, sectionId: 's8', gradeLevel: 8, schoolYear: '2026-2027', status });
+    fixture.enrollments = [enrollment('a', 'enrolled'), enrollment('b', 'enrolled'), enrollment('c', 'transferred')];
+    expect(render(glc)).toMatch(/tabular-nums[^>]*>2<\/td>/);
   });
 });
