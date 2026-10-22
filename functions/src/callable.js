@@ -19,6 +19,8 @@ export const LIMITS = {
   relationshipChange: { windowMs: 60 * 60 * 1000, max: 60 },
   // Preview and redeem of advisory slips share one budget per account.
   advisorySlip: { windowMs: 60 * 60 * 1000, max: 10 },
+  // Adviser requests to add or remove a learner (spec 2026-10-22).
+  learnerRequest: { windowMs: 60 * 60 * 1000, max: 30 },
   // SF2 downloads from the Class tab (spec 2026-10-22). Each builds a workbook, so keep it modest.
   sf2Export: { windowMs: 60 * 60 * 1000, max: 20 },
 };
