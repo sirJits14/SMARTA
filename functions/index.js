@@ -24,6 +24,7 @@ import { getSchoolContext, requestSchoolRole, setAdvisoryRequestsEnabled, withdr
 import { retireSubjectTeachers } from './src/handlers/retireSubjectTeachers.js';
 import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, getSchoolLearnerHistory, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
+import { exportSchoolSf2 } from './src/handlers/sf2Export.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -48,7 +49,7 @@ const guardianCall = (fn) => onCall({ enforceAppCheck: true }, async (req) => {
 const staffCall = (fn, options = {}) => onCall({ enforceAppCheck: true, ...options }, async (req) => {
   try { return await fn({ ...callDeps(), ...(await staffIdentity(db, auth, req)), authTime: req.auth.token.auth_time }, req.data || {}); } catch (e) { throw toHttpsError(e); }
 });
-const schoolCall = fn => onCall({ enforceAppCheck: true }, async req => {
+const schoolCall = (fn, options = {}) => onCall({ enforceAppCheck: true, ...options }, async req => {
   try { return await fn({ ...callDeps(), ...(await schoolIdentity(db, auth, req)) }, req.data || {}); }
   catch (e) { throw toHttpsError(e); }
 });
@@ -124,6 +125,8 @@ export const getSchoolLearnerHistoryFn = schoolCall(getSchoolLearnerHistory);
 export const getPortalAnnouncementsFn = schoolCall(getPortalAnnouncements);
 export const getPortalAnnouncementFn = schoolCall(getPortalAnnouncement);
 export const savePortalAnnouncementFn = staffCall(savePortalAnnouncement);
+// The SF2 workbook for a section and month, built on the server so phones never load ExcelJS (spec 2026-10-22).
+export const exportSchoolSf2Fn = schoolCall(exportSchoolSf2, { memory: '512MiB', timeoutSeconds: 60 });
 export const onAttendanceCorrectionCreated = onDocumentCreated(
   { document: 'attendance_corrections/{id}', retry: true }, event =>
     handleAttendanceCorrection(deps(), { id: event.params.id, data: event.data?.data() }));
