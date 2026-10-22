@@ -290,7 +290,13 @@ describe('renderGradeSummaryPng', () => {
       await vi.advanceTimersByTimeAsync(3000);
       await expect(pending).resolves.toBeInstanceOf(Blob);
       expect(ctx.drawImage).not.toHaveBeenCalled();
-      expect(vi.getTimerCount()).toBe(0);
     });
+  });
+
+  it('leaves no timer running once the fonts and the logo have loaded', async () => {
+    vi.useFakeTimers();
+    fakeBrowser();
+    await expect(renderGradeSummaryPng(summary(), { generatedOn })).resolves.toBeInstanceOf(Blob);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
