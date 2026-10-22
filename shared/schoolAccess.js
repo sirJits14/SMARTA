@@ -14,7 +14,7 @@ export const currentAssignments = actor => (actor?.assignments || []).filter(a =
 
 // Curriculum Adviser assignments and SIMS coordinator scopes both grant
 // grade-wide review; class advisers only reach their own section.
-const reviewGrades = actor => [
+export const reviewGrades = actor => [
   ...currentAssignments(actor).filter(a => a.role === 'curriculum_adviser').map(a => a.gradeLevel),
   ...(Array.isArray(actor?.simsGrades) ? actor.simsGrades : []),
 ];
