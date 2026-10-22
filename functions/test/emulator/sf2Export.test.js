@@ -121,7 +121,7 @@ describe('exportSchoolSf2', () => {
   });
   it('fails for everyone when a day carries a grade that is not a grade from 7 to 12, as the live roster does', async () => {
     // A key that is present but invalid never falls back to the section's grade, so the data is broken for every caller.
-    for (const gradeLevel of [null, '7', 13]) {
+    for (const gradeLevel of [null, '7', 6, 13, 7.5]) {
       await db().doc('student_attendance/SEC1_2026-09-24').set({ sectionId: 'SEC1', schoolYear: year, gradeLevel, date: '2026-09-24', marks: {} });
       for (const uid of ['teacher', 'admin']) {
         await expect(ask(uid)).rejects.toMatchObject({ code: 'failed-precondition', message: 'Attendance record requires administrator repair.' });

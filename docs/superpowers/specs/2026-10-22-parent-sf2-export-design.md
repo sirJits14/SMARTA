@@ -59,7 +59,7 @@ Defaults chosen for this spec (change during review if wrong):
 
 ### `exportSchoolSf2Fn({ sectionId, month })`
 
-A `schoolCall` with 512 MiB and a 60-second timeout (`schoolCall` gains an optional options argument, as
+A `schoolCall` with 512 MiB, a 60-second timeout and concurrency 5 (`schoolCall` gains an optional options argument, as
 `staffCall` has).
 
 1. Validate `sectionId` (identifier) and `month` (`YYYY-MM`).

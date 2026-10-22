@@ -129,7 +129,8 @@ export const savePortalAnnouncementFn = staffCall(savePortalAnnouncement);
 // other callable, the kiosk scan included.
 export const exportSchoolSf2Fn = schoolCall(
   async (deps, input) => (await import('./src/handlers/sf2Export.js')).exportSchoolSf2(deps, input),
-  // One workbook build peaks near 150 MB, so a 512 MiB instance should not take dozens of requests at once.
+  // A workbook build adds about 50 MB on top of a base of about 70 MB (measured), so five at once stay well
+  // inside 512 MiB; the instance should not take dozens of requests at once.
   { memory: '512MiB', timeoutSeconds: 60, concurrency: 5 });
 export const onAttendanceCorrectionCreated = onDocumentCreated(
   { document: 'attendance_corrections/{id}', retry: true }, event =>
