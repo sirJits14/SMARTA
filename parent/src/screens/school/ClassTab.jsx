@@ -11,9 +11,13 @@ import { initials } from '../../lib/format.js';
 import { Banner, Btn, Inp, Sel, Spinner, EmptyState } from '../../components/ui.jsx';
 import Icon from '../../components/Icon.jsx';
 import UndoToast from './UndoToast.jsx';
+import ClassActions from './ClassActions.jsx';
+import { sf2MonthOptions, base64ToFile, saveFile } from '../../lib/sf2.js';
+import S from '../../strings.js';
 import './ClassTab.css';
 
 const FlagSheet = lazy(() => import('./FlagSheet.jsx'));
+const Sf2Sheet = lazy(() => import('./Sf2Sheet.jsx'));
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
 const rosterKey = (sectionId, date) => `roster:${auth.currentUser?.uid || ''}:${sectionId}:${date}`;
@@ -38,6 +42,7 @@ export default function ClassTab({ sections, ended, navigate }) {
   const sheetOpen = useRef(false);
   sheetOpen.current = Boolean(sheet);
   const validSection = sections.some((s) => s.id === sectionId) ? sectionId : sections[0]?.id || '';
+  const section = sections.find((s) => s.id === validSection);
 
   useEffect(() => {
     if (!validSection) return undefined;
@@ -68,6 +73,22 @@ export default function ClassTab({ sections, ended, navigate }) {
   const groups = useMemo(() => groupRoster(roster?.rows || [], session), [roster, session]);
   const canCorrect = Boolean(roster?.canCorrect) && !ended && isToday;
   const refresh = () => setReload((n) => n + 1);
+
+  // SF2: pick a month in a sheet, the server builds the workbook, and the phone saves it.
+  const [sf2Open, setSf2Open] = useState(false);
+  const [sf2Busy, setSf2Busy] = useState(false);
+  const [sf2Error, setSf2Error] = useState('');
+  const sf2Lock = useRef(false);
+  const downloadSf2 = async (month) => {
+    if (sf2Lock.current) return;
+    sf2Lock.current = true; setSf2Busy(true); setSf2Error('');
+    try {
+      const { data } = await callable('exportSchoolSf2Fn')({ sectionId: validSection, month });
+      const outcome = await saveFile(base64ToFile(data.contentBase64, data.filename, data.contentType));
+      if (outcome !== 'cancelled') setSf2Open(false);
+    } catch (e) { setSf2Error(schoolError(e)); }
+    finally { sf2Lock.current = false; setSf2Busy(false); }
+  };
 
   useEffect(() => { import('./FlagSheet.jsx').catch(() => {}); }, []);
   useEffect(() => {
@@ -143,6 +164,7 @@ export default function ClassTab({ sections, ended, navigate }) {
           {!isToday && <Inp type="date" aria-label="School day" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ width: 'auto', minHeight: 44 }} />}
         </div>
       </section>
+      <ClassActions onSf2={ended ? undefined : () => { setSf2Error(''); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''} />
       {error && <Banner tone="danger" action={<Btn variant="ghost" onClick={refresh}>Try again</Btn>}>{error}</Banner>}
       {loading && !roster && <Spinner label="Loading your class" />}
       {roster && !isToday && <p className="class-note">Past days are view-only. Your coordinator corrects earlier days in SIMS.</p>}
@@ -164,6 +186,12 @@ export default function ClassTab({ sections, ended, navigate }) {
       {sheet && (
         <Suspense fallback={null}>
           <FlagSheet rows={sheet.rows} session={session} mode={sheet.mode} busy={saving} error={sheetError} onConfirm={confirm} onClose={() => { if (!saving) setSheet(null); }} />
+        </Suspense>
+      )}
+      {sf2Open && (
+        <Suspense fallback={null}>
+          <Sf2Sheet sectionLabel={sectionLabel(section)} months={sf2MonthOptions(section?.schoolYear, today)} busy={sf2Busy} error={sf2Error}
+            onDownload={downloadSf2} onClose={() => setSf2Open(false)} />
         </Suspense>
       )}
       {toast && <UndoToast key={toast.id} message={toast.message} onUndo={toast.undo} onDone={() => setToast(null)} />}
