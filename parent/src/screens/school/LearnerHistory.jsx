@@ -13,6 +13,9 @@ import { eventTitle, latestScanToday, nameCase } from '../../lib/format.js';
 import { historyThread } from '../../lib/thread.js';
 import { schoolError } from '../../lib/school.js';
 import { formatScanTime, localDate } from '../../../../shared/dates.js';
+// The remove link, chip, inline error and Remove sheet are styled here. CSS is split per route chunk,
+// so a reload or deep link to this screen must load the stylesheet itself (Vite de-duplicates it).
+import './ClassTab.css';
 
 const RemoveLearnerSheet = lazy(() => import('./RemoveLearnerSheet.jsx'));
 
@@ -79,14 +82,16 @@ export default function LearnerHistory({ sectionId, studentId, navigate }) {
   const runRequest = async (work) => {
     if (requestLock.current) return false;
     requestLock.current = true; setRequestBusy(true); setRequestError('');
-    try { await work(); requests.refresh(); return true; }
+    try { await work(); return true; }
     catch (e) { setRequestError(schoolError(e)); return false; }
-    finally { requestLock.current = false; setRequestBusy(false); }
+    // Refresh after a failure too: "already decided" means the list on screen is stale.
+    finally { requestLock.current = false; setRequestBusy(false); requests.refresh(); }
   };
   const sendRemoval = async (input) => {
     if (await runRequest(() => callable('requestLearnerRemovalFn')(removalPayload(sectionId, studentId, input)))) setRemoveOpen(false);
   };
   const withdrawRemoval = () => runRequest(() => callable('withdrawLearnerRequestFn')({ requestId: removal.id }));
+  useEffect(() => { import('./RemoveLearnerSheet.jsx').catch(() => {}); }, []);
 
   const loadOlder = () => { keepFromBottom.current = document.documentElement.scrollHeight - window.scrollY; load(cursor); };
   useLayoutEffect(() => {
@@ -141,7 +146,7 @@ export default function LearnerHistory({ sectionId, studentId, navigate }) {
                     <button type="button" className="class-link" disabled={requestBusy} onClick={withdrawRemoval}>{S.withdrawRequest}</button>
                   </>
                 ) : <button type="button" className="class-link class-link--quiet" onClick={() => { setRequestError(''); setRemoveOpen(true); }}>{S.removeFromClass}</button>}
-                {requestError && !removeOpen && <span className="learner-field-error">{requestError}</span>}
+                {requestError && !removeOpen && <span className="learner-field-error" role="alert">{requestError}</span>}
               </div>
             )}
           </div>}

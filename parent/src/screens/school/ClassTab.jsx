@@ -125,9 +125,10 @@ export default function ClassTab({ sections, ended, navigate }) {
   const runRequest = async (work) => {
     if (requestLock.current) return false;
     requestLock.current = true; setRequestBusy(true); setRequestError('');
-    try { await work(); requests.refresh(); return true; }
+    try { await work(); return true; }
     catch (e) { setRequestError(schoolError(e)); return false; }
-    finally { requestLock.current = false; setRequestBusy(false); }
+    // Refresh after a failure too: "already decided" means the list on screen is stale.
+    finally { requestLock.current = false; setRequestBusy(false); requests.refresh(); }
   };
   const submitAdd = async (form) => {
     if (await runRequest(() => callable('requestLearnerAddFn')(addPayload(validSection, form)))) {
@@ -141,6 +142,8 @@ export default function ClassTab({ sections, ended, navigate }) {
 
   useEffect(() => { import('./FlagSheet.jsx').catch(() => {}); }, []);
   useEffect(() => { import('./Sf2Sheet.jsx').catch(() => {}); }, []);
+  useEffect(() => { import('./AddLearnerSheet.jsx').catch(() => {}); }, []);
+  useEffect(() => { import('./RequestsSheet.jsx').catch(() => {}); }, []);
   useEffect(() => {
     if (!canCorrect || !groups.inSchool.length) { setSelecting(false); setSelected(new Set()); }
   }, [validSection, date, canCorrect, groups.inSchool.length]);

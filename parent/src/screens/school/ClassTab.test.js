@@ -41,3 +41,17 @@ describe('ClassTab Download SF2 button', () => {
     expect(html).not.toContain(S.sf2Button);
   });
 });
+
+// Same first-paint render: the Add learner button follows `ended` the same way.
+describe('ClassTab Add learner button', () => {
+  const section = { id: 'sec-1', name: 'Rizal', gradeLevel: 7, schoolYear: '2026-2027' };
+  const render = (props) => renderToStaticMarkup(createElement(ClassTab, { sections: [section], ended: false, navigate() {}, ...props }));
+
+  it('is offered while the school year is running', () => {
+    expect(render({ ended: false })).toContain(S.addLearnerButton);
+  });
+
+  it('is hidden once the school year has ended', () => {
+    expect(render({ ended: true })).not.toContain(S.addLearnerButton);
+  });
+});
