@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import S from '../../strings.js';
 import { manilaDate } from '../../../../shared/dates.js';
 import { Banner, Btn, Inp, Sel } from '../../components/ui.jsx';
@@ -21,6 +21,9 @@ export function AddLearnerForm({ initial, busy, error, today = manilaDate(), onS
   const [form, setForm] = useState(() => initial || emptyLearnerForm());
   const [errors, setErrors] = useState({});
   const element = useRef(null);
+  const answer = useRef(null);
+  // The form is taller than the sheet, so the answer sits beside the send button and is brought into view when it arrives.
+  useEffect(() => { if (error) answer.current?.scrollIntoView?.({ block: 'nearest' }); }, [error]);
   const set = (key) => (event) => { const value = event.target.value; setForm((current) => ({ ...current, [key]: value })); };
   const bad = (key) => (errors[key] ? true : undefined); // omit the attribute unless the field is wrong
   const submit = (event) => {
@@ -37,7 +40,6 @@ export function AddLearnerForm({ initial, busy, error, today = manilaDate(), onS
   );
   return (
     <form ref={element} className="learner-form" onSubmit={submit} noValidate>
-      {error && <div className="learner-form-wide"><Banner tone="danger">{error}</Banner></div>}
       <h3 className="learner-form-title">{S.learnerSectionLearner}</h3>
       {text('lrn', S.learnerLrn, { inputMode: 'numeric', maxLength: 12 }, true)}
       {text('lastName', S.learnerLastName)}
@@ -63,6 +65,7 @@ export function AddLearnerForm({ initial, busy, error, today = manilaDate(), onS
       {text('guardianRelationship', S.learnerGuardianRelationship)}
       {text('guardianContact', S.learnerGuardianContact, { inputMode: 'tel' })}
       {text('contactNumber', S.learnerContactNumber, { inputMode: 'tel' })}
+      {error && <div ref={answer} className="learner-form-wide"><Banner tone="danger">{error}</Banner></div>}
       <div className="learner-form-wide">
         <Btn type="submit" disabled={busy} style={{ width: '100%' }}>{busy ? S.learnerSending : S.learnerSend}</Btn>
         <Btn type="button" variant="ghost" disabled={busy} onClick={onClose} style={{ width: '100%', marginTop: 10 }}>{S.learnerCancel}</Btn>

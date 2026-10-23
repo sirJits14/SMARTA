@@ -34,4 +34,16 @@ describe('AddLearnerForm', () => {
     expect(html).toContain(S.learnerSending);
     expect(html.match(/disabled=""/g).length).toBeGreaterThan(10);
   });
+  it('puts the server’s answer beside the send button, not at the top of the long form', () => {
+    const answer = 'This LRN is already in your class.';
+    const html = render({ error: answer });
+    const afterLastField = html.indexOf(S.learnerContactNumber);
+    const answerAt = html.indexOf(answer);
+    const sendAt = html.indexOf(S.learnerSend);
+    expect(afterLastField, 'contact number field').toBeGreaterThan(-1);
+    expect(sendAt, 'send button').toBeGreaterThan(-1);
+    expect(answerAt, 'after the last field').toBeGreaterThan(afterLastField);
+    expect(answerAt, 'before the send button').toBeLessThan(sendAt);
+    expect(html.split(answer).length - 1, 'shown once').toBe(1);
+  });
 });
