@@ -229,7 +229,9 @@ Everything below is on the Class tab and hides once the school year has ended.
 - Pure helpers (labels, flag text, grouping) live in `src/lib/learnerRequests.js` with tests.
 - When the school year has ended, requests can no longer be decided, so Waiting is empty and the page is read
   only. Decided stays readable for Administrators; a coordinator's or Curriculum Adviser's grade scope ends with
-  the year, as it does for session corrections.
+  the year, as it does for session corrections. Ending the school year (`endSchoolYear`) withdraws the year's
+  still-pending requests ("School year ended") and removes their address and phone numbers, so nothing personal
+  is kept on a request nobody can close.
 
 ## Errors and edge cases
 

@@ -31,7 +31,7 @@ const allRequests = async () => (await db().collection('learner_change_requests'
 const inboxOf = async (uid) => (await db().collection(`guardians/${uid}/inbox`).get()).docs.map((d) => d.data());
 // Every audit row as one string, to prove a reviewer's or adviser's free text never reaches the audit log.
 const auditText = async () => JSON.stringify((await db().collection('audit_log').get()).docs.map((d) => d.data()));
-const waitingIds =async (uid) => (await listLearnerRequests(deps(uid), { view: 'waiting' })).requests.map((r) => r.id);
+const waitingIds = async (uid) => (await listLearnerRequests(deps(uid), { view: 'waiting' })).requests.map((r) => r.id);
 const decidedBase = Date.UTC(2026, 9, 1);
 // A request somebody has already decided (approved by default); `over` can change any field.
 const seedDecided = (id, over = {}) => db().doc(`learner_change_requests/${id}`).set({
@@ -431,6 +431,16 @@ describe('approving an add', () => {
     await resolveLearnerRequest(deps('admin'), { requestId: id, approve: true });
     expect(await get('students/S3')).toMatchObject({ status: 'active', gradeLevel: 7 });
   });
+  it('records an approval that re-enrolls a Dropped learner as "enrolled", with no previous section', async () => {
+    await db().doc('students/S3').update({ status: 'dropped' });
+    await db().doc('enrollments/S3_2026-2027').set({ studentId: 'S3', sectionId: 'SEC2', schoolYear: year, gradeLevel: 7, type: 'returning', dateEnrolled: '2026-06-04', status: 'dropped' });
+    const { id } = await file('teacher', { student: form({ lrn: '100000000003' }), enrollType: 'returning' });
+    await resolveLearnerRequest(deps('admin'), { requestId: id, approve: true });
+    expect(await get('enrollments/S3_2026-2027')).toMatchObject({ sectionId: 'SEC1', status: 'enrolled', type: 'returning', dateEnrolled: '2026-10-22' });
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.addApproved').get()).docs.map((d) => d.data());
+    expect(audit).toHaveLength(1);
+    expect(audit[0].details).toEqual({ lrn: '100000000003', name: 'Juan Santos Dela Cruz Jr', mode: 'enrolled', sectionId: 'SEC1', gradeLevel: 7, previousSectionId: null });
+  });
   it('leaves a learner from another grade to an Administrator', async () => {
     const { id } = await file('teacher', { student: form({ lrn: '100000000004' }) });
     await expect(resolveLearnerRequest(deps('coord7'), { requestId: id, approve: true })).rejects.toMatchObject({ code: 'permission-denied' });
@@ -448,7 +458,8 @@ describe('approving an add', () => {
     await db().doc('students/D1').set({ lrn: '200000000001', firstName: 'A', lastName: 'One', sex: 'M' });
     await db().doc('students/D2').set({ lrn: '200000000001', firstName: 'B', lastName: 'Two', sex: 'M' });
     const { id } = await file();
-    await expect(resolveLearnerRequest(deps('admin'), { requestId: id, approve: true })).rejects.toMatchObject({ code: 'failed-precondition' });
+    await expect(resolveLearnerRequest(deps('admin'), { requestId: id, approve: true }))
+      .rejects.toMatchObject({ code: 'failed-precondition', message: 'This LRN matches more than one learner. An administrator must fix the records first.' });
   });
   it('blocks approval when the adviser has lost the class, but a rejection still works', async () => {
     const { id } = await file();
@@ -461,7 +472,8 @@ describe('approving an add', () => {
   it('blocks approval when the section changed grade', async () => {
     const { id } = await file();
     await db().doc('sections/SEC1').update({ gradeLevel: 8 });
-    await expect(resolveLearnerRequest(deps('admin'), { requestId: id, approve: true })).rejects.toMatchObject({ code: 'failed-precondition' });
+    await expect(resolveLearnerRequest(deps('admin'), { requestId: id, approve: true }))
+      .rejects.toMatchObject({ code: 'failed-precondition', message: 'This section changed. Reject this request and ask for a new one.' });
   });
   it('cannot be decided twice or after the school year ended', async () => {
     const { id } = await file();
@@ -492,6 +504,16 @@ describe('approving a removal', () => {
     expect(audit[0].details).toEqual({ lrn: '100000000001', name: 'Ana B. Cruz', reasonCode, sectionId: 'SEC1', gradeLevel: 7 });
     expect(await auditText()).not.toContain('Stopped attending in September');
   });
+  it('lets a Curriculum Adviser for the grade approve a removal', async () => {
+    const { id } = await requestLearnerRemoval(deps('teacher'), removal({ reasonCode: 'transferred_out' }));
+    await resolveLearnerRequest(deps('ca7'), { requestId: id, approve: true });
+    expect(await get(`learner_change_requests/${id}`)).toMatchObject({ status: 'approved', decidedByUid: 'ca7', decidedByName: 'Cleo Curriculum', decisionReason: 'Approved' });
+    expect(await get('enrollments/S1_2026-2027')).toMatchObject({ status: 'transferred', sectionId: 'SEC1' });
+    expect(await get('students/S1')).toMatchObject({ status: 'transferred', gradeLevel: null, scopeSchoolYear: null });
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.removalApproved').get()).docs.map((d) => d.data());
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({ targetId: id, actorUid: 'ca7@deped.gov.ph' });
+  });
   it('refuses when the learner has already left the class', async () => {
     const { id } = await requestLearnerRemoval(deps('teacher'), removal());
     await db().doc('enrollments/S1_2026-2027').update({ status: 'dropped' });
@@ -517,6 +539,34 @@ describe('rejecting', () => {
     // The reason stays on the request and in the adviser's Inbox note; the audit row keeps only who and what.
     expect(audit[0].details).toEqual({ kind: 'add', lrn: '200000000001', name: 'Juan Santos Dela Cruz Jr', sectionId: 'SEC1', gradeLevel: 7 });
     expect(await auditText()).not.toContain('Birthdate does not match the birth certificate');
+  });
+  it('rejects a removal request, tells the adviser and leaves the enrollment as it was', async () => {
+    const { id } = await requestLearnerRemoval(deps('teacher'), removal());
+    const enrollmentBefore = await get('enrollments/S1_2026-2027');
+    const learnerBefore = await get('students/S1');
+    await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: false, reason: 'Still attending class' });
+    expect(await get(`learner_change_requests/${id}`)).toMatchObject({ kind: 'remove', status: 'rejected', decidedByUid: 'coord7', decisionReason: 'Still attending class' });
+    expect(await inboxOf('teacher')).toEqual([expect.objectContaining({ type: 'learner_request', requestId: id, rejected: true, title: 'Request not approved',
+      body: 'Removing Ana B. Cruz was not approved. Reason: Still attending class' })]);
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.requestRejected').get()).docs.map((d) => d.data());
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({ targetType: 'learner_request', targetId: id, actorUid: 'coord7@school.test' });
+    expect(audit[0].details).toEqual({ kind: 'remove', lrn: '100000000001', name: 'Ana B. Cruz', sectionId: 'SEC1', gradeLevel: 7 });
+    expect(await get('enrollments/S1_2026-2027')).toEqual(enrollmentBefore);
+    expect(await get('students/S1')).toEqual(learnerBefore);
+    expect(await auditText()).not.toContain('Still attending class');
+    expect(await auditText()).not.toContain('Stopped attending in September');
+  });
+  it('can reject a pending add whose student is missing', async () => {
+    // A malformed document (it cannot be filed through the handler), so it is written directly.
+    await db().doc('learner_change_requests/broken').set({ kind: 'add', status: 'pending', schoolYear: year, sectionId: 'SEC1', gradeLevel: 7,
+      sectionName: 'Rizal', displayName: 'Mystery Learner', requestedByUid: 'teacher', requestedByName: 'Tina Teacher', enrollType: 'new',
+      createdAt: Timestamp.fromMillis(Date.UTC(2026, 9, 1)) });
+    await resolveLearnerRequest(deps('admin'), { requestId: 'broken', approve: false, reason: 'The form is incomplete' });
+    expect(await get('learner_change_requests/broken')).toMatchObject({ status: 'rejected', decisionReason: 'The form is incomplete' });
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.requestRejected').get()).docs.map((d) => d.data());
+    expect(audit).toHaveLength(1);
+    expect(audit[0].details).toEqual({ kind: 'add', lrn: '', name: 'Mystery Learner', sectionId: 'SEC1', gradeLevel: 7 });
   });
 });
 

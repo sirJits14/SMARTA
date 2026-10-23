@@ -282,7 +282,7 @@ export async function resolveLearnerRequest(deps, input) {
     // Audit rows never carry free text: the reasons and the removal note stay on the request document.
     if (!approve) {
       note = { title: 'Request not approved', body: `${request.kind === 'add' ? 'Adding' : 'Removing'} ${name} was not approved. Reason: ${reason}`, rejected: true };
-      audit = { action: 'learner.requestRejected', details: { kind: request.kind, lrn: request.kind === 'add' ? request.student.lrn : request.lrn, name,
+      audit = { action: 'learner.requestRejected', details: { kind: request.kind, lrn: request.kind === 'add' ? request.student?.lrn || '' : request.lrn || '', name,
         sectionId: request.sectionId, gradeLevel: request.gradeLevel } };
     } else {
       // Everything is read before the first write.
