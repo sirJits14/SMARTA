@@ -20,6 +20,9 @@ export default function LearnerRequestsPage({ schoolYear }) {
   // Depends on loading and error too, so Decided opened during a reload loads when it ends, and Refresh after a failure retries.
   useEffect(() => { if (shouldLoadDecided({ view, decided, loading, error })) lists.loadDecided(false); }, [view, decided, loading, error]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const timer = setInterval(() => tick(n => n + 1), 60000); return () => clearInterval(timer); }, []);
+  // Choosing Decided with nothing loaded also drops an old message (a refused decision, a failed load), in the
+  // same click, so the effect above sees the new tab and the clear together and loads once. Only a click clears it.
+  const openView = (next) => { setView(next); if (next === 'decided' && !decided) lists.clearError(); };
   const tabs = [['waiting', `Waiting${count ? ` (${count})` : ''}`], ['decided', 'Decided']];
   return <div style={{ fontFamily: T.body }}>
     <div className="sims-heading" style={S.plate}>
@@ -34,7 +37,7 @@ export default function LearnerRequestsPage({ schoolYear }) {
     {notice && <p role="status" className="sims-feedback is-success">{notice}</p>}
     {!waiting && loading && <p role="status">Loading learner requests…</p>}
     {waiting && <>
-      <SubTabs id="learner-requests" label="Learner request views" tabs={tabs} value={view} onChange={setView} />
+      <SubTabs id="learner-requests" label="Learner request views" tabs={tabs} value={view} onChange={openView} />
       <div role="tabpanel" id="learner-requests-panel" aria-labelledby={`learner-requests-tab-${view}`}>
         {view === 'waiting'
           ? <WaitingList requests={waiting.requests} ended={ended} pending={pending} failures={failures}

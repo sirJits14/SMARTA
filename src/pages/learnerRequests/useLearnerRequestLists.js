@@ -13,7 +13,8 @@ export const requestLeftList = (reloaded, requestId) => Array.isArray(reloaded) 
 
 // Whether the Decided tab should fetch its first page now. Loads once per empty Decided: starting a load sets
 // loading, success sets decided and a failure sets error, and each of the three blocks this condition, so only
-// Refresh (which clears error and empties decided) can bring one more attempt.
+// a person can bring one more attempt: Refresh (which clears error and empties decided), or choosing the
+// Decided tab, which clears the old message with clearError and tries once.
 export const shouldLoadDecided = ({ view, decided, loading, error }) => view === 'decided' && !decided && !loading && !error;
 
 // The Waiting and Decided lists and one decision lock shared by every card. The server filters both lists to
@@ -79,5 +80,7 @@ export function useLearnerRequestLists() {
     } finally { lock.current = false; setPending(false); }
   }, [refresh]);
 
-  return { waiting, decided, loading, loadedAt, error, notice, pending, failures, refresh, loadDecided, decide };
+  const clearError = useCallback(() => setError(''), []);
+
+  return { waiting, decided, loading, loadedAt, error, notice, pending, failures, refresh, loadDecided, decide, clearError };
 }

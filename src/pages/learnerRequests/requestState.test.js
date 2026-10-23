@@ -76,6 +76,19 @@ describe('learner request badge count', () => {
     expect(badge.currentLearnerRequestCount()).toBe(0);
   });
 
+  it('makes no call and keeps the count at 0 when nobody is listening', async () => {
+    const late = badge.refreshLearnerRequestCount(); // a late call made after sign-out
+    expect(calls).toHaveLength(0);
+    await late;
+    expect(badge.currentLearnerRequestCount()).toBe(0);
+    const stop = badge.subscribeLearnerRequestCount(() => {});
+    stop(); // everyone left again
+    const later = badge.refreshLearnerRequestCount();
+    expect(calls).toHaveLength(0);
+    await later;
+    expect(badge.currentLearnerRequestCount()).toBe(0);
+  });
+
   it('drops an answer for the previous person that arrives after they left, and does not share its call', async () => {
     const stop = badge.subscribeLearnerRequestCount(() => {});
     const late = badge.refreshLearnerRequestCount();

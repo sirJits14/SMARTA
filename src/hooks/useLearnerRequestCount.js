@@ -10,6 +10,7 @@ let inflight = null;
 let generation = 0; // bumped when the last listener leaves, so a late answer for the previous person is dropped
 const listeners = new Set();
 export function refreshLearnerRequestCount() {
+  if (listeners.size === 0) return Promise.resolve(); // nobody is watching (signed out): a late call must not write the next person's count
   if (!inflight) {
     const mine = generation;
     const call = httpsCallable(functions, 'getLearnerRequestCountFn')({})
@@ -38,7 +39,7 @@ export function useLearnerRequestCount(enabled) {
     refreshLearnerRequestCount();
     const onFocus = () => refreshLearnerRequestCount();
     window.addEventListener('focus', onFocus);
-    return () => { unsubscribe(); window.removeEventListener('focus', onFocus); };
+    return () => { unsubscribe(); window.removeEventListener('focus', onFocus); setValue(0); };
   }, [enabled]);
   return enabled ? value : 0;
 }
