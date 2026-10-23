@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  approveEffect, classText, decidableCount, detailRows, existingFlag, kindLabel, orderWaiting, outcomeText, placeText, removalText, whenText,
+  approveEffect, classText, decidableCount, detailRows, existingFlag, keepsDetailsText, kindLabel, orderWaiting, outcomeText, personText, placeText, removalText, whenText,
 } from './learnerRequests.js';
 
 const add = {
@@ -50,6 +50,38 @@ describe('an LRN that is already in SIMS', () => {
     expect(existingFlag({ ...add, existing: { exists: true, needsAdmin: true } })).toBe('Needs an administrator');
     expect(existingFlag({ ...add, existing: { exists: true, ambiguous: true, needsAdmin: false } })).toBe('This LRN matches more than one learner. Fix the records first.');
   });
+  it('says approving will not work when the learner is already in this class', () => {
+    expect(existingFlag(existing({ enrolledHere: true, currentSection: 'Rizal' }))).toBe('Already in SIMS: BEN DY, already in this class. Approving will not work; reject this request.');
+  });
+  it('lets needing an administrator or a duplicate LRN win over already being in this class', () => {
+    expect(existingFlag(existing({ enrolledHere: true, needsAdmin: true }))).toBe('Needs an administrator');
+    expect(existingFlag(existing({ enrolledHere: true, ambiguous: true }))).toBe('This LRN matches more than one learner. Fix the records first.');
+  });
+  it('says SIMS keeps its own details only when approving can go ahead for a learner already in SIMS', () => {
+    const kept = 'SIMS keeps the details it already has for this learner.';
+    expect(keepsDetailsText(existing({}))).toBe(kept);
+    expect(keepsDetailsText(existing({ currentGrade: null, currentSection: '' }))).toBe(kept);
+    expect(keepsDetailsText(add)).toBe('');
+    expect(keepsDetailsText(existing({ needsAdmin: true }))).toBe('');
+    expect(keepsDetailsText(existing({ ambiguous: true }))).toBe('');
+    expect(keepsDetailsText(existing({ enrolledHere: true }))).toBe('');
+    expect(keepsDetailsText(remove('dropped_out'))).toBe('');
+  });
+});
+
+describe('people in capitals, emails as written', () => {
+  it('capitalises a name', () => {
+    expect(personText('Tina Teacher')).toBe('TINA TEACHER');
+  });
+  it('leaves an email address as written', () => {
+    expect(personText('teacher@deped.gov.ph')).toBe('teacher@deped.gov.ph');
+    expect(personText('Teacher.One@DepEd.gov.ph')).toBe('Teacher.One@DepEd.gov.ph');
+  });
+  it('gives nothing for a missing name', () => {
+    expect(personText('')).toBe('');
+    expect(personText(null)).toBe('');
+    expect(personText(undefined)).toBe('');
+  });
 });
 
 describe('lists', () => {
@@ -59,9 +91,11 @@ describe('lists', () => {
     expect(decidableCount(rows)).toBe(2);
   });
   it('words a decision and its time in Manila', () => {
-    expect(outcomeText({ status: 'approved', decidedByName: 'Ada Admin' })).toBe('Approved by Ada Admin');
+    expect(outcomeText({ status: 'approved', decidedByName: 'Ada Admin' })).toBe('Approved by ADA ADMIN');
+    expect(outcomeText({ status: 'approved', decidedByName: 'ada@deped.gov.ph' })).toBe('Approved by ada@deped.gov.ph');
     expect(outcomeText({ status: 'rejected', decidedByName: '' })).toBe('Not approved by staff');
-    expect(whenText(Date.UTC(2026, 9, 22, 1, 5))).toContain('Oct 22, 2026');
+    // 20:00 UTC on Oct 21 is 04:00 on Oct 22 in Manila, so a dropped timeZone would show Oct 21.
+    expect(whenText(Date.UTC(2026, 9, 21, 20, 0))).toContain('Oct 22, 2026');
     expect(whenText(null)).toBe('');
   });
 });

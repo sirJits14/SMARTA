@@ -6,6 +6,12 @@ export const kindLabel = (request) => (request.kind === 'add' ? 'Add' : 'Remove'
 export const classText = (request) => `Grade ${request.gradeLevel} · ${request.sectionName || request.sectionId}`;
 export const nameText = (request) => capsName(request.displayName);
 
+// A person's name in capitals; an email address (shown when they have no name) stays as written.
+export const personText = (name) => {
+  if (!name) return '';
+  return String(name).includes('@') ? String(name) : capsName(name);
+};
+
 const STATUS_WORD = { dropped: 'Dropped', transferred: 'Transferred' };
 
 // Where an existing learner is now, in words an approver can act on.
@@ -20,8 +26,16 @@ export function existingFlag(request) {
   if (!existing) return '';
   if (existing.needsAdmin) return 'Needs an administrator';
   if (existing.ambiguous) return 'This LRN matches more than one learner. Fix the records first.';
+  if (existing.enrolledHere) return `Already in SIMS: ${capsName(existing.displayName)}, already in this class. Approving will not work; reject this request.`;
   const effect = existing.currentGrade != null ? 'Approving moves them here.' : 'Approving enrolls them here.';
   return `Already in SIMS: ${capsName(existing.displayName)}, currently ${placeText(existing)}. ${effect}`;
+}
+
+// Approving an Add for an LRN already in SIMS leaves the learner's own record as it is; the adviser's details are ignored.
+export function keepsDetailsText(request) {
+  const existing = request.existing;
+  if (!existing || existing.needsAdmin || existing.ambiguous || existing.enrolledHere) return '';
+  return 'SIMS keeps the details it already has for this learner.';
 }
 
 // What approving a request will do, in a sentence. Adds for a learner already in SIMS say it in the flag instead.
@@ -51,7 +65,7 @@ export const removalText = (request) => `${reasonLabel(request.reasonCode)} · $
 
 export const whenText = (ms) => (ms ? new Date(ms).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' }) : '');
 
-export const outcomeText = (request) => `${request.status === 'approved' ? 'Approved' : 'Not approved'} by ${request.decidedByName || 'staff'}`;
+export const outcomeText = (request) => `${request.status === 'approved' ? 'Approved' : 'Not approved'} by ${personText(request.decidedByName) || 'staff'}`;
 
 // Requests the signed-in person can decide come first, then the ones that need an administrator.
 export const orderWaiting = (requests) => [...requests.filter((r) => r.decidable), ...requests.filter((r) => !r.decidable)];

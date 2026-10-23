@@ -1,7 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import RequestCard from './RequestCard.jsx';
+import RequestCard, { rejectRequest } from './RequestCard.jsx';
 import WaitingList from './WaitingList.jsx';
 import DecidedList from './DecidedList.jsx';
 
@@ -18,7 +18,7 @@ describe('RequestCard', () => {
     const html = card(add);
     expect(html).toContain('JUAN DELA CRUZ');
     expect(html).toContain('LRN 123456789012');
-    expect(html).toContain('Grade 7 · Rizal · requested by Tina Teacher');
+    expect(html).toContain('Grade 7 · Rizal · requested by TINA TEACHER');
     expect(html).toContain('Adds JUAN DELA CRUZ to Grade 7 · Rizal as New.');
     expect(html).toContain('<summary');
     expect(html).toContain('123 Rizal St.');
@@ -29,6 +29,42 @@ describe('RequestCard', () => {
     const html = card({ ...add, existing: { exists: true, needsAdmin: false, displayName: 'Ben Dy', learnerStatus: 'active', currentGrade: 7, currentSection: 'Mabini' } });
     expect(html).toContain('Already in SIMS: BEN DY, currently Grade 7 · Mabini. Approving moves them here.');
     expect(html).not.toContain('Adds JUAN');
+  });
+  it('shows an adviser with no name by their email address as written', () => {
+    const html = card({ ...add, requestedByName: 'teacher@deped.gov.ph' });
+    expect(html).toContain('requested by teacher@deped.gov.ph');
+    expect(html).not.toContain('TEACHER@DEPED.GOV.PH');
+  });
+  it('says SIMS keeps what it has when approving an LRN already in SIMS can go ahead', () => {
+    const html = card({ ...add, existing: { exists: true, needsAdmin: false, displayName: 'Ben Dy', learnerStatus: 'active', currentGrade: 7, currentSection: 'Mabini' } });
+    expect(html).toContain('SIMS keeps the details it already has for this learner.');
+    expect(html).not.toContain('sims-flag--conflict');
+    expect(card(add)).not.toContain('SIMS keeps the details');
+  });
+  it('promises nothing it will not do for a learner already in this class', () => {
+    const html = card({ ...add, existing: { exists: true, needsAdmin: false, enrolledHere: true, displayName: 'Ben Dy', learnerStatus: 'active', currentGrade: 7, currentSection: 'Rizal' } });
+    expect(html).toContain('Already in SIMS: BEN DY, already in this class. Approving will not work; reject this request.');
+    expect(html).not.toContain('Approving moves them here');
+    expect(html).not.toContain('SIMS keeps the details');
+    expect(html).toContain('sims-flag--conflict');
+    expect(html).toContain('>Reject<');
+  });
+  it('shows a duplicate LRN as a conflict even when the person can decide', () => {
+    const html = card({ ...add, existing: { exists: true, needsAdmin: false, ambiguous: true } });
+    expect(html).toContain('This LRN matches more than one learner. Fix the records first.');
+    expect(html).toContain('sims-flag--conflict');
+    expect(html).not.toContain('SIMS keeps the details');
+  });
+  it('names the learner on the Details summary and wraps long text', () => {
+    const html = card(add);
+    expect(html).toContain('aria-label="Details for JUAN DELA CRUZ"');
+    expect(card(remove).match(/overflow-wrap:anywhere/g)).toHaveLength(3); // name, removal note, effect
+    const flagged = card({ ...add, existing: { exists: true, needsAdmin: false, displayName: 'Ben Dy', learnerStatus: 'active', currentGrade: 7, currentSection: 'Mabini' } });
+    expect(flagged).toMatch(/<li class="sims-flag" style="overflow-wrap:anywhere">/);
+  });
+  it('leaves out the LRN when there is none', () => {
+    expect(card(add)).toContain('>LRN 123456789012<');
+    expect(card({ ...add, lrn: '' })).not.toContain('>LRN ');
   });
   it('shows a request that needs an administrator without actions', () => {
     const html = card({ ...add, decidable: false, existing: { exists: true, needsAdmin: true } });
@@ -46,6 +82,21 @@ describe('RequestCard', () => {
     const html = card(add, { failure: 'Already decided.', disabled: true });
     expect(html).toContain('Already decided.');
     expect(html.match(/disabled=""/g)).toHaveLength(2);
+  });
+});
+
+describe('rejectRequest', () => {
+  it('passes the request and the reason on and gives back the answer', async () => {
+    const seen = [];
+    expect(await rejectRequest(async (...args) => { seen.push(args); return true; }, add, 'Wrong learner')).toBe(true);
+    expect(seen).toEqual([[add, 'Wrong learner']]);
+    expect(await rejectRequest(async () => false, add, 'x')).toBe(false);
+  });
+  it('keeps the form open instead of raising when the handler throws, rejects or returns nothing', async () => {
+    expect(await rejectRequest(() => { throw new Error('boom'); }, add, 'x')).toBe(false);
+    expect(await rejectRequest(async () => { throw new Error('boom'); }, add, 'x')).toBe(false);
+    expect(await rejectRequest(() => undefined, add, 'x')).toBe(false);
+    expect(await rejectRequest(undefined, add, 'x')).toBe(false);
   });
 });
 
@@ -68,18 +119,45 @@ describe('WaitingList', () => {
 });
 
 describe('DecidedList', () => {
-  const decided = (over) => ({ ...base, id: 'd1', kind: 'add', status: 'approved', displayName: 'Maria Santos', lrn: '123456789013', decidedAt: Date.UTC(2026, 9, 22, 1, 5), decidedByName: 'Ada Admin', decisionReason: 'Approved', ...over });
+  const decided = (over) => ({ ...base, id: 'd1', kind: 'add', status: 'approved', displayName: 'Maria Santos', lrn: '123456789013', decidedAt: Date.UTC(2026, 9, 21, 20, 0), decidedByName: 'Ada Admin', decisionReason: 'Approved', ...over });
   it('shows the outcome, who decided, when, and the reason', () => {
     const html = renderToStaticMarkup(h(DecidedList, { decided: { requests: [decided({}), decided({ id: 'd2', status: 'rejected', kind: 'remove', displayName: 'Ben Dy', reasonCode: 'transferred_out', note: 'Moved', decisionReason: 'Wrong learner' })], nextCursor: null }, loading: false, onMore() {} }));
-    expect(html).toContain('Approved by Ada Admin · Oct 22, 2026');
+    expect(html).toContain('Approved by ADA ADMIN · Oct 22, 2026');
     expect(html).toContain('Not approved');
     expect(html).toContain('Remove BEN DY');
     expect(html).toContain('Reason: Wrong learner');
     expect(html).not.toContain('Load more');
   });
+  it('shows the requester in capitals, or their email address as written', () => {
+    const list = (over) => renderToStaticMarkup(h(DecidedList, { decided: { requests: [decided(over)], nextCursor: null }, loading: false, onMore() {} }));
+    expect(list({})).toContain('requested by TINA TEACHER');
+    expect(list({ requestedByName: 'teacher@deped.gov.ph', decidedByName: 'ada@deped.gov.ph' })).toContain('requested by teacher@deped.gov.ph');
+    expect(list({ decidedByName: 'ada@deped.gov.ph' })).toContain('Approved by ada@deped.gov.ph · Oct 22, 2026');
+  });
+  it('hides the default reason of an approval but keeps one a person wrote', () => {
+    const list = (over) => renderToStaticMarkup(h(DecidedList, { decided: { requests: [decided(over)], nextCursor: null }, loading: false, onMore() {} }));
+    expect(list({})).not.toContain('Reason:');
+    expect(list({ decisionReason: 'Checked with the adviser' })).toContain('Reason: Checked with the adviser');
+    expect(list({ status: 'rejected', decisionReason: 'Approved' })).toContain('Reason: Approved');
+    expect(list({ decisionReason: '' })).not.toContain('Reason:');
+  });
+  it('leaves out the LRN when there is none and does not dangle a separator without a time', () => {
+    const list = (over) => renderToStaticMarkup(h(DecidedList, { decided: { requests: [decided(over)], nextCursor: null }, loading: false, onMore() {} }));
+    expect(list({ lrn: '' })).not.toContain('LRN');
+    const html = list({ decidedAt: null });
+    expect(html).toContain('Approved by ADA ADMIN<');
+    expect(html).not.toContain('Approved by ADA ADMIN ·');
+  });
+  it('wraps long names, reasons and notes', () => {
+    const html = renderToStaticMarkup(h(DecidedList, { decided: { requests: [decided({ status: 'rejected', kind: 'remove', reasonCode: 'dropped_out', note: 'n', decisionReason: 'Wrong learner' })], nextCursor: null }, loading: false, onMore() {} }));
+    expect(html.match(/overflow-wrap:anywhere/g).length).toBeGreaterThanOrEqual(3);
+  });
   it('offers more when the server has another page, and says so when nothing is decided', () => {
     expect(renderToStaticMarkup(h(DecidedList, { decided: { requests: [decided({})], nextCursor: { ms: 1, id: 'x' } }, loading: false, onMore() {} }))).toContain('Load more');
     expect(renderToStaticMarkup(h(DecidedList, { decided: { requests: [], nextCursor: null }, loading: false, onMore() {} }))).toContain('Nothing decided yet');
     expect(renderToStaticMarkup(h(DecidedList, { decided: null, loading: true, onMore() {} }))).toContain('Loading decided requests');
+  });
+  it('shows nothing while there is no list and nothing is loading, since the page shows its own error', () => {
+    expect(renderToStaticMarkup(h(DecidedList, { decided: null, loading: false, onMore() {} }))).toBe('');
   });
 });
