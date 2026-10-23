@@ -364,7 +364,7 @@ const S = {
   removeNoteHint: 'Tell the approver what happened.',
   removePending: 'Removal pending',
   withdrawRequest: 'Withdraw request',
-  requestWithdrawn: 'Request withdrawn.',
+  learnerRequestWithdrawn: 'Request withdrawn.',
   requestsTitle: 'Learner requests',
   requestsEmpty: 'No requests yet.',
   requestsClose: 'Close',

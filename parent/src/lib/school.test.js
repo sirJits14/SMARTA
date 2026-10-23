@@ -30,6 +30,12 @@ describe('school access presentation', () => {
     expect(inboxDestination({ type: 'learner_request' })).toBe('/school');
     expect(inboxDestination({ type: 'learner_request', rejected: true })).toBe('/school');
   });
+  it('keeps each school access request status on its own label', () => {
+    expect(REQUEST_STATUS.pending).toBe('Waiting for review');
+    expect(REQUEST_STATUS.approved).toBe('Approved');
+    expect(REQUEST_STATUS.rejected).toBe('Not approved');
+    expect(REQUEST_STATUS.withdrawn).toBe('Withdrawn');
+  });
   it('offers requestable roles and sections grouped by grade', () => {
     expect(REQUESTABLE_ROLES).toEqual(['adviser']);
     expect(ROLE_LABELS).toEqual({ adviser: 'Adviser', curriculum_adviser: 'Curriculum Adviser' });

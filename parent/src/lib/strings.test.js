@@ -1,7 +1,23 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import S, { FORBIDDEN } from '../strings.js';
 
 describe('strings', () => {
+  // In an object literal the later duplicate key silently wins, so a new string can change an old one's wording.
+  it('never reuses a key with different text', () => {
+    const lines = readFileSync(new URL('../strings.js', import.meta.url), 'utf8').split(/\r?\n/);
+    const seen = new Map();
+    const clashes = [];
+    for (const line of lines) {
+      const match = /^ {2}([A-Za-z_$][\w$]*):/.exec(line);
+      if (!match) continue;
+      const text = line.trim();
+      if (seen.has(match[1]) && seen.get(match[1]) !== text) clashes.push(match[1]);
+      seen.set(match[1], text);
+    }
+    expect(clashes, `strings.js defines these keys twice with different text: ${clashes.join(', ')}`).toEqual([]);
+    expect(seen.size).toBeGreaterThan(100);
+  });
   it('has no empty strings', () => {
     for (const [k, v] of Object.entries(S)) expect(typeof v === 'string' && v.trim().length > 0, k).toBe(true);
   });
@@ -66,7 +82,7 @@ describe('strings', () => {
       'learnerMiddleName', 'learnerExt', 'learnerSex', 'learnerMale', 'learnerFemale', 'learnerChoose', 'learnerBirthdate', 'learnerEnrollType',
       'learnerSectionContact', 'learnerAddress', 'learnerGuardianName', 'learnerGuardianRelationship', 'learnerGuardianContact', 'learnerContactNumber',
       'learnerSend', 'learnerSending', 'learnerCancel', 'learnerSent', 'removeFromClass', 'removeHint', 'removeReason', 'removeNote', 'removeNoteHint',
-      'removePending', 'withdrawRequest', 'requestWithdrawn', 'requestsTitle', 'requestsEmpty', 'requestsClose', 'requestsWaitingOne', 'requestsWaitingMany',
+      'removePending', 'withdrawRequest', 'learnerRequestWithdrawn', 'requestsTitle', 'requestsEmpty', 'requestsClose', 'requestsWaitingOne', 'requestsWaitingMany',
       'requestsPast', 'requestReasonLabel', 'requestSendAgain', 'learnerAddVerb', 'learnerRemoveVerb', 'learnerStatusPending', 'learnerStatusApproved',
       'learnerStatusRejected', 'learnerStatusWithdrawn'])
       expect(typeof S[k], k).toBe('string');

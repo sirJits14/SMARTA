@@ -42,6 +42,14 @@ describe('payloads', () => {
     const request = { kind: 'add', status: 'rejected', enrollType: 'transferee', student: { lrn: '123456789012', lastName: 'Dela Cruz', firstName: 'Juan', sex: 'M', birthdate: '2012-05-01', guardianName: 'Maria' } };
     expect(prefillFrom(request)).toMatchObject({ lrn: '123456789012', guardianName: 'Maria', enrollType: 'transferee', address: '', contactNumber: '', guardianContact: '' });
   });
+  it('strips contact details, unknown keys and non-text values on its own', () => {
+    const request = { kind: 'add', status: 'rejected', enrollType: 'visitor', student: {
+      lrn: '123456789012', lastName: 'Dela Cruz', address: '123 Rizal St.', guardianContact: '09171234567', contactNumber: '09181234567', nickname: 'Jun', firstName: 42 } };
+    const form = prefillFrom(request);
+    expect(form).toMatchObject({ lrn: '123456789012', lastName: 'Dela Cruz', address: '', guardianContact: '', contactNumber: '', firstName: '', enrollType: 'new' });
+    expect(Object.keys(form).sort()).toEqual(Object.keys(emptyLearnerForm()).sort());
+    expect(JSON.stringify(form)).not.toMatch(/Rizal|0917|0918|Jun/);
+  });
 });
 
 describe('request lists', () => {

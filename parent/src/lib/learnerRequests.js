@@ -2,7 +2,7 @@ import S from '../strings.js';
 import { nameCase } from './format.js';
 import { manilaDate } from '../../../shared/dates.js';
 import {
-  ENROLL_TYPES, ENROLL_TYPE_LABELS, REASON_CODES, REMOVAL_REASONS, reasonLabel, validateEnrollType, validateLearnerFields, validateRemoval,
+  CONTACT_FIELDS, ENROLL_TYPES, ENROLL_TYPE_LABELS, REASON_CODES, REMOVAL_REASONS, reasonLabel, validateEnrollType, validateLearnerFields, validateRemoval,
 } from '../../../shared/learnerRequests.js';
 
 export const REASON_OPTIONS = REASON_CODES.map((value) => ({ value, label: REMOVAL_REASONS[value].label }));
@@ -32,8 +32,19 @@ export function addPayload(sectionId, form) {
 export const removalPayload = (sectionId, studentId, { reasonCode, note }) => ({ sectionId, studentId, reasonCode, note });
 
 // "Send again" on a not-approved add: the form comes back without the address and phone numbers,
-// which the school clears once a request is decided.
-export const prefillFrom = (request) => ({ ...emptyLearnerForm(), ...(request.student || {}), enrollType: request.enrollType || 'new' });
+// which the school clears once a request is decided. The server already strips them; this does not
+// rely on that. Only the form's own fields are taken, and only text values; the contact fields stay
+// empty and an unknown enrollment type falls back to new.
+export function prefillFrom(request) {
+  const form = emptyLearnerForm();
+  const student = request?.student || {};
+  for (const key of Object.keys(form)) {
+    if (key === 'enrollType' || CONTACT_FIELDS.includes(key)) continue;
+    if (typeof student[key] === 'string') form[key] = student[key];
+  }
+  form.enrollType = ENROLL_TYPES.includes(request?.enrollType) ? request.enrollType : 'new';
+  return form;
+}
 
 export const STATUS_LABEL = {
   pending: S.learnerStatusPending, approved: S.learnerStatusApproved, rejected: S.learnerStatusRejected, withdrawn: S.learnerStatusWithdrawn,
