@@ -55,7 +55,15 @@
     { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "pushResult.status", "order": "ASCENDING" }, { "fieldPath": "pushResult.claimedAt", "order": "ASCENDING" } ] },
     { "collectionGroup": "audit_log", "queryScope": "COLLECTION", "fields": [
-      { "fieldPath": "targetType", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" } ] }
+      { "fieldPath": "targetType", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "requestedByUid", "order": "ASCENDING" }, { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] }
   ],
   "fieldOverrides": [
     { "collectionGroup": "devices", "fieldPath": "refreshedAt", "indexes": [

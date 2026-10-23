@@ -24,6 +24,7 @@ import { getSchoolContext, requestSchoolRole, setAdvisoryRequestsEnabled, withdr
 import { retireSubjectTeachers } from './src/handlers/retireSubjectTeachers.js';
 import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, getSchoolLearnerHistory, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
+import { requestLearnerAdd, requestLearnerRemoval, withdrawLearnerRequest, getLearnerRequests, listLearnerRequests, resolveLearnerRequest, getLearnerRequestCount } from './src/handlers/learnerRequests.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -124,6 +125,14 @@ export const getSchoolLearnerHistoryFn = schoolCall(getSchoolLearnerHistory);
 export const getPortalAnnouncementsFn = schoolCall(getPortalAnnouncements);
 export const getPortalAnnouncementFn = schoolCall(getPortalAnnouncement);
 export const savePortalAnnouncementFn = staffCall(savePortalAnnouncement);
+// Advisers ask from the Parent App; an Administrator or whoever covers the grade decides in SIMS (spec 2026-10-22).
+export const requestLearnerAddFn = schoolCall(requestLearnerAdd);
+export const requestLearnerRemovalFn = schoolCall(requestLearnerRemoval);
+export const withdrawLearnerRequestFn = schoolCall(withdrawLearnerRequest);
+export const getLearnerRequestsFn = schoolCall(getLearnerRequests);
+export const listLearnerRequestsFn = schoolCall(listLearnerRequests);
+export const resolveLearnerRequestFn = schoolCall(resolveLearnerRequest);
+export const getLearnerRequestCountFn = schoolCall(getLearnerRequestCount);
 // The SF2 workbook for a section and month, built on the server so phones never load ExcelJS (spec 2026-10-22).
 // The handler (and ExcelJS with it) loads on the first request, so it does not slow the cold start of every
 // other callable, the kiosk scan included.
