@@ -6,7 +6,7 @@ import { decidableCount, nameText } from '../lib/learnerRequests.js';
 import SubTabs from './guardians/school/SubTabs.jsx';
 import WaitingList from './learnerRequests/WaitingList.jsx';
 import DecidedList from './learnerRequests/DecidedList.jsx';
-import { useLearnerRequestLists } from './learnerRequests/useLearnerRequestLists.js';
+import { shouldLoadDecided, useLearnerRequestLists } from './learnerRequests/useLearnerRequestLists.js';
 
 // Advisers ask in the parent app to add or remove a learner; an Administrator, or whoever covers the grade,
 // decides here (spec 2026-10-22). The server filters both lists to what this person may see.
@@ -17,7 +17,8 @@ export default function LearnerRequestsPage({ schoolYear }) {
   const [, tick] = useState(0);
   const count = waiting ? decidableCount(waiting.requests) : 0;
   const ended = Boolean(waiting?.ended);
-  useEffect(() => { if (view === 'decided' && !decided && !loading) lists.loadDecided(false); }, [view, decided]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Depends on loading and error too, so Decided opened during a reload loads when it ends, and Refresh after a failure retries.
+  useEffect(() => { if (shouldLoadDecided({ view, decided, loading, error })) lists.loadDecided(false); }, [view, decided, loading, error]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const timer = setInterval(() => tick(n => n + 1), 60000); return () => clearInterval(timer); }, []);
   const tabs = [['waiting', `Waiting${count ? ` (${count})` : ''}`], ['decided', 'Decided']];
   return <div style={{ fontFamily: T.body }}>
