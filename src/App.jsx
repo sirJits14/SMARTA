@@ -19,6 +19,7 @@ import loadingGif from './assets/loading.gif';
 // the single initial bundle.
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const StudentsPage = lazy(() => import('./pages/StudentsPage.jsx'));
+const LearnerRequestsPage = lazy(() => import('./pages/LearnerRequestsPage.jsx'));
 const SectionsPage = lazy(() => import('./pages/SectionsPage.jsx'));
 const SchedulesPage = lazy(() => import('./pages/SchedulesPage.jsx'));
 const EnrollPage = lazy(() => import('./pages/EnrollPage.jsx'));
@@ -160,6 +161,7 @@ export default function App() {
         <Suspense fallback={<PageFallback />}>
           {shown==='dashboard' && <DashboardPage me={me} schoolYear={schoolYear} setPage={setPage} />}
           {shown==='students' && <StudentsPage me={me} schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
+          {shown==='learnerRequests' && <LearnerRequestsPage schoolYear={schoolYear} />}
           {shown==='sections' && <SectionsPage me={me} schoolYear={schoolYear} />}
           {shown==='schedules' && <SchedulesPage me={me} schoolYear={schoolYear} />}
           {shown==='enroll' && <EnrollPage me={me} schoolYear={schoolYear} />}

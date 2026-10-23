@@ -54,10 +54,11 @@ describe('staff data startup', () => {
 describe('pages', () => {
   it('admins open everything including Accounts', () => {
     expect(isAdmin(admin)).toBe(true);
-    expect(allowedPages(admin)).toEqual(expect.arrayContaining(['dashboard', 'enroll', 'guardians', 'announcements', 'settings', 'accounts']));
+    expect(allowedPages(admin)).toEqual(expect.arrayContaining(['dashboard', 'enroll', 'guardians', 'announcements', 'settings', 'accounts', 'learnerRequests']));
   });
-  it('coordinators open the shared pages, including Announcements', () => {
-    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'sections', 'schedules', 'attendance', 'announcements']);
+  it('coordinators open the shared pages, including Announcements and Learner requests', () => {
+    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements']);
+    expect(canOpen(glc8, 'learnerRequests')).toBe(true);
     expect(canOpen(glc8, 'attendance')).toBe(true);
     expect(canOpen(glc8, 'enroll')).toBe(false);
     expect(canOpen({ role: 'teacher' }, 'dashboard')).toBe(false);
