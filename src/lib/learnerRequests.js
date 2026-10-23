@@ -1,0 +1,58 @@
+import { ENROLL_TYPE_LABELS, reasonLabel } from '../../shared/learnerRequests.js';
+import { capsName, fullName } from './roster.js';
+
+// Words the Learner requests page shows. The server decides who may act; this file only phrases it.
+export const kindLabel = (request) => (request.kind === 'add' ? 'Add' : 'Remove');
+export const classText = (request) => `Grade ${request.gradeLevel} · ${request.sectionName || request.sectionId}`;
+export const nameText = (request) => capsName(request.displayName);
+
+const STATUS_WORD = { dropped: 'Dropped', transferred: 'Transferred' };
+
+// Where an existing learner is now, in words an approver can act on.
+export function placeText(existing) {
+  if (existing.currentGrade != null) return `Grade ${existing.currentGrade} · ${existing.currentSection}`;
+  return STATUS_WORD[existing.learnerStatus] || 'Unassigned';
+}
+
+// The flag under an Add whose LRN is already in SIMS; '' when the LRN is new.
+export function existingFlag(request) {
+  const existing = request.existing;
+  if (!existing) return '';
+  if (existing.needsAdmin) return 'Needs an administrator';
+  if (existing.ambiguous) return 'This LRN matches more than one learner. Fix the records first.';
+  const effect = existing.currentGrade != null ? 'Approving moves them here.' : 'Approving enrolls them here.';
+  return `Already in SIMS: ${capsName(existing.displayName)}, currently ${placeText(existing)}. ${effect}`;
+}
+
+// What approving a request will do, in a sentence. Adds for a learner already in SIMS say it in the flag instead.
+export function approveEffect(request) {
+  const name = nameText(request);
+  if (request.kind === 'remove') {
+    if (request.reasonCode === 'transferred_out') return `Marks ${name} as transferred and ends the enrollment.`;
+    if (request.reasonCode === 'dropped_out') return `Marks ${name} as dropped and ends the enrollment.`;
+    return `Ends the enrollment of ${name}. They stay Active and show as Unassigned.`;
+  }
+  return request.existing ? '' : `Adds ${name} to ${classText(request)} as ${ENROLL_TYPE_LABELS[request.enrollType] || 'New'}.`;
+}
+
+// The "Details" of an Add: everything the adviser typed, skipping what was left blank.
+export function detailRows(request) {
+  const student = request.student || {};
+  return [
+    ['Name', fullName(student)], ['LRN', student.lrn], ['Sex', student.sex === 'F' ? 'Female' : student.sex === 'M' ? 'Male' : ''],
+    ['Birthdate', student.birthdate], ['Enrollment type', ENROLL_TYPE_LABELS[request.enrollType]], ['Address', student.address],
+    ['Guardian', student.guardianName], ['Relationship', student.guardianRelationship], ['Guardian contact', student.guardianContact],
+    ['Contact number', student.contactNumber],
+  ].filter(([, value]) => value);
+}
+
+// One line under a removal: why the adviser asked.
+export const removalText = (request) => `${reasonLabel(request.reasonCode)} · ${request.note}`;
+
+export const whenText = (ms) => (ms ? new Date(ms).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' }) : '');
+
+export const outcomeText = (request) => `${request.status === 'approved' ? 'Approved' : 'Not approved'} by ${request.decidedByName || 'staff'}`;
+
+// Requests the signed-in person can decide come first, then the ones that need an administrator.
+export const orderWaiting = (requests) => [...requests.filter((r) => r.decidable), ...requests.filter((r) => !r.decidable)];
+export const decidableCount = (requests) => requests.filter((r) => r.decidable).length;
