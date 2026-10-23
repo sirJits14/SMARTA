@@ -9,7 +9,7 @@ import { loadSchoolActor, inboxRef } from './schoolAccess.js';
 import { reviewGrades } from '../../shared/schoolAccess.js';
 import { manilaDate } from '../../shared/dates.js';
 import {
-  MAX_PENDING_PER_ADVISER, NOTE_MAX, REMOVAL_REASONS, addKey, canDecideLearnerRequest, cleanText, coversGrade, isSectionAdviser,
+  CONTACT_FIELDS, MAX_PENDING_PER_ADVISER, NOTE_MAX, REMOVAL_REASONS, addKey, canDecideLearnerRequest, cleanText, coversGrade, isSectionAdviser,
   reasonLabel, removeKey, validateEnrollType, validateLearnerFields, validateRemoval,
 } from '../../shared/learnerRequests.js';
 import { fullName } from '../lib/format.js';
@@ -19,6 +19,13 @@ const fail = (code, message) => { throw new CallableError(code, message); };
 const identifier = (value) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 const cursorId = (value) => typeof value === 'string' && value.length > 0 && value.length <= 1500 && !value.includes('/');
 const millis = (value) => (value?.toMillis ? value.toMillis() : null);
+// A page cursor must name a time Firestore accepts: from 1970 to the end of the year 9999.
+const MAX_CURSOR_MS = 253402300799999;
+// A decided or withdrawn request has its address and phone numbers cleared when it is decided
+// (Task 4). Reads still drop them, so a stored document that kept them cannot leak them.
+const withoutContact = (student) => (student && typeof student === 'object'
+  ? Object.fromEntries(Object.entries(student).filter(([field]) => !CONTACT_FIELDS.includes(field)))
+  : student);
 // The shared validator turns anything into text (an object becomes "[object Object]", a number is
 // accepted), so a filing is checked here first: only strings count as text, and null or undefined
 // mean "not filled in", which the validator then reports field by field.
@@ -160,8 +167,8 @@ const adviserRow = (snap) => {
     lrn: r.kind === 'add' ? r.student?.lrn || '' : r.lrn || '', studentId: r.studentId || '', enrollType: r.enrollType || '',
     reasonCode: r.reasonCode || '', note: r.note || '', decisionReason: r.status === 'rejected' ? r.decisionReason || '' : '',
     createdAt: millis(r.createdAt), decidedAt: millis(r.decidedAt) ?? millis(r.withdrawnAt),
-    // Only a rejected add is sent again, so only it hands the form back.
-    student: r.kind === 'add' && r.status === 'rejected' ? r.student : undefined,
+    // Only a rejected add is sent again, so only it hands the form back, and never its contact details.
+    student: r.kind === 'add' && r.status === 'rejected' ? withoutContact(r.student) : undefined,
   };
 };
 
@@ -202,7 +209,8 @@ const reviewerRow = (snap, flag, actor) => {
     displayName: r.displayName || '', lrn: r.kind === 'add' ? r.student?.lrn || '' : r.lrn || '', createdAt: millis(r.createdAt),
     decidedAt: millis(r.decidedAt), decidedByName: r.decidedByName || '', decisionReason: r.decisionReason || '',
   };
-  if (r.kind === 'add') Object.assign(row, { student: r.student, enrollType: r.enrollType, existing: flag || null });
+  // Reviewers need the address and phone numbers to decide, so only a pending add returns the whole form.
+  if (r.kind === 'add') Object.assign(row, { student: r.status === 'pending' ? r.student : withoutContact(r.student), enrollType: r.enrollType, existing: flag || null });
   else Object.assign(row, { studentId: r.studentId, reasonCode: r.reasonCode, note: r.note });
   row.decidable = r.status === 'pending' && (actor.isAdmin || !flag?.needsAdmin);
   return row;
@@ -220,7 +228,8 @@ export async function listLearnerRequests(deps, input) {
   const view = input?.view ?? 'waiting';
   if (!['waiting', 'decided'].includes(view)) fail('invalid-argument', 'Choose waiting or decided requests.');
   const cursor = input?.cursor ?? null;
-  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms) && cursorId(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
+  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms)
+    && cursor.ms >= 0 && cursor.ms <= MAX_CURSOR_MS && cursorId(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
   const actor = await loadSchoolActor(deps);
   const base = { schoolYear: actor.schoolYear, ended: actor.ended };
   if (view === 'waiting') return { ...base, requests: await waitingRows(deps, actor), nextCursor: null };
@@ -231,10 +240,12 @@ export async function listLearnerRequests(deps, input) {
   // Withdrawn requests have no decidedAt, so only approved and rejected ones appear here.
   query = query.orderBy('decidedAt', 'desc').orderBy(FieldPath.documentId(), 'desc');
   if (cursor) query = query.startAfter(Timestamp.fromMillis(cursor.ms), cursor.id);
-  const snap = await query.limit(DECIDED_PAGE).get();
-  const requests = snap.docs.map((d) => reviewerRow(d, null, actor));
-  const last = snap.docs[snap.docs.length - 1];
-  return { ...base, requests, nextCursor: snap.size === DECIDED_PAGE ? { ms: millis(last.data().decidedAt), id: last.id } : null };
+  // One row more than a page: the extra row proves there is a next page, so a full last page gets no "Load more".
+  const snap = await query.limit(DECIDED_PAGE + 1).get();
+  const page = snap.docs.slice(0, DECIDED_PAGE);
+  const requests = page.map((d) => reviewerRow(d, null, actor));
+  const last = page[page.length - 1];
+  return { ...base, requests, nextCursor: snap.size > DECIDED_PAGE ? { ms: millis(last.data().decidedAt), id: last.id } : null };
 }
 
 export async function getLearnerRequestCount(deps) {
