@@ -26,6 +26,10 @@ describe('school access presentation', () => {
     expect(inboxDestination({ type: 'school_access' })).toBe('/settings');
     expect(inboxDestination({ type: 'school_access', rejected: true })).toBe('/settings/school-access');
   });
+  it('sends a learner request note to the Class tab', () => {
+    expect(inboxDestination({ type: 'learner_request' })).toBe('/school');
+    expect(inboxDestination({ type: 'learner_request', rejected: true })).toBe('/school');
+  });
   it('offers requestable roles and sections grouped by grade', () => {
     expect(REQUESTABLE_ROLES).toEqual(['adviser']);
     expect(ROLE_LABELS).toEqual({ adviser: 'Adviser', curriculum_adviser: 'Curriculum Adviser' });

@@ -32,6 +32,7 @@ export function correctionError({ session, reason }) {
 }
 export function inboxDestination(item) {
   if (item.type === 'school_access') return item.rejected ? '/settings/school-access' : '/settings';
+  if (item.type === 'learner_request') return '/school';
   if (!item.studentId) return null;
   const path = `/learner/${encodeURIComponent(item.studentId)}`;
   if (item.type === 'attendance_correction') return `${path}?${new URLSearchParams({ date: item.date || '', session: item.session || '' })}`;

@@ -61,6 +61,17 @@ describe('strings', () => {
     for (const k of ['classActions', 'sf2Button', 'sf2Title', 'sf2Hint', 'sf2Month', 'sf2Download', 'sf2Preparing', 'sf2Close', 'sf2NoLearners', 'sf2NoMonths', 'sf2Ready', 'sf2Save', 'sf2Failed', 'sf2SaveFailed'])
       expect(typeof S[k], k).toBe('string');
   });
+  it('has the learner request strings', () => {
+    for (const k of ['addLearnerButton', 'addLearnerTitle', 'addLearnerHint', 'learnerSectionLearner', 'learnerLrn', 'learnerLastName', 'learnerFirstName',
+      'learnerMiddleName', 'learnerExt', 'learnerSex', 'learnerMale', 'learnerFemale', 'learnerChoose', 'learnerBirthdate', 'learnerEnrollType',
+      'learnerSectionContact', 'learnerAddress', 'learnerGuardianName', 'learnerGuardianRelationship', 'learnerGuardianContact', 'learnerContactNumber',
+      'learnerSend', 'learnerSending', 'learnerCancel', 'learnerSent', 'removeFromClass', 'removeHint', 'removeReason', 'removeNote', 'removeNoteHint',
+      'removePending', 'withdrawRequest', 'requestWithdrawn', 'requestsTitle', 'requestsEmpty', 'requestsClose', 'requestsWaitingOne', 'requestsWaitingMany',
+      'requestsPast', 'requestReasonLabel', 'requestSendAgain', 'learnerAddVerb', 'learnerRemoveVerb', 'learnerStatusPending', 'learnerStatusApproved',
+      'learnerStatusRejected', 'learnerStatusWithdrawn'])
+      expect(typeof S[k], k).toBe('string');
+    expect(S.learnerSent).toBe('Sent for approval. You get an Inbox note when it is decided.');
+  });
   it('calls the family role Parent/Guardian and drops Subject Teacher copy', () => {
     expect(S.joinFamily).toBe('Parent/Guardian');
     expect(S.modeFamily).toBe('Parent/Guardian');
