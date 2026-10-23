@@ -13,11 +13,15 @@ import Icon from '../../components/Icon.jsx';
 import UndoToast from './UndoToast.jsx';
 import ClassActions from './ClassActions.jsx';
 import { sf2MonthOptions, base64ToFile, saveFile, saveWithFallback } from '../../lib/sf2.js';
+import { useLearnerRequests } from '../../hooks/useLearnerRequests.js';
+import { addPayload, pendingRemovalIds, pendingRequests, prefillFrom } from '../../lib/learnerRequests.js';
 import S from '../../strings.js';
 import './ClassTab.css';
 
 const FlagSheet = lazy(() => import('./FlagSheet.jsx'));
 const Sf2Sheet = lazy(() => import('./Sf2Sheet.jsx'));
+const AddLearnerSheet = lazy(() => import('./AddLearnerSheet.jsx'));
+const RequestsSheet = lazy(() => import('./RequestsSheet.jsx'));
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
 // A share or download that went through; 'cancelled' and 'blocked' keep the sheet open for another try.
@@ -110,6 +114,31 @@ export default function ClassTab({ sections, ended, navigate }) {
     finally { sf2Lock.current = false; }
   };
 
+  // Learner requests: the adviser asks and SIMS decides, so the roster changes only after approval.
+  const requests = useLearnerRequests(validSection, !ended);
+  const [addForm, setAddForm] = useState(null); // { initial } while the Add learner sheet is open
+  const [requestsOpen, setRequestsOpen] = useState(false);
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const requestLock = useRef(false);
+  const removalIds = useMemo(() => pendingRemovalIds(requests.requests), [requests.requests]);
+  const runRequest = async (work) => {
+    if (requestLock.current) return false;
+    requestLock.current = true; setRequestBusy(true); setRequestError('');
+    try { await work(); requests.refresh(); return true; }
+    catch (e) { setRequestError(schoolError(e)); return false; }
+    finally { requestLock.current = false; setRequestBusy(false); }
+  };
+  const submitAdd = async (form) => {
+    if (await runRequest(() => callable('requestLearnerAddFn')(addPayload(validSection, form)))) {
+      setAddForm(null);
+      setToast({ id: Date.now(), message: S.learnerSent, undo: null });
+    }
+  };
+  const withdrawRequest = async (requestId) => {
+    if (await runRequest(() => callable('withdrawLearnerRequestFn')({ requestId }))) setToast({ id: Date.now(), message: S.learnerRequestWithdrawn, undo: null });
+  };
+
   useEffect(() => { import('./FlagSheet.jsx').catch(() => {}); }, []);
   useEffect(() => { import('./Sf2Sheet.jsx').catch(() => {}); }, []);
   useEffect(() => {
@@ -185,7 +214,10 @@ export default function ClassTab({ sections, ended, navigate }) {
           {!isToday && <Inp type="date" aria-label="School day" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ width: 'auto', minHeight: 44 }} />}
         </div>
       </section>
-      <ClassActions onSf2={ended ? undefined : () => { setSf2Error(''); setSf2File(null); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''} />
+      <ClassActions onAddLearner={ended ? undefined : () => { setRequestError(''); setAddForm({ initial: null }); }}
+        onSf2={ended ? undefined : () => { setSf2Error(''); setSf2File(null); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''}
+        requestTotal={(requests.requests || []).length} requestWaiting={pendingRequests(requests.requests).length}
+        onOpenRequests={() => { setRequestError(''); setRequestsOpen(true); }} />
       {error && <Banner tone="danger" action={<Btn variant="ghost" onClick={refresh}>Try again</Btn>}>{error}</Banner>}
       {loading && !roster && <Spinner label="Loading your class" />}
       {roster && !isToday && <p className="class-note">Past days are view-only. Your coordinator corrects earlier days in SIMS.</p>}
@@ -193,9 +225,9 @@ export default function ClassTab({ sections, ended, navigate }) {
       {roster && (
         <>
           <RowGroup title="In school" hint={groups.inSchool.length ? (canCorrect ? (selecting ? 'Tick each learner who isn’t in class, then Flag.' : 'Tap a learner for history, or Flag one who isn’t in class.') : null) : 'No gate entries yet for this session.'}
-            rows={groups.inSchool} session={session} selecting={selecting} selected={selected} onPick={canCorrect ? (row) => pick(row, 'flag') : null} onOpen={open} flagLabel="Flag" />
-          <RowGroup title="Flagged" rows={groups.flagged} session={session} onPick={canCorrect ? (row) => pick(row, 'restore') : null} onOpen={open} flagLabel="Restore" collapsible />
-          <RowGroup title="Absent or no gate entry" rows={groups.noEntry} session={session} onOpen={open} collapsible />
+            rows={groups.inSchool} session={session} selecting={selecting} selected={selected} onPick={canCorrect ? (row) => pick(row, 'flag') : null} onOpen={open} flagLabel="Flag" removalIds={removalIds} />
+          <RowGroup title="Flagged" rows={groups.flagged} session={session} onPick={canCorrect ? (row) => pick(row, 'restore') : null} onOpen={open} flagLabel="Restore" collapsible removalIds={removalIds} />
+          <RowGroup title="Absent or no gate entry" rows={groups.noEntry} session={session} onOpen={open} collapsible removalIds={removalIds} />
         </>
       )}
       {selecting && (
@@ -215,16 +247,29 @@ export default function ClassTab({ sections, ended, navigate }) {
             file={sf2File} onDownload={downloadSf2} onSave={saveSf2} onMonthChange={() => { setSf2File(null); setSf2Error(''); }} onClose={() => setSf2Open(false)} />
         </Suspense>
       )}
+      {addForm && (
+        <Suspense fallback={null}>
+          <AddLearnerSheet classLabel={sectionLabel(section)} initial={addForm.initial} busy={requestBusy} error={requestError}
+            onSubmit={submitAdd} onClose={() => setAddForm(null)} />
+        </Suspense>
+      )}
+      {requestsOpen && requests.requests && (
+        <Suspense fallback={null}>
+          <RequestsSheet requests={requests.requests} busy={requestBusy} error={requestError || requests.error}
+            onWithdraw={withdrawRequest} onClose={() => setRequestsOpen(false)}
+            onSendAgain={(request) => { setRequestsOpen(false); setRequestError(''); setAddForm({ initial: prefillFrom(request) }); }} />
+        </Suspense>
+      )}
       {toast && <UndoToast key={toast.id} message={toast.message} onUndo={toast.undo} onDone={() => setToast(null)} />}
     </div>
   );
 }
 
-function RowGroup({ title, hint, rows, session, selecting = false, selected, onPick, onOpen, flagLabel, collapsible = false }) {
+function RowGroup({ title, hint, rows, session, selecting = false, selected, onPick, onOpen, flagLabel, collapsible = false, removalIds }) {
   if (collapsible && !rows.length) return null;
   const list = (
     <ul className="learner-list class-list" aria-label={title}>
-      {rows.map((row) => <ClassRow key={row.studentId} row={row} session={session} selecting={selecting} checked={Boolean(selected?.has(row.studentId))} onPick={onPick ? () => onPick(row) : null} onOpen={() => onOpen(row)} flagLabel={flagLabel} />)}
+      {rows.map((row) => <ClassRow key={row.studentId} row={row} session={session} selecting={selecting} checked={Boolean(selected?.has(row.studentId))} onPick={onPick ? () => onPick(row) : null} onOpen={() => onOpen(row)} flagLabel={flagLabel} removalPending={Boolean(removalIds?.has(row.studentId))} />)}
     </ul>
   );
   if (collapsible) {
@@ -241,7 +286,7 @@ function RowGroup({ title, hint, rows, session, selecting = false, selected, onP
 
 const flagReason = (reason) => (reason || '').replace(/^Not in class(?::\s*|$)/, '');
 
-function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel }) {
+function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel, removalPending = false }) {
   const status = row[session] || {};
   const entered = enteredFor(row, session);
   const preview = status.overrideActive
@@ -256,6 +301,7 @@ function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel 
       <span className="learner-row-body">
         <span className="learner-row-top">
           <span className="learner-row-name">{row.displayName}</span>
+          {removalPending && <span className="class-chip">{S.removePending}</span>}
           {entered && !status.overrideActive && <span className="learner-row-time">{formatScanTime(entered)}</span>}
         </span>
         <span className={`learner-row-preview${status.overrideActive ? ' class-preview--flagged' : ''}`}>{preview}</span>
