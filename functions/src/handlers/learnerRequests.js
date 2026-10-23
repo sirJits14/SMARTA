@@ -253,3 +253,106 @@ export async function getLearnerRequestCount(deps) {
   const rows = await waitingRows(deps, actor);
   return { count: rows.filter((r) => r.decidable).length };
 }
+
+const OUTCOME_TEXT = { add: 'Learner added', remove: 'Learner removed' };
+
+export async function resolveLearnerRequest(deps, input) {
+  if (!identifier(input?.requestId) || typeof input.approve !== 'boolean') fail('invalid-argument', 'Choose a request and a decision.');
+  const text = typeof input.reason === 'string' ? cleanText(input.reason) : '';
+  if (text.length > NOTE_MAX) fail('invalid-argument', `Keep the reason within ${NOTE_MAX} characters.`);
+  if (!input.approve && !text) fail('invalid-argument', 'Tell the adviser why. Enter a reason of 1–500 characters.');
+  const approve = input.approve;
+  const reason = text || 'Approved';
+  const db = deps.db;
+  const ref = requestsOf(db).doc(input.requestId);
+  return db.runTransaction(async (tx) => {
+    const actor = await loadSchoolActor(deps, tx);
+    if (actor.ended) fail('failed-precondition', 'This school year has ended.');
+    const snap = await tx.get(ref);
+    const request = snap.data();
+    if (!request) fail('not-found', 'Request not found.');
+    if (request.status !== 'pending') fail('failed-precondition', 'Already decided.');
+    if (!canDecideLearnerRequest(actor, request)) fail('permission-denied', 'You cannot review this request.');
+    const decision = { status: approve ? 'approved' : 'rejected', decidedAt: FieldValue.serverTimestamp(), decidedByUid: actor.uid,
+      decidedByEmail: actor.email, decidedByName: actor.displayName, decisionReason: reason, ...contactCleared(request) };
+    const name = request.displayName || '';
+    let note;
+    let audit;
+
+    // Audit rows never carry free text: the reasons and the removal note stay on the request document.
+    if (!approve) {
+      note = { title: 'Request not approved', body: `${request.kind === 'add' ? 'Adding' : 'Removing'} ${name} was not approved. Reason: ${reason}`, rejected: true };
+      audit = { action: 'learner.requestRejected', details: { kind: request.kind, lrn: request.kind === 'add' ? request.student.lrn : request.lrn, name,
+        sectionId: request.sectionId, gradeLevel: request.gradeLevel } };
+    } else {
+      // Everything is read before the first write.
+      const [sectionSnap, accountSnap, matches, enrollmentSnap, studentSnap] = await Promise.all([
+        tx.get(db.doc(`sections/${request.sectionId}`)),
+        tx.get(db.doc(`school_accounts/${request.requestedByUid}`)),
+        request.kind === 'add' ? tx.get(db.collection('students').where('lrn', '==', request.student.lrn).limit(2)) : null,
+        request.kind === 'remove' ? tx.get(db.doc(`enrollments/${request.studentId}_${request.schoolYear}`)) : null,
+        request.kind === 'remove' ? tx.get(db.doc(`students/${request.studentId}`)) : null,
+      ]);
+      const section = sectionSnap.exists ? { ...sectionSnap.data(), id: sectionSnap.id } : null;
+      if (!section || section.schoolYear !== request.schoolYear || section.gradeLevel !== request.gradeLevel) {
+        fail('failed-precondition', 'This section changed. Reject this request and ask for a new one.');
+      }
+      if (!isSectionAdviser({ schoolYear: actor.schoolYear, assignments: accountSnap.data()?.assignments || [] }, request.sectionId)) {
+        fail('failed-precondition', 'The adviser no longer holds this class. Reject this request.');
+      }
+      const today = manilaDate(clock(deps));
+      const target = { gradeLevel: section.gradeLevel, sectionId: section.id, track: section.track || null, strand: section.strand || null };
+      const where = classLabel(section);
+
+      if (request.kind === 'add') {
+        if (matches.size > 1) fail('failed-precondition', 'This LRN matches more than one learner. An administrator must fix the records first.');
+        let mode = 'new';
+        let previousSectionId = null;
+        if (matches.empty) {
+          const studentRef = db.collection('students').doc();
+          tx.set(studentRef, { ...Object.fromEntries(STUDENT_FIELDS.map((field) => [field, request.student[field] ?? ''])),
+            status: 'active', documents: { ...NEW_LEARNER_DOCUMENTS }, createdAt: today, ...scopeFor(section.gradeLevel, request.schoolYear) });
+          tx.set(db.doc(`enrollments/${studentRef.id}_${request.schoolYear}`), { studentId: studentRef.id, schoolYear: request.schoolYear, ...target,
+            type: request.enrollType, dateEnrolled: today, status: 'enrolled' });
+        } else {
+          const found = matches.docs[0];
+          const enrollmentRef = db.doc(`enrollments/${found.id}_${request.schoolYear}`);
+          const enrollment = (await tx.get(enrollmentRef)).data();
+          const enrolled = enrollment?.status === 'enrolled';
+          const existingName = fullName(found.data());
+          if (enrolled && enrollment.sectionId === section.id) fail('already-exists', `${existingName} is already in this class. Reject this request.`);
+          if (!actor.isAdmin && !(enrolled && coversGrade(actor, enrollment.gradeLevel))) fail('permission-denied', 'An administrator must approve this request.');
+          if (enrolled) {
+            // A move keeps the original enrollment date and type, as the SIMS learner form does.
+            tx.update(enrollmentRef, target);
+            if ((found.data().status ?? 'active') === 'active') tx.update(found.ref, scopeFor(section.gradeLevel, request.schoolYear));
+            mode = 'moved';
+            previousSectionId = enrollment.sectionId;
+          } else {
+            tx.update(found.ref, { status: 'active', ...scopeFor(section.gradeLevel, request.schoolYear) });
+            tx.set(enrollmentRef, { studentId: found.id, schoolYear: request.schoolYear, ...target, type: request.enrollType, dateEnrolled: today, status: 'enrolled' });
+            mode = 'enrolled';
+          }
+        }
+        note = { title: OUTCOME_TEXT.add, body: `${name} was added to ${where}.` };
+        audit = { action: 'learner.addApproved', details: { lrn: request.student.lrn, name, mode, sectionId: section.id, gradeLevel: section.gradeLevel, previousSectionId } };
+      } else {
+        const enrollment = enrollmentSnap.data();
+        if (!studentSnap.exists || enrollment?.status !== 'enrolled' || enrollment.sectionId !== request.sectionId) {
+          fail('failed-precondition', `${name} is no longer in this class. Reject this request.`);
+        }
+        const outcome = REMOVAL_REASONS[request.reasonCode];
+        if (!outcome) fail('failed-precondition', 'This request has an unknown reason. Reject it and ask for a new one.');
+        tx.update(enrollmentSnap.ref, { status: outcome.enrollment });
+        tx.update(studentSnap.ref, { ...(outcome.learner ? { status: outcome.learner } : {}), ...NO_SCOPE });
+        note = { title: OUTCOME_TEXT.remove, body: `${name} was removed from ${where}: ${reasonLabel(request.reasonCode)}.` };
+        audit = { action: 'learner.removalApproved', details: { lrn: request.lrn, name, reasonCode: request.reasonCode, sectionId: section.id, gradeLevel: section.gradeLevel } };
+      }
+    }
+
+    tx.update(ref, decision);
+    tx.set(db.collection('audit_log').doc(), auditRow(actor, audit.action, ref.id, audit.details));
+    tx.set(inboxRef(db, request.requestedByUid, `learner:${ref.id}`), { type: 'learner_request', requestId: ref.id, ...note, createdAt: FieldValue.serverTimestamp() });
+    return { ok: true };
+  });
+}
