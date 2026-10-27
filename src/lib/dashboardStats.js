@@ -56,7 +56,7 @@ export function recentEnrolledSections(enrollments, schoolYear) {
     if (date > group.latestDate) group.latestDate = date;
     groups.set(enrollment.sectionId, group);
   }
-  return [...groups.values()].sort((a, b) => b.latestDate.localeCompare(a.latestDate) || a.sectionId.localeCompare(b.sectionId)).slice(0, 10);
+  return [...groups.values()].sort((a, b) => b.latestDate.localeCompare(a.latestDate) || a.sectionId.localeCompare(b.sectionId)).slice(0, 30);
 }
 
 export function attendanceCoverage({ students, sections, enrollments, attendance, schoolYear, date }) {

@@ -6,7 +6,7 @@ Help staff identify sections with recent enrollment activity when deciding which
 
 ## Design
 
-Add a dashboard card listing up to five sections and can be expanded into showing the recent enrolled from recent to the start up to 10 sections with current-school-year enrolled learners, ordered by their most recent enrollment date. Show the grade and section, the latest enrollment date, and the total currently enrolled learners in each section. Follow the dashboard's existing role-based grade scope and card styling. Show an empty state when there are no enrolled sections. Keep the existing recent learner enrollments card.
+Add a dashboard card listing up to five sections, expandable to the 30 most recently enrolled sections with current-school-year enrolled learners, ordered by their most recent enrollment date. Show the grade and section, the latest enrollment date, and the total currently enrolled learners in each section. Follow the dashboard's existing role-based grade scope and card styling. Show an empty state when there are no enrolled sections. Keep the existing recent learner enrollments card.
 
 ## Approaches
 

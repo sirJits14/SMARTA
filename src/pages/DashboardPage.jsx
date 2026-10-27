@@ -54,7 +54,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
         {recentSections.length ? <>
           <div className="sims-table-scroll" role="region" aria-label="Recently enrolled sections" tabIndex={0}>
             <table><thead><tr><th>Section</th><th>Latest enrollment</th><th>Enrolled learners</th></tr></thead><tbody>
-              {recentSections.slice(0,showMoreSections ? 10 : 5).map(({sectionId,count,latestDate}) => {
+              {recentSections.slice(0,showMoreSections ? 30 : 5).map(({sectionId,count,latestDate}) => {
                 const section = sectionsById[sectionId];
                 return <tr key={sectionId}><td><strong>{section ? [section.gradeLevel && `Grade ${section.gradeLevel}`, section.name, section.strand].filter(Boolean).join(' · ') : 'Unavailable section'}</strong></td><td>{latestDate || '—'}</td><td>{count.toLocaleString()}</td></tr>;
               })}
