@@ -19,10 +19,10 @@ describe('recentEnrolledSections', () => {
     ]);
   });
 
-  it('limits the result to ten sections', () => {
-    const rows = Array.from({ length: 12 }, (_, i) => ({ sectionId: String(i), schoolYear: 'year', status: 'enrolled', dateEnrolled: `2026-06-${String(i + 1).padStart(2, '0')}` }));
-    expect(recentEnrolledSections(rows, 'year')).toHaveLength(10);
-    expect(recentEnrolledSections(rows, 'year')[0].sectionId).toBe('11');
+  it('limits the result to thirty sections', () => {
+    const rows = Array.from({ length: 32 }, (_, i) => ({ sectionId: String(i), schoolYear: 'year', status: 'enrolled', dateEnrolled: new Date(Date.UTC(2026, 5, i + 1)).toISOString().slice(0, 10) }));
+    expect(recentEnrolledSections(rows, 'year')).toHaveLength(30);
+    expect(recentEnrolledSections(rows, 'year')[0].sectionId).toBe('31');
   });
 });
 
