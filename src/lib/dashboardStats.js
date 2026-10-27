@@ -46,6 +46,19 @@ export function recentEnrollments(enrollments, schoolYear, limit = 5) {
     .slice(0, limit);
 }
 
+export function recentEnrolledSections(enrollments, schoolYear) {
+  const groups = new Map();
+  for (const enrollment of enrollments) {
+    if (enrollment.schoolYear !== schoolYear || enrollment.status !== 'enrolled' || !enrollment.sectionId) continue;
+    const group = groups.get(enrollment.sectionId) || { sectionId: enrollment.sectionId, count: 0, latestDate: '' };
+    group.count++;
+    const date = enrollment.dateEnrolled || '';
+    if (date > group.latestDate) group.latestDate = date;
+    groups.set(enrollment.sectionId, group);
+  }
+  return [...groups.values()].sort((a, b) => b.latestDate.localeCompare(a.latestDate) || a.sectionId.localeCompare(b.sectionId)).slice(0, 10);
+}
+
 export function attendanceCoverage({ students, sections, enrollments, attendance, schoolYear, date }) {
   const studentIds = new Set(depedSort(students).map(s => s.id));
   const enrolledSections = new Set(enrollments.filter(e => e.schoolYear === schoolYear && e.status === 'enrolled' && studentIds.has(e.studentId)).map(e => e.sectionId));
