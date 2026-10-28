@@ -31,8 +31,14 @@ const TEXT_LABELS = { lastName: 'Last name', firstName: 'First name', middleName
   address: 'Address', guardianName: 'Guardian name', guardianRelationship: 'Guardian relationship',
   guardianContact: 'Guardian contact', contactNumber: 'Contact number' };
 
-// Trim, drop control characters and collapse runs of spaces.
-export const cleanText = (value) => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+// Trim, turn C0 control characters into spaces and collapse runs of spaces. Zero-width marks and
+// direction controls (C1 controls, zero-width space/joiners, left-to-right and right-to-left marks
+// and overrides, word joiners, isolates, the byte-order mark) are removed outright, not replaced by
+// a space: they are invisible, so a name keeps reading as typed and cannot be made to look different.
+export const cleanText = (value) => String(value ?? '')
+  .replace(/[\u0000-\u001f\u007f]/g, ' ')
+  .replace(/[\u0080-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/g, '')
+  .replace(/\s+/g, ' ').trim();
 
 function birthdateError(text, today) {
   if (!text) return 'Birthdate is required.';

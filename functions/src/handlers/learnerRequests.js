@@ -61,6 +61,33 @@ function requireAdviser(actor, sectionId) {
   if (!isSectionAdviser(actor, sectionId)) fail('permission-denied', "Only this class's adviser can send learner requests.");
 }
 
+// Does the person behind a school_accounts document hold the class this school year? A disabled
+// account holds nothing, exactly as loadSchoolActor treats it.
+const holdsClass = (schoolYear, account, sectionId) => !account?.disabled
+  && isSectionAdviser({ schoolYear, assignments: account?.assignments || [] }, sectionId);
+
+// The LRN of a request, whichever kind it is.
+const requestLrn = (request) => (request.kind === 'add' ? request.student?.lrn || '' : request.lrn || '');
+// Audit details for a withdrawn request: section, grade, LRN and name, never free text.
+const withdrawnDetails = (request) => ({ sectionId: request.sectionId, gradeLevel: request.gradeLevel, lrn: requestLrn(request), name: request.displayName || '' });
+
+// `existing` is a waiting request with the caller's dedupe key that somebody else filed (the handlers
+// return the caller's own before getting here). This only reads, so it must run before the handler's
+// first write. If that person still holds the class their request stands and the caller is told; if
+// the class has a new adviser the request is stale, because nobody could approve it any more, and is
+// returned so the handler withdraws it in the same transaction that files the caller's own.
+async function staleRequestOf(deps, tx, actor, existing) {
+  const uid = existing.data().requestedByUid;
+  const account = identifier(uid) ? (await tx.get(deps.db.doc(`school_accounts/${uid}`))).data() : null;
+  if (holdsClass(actor.schoolYear, account, existing.data().sectionId)) fail('already-exists', 'Another adviser of this class already sent this request.');
+  return existing;
+}
+
+function withdrawStale(deps, tx, actor, stale) {
+  withdrawLearnerRequests(tx, [stale], 'Adviser changed');
+  tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'learner.requestWithdrawn', stale.id, withdrawnDetails(stale.data())));
+}
+
 async function sectionOf(deps, tx, sectionId, actor) {
   const snap = await tx.get(deps.db.doc(`sections/${sectionId}`));
   const section = snap.exists ? { ...snap.data(), id: snap.id } : null;
@@ -96,13 +123,18 @@ export async function requestLearnerAdd(deps, input) {
       tx.get(pendingLearnerRequests(deps.db, deps.uid)),
       tx.get(deps.db.collection('students').where('lrn', '==', student.lrn).limit(2)),
     ]);
-    // A second tap, or a second device, finds the request already waiting.
-    if (same.size) return { id: same.docs[0].id, status: 'pending' };
+    const waiting = same.docs[0];
+    // A second tap, or a second device, finds the caller's own request already waiting. Someone else's
+    // is never handed back: it is withdrawn below if that person lost the class, or the caller is told.
+    if (waiting?.data().requestedByUid === deps.uid) return { id: waiting.id, status: 'pending' };
+    const stale = waiting ? await staleRequestOf(deps, tx, actor, waiting) : null;
     if (matches.size === 1) {
       const enrollment = (await tx.get(deps.db.doc(`enrollments/${matches.docs[0].id}_${section.schoolYear}`))).data();
       if (enrollment?.status === 'enrolled' && enrollment.sectionId === section.id) fail('already-exists', 'This LRN is already in your class.');
     }
     if (mine.size >= MAX_PENDING_PER_ADVISER) fail('resource-exhausted', 'Wait for your pending requests to be decided.');
+    // Every read is done; writes start here.
+    if (stale) withdrawStale(deps, tx, actor, stale);
     const ref = requestsOf(deps.db).doc();
     tx.set(ref, filing(actor, deps, section, { kind: 'add', dedupeKey: key, student, enrollType: type.value, displayName: fullName(student) }));
     tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'learner.addRequested', ref.id,
@@ -131,8 +163,13 @@ export async function requestLearnerRemoval(deps, input) {
     if (!student.exists || enrollment.data()?.status !== 'enrolled' || enrollment.data().sectionId !== section.id) {
       fail('permission-denied', 'Learner is not enrolled in this section.');
     }
-    if (same.size) return { id: same.docs[0].id, status: 'pending' };
+    const waiting = same.docs[0];
+    if (waiting?.data().requestedByUid === deps.uid) return { id: waiting.id, status: 'pending' };
+    // Someone else's waiting request for this learner: withdrawn below if they lost the class, else refused.
+    const stale = waiting ? await staleRequestOf(deps, tx, actor, waiting) : null;
     if (mine.size >= MAX_PENDING_PER_ADVISER) fail('resource-exhausted', 'Wait for your pending requests to be decided.');
+    // Every read is done; writes start here.
+    if (stale) withdrawStale(deps, tx, actor, stale);
     const name = fullName(student.data());
     const ref = requestsOf(deps.db).doc();
     tx.set(ref, filing(actor, deps, section, { kind: 'remove', dedupeKey: key, studentId: input.studentId, lrn: student.data().lrn || '',
@@ -154,8 +191,7 @@ export async function withdrawLearnerRequest(deps, input) {
     if (!request || request.requestedByUid !== deps.uid) fail('not-found', 'Request not found.');
     if (request.status !== 'pending') fail('failed-precondition', 'This request was already decided.');
     withdrawLearnerRequests(tx, [snap], 'Withdrawn by the adviser');
-    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'learner.requestWithdrawn', ref.id,
-      { sectionId: request.sectionId, gradeLevel: request.gradeLevel, lrn: request.kind === 'add' ? request.student?.lrn || '' : request.lrn || '', name: request.displayName || '' }));
+    tx.set(deps.db.collection('audit_log').doc(), auditRow(actor, 'learner.requestWithdrawn', ref.id, withdrawnDetails(request)));
     return { ok: true };
   });
 }
@@ -209,9 +245,13 @@ const reviewerRow = (snap, flag, actor) => {
     displayName: r.displayName || '', lrn: r.kind === 'add' ? r.student?.lrn || '' : r.lrn || '', createdAt: millis(r.createdAt),
     decidedAt: millis(r.decidedAt), decidedByName: r.decidedByName || '', decisionReason: r.decisionReason || '',
   };
-  // Reviewers need the address and phone numbers to decide, so only a pending add returns the whole form.
-  if (r.kind === 'add') Object.assign(row, { student: r.status === 'pending' ? r.student : withoutContact(r.student), enrollType: r.enrollType, existing: flag || null });
-  else Object.assign(row, { studentId: r.studentId, reasonCode: r.reasonCode, note: r.note });
+  // Reviewers need the whole form (address and phone numbers included) to decide, so only a pending add
+  // returns it. A decided or withdrawn row has no `student` key at all: the SIMS Decided list never
+  // shows it, and it holds the birthdate, sex and guardian details.
+  if (r.kind === 'add') {
+    Object.assign(row, { enrollType: r.enrollType, existing: flag || null });
+    if (r.status === 'pending') row.student = r.student;
+  } else Object.assign(row, { studentId: r.studentId, reasonCode: r.reasonCode, note: r.note });
   row.decidable = r.status === 'pending' && (actor.isAdmin || !flag?.needsAdmin);
   return row;
 };
@@ -278,11 +318,13 @@ export async function resolveLearnerRequest(deps, input) {
     const name = request.displayName || '';
     let note;
     let audit;
+    // What the decision did, returned to the caller: 'rejected', 'removed', or for an add 'new', 'moved' or 'enrolled'.
+    let result = 'rejected';
 
     // Audit rows never carry free text: the reasons and the removal note stay on the request document.
     if (!approve) {
       note = { title: 'Request not approved', body: `${request.kind === 'add' ? 'Adding' : 'Removing'} ${name} was not approved. Reason: ${reason}`, rejected: true };
-      audit = { action: 'learner.requestRejected', details: { kind: request.kind, lrn: request.kind === 'add' ? request.student?.lrn || '' : request.lrn || '', name,
+      audit = { action: 'learner.requestRejected', details: { kind: request.kind, lrn: requestLrn(request), name,
         sectionId: request.sectionId, gradeLevel: request.gradeLevel } };
     } else {
       // Everything is read before the first write.
@@ -297,7 +339,7 @@ export async function resolveLearnerRequest(deps, input) {
       if (!section || section.schoolYear !== request.schoolYear || section.gradeLevel !== request.gradeLevel) {
         fail('failed-precondition', 'This section changed. Reject this request and ask for a new one.');
       }
-      if (!isSectionAdviser({ schoolYear: actor.schoolYear, assignments: accountSnap.data()?.assignments || [] }, request.sectionId)) {
+      if (!holdsClass(actor.schoolYear, accountSnap.data(), request.sectionId)) {
         fail('failed-precondition', 'The adviser no longer holds this class. Reject this request.');
       }
       const today = manilaDate(clock(deps));
@@ -307,15 +349,20 @@ export async function resolveLearnerRequest(deps, input) {
       if (request.kind === 'add') {
         if (matches.size > 1) fail('failed-precondition', 'This LRN matches more than one learner. An administrator must fix the records first.');
         let mode = 'new';
+        // The learner record that changed, and the same-year enrollment document this approval replaced or moved.
+        let studentId;
         let previousSectionId = null;
+        let previousStatus = null;
         if (matches.empty) {
           const studentRef = db.collection('students').doc();
+          studentId = studentRef.id;
           tx.set(studentRef, { ...Object.fromEntries(STUDENT_FIELDS.map((field) => [field, request.student[field] ?? ''])),
             status: 'active', documents: { ...NEW_LEARNER_DOCUMENTS }, createdAt: today, ...scopeFor(section.gradeLevel, request.schoolYear) });
           tx.set(db.doc(`enrollments/${studentRef.id}_${request.schoolYear}`), { studentId: studentRef.id, schoolYear: request.schoolYear, ...target,
             type: request.enrollType, dateEnrolled: today, status: 'enrolled' });
         } else {
           const found = matches.docs[0];
+          studentId = found.id;
           const enrollmentRef = db.doc(`enrollments/${found.id}_${request.schoolYear}`);
           const enrollment = (await tx.get(enrollmentRef)).data();
           const enrolled = enrollment?.status === 'enrolled';
@@ -327,15 +374,19 @@ export async function resolveLearnerRequest(deps, input) {
             tx.update(enrollmentRef, target);
             if ((found.data().status ?? 'active') === 'active') tx.update(found.ref, scopeFor(section.gradeLevel, request.schoolYear));
             mode = 'moved';
-            previousSectionId = enrollment.sectionId;
           } else {
             tx.update(found.ref, { status: 'active', ...scopeFor(section.gradeLevel, request.schoolYear) });
             tx.set(enrollmentRef, { studentId: found.id, schoolYear: request.schoolYear, ...target, type: request.enrollType, dateEnrolled: today, status: 'enrolled' });
             mode = 'enrolled';
           }
+          // A move changes an enrolled enrollment; a re-enrollment overwrites a dropped or transferred one, if there was any.
+          previousSectionId = enrollment?.sectionId ?? null;
+          previousStatus = enrollment?.status ?? null;
         }
+        result = mode;
         note = { title: OUTCOME_TEXT.add, body: `${name} was added to ${where}.` };
-        audit = { action: 'learner.addApproved', details: { lrn: request.student.lrn, name, mode, sectionId: section.id, gradeLevel: section.gradeLevel, previousSectionId } };
+        audit = { action: 'learner.addApproved', details: { lrn: request.student.lrn, name, mode, studentId, sectionId: section.id, gradeLevel: section.gradeLevel,
+          previousSectionId, previousStatus } };
       } else {
         const enrollment = enrollmentSnap.data();
         if (!studentSnap.exists || enrollment?.status !== 'enrolled' || enrollment.sectionId !== request.sectionId) {
@@ -346,13 +397,15 @@ export async function resolveLearnerRequest(deps, input) {
         tx.update(enrollmentSnap.ref, { status: outcome.enrollment });
         tx.update(studentSnap.ref, { ...(outcome.learner ? { status: outcome.learner } : {}), ...NO_SCOPE });
         note = { title: OUTCOME_TEXT.remove, body: `${name} was removed from ${where}: ${reasonLabel(request.reasonCode)}.` };
-        audit = { action: 'learner.removalApproved', details: { lrn: request.lrn, name, reasonCode: request.reasonCode, sectionId: section.id, gradeLevel: section.gradeLevel } };
+        result = 'removed';
+        audit = { action: 'learner.removalApproved', details: { lrn: request.lrn, name, reasonCode: request.reasonCode, studentId: request.studentId,
+          sectionId: section.id, gradeLevel: section.gradeLevel } };
       }
     }
 
     tx.update(ref, decision);
     tx.set(db.collection('audit_log').doc(), auditRow(actor, audit.action, ref.id, audit.details));
     tx.set(inboxRef(db, request.requestedByUid, `learner:${ref.id}`), { type: 'learner_request', requestId: ref.id, ...note, createdAt: FieldValue.serverTimestamp() });
-    return { ok: true };
+    return { ok: true, mode: result };
   });
 }

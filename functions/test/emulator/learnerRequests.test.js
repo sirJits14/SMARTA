@@ -12,6 +12,7 @@ const now = () => new Date('2026-10-22T09:00:00+08:00');
 const people = {
   teacher: { email: 'teacher@deped.gov.ph', displayName: 'Tina Teacher' }, // Class Adviser of SEC1 (Grade 7 Rizal)
   other: { email: 'other@deped.gov.ph', displayName: 'Omar Other' }, // Class Adviser of SEC2 (Grade 7 Mabini)
+  newadv: { email: 'newadv@deped.gov.ph', displayName: 'Nina New' }, // seeded only in the dedupe tests: the class's next adviser
   eight: { email: 'eight@deped.gov.ph', displayName: 'Eli Eight' }, // Class Adviser of SEC8 (Grade 8)
   admin: { email: 'admin@school.test', displayName: 'Ada Admin' },
   coord7: { email: 'coord7@school.test', displayName: 'Cora Seven' }, // SIMS Grade Level Coordinator, Grade 7
@@ -143,6 +144,117 @@ describe('filing a removal', () => {
     const first = await requestLearnerRemoval(deps('teacher'), removal());
     expect(await requestLearnerRemoval(deps('teacher'), removal({ note: 'Typed again' }))).toEqual(first);
     expect(await allRequests()).toHaveLength(1);
+  });
+});
+
+// A waiting request is found by its key (class + learner). When the one found is somebody else's, the
+// caller must never be handed an id that is not theirs: the earlier adviser's request is withdrawn if
+// they no longer hold the class, and the caller's own is filed; if they still hold it, the caller is told.
+describe('the same request from another adviser of the class', () => {
+  const holding = (sectionId = 'SEC1') => ({ assignments: [{ role: 'adviser', schoolYear: year, sectionId, gradeLevel: 7 }] });
+  const loseClass = (uid = 'teacher') => db().doc(`school_accounts/${uid}`).set({ assignments: [] });
+  const auditOf = async (action) => (await db().collection('audit_log').where('action', '==', action).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+  const ANOTHER = 'Another adviser of this class already sent this request.';
+  beforeEach(async () => {
+    await db().doc('school_accounts/newadv').set(holding()); // both people advise SEC1 until a test removes one
+  });
+
+  it('withdraws an earlier adviser’s add once the class has a new adviser, and files the new one in the same step', async () => {
+    const old = await file('teacher');
+    await loseClass();
+    const mine = await file('newadv');
+    expect(mine.status).toBe('pending');
+    expect(mine.id).not.toBe(old.id);
+    const stale = await get(`learner_change_requests/${old.id}`);
+    expect(stale).toMatchObject({ status: 'withdrawn', decisionReason: 'Adviser changed', requestedByUid: 'teacher', kind: 'add' });
+    expect(stale.withdrawnAt.toMillis()).toBeGreaterThan(0);
+    for (const field of ['address', 'guardianContact', 'contactNumber']) expect(stale.student).not.toHaveProperty(field);
+    expect(stale.student).toMatchObject({ lrn: '200000000001', guardianName: 'Maria Dela Cruz' });
+    expect(await get(`learner_change_requests/${mine.id}`)).toMatchObject({ status: 'pending', requestedByUid: 'newadv', requestedByEmail: 'newadv@deped.gov.ph',
+      kind: 'add', dedupeKey: 'add:SEC1:200000000001', student: expect.objectContaining({ address: '123 Rizal St.' }) });
+    // Exactly one waiting request is left, it is the caller's, and it shows in the caller's list.
+    expect(await waitingIds('admin')).toEqual([mine.id]);
+    expect((await getLearnerRequests(deps('newadv'), { sectionId: 'SEC1' })).requests.map((r) => r.id)).toEqual([mine.id]);
+    // The withdrawal is audited like a withdraw (section, grade, LRN, name; no free text), by whoever caused it.
+    const withdrawn = await auditOf('learner.requestWithdrawn');
+    expect(withdrawn).toHaveLength(1);
+    expect(withdrawn[0]).toMatchObject({ targetType: 'learner_request', targetId: old.id, actorUid: 'newadv@deped.gov.ph' });
+    expect(withdrawn[0].details).toEqual({ sectionId: 'SEC1', gradeLevel: 7, lrn: '200000000001', name: 'Juan Santos Dela Cruz Jr' });
+    expect((await auditOf('learner.addRequested')).map((r) => r.targetId).sort()).toEqual([old.id, mine.id].sort());
+    // A reviewer can approve the new request (the withdrawn one could never have been approved).
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: mine.id, approve: true })).toEqual({ ok: true, mode: 'new' });
+    expect((await get(`learner_change_requests/${mine.id}`)).status).toBe('approved');
+  });
+  it('withdraws an earlier adviser’s removal request the same way', async () => {
+    const old = await requestLearnerRemoval(deps('teacher'), removal());
+    await loseClass();
+    const mine = await requestLearnerRemoval(deps('newadv'), removal({ note: 'Seen by the new adviser' }));
+    expect(mine.id).not.toBe(old.id);
+    expect(await get(`learner_change_requests/${old.id}`)).toMatchObject({ status: 'withdrawn', decisionReason: 'Adviser changed', requestedByUid: 'teacher' });
+    expect(await get(`learner_change_requests/${mine.id}`)).toMatchObject({ status: 'pending', requestedByUid: 'newadv', kind: 'remove',
+      dedupeKey: 'remove:SEC1:S1', note: 'Seen by the new adviser' });
+    expect(await waitingIds('admin')).toEqual([mine.id]);
+    const withdrawn = await auditOf('learner.requestWithdrawn');
+    expect(withdrawn).toHaveLength(1);
+    expect(withdrawn[0]).toMatchObject({ targetId: old.id, actorUid: 'newadv@deped.gov.ph' });
+    expect(withdrawn[0].details).toEqual({ sectionId: 'SEC1', gradeLevel: 7, lrn: '100000000001', name: 'Ana B. Cruz' });
+    expect(await auditText()).not.toContain('Stopped attending in September');
+    expect(await auditText()).not.toContain('Seen by the new adviser');
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: mine.id, approve: true })).toEqual({ ok: true, mode: 'removed' });
+  });
+  it.each([
+    ['a disabled account', () => db().doc('school_accounts/teacher').set({ disabled: true, ...holding() })],
+    ['a deleted account', () => db().doc('school_accounts/teacher').delete()],
+    ['an assignment for another class', () => db().doc('school_accounts/teacher').set(holding('SEC2'))],
+    ['an assignment from another school year', () => db().doc('school_accounts/teacher').set({ assignments: [{ role: 'adviser', schoolYear: '2025-2026', sectionId: 'SEC1', gradeLevel: 7 }] })],
+  ])('treats %s as no longer advising the class', async (_label, change) => {
+    const old = await file('teacher');
+    await change();
+    const mine = await file('newadv');
+    expect(mine.id).not.toBe(old.id);
+    expect(await get(`learner_change_requests/${old.id}`)).toMatchObject({ status: 'withdrawn', decisionReason: 'Adviser changed' });
+    expect(await waitingIds('admin')).toEqual([mine.id]);
+  });
+  it('refuses the caller, and changes nothing, while the earlier adviser still holds the class', async () => {
+    const first = await file('teacher');
+    await expect(file('newadv')).rejects.toMatchObject({ code: 'already-exists', message: ANOTHER });
+    const removalFirst = await requestLearnerRemoval(deps('teacher'), removal());
+    await expect(requestLearnerRemoval(deps('newadv'), removal())).rejects.toMatchObject({ code: 'already-exists', message: ANOTHER });
+    const all = await allRequests();
+    expect(all.map((r) => r.id).sort()).toEqual([first.id, removalFirst.id].sort());
+    for (const request of all) expect(request).toMatchObject({ status: 'pending', requestedByUid: 'teacher' });
+    expect(all.find((r) => r.id === first.id).student).toMatchObject({ address: '123 Rizal St.', contactNumber: '09181234567' });
+    expect(await auditOf('learner.requestWithdrawn')).toEqual([]);
+    expect(await auditOf('learner.addRequested')).toHaveLength(1);
+    expect(await auditOf('learner.removalRequested')).toHaveLength(1);
+    expect(await getLearnerRequests(deps('newadv'), { sectionId: 'SEC1' })).toEqual({ requests: [] });
+  });
+  it('still returns the same person’s own waiting request when another adviser also holds the class', async () => {
+    const first = await file('teacher');
+    expect(await file('teacher')).toEqual(first);
+    const removalFirst = await requestLearnerRemoval(deps('teacher'), removal());
+    expect(await requestLearnerRemoval(deps('teacher'), removal({ note: 'Typed again' }))).toEqual(removalFirst);
+    expect(await allRequests()).toHaveLength(2);
+    expect(await auditOf('learner.requestWithdrawn')).toEqual([]);
+  });
+  it('leaves the earlier request waiting when the new one cannot be filed', async () => {
+    const old = await file('teacher');
+    await loseClass();
+    for (let i = 0; i < 20; i++) await file('newadv', { student: form({ lrn: `3000000000${String(i).padStart(2, '0')}` }) });
+    await expect(file('newadv')).rejects.toMatchObject({ code: 'resource-exhausted' });
+    // The withdrawal is part of the same transaction, so a refused filing withdraws nothing.
+    expect(await get(`learner_change_requests/${old.id}`)).toMatchObject({ status: 'pending', requestedByUid: 'teacher' });
+    expect((await get(`learner_change_requests/${old.id}`)).student).toMatchObject({ address: '123 Rizal St.' });
+    expect(await auditOf('learner.requestWithdrawn')).toEqual([]);
+  }, 60000);
+  it('lets the earlier adviser file again once they hold the class again', async () => {
+    const old = await file('teacher');
+    await loseClass();
+    const mine = await file('newadv');
+    await db().doc('school_accounts/teacher').set(holding()); // the class is theirs again, and newadv still holds it too
+    await expect(file('teacher')).rejects.toMatchObject({ code: 'already-exists', message: ANOTHER });
+    expect((await get(`learner_change_requests/${old.id}`)).status).toBe('withdrawn');
+    expect((await get(`learner_change_requests/${mine.id}`)).status).toBe('pending');
   });
 });
 
@@ -313,6 +425,7 @@ describe('what reviewers see', () => {
     expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1 });
   });
   it('never returns the address or phone numbers of a decided request, even if a stored one still has them', async () => {
+    // (Decided reviewer rows now carry no learner form at all; the adviser's own list is where the contact-free form is checked.)
     const stored = { lrn: '400000000001', lastName: 'Reyes', firstName: 'Rita', middleName: 'Q', extName: '', sex: 'F', birthdate: '2012-01-01',
       address: '9 Mabini St.', guardianName: 'Rosa Reyes', guardianRelationship: 'Mother', guardianContact: '09171111111', contactNumber: '09182222222' };
     const kept = { lrn: '400000000001', lastName: 'Reyes', firstName: 'Rita', middleName: 'Q', extName: '', sex: 'F', birthdate: '2012-01-01',
@@ -323,7 +436,9 @@ describe('what reviewers see', () => {
     for (const uid of ['coord7', 'admin']) {
       const rows = await decidedRowsOf(uid);
       expect(rows.map((r) => r.id)).toEqual(['ok1', 'no1']);
-      for (const row of rows) expect(row.student).toEqual(kept);
+      // A decided row never carries the learner form (birthdate, sex, guardian), contact-free or not.
+      for (const row of rows) expect(row).not.toHaveProperty('student');
+      expect(JSON.stringify(rows)).not.toContain('Rosa Reyes');
     }
     const mine = (await getLearnerRequests(deps('teacher'), { sectionId: 'SEC1' })).requests;
     expect(rowOf(mine, 'no1').student).toEqual(kept);
@@ -333,6 +448,26 @@ describe('what reviewers see', () => {
     expect(rowOf(await waitingRowsOf('coord7'), pending.id).student).toEqual(form());
     // The stored documents are untouched: this is a guard on what leaves the server.
     expect(await get('learner_change_requests/no1')).toMatchObject({ student: { address: '9 Mabini St.', contactNumber: '09182222222' } });
+  });
+  it('gives a request’s form to reviewers only while it is waiting, and to the adviser only for a rejected add', async () => {
+    const approved = await file('teacher', { student: form({ lrn: '200000000001' }) });
+    const rejected = await file('teacher', { student: form({ lrn: '200000000002', firstName: 'Rejected' }) });
+    const waiting = await file('teacher', { student: form({ lrn: '200000000003' }) });
+    const removal1 = await requestLearnerRemoval(deps('teacher'), removal());
+    await resolveLearnerRequest(deps('admin'), { requestId: approved.id, approve: true });
+    await resolveLearnerRequest(deps('admin'), { requestId: rejected.id, approve: false, reason: 'Check the LRN' });
+    await resolveLearnerRequest(deps('admin'), { requestId: removal1.id, approve: false, reason: 'Still attending' });
+    for (const uid of ['admin', 'coord7', 'ca7']) {
+      const decided = await decidedRowsOf(uid);
+      expect(decided.map((r) => r.id).sort()).toEqual([approved.id, rejected.id, removal1.id].sort());
+      for (const row of decided) expect(row, `${uid} ${row.status}`).not.toHaveProperty('student');
+      const stillWaiting = rowOf(await waitingRowsOf(uid), waiting.id);
+      expect(stillWaiting.student).toEqual(form({ lrn: '200000000003' })); // reviewers need the whole form to decide
+    }
+    const mine = (await getLearnerRequests(deps('teacher'), { sectionId: 'SEC1' })).requests;
+    expect(rowOf(mine, rejected.id).student).toMatchObject({ lrn: '200000000002', firstName: 'Rejected', birthdate: '2012-05-01' });
+    expect(rowOf(mine, rejected.id).student).not.toHaveProperty('address');
+    expect(rowOf(mine, approved.id).student).toBeUndefined();
   });
   it('refuses a page cursor that is not a real point in time', async () => {
     const page = (cursor) => listLearnerRequests(deps('coord7'), { view: 'decided', cursor });
@@ -385,8 +520,28 @@ describe('approving an add', () => {
     const audit = (await db().collection('audit_log').where('action', '==', 'learner.addApproved').get()).docs.map((d) => d.data());
     expect(audit).toHaveLength(1);
     expect(audit[0]).toMatchObject({ targetType: 'learner_request', targetId: id, actorUid: 'admin@school.test' });
-    // Audit rows never carry free text: only the LRN, name, outcome, section and grade.
-    expect(audit[0].details).toEqual({ lrn: '200000000001', name: 'Juan Santos Dela Cruz Jr', mode: 'new', sectionId: 'SEC1', gradeLevel: 7, previousSectionId: null });
+    // Audit rows never carry free text: only the LRN, name, outcome, the learner record, section and grade.
+    expect(audit[0].details).toEqual({ lrn: '200000000001', name: 'Juan Santos Dela Cruz Jr', mode: 'new', studentId: created.id,
+      sectionId: 'SEC1', gradeLevel: 7, previousSectionId: null, previousStatus: null });
+  });
+  it('tells the caller what the approval did', async () => {
+    const created = await file('teacher');
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: created.id, approve: true })).toEqual({ ok: true, mode: 'new' });
+    const moved = await file('teacher', { student: form({ lrn: '100000000002' }) });
+    expect(await resolveLearnerRequest(deps('coord7'), { requestId: moved.id, approve: true })).toEqual({ ok: true, mode: 'moved' });
+    const enrolled = await file('teacher', { student: form({ lrn: '100000000003' }) });
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: enrolled.id, approve: true })).toEqual({ ok: true, mode: 'enrolled' });
+  });
+  it('lets a stale card approve an Add that moves the learner another approval just created', async () => {
+    // Two advisers' requests for one LRN in different classes: the second approval moves the learner the first created.
+    const first = await file('teacher');
+    const second = await requestLearnerAdd(deps('other'), addInput({ sectionId: 'SEC2' }));
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: first.id, approve: true })).toEqual({ ok: true, mode: 'new' });
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: second.id, approve: true })).toEqual({ ok: true, mode: 'moved' });
+    const [created] = (await db().collection('students').where('lrn', '==', '200000000001').get()).docs;
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.addApproved').where('targetId', '==', second.id).get()).docs.map((d) => d.data());
+    expect(audit[0].details).toEqual({ lrn: '200000000001', name: 'Juan Santos Dela Cruz Jr', mode: 'moved', studentId: created.id,
+      sectionId: 'SEC2', gradeLevel: 7, previousSectionId: 'SEC1', previousStatus: 'enrolled' });
   });
   it('lets a coordinator and a Curriculum Adviser for the grade approve', async () => {
     const a = await file('teacher');
@@ -409,21 +564,26 @@ describe('approving an add', () => {
   });
   it('moves a learner enrolled in another section, keeping their details and enrollment date', async () => {
     const { id } = await file('teacher', { student: form({ lrn: '100000000002', lastName: 'Typed Differently' }) });
-    await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: true });
+    expect(await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: true })).toEqual({ ok: true, mode: 'moved' });
     expect(await get('enrollments/S2_2026-2027')).toMatchObject({ sectionId: 'SEC1', gradeLevel: 7, type: 'returning', dateEnrolled: '2026-06-02', status: 'enrolled' });
     expect(await get('students/S2')).toMatchObject({ lastName: 'Dy', status: 'active', gradeLevel: 7, scopeSchoolYear: year });
     expect((await db().collection('students').where('lrn', '==', '100000000002').get()).size).toBe(1);
     const audit = (await db().collection('audit_log').where('action', '==', 'learner.addApproved').get()).docs.map((d) => d.data());
     expect(audit).toHaveLength(1);
-    expect(audit[0].details).toEqual({ lrn: '100000000002', name: 'Juan Santos Typed Differently Jr', mode: 'moved', sectionId: 'SEC1', gradeLevel: 7, previousSectionId: 'SEC2' });
+    expect(audit[0].details).toEqual({ lrn: '100000000002', name: 'Juan Santos Typed Differently Jr', mode: 'moved', studentId: 'S2',
+      sectionId: 'SEC1', gradeLevel: 7, previousSectionId: 'SEC2', previousStatus: 'enrolled' });
   });
   it('enrolls an Unassigned learner only when an Administrator approves', async () => {
     const { id } = await file('teacher', { student: form({ lrn: '100000000003' }), enrollType: 'returning' });
     await expect(resolveLearnerRequest(deps('coord7'), { requestId: id, approve: true }))
       .rejects.toMatchObject({ code: 'permission-denied', message: 'An administrator must approve this request.' });
-    await resolveLearnerRequest(deps('admin'), { requestId: id, approve: true });
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: id, approve: true })).toEqual({ ok: true, mode: 'enrolled' });
     expect(await get('enrollments/S3_2026-2027')).toMatchObject({ sectionId: 'SEC1', gradeLevel: 7, type: 'returning', dateEnrolled: '2026-10-22', status: 'enrolled' });
     expect(await get('students/S3')).toMatchObject({ status: 'active', gradeLevel: 7, scopeSchoolYear: year, firstName: 'Cara' });
+    // S3 had no enrollment this year, so nothing was overwritten.
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.addApproved').get()).docs.map((d) => d.data());
+    expect(audit[0].details).toEqual({ lrn: '100000000003', name: 'Juan Santos Dela Cruz Jr', mode: 'enrolled', studentId: 'S3',
+      sectionId: 'SEC1', gradeLevel: 7, previousSectionId: null, previousStatus: null });
   });
   it('brings a Dropped learner back for an Administrator', async () => {
     await db().doc('students/S3').update({ status: 'dropped' });
@@ -431,7 +591,7 @@ describe('approving an add', () => {
     await resolveLearnerRequest(deps('admin'), { requestId: id, approve: true });
     expect(await get('students/S3')).toMatchObject({ status: 'active', gradeLevel: 7 });
   });
-  it('records an approval that re-enrolls a Dropped learner as "enrolled", with no previous section', async () => {
+  it('records an approval that re-enrolls a Dropped learner as "enrolled", with the dropped enrollment it overwrote', async () => {
     await db().doc('students/S3').update({ status: 'dropped' });
     await db().doc('enrollments/S3_2026-2027').set({ studentId: 'S3', sectionId: 'SEC2', schoolYear: year, gradeLevel: 7, type: 'returning', dateEnrolled: '2026-06-04', status: 'dropped' });
     const { id } = await file('teacher', { student: form({ lrn: '100000000003' }), enrollType: 'returning' });
@@ -439,7 +599,21 @@ describe('approving an add', () => {
     expect(await get('enrollments/S3_2026-2027')).toMatchObject({ sectionId: 'SEC1', status: 'enrolled', type: 'returning', dateEnrolled: '2026-10-22' });
     const audit = (await db().collection('audit_log').where('action', '==', 'learner.addApproved').get()).docs.map((d) => d.data());
     expect(audit).toHaveLength(1);
-    expect(audit[0].details).toEqual({ lrn: '100000000003', name: 'Juan Santos Dela Cruz Jr', mode: 'enrolled', sectionId: 'SEC1', gradeLevel: 7, previousSectionId: null });
+    // The old dropped enrollment (SEC2) was replaced, so the row says where it was and what it was.
+    expect(audit[0].details).toEqual({ lrn: '100000000003', name: 'Juan Santos Dela Cruz Jr', mode: 'enrolled', studentId: 'S3',
+      sectionId: 'SEC1', gradeLevel: 7, previousSectionId: 'SEC2', previousStatus: 'dropped' });
+  });
+  it.each(['dropped', 'transferred'])('records the %s same-year enrollment that a re-enrollment overwrites, from another grade', async (status) => {
+    await db().doc('students/S4').update({ status });
+    await db().doc('enrollments/S4_2026-2027').update({ status });
+    const { id } = await file('teacher', { student: form({ lrn: '100000000004' }) });
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: id, approve: true })).toEqual({ ok: true, mode: 'enrolled' });
+    expect(await get('enrollments/S4_2026-2027')).toMatchObject({ sectionId: 'SEC1', gradeLevel: 7, status: 'enrolled' });
+    expect(await get('students/S4')).toMatchObject({ status: 'active', gradeLevel: 7 });
+    const audit = (await db().collection('audit_log').where('action', '==', 'learner.addApproved').get()).docs.map((d) => d.data());
+    expect(audit).toHaveLength(1);
+    expect(audit[0].details).toEqual({ lrn: '100000000004', name: 'Juan Santos Dela Cruz Jr', mode: 'enrolled', studentId: 'S4',
+      sectionId: 'SEC1', gradeLevel: 7, previousSectionId: 'SEC8', previousStatus: status });
   });
   it('leaves a learner from another grade to an Administrator', async () => {
     const { id } = await file('teacher', { student: form({ lrn: '100000000004' }) });
@@ -466,8 +640,26 @@ describe('approving an add', () => {
     await db().doc('school_accounts/teacher').set({ assignments: [] });
     await expect(resolveLearnerRequest(deps('admin'), { requestId: id, approve: true }))
       .rejects.toMatchObject({ code: 'failed-precondition', message: 'The adviser no longer holds this class. Reject this request.' });
-    await resolveLearnerRequest(deps('admin'), { requestId: id, approve: false, reason: 'No longer your class' });
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: id, approve: false, reason: 'No longer your class' })).toEqual({ ok: true, mode: 'rejected' });
     expect((await get(`learner_change_requests/${id}`)).status).toBe('rejected');
+  });
+  it('treats a disabled adviser account as no longer holding the class, for an add and a removal', async () => {
+    const add = await file();
+    const removeRequest = await requestLearnerRemoval(deps('teacher'), removal());
+    // The assignment is still there, but the account is switched off (loadSchoolActor ignores a disabled account's assignments too).
+    await db().doc('school_accounts/teacher').set({ disabled: true, assignments: [{ role: 'adviser', schoolYear: year, sectionId: 'SEC1', gradeLevel: 7 }] });
+    for (const { id } of [add, removeRequest]) {
+      await expect(resolveLearnerRequest(deps('admin'), { requestId: id, approve: true }))
+        .rejects.toMatchObject({ code: 'failed-precondition', message: 'The adviser no longer holds this class. Reject this request.' });
+      expect((await get(`learner_change_requests/${id}`)).status).toBe('pending');
+    }
+    expect((await db().collection('students').where('lrn', '==', '200000000001').get()).size).toBe(0);
+    expect(await get('enrollments/S1_2026-2027')).toMatchObject({ status: 'enrolled', sectionId: 'SEC1' });
+    // Turning the account back on lets the same request through; a rejection never depended on it.
+    await db().doc('school_accounts/teacher').update({ disabled: FieldValue.delete() });
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: add.id, approve: true })).toEqual({ ok: true, mode: 'new' });
+    await db().doc('school_accounts/teacher').update({ disabled: true });
+    expect(await resolveLearnerRequest(deps('admin'), { requestId: removeRequest.id, approve: false, reason: 'Account switched off' })).toEqual({ ok: true, mode: 'rejected' });
   });
   it('blocks approval when the section changed grade', async () => {
     const { id } = await file();
@@ -492,7 +684,7 @@ describe('approving a removal', () => {
     ['moved_section', 'dropped', 'active'],
   ])('%s ends the enrollment and sets the learner status', async (reasonCode, enrollmentStatus, learnerStatus) => {
     const { id } = await requestLearnerRemoval(deps('teacher'), removal({ reasonCode }));
-    await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: true });
+    expect(await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: true })).toEqual({ ok: true, mode: 'removed' });
     expect(await get('enrollments/S1_2026-2027')).toMatchObject({ status: enrollmentStatus, sectionId: 'SEC1' });
     expect(await get('students/S1')).toMatchObject({ status: learnerStatus, gradeLevel: null, scopeSchoolYear: null, firstName: 'Ana' });
     const [note] = await inboxOf('teacher');
@@ -501,7 +693,7 @@ describe('approving a removal', () => {
     const audit = (await db().collection('audit_log').where('action', '==', 'learner.removalApproved').get()).docs.map((d) => d.data());
     expect(audit).toHaveLength(1);
     // The reason code is the only reason in the audit row; the free-text note stays on the request.
-    expect(audit[0].details).toEqual({ lrn: '100000000001', name: 'Ana B. Cruz', reasonCode, sectionId: 'SEC1', gradeLevel: 7 });
+    expect(audit[0].details).toEqual({ lrn: '100000000001', name: 'Ana B. Cruz', reasonCode, studentId: 'S1', sectionId: 'SEC1', gradeLevel: 7 });
     expect(await auditText()).not.toContain('Stopped attending in September');
   });
   it('lets a Curriculum Adviser for the grade approve a removal', async () => {
@@ -526,7 +718,7 @@ describe('rejecting', () => {
   it('needs a reason, then tells the adviser and changes nothing', async () => {
     const { id } = await file();
     await expect(resolveLearnerRequest(deps('admin'), { requestId: id, approve: false })).rejects.toMatchObject({ code: 'invalid-argument' });
-    await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: false, reason: 'Birthdate does not match the birth certificate' });
+    expect(await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: false, reason: 'Birthdate does not match the birth certificate' })).toEqual({ ok: true, mode: 'rejected' });
     const request = await get(`learner_change_requests/${id}`);
     expect(request).toMatchObject({ status: 'rejected', decisionReason: 'Birthdate does not match the birth certificate' });
     for (const field of ['address', 'guardianContact', 'contactNumber']) expect(request.student).not.toHaveProperty(field);
@@ -544,7 +736,7 @@ describe('rejecting', () => {
     const { id } = await requestLearnerRemoval(deps('teacher'), removal());
     const enrollmentBefore = await get('enrollments/S1_2026-2027');
     const learnerBefore = await get('students/S1');
-    await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: false, reason: 'Still attending class' });
+    expect(await resolveLearnerRequest(deps('coord7'), { requestId: id, approve: false, reason: 'Still attending class' })).toEqual({ ok: true, mode: 'rejected' });
     expect(await get(`learner_change_requests/${id}`)).toMatchObject({ kind: 'remove', status: 'rejected', decidedByUid: 'coord7', decisionReason: 'Still attending class' });
     expect(await inboxOf('teacher')).toEqual([expect.objectContaining({ type: 'learner_request', requestId: id, rejected: true, title: 'Request not approved',
       body: 'Removing Ana B. Cruz was not approved. Reason: Still attending class' })]);

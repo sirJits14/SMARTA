@@ -50,6 +50,36 @@ describe('validateLearnerFields', () => {
   });
 });
 
+describe('cleanText', () => {
+  it('removes a right-to-left override and a zero-width space from a name, leaving no space behind', () => {
+    expect(cleanText('Santos\u202e Dela\u200b Cruz')).toBe('Santos Dela Cruz');
+    expect(cleanText('Ju\u200ban')).toBe('Juan');
+    expect(cleanText('\u202eCruz\u202c')).toBe('Cruz');
+    const result = validateLearnerFields({ ...good, lastName: 'Cru\u202ez\u200b', firstName: '\ufeffJuan' }, { today: '2026-10-22' });
+    expect(result.ok).toBe(true);
+    expect(result.value).toMatchObject({ lastName: 'Cruz', firstName: 'Juan' });
+  });
+  it('removes every listed invisible range, at both ends of each', () => {
+    const ends = ['\u0080', '\u009f', '\u200b', '\u200f', '\u202a', '\u202e', '\u2060', '\u2064', '\u2066', '\u2069', '\ufeff'];
+    for (const char of ends) expect(cleanText(`Ana${char}Lim`), char.charCodeAt(0).toString(16)).toBe('AnaLim');
+    expect(cleanText(ends.join(''))).toBe('');
+  });
+  it('keeps turning C0 control characters into a space and collapsing whitespace', () => {
+    expect(cleanText('Ju\u0000an\n')).toBe('Ju an');
+    expect(cleanText('  Dela \t\u007f Cruz  ')).toBe('Dela Cruz');
+    expect(cleanText('a\u00a0b')).toBe('a b'); // a no-break space is whitespace, not an invisible mark
+    expect(cleanText(null)).toBe('');
+  });
+  it('keeps ordinary accents, the letter ñ and combining marks', () => {
+    expect(cleanText('José Muñoz Peña ñ Ñ')).toBe('José Muñoz Peña ñ Ñ');
+    expect(cleanText('Mun\u0303oz')).toBe('Mun\u0303oz'); // n + combining tilde survives
+  });
+  it('treats a name made only of invisible characters as missing', () => {
+    const result = validateLearnerFields({ ...good, lastName: '\u200b\u200b', firstName: '\u202e' }, { today: '2026-10-22' });
+    expect(result.errors).toMatchObject({ lastName: 'Last name is required.', firstName: 'First name is required.' });
+  });
+});
+
 describe('validateEnrollType', () => {
   it('defaults to new and accepts the import types', () => {
     expect(validateEnrollType('')).toEqual({ ok: true, value: 'new' });
