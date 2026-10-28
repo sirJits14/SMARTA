@@ -41,7 +41,7 @@ const requestsOf = (db) => db.collection('learner_change_requests');
 const classLabel = (section) => `Grade ${section.gradeLevel} · ${section.name || section.sectionName || section.id}`;
 const TOO_MANY = () => 'Too many learner requests. Try again in a little while.';
 
-const REQUEST_LIMIT = 200; // pending requests read per school year, filtered in code
+const REQUEST_LIMIT = 200; // waiting requests returned at most; one more is read to know the list was cut
 const DECIDED_PAGE = 50;
 const ADVISER_LIST = 50;
 // Matches DOCS_DEFAULT in src/data/students.js: no paperwork on file yet.
@@ -256,12 +256,23 @@ const reviewerRow = (snap, flag, actor) => {
   return row;
 };
 
-async function waitingRows(deps, actor) {
-  if (actor.ended || (!actor.isAdmin && !reviewGrades(actor).length)) return [];
-  const snap = await requestsOf(deps.db).where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear)
-    .orderBy('createdAt', 'asc').limit(REQUEST_LIMIT).get();
-  const mine = snap.docs.filter((d) => canDecideLearnerRequest(actor, d.data()));
-  return Promise.all(mine.map(async (d) => reviewerRow(d, d.data().kind === 'add' ? await existingLearner(deps, actor, d.data()) : null, actor)));
+// The waiting requests a reviewer can act on, oldest first, and whether the list was cut at REQUEST_LIMIT.
+// An administrator reads every pending request of the school year. Anyone else reads only the grades they
+// cover, in the query itself, so another grade's older requests can never fill the read and hide theirs.
+// The in-code filter stays: it also drops the reviewer's own requests. `forCount` skips the existing-learner
+// lookups an administrator never needs (an administrator can decide whatever passes the filter); everyone
+// else keeps them, because `needsAdmin` decides whether they can act.
+async function waitingRows(deps, actor, { forCount = false } = {}) {
+  const grades = [...new Set(reviewGrades(actor))];
+  if (actor.ended || (!actor.isAdmin && !grades.length)) return { rows: [], truncated: false };
+  let query = requestsOf(deps.db).where('status', '==', 'pending').where('schoolYear', '==', actor.schoolYear);
+  if (!actor.isAdmin) query = query.where('gradeLevel', 'in', grades);
+  const snap = await query.orderBy('createdAt', 'asc').limit(REQUEST_LIMIT + 1).get();
+  const mine = snap.docs.slice(0, REQUEST_LIMIT).filter((d) => canDecideLearnerRequest(actor, d.data()));
+  const lookup = !(forCount && actor.isAdmin);
+  const rows = await Promise.all(mine.map(async (d) =>
+    reviewerRow(d, lookup && d.data().kind === 'add' ? await existingLearner(deps, actor, d.data()) : null, actor)));
+  return { rows, truncated: snap.size > REQUEST_LIMIT };
 }
 
 export async function listLearnerRequests(deps, input) {
@@ -272,9 +283,12 @@ export async function listLearnerRequests(deps, input) {
     && cursor.ms >= 0 && cursor.ms <= MAX_CURSOR_MS && cursorId(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
   const actor = await loadSchoolActor(deps);
   const base = { schoolYear: actor.schoolYear, ended: actor.ended };
-  if (view === 'waiting') return { ...base, requests: await waitingRows(deps, actor), nextCursor: null };
+  if (view === 'waiting') {
+    const { rows, truncated } = await waitingRows(deps, actor);
+    return { ...base, requests: rows, truncated, nextCursor: null };
+  }
   const grades = [...new Set(reviewGrades(actor))];
-  if (!actor.isAdmin && !grades.length) return { ...base, requests: [], nextCursor: null };
+  if (!actor.isAdmin && !grades.length) return { ...base, requests: [], truncated: false, nextCursor: null };
   let query = requestsOf(deps.db).where('schoolYear', '==', actor.schoolYear);
   if (!actor.isAdmin) query = query.where('gradeLevel', 'in', grades);
   // Withdrawn requests have no decidedAt, so only approved and rejected ones appear here.
@@ -285,13 +299,13 @@ export async function listLearnerRequests(deps, input) {
   const page = snap.docs.slice(0, DECIDED_PAGE);
   const requests = page.map((d) => reviewerRow(d, null, actor));
   const last = page[page.length - 1];
-  return { ...base, requests, nextCursor: snap.size > DECIDED_PAGE ? { ms: millis(last.data().decidedAt), id: last.id } : null };
+  return { ...base, requests, truncated: false, nextCursor: snap.size > DECIDED_PAGE ? { ms: millis(last.data().decidedAt), id: last.id } : null };
 }
 
 export async function getLearnerRequestCount(deps) {
   const actor = await loadSchoolActor(deps);
-  const rows = await waitingRows(deps, actor);
-  return { count: rows.filter((r) => r.decidable).length };
+  const { rows, truncated } = await waitingRows(deps, actor, { forCount: true });
+  return { count: rows.filter((r) => r.decidable).length, truncated };
 }
 
 const OUTCOME_TEXT = { add: 'Learner added', remove: 'Learner removed' };

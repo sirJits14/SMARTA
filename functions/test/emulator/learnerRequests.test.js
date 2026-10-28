@@ -319,9 +319,9 @@ describe('what reviewers see', () => {
     expect(await waitingIds('ca7')).toEqual([grade7.id]);
     expect(await waitingIds('coord8')).toEqual([grade8.id]);
     expect(await waitingIds('teacher')).toEqual([]);
-    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 2 });
-    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1 });
-    expect(await getLearnerRequestCount(deps('teacher'))).toEqual({ count: 0 });
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 2, truncated: false });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1, truncated: false });
+    expect(await getLearnerRequestCount(deps('teacher'))).toEqual({ count: 0, truncated: false });
   });
   it('flags an LRN already in SIMS and shows whose it is only to reviewers who may see it', async () => {
     const inOtherSection = await file('teacher', { student: form({ lrn: '100000000002' }) }); // S2, Grade 7, Mabini
@@ -335,8 +335,8 @@ describe('what reviewers see', () => {
     const admin = (await listLearnerRequests(deps('admin'), { view: 'waiting' })).requests;
     expect(find(admin, unassigned.id)).toMatchObject({ decidable: true,
       existing: { needsAdmin: false, displayName: 'Cara Lim', currentGrade: null, learnerStatus: 'active' } });
-    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1 });
-    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 2 });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1, truncated: false });
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 2, truncated: false });
   });
   it('pages through decided requests for the reviewer’s grades, newest first', async () => {
     const decided = (id, over) => db().doc(`learner_change_requests/${id}`).set({ kind: 'add', status: 'approved', schoolYear: year, sectionId: 'SEC1', gradeLevel: 7,
@@ -366,15 +366,15 @@ describe('what reviewers see', () => {
     await seedDecided('done1');
     // Before the year ends everything is visible, so the empty lists below are not vacuous.
     expect(await waitingIds('coord7')).toEqual([id]);
-    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1 });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1, truncated: false });
     expect((await decidedRowsOf('coord7')).map((r) => r.id)).toEqual(['done1']);
     await db().doc(`school_years/${year}`).set({ endedAt: new Date() });
     for (const uid of ['admin', 'coord7']) {
-      expect(await listLearnerRequests(deps(uid), { view: 'waiting' })).toMatchObject({ ended: true, requests: [], nextCursor: null });
-      expect(await getLearnerRequestCount(deps(uid))).toEqual({ count: 0 });
+      expect(await listLearnerRequests(deps(uid), { view: 'waiting' })).toMatchObject({ ended: true, requests: [], truncated: false, nextCursor: null });
+      expect(await getLearnerRequestCount(deps(uid))).toEqual({ count: 0, truncated: false });
     }
     for (const uid of ['coord7', 'ca7']) {
-      expect(await listLearnerRequests(deps(uid), { view: 'decided' })).toMatchObject({ ended: true, requests: [], nextCursor: null });
+      expect(await listLearnerRequests(deps(uid), { view: 'decided' })).toMatchObject({ ended: true, requests: [], truncated: false, nextCursor: null });
     }
     const admin = await listLearnerRequests(deps('admin'), { view: 'decided' });
     expect(admin.ended).toBe(true);
@@ -390,8 +390,8 @@ describe('what reviewers see', () => {
     expect(admin.decidable).toBe(true);
     expect(admin.existing).toEqual({ exists: true, needsAdmin: false, enrolledHere: false, displayName: 'Dan Ong', learnerStatus: 'active',
       currentGrade: 8, currentSection: 'Eight' });
-    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 0 });
-    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 1 });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 0, truncated: false });
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 1, truncated: false });
   });
   it('tells a coordinator only that an Unassigned learner needs an administrator', async () => {
     const { id } = await file('teacher', { student: form({ lrn: '100000000003' }) }); // S3, no enrollment
@@ -412,17 +412,17 @@ describe('what reviewers see', () => {
     const admin = rowOf(await waitingRowsOf('admin'), id);
     expect(admin.decidable).toBe(true);
     expect(admin.existing).toEqual({ exists: true, ambiguous: true, needsAdmin: false });
-    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 0 });
-    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 1 });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 0, truncated: false });
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 1, truncated: false });
   });
   it('never lets someone decide their own request, even when they cover its grade', async () => {
     await db().doc('users/teacher@deped.gov.ph').set({ uid: 'teacher', role: 'glc', gradeLevel: 7 });
     const { id } = await file('teacher');
     expect(await waitingIds('teacher')).toEqual([]);
-    expect(await getLearnerRequestCount(deps('teacher'))).toEqual({ count: 0 });
+    expect(await getLearnerRequestCount(deps('teacher'))).toEqual({ count: 0, truncated: false });
     // Another coordinator for the same grade still sees and counts it.
     expect(await waitingIds('coord7')).toEqual([id]);
-    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1 });
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1, truncated: false });
   });
   it('never returns the address or phone numbers of a decided request, even if a stored one still has them', async () => {
     // (Decided reviewer rows now carry no learner form at all; the adviser's own list is where the contact-free form is checked.)
@@ -497,6 +497,91 @@ describe('what reviewers see', () => {
     expect(second.requests.map((r) => r.id)).toEqual(['older']);
     expect(second.nextCursor).toBeNull();
   }, 30000);
+});
+
+describe('a long waiting list', () => {
+  // Pending Grade 8 adds written straight to the collection, all older than anything the handlers file.
+  const longAgo = Date.UTC(2020, 0, 1);
+  const seedPendingGrade8 = async (count) => {
+    const batch = db().batch();
+    for (let i = 0; i < count; i++) {
+      const id = `old${String(i).padStart(3, '0')}`;
+      batch.set(db().doc(`learner_change_requests/${id}`), {
+        kind: 'add', status: 'pending', schoolYear: year, sectionId: 'SEC8', gradeLevel: 8, sectionName: 'Eight', displayName: id,
+        student: { lrn: `5${String(i).padStart(11, '0')}` }, enrollType: 'new', requestedByUid: 'eight', requestedByName: 'Eli Eight',
+        requestedByEmail: 'eight@deped.gov.ph', createdAt: Timestamp.fromMillis(longAgo + i * 1000),
+      });
+    }
+    await batch.commit();
+  };
+  // Deps whose db records every collection() call, to see which collections a count reads.
+  const recording = (uid, reads) => ({ ...deps(uid), db: new Proxy(db(), { get: (target, prop) => {
+    const value = Reflect.get(target, prop);
+    if (typeof value !== 'function') return value;
+    return prop === 'collection' ? (name) => { reads.push(name); return target.collection(name); } : value.bind(target);
+  } }) });
+
+  it('does not starve a coordinator when older requests for another grade fill the first 200', async () => {
+    await seedPendingGrade8(205);
+    const mine = await file('teacher'); // Grade 7, newer than all 205 of Grade 8
+    const list = await listLearnerRequests(deps('coord7'), { view: 'waiting' });
+    expect(list.requests.map((r) => r.id)).toEqual([mine.id]);
+    expect(list.truncated).toBe(false);
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 1, truncated: false });
+    expect(await waitingIds('ca7')).toEqual([mine.id]);
+    // Grade 8's own coordinator does face the long list, and is told it was cut.
+    const grade8 = await listLearnerRequests(deps('coord8'), { view: 'waiting' });
+    expect(grade8.requests).toHaveLength(200);
+    expect(grade8.requests[0].id).toBe('old000');
+    expect(grade8.truncated).toBe(true);
+    expect(await getLearnerRequestCount(deps('coord8'))).toEqual({ count: 200, truncated: true });
+  }, 60000);
+  it('cuts an administrator’s waiting list at 200 and says so, and counts the same 200', async () => {
+    await seedPendingGrade8(205);
+    await file('teacher');
+    const list = await listLearnerRequests(deps('admin'), { view: 'waiting' });
+    expect(list.requests).toHaveLength(200);
+    expect(list.requests[0].id).toBe('old000');
+    expect(list.requests[199].id).toBe('old199');
+    expect(list.truncated).toBe(true);
+    expect(list.nextCursor).toBeNull();
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 200, truncated: true });
+    // Only the Waiting list is ever cut.
+    expect((await listLearnerRequests(deps('admin'), { view: 'decided' })).truncated).toBe(false);
+  }, 60000);
+  it('does not call exactly 200 waiting requests a cut list, but 201 is', async () => {
+    await seedPendingGrade8(200);
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 200, truncated: false });
+    expect(await getLearnerRequestCount(deps('coord8'))).toEqual({ count: 200, truncated: false });
+    const list = await listLearnerRequests(deps('admin'), { view: 'waiting' });
+    expect(list.requests).toHaveLength(200);
+    expect(list.truncated).toBe(false);
+    await file('teacher');
+    expect(await getLearnerRequestCount(deps('admin'))).toEqual({ count: 200, truncated: true });
+    expect((await listLearnerRequests(deps('admin'), { view: 'waiting' })).truncated).toBe(true);
+  }, 60000);
+  it('reads every grade a reviewer covers, once, however many ways they cover it', async () => {
+    // coord7 is a Grade 7 coordinator and also a Curriculum Adviser for Grades 7 and 8.
+    await db().doc('school_accounts/coord7').set({ assignments: [
+      { role: 'curriculum_adviser', schoolYear: year, gradeLevel: 7 }, { role: 'curriculum_adviser', schoolYear: year, gradeLevel: 8 }] });
+    const grade7 = await file('teacher');
+    const grade8 = await requestLearnerAdd(deps('eight'), addInput({ sectionId: 'SEC8', student: form({ lrn: '200000000002' }) }));
+    expect(await waitingIds('coord7')).toEqual([grade7.id, grade8.id]);
+    expect(await getLearnerRequestCount(deps('coord7'))).toEqual({ count: 2, truncated: false });
+  });
+  it('counts for an administrator without looking up any existing learner, and still does for a coordinator', async () => {
+    const { id } = await file('teacher', { student: form({ lrn: '100000000003' }) }); // S3, Unassigned: only an administrator can decide it
+    const adminReads = [];
+    expect(await getLearnerRequestCount(recording('admin', adminReads))).toEqual({ count: 1, truncated: false });
+    expect(adminReads).not.toContain('students');
+    const coordinatorReads = [];
+    expect(await getLearnerRequestCount(recording('coord7', coordinatorReads))).toEqual({ count: 0, truncated: false });
+    expect(coordinatorReads).toContain('students');
+    // The Waiting list itself still carries the lookup for an administrator.
+    const row = rowOf(await waitingRowsOf('admin'), id);
+    expect(row.decidable).toBe(true);
+    expect(row.existing).toMatchObject({ exists: true, needsAdmin: false, displayName: 'Cara Lim' });
+  });
 });
 
 describe('approving an add', () => {

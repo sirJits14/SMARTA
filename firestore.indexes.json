@@ -62,6 +62,8 @@
       { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] },
     { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" } ] },
     { "collectionGroup": "audit_log", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "targetType", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" } ] }
   ],
