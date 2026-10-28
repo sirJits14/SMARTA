@@ -45,6 +45,32 @@ describe('parseWorksheetRows', () => {
     expect(rows[0].birthdate).toBe('2012-05-01');
   });
 
+  it('reads the calculated result out of a formula cell instead of stringifying the raw value', () => {
+    const ws = worksheetFrom([TEMPLATE_HEADERS, GOOD_ROW]);
+    ws.getRow(2).getCell(2).value = { formula: 'UPPER("reyes")', result: 'Reyes' };
+    const { rows } = parseWorksheetRows(ws);
+    expect(rows[0].lastName).toBe('Reyes');
+  });
+
+  it('reads the concatenated run text out of a rich-text cell instead of stringifying the raw value', () => {
+    const ws = worksheetFrom([TEMPLATE_HEADERS, GOOD_ROW]);
+    ws.getRow(2).getCell(4).value = {
+      richText: [
+        { font: { bold: true }, text: 'San' },
+        { font: { italic: true }, text: 'tos' },
+      ],
+    };
+    const { rows } = parseWorksheetRows(ws);
+    expect(rows[0].middleName).toBe('Santos');
+  });
+
+  it('normalizes a formula cell whose calculated result is a date to YYYY-MM-DD', () => {
+    const ws = worksheetFrom([TEMPLATE_HEADERS, GOOD_ROW]);
+    ws.getRow(2).getCell(7).value = { formula: 'TODAY()', result: new Date(2012, 4, 1) };
+    const { rows } = parseWorksheetRows(ws);
+    expect(rows[0].birthdate).toBe('2012-05-01');
+  });
+
   it('flags a header mismatch instead of parsing rows', () => {
     const ws = worksheetFrom([['Wrong', 'Headers'], GOOD_ROW]);
     const { headerError, rows } = parseWorksheetRows(ws);
