@@ -51,12 +51,14 @@ If the button is greyed out, your class has no learners yet. If you see "Too man
 
 ## Adding or removing a learner
 
-You ask; an administrator or your grade's coordinator decides in SIMS. Nothing changes in your class until it is approved.
+You ask; an administrator, or the coordinator or Curriculum Adviser for your grade, decides in SIMS. Nothing changes in your class until it is approved.
 
 **Add a learner.** On **Class**, tap **Add learner**. Enter the learner's details, the same ones the registrar imports from Excel. LRN, name, sex and birthdate are required; the enrollment type starts as New; address and guardian details are optional. Your class and grade are filled in for you. Tap **Send for approval**. Once the school year has ended, the buttons for asking are not offered.
 
 **Remove a learner.** Open the learner from the Class tab, scroll to the bottom and tap **Remove from class**. Choose why (Transferred out, Dropped out, or Moved to another section), add a short note and send it. The learner stays in your class, marked *Removal pending*, until it is approved. Nothing is deleted: the learner's record and past attendance stay in SIMS.
 
 **Follow up.** The Class tab shows a link that reads "N requests waiting for approval", or "Past requests" once none are waiting. Open it to withdraw a request, or to send a not-approved add again with the form filled in. Re-enter the address and phone numbers, because the school clears them once a request is decided. You get an Inbox note when a request is approved or not approved, with the reason.
+
+**Where the Inbox note arrives.** The Inbox tab is in the Parent/Guardian view of the app. The School view, where the Class tab is, has only Class, Notices and Settings at the bottom. To read the note, open **Settings**, tap **Use the app as**, choose **Parent/Guardian**, then tap **Inbox**. (You can also open the app's `/inbox` address directly.) Tapping the note takes you back to the Class tab. To return to your class, open **Settings** again and choose **School**.
 
 If the LRN you enter already belongs to a learner in SIMS, your request still goes through: the approver sees it and decides whether to enroll or move that learner. SIMS keeps the details it already has for that learner, and the approver only enrolls or moves them.

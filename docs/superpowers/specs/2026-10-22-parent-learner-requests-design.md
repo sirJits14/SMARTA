@@ -96,10 +96,12 @@ decision:        decidedAt, decidedByUid, decidedByEmail, decidedByName, decisio
 - **Dedupe:** at most one pending request per `dedupeKey`. The check is a query inside the transaction.
 - **Limits:** 20 pending requests per adviser, 30 requests per hour per adviser (`enforceRateLimit`, action
   `learnerRequest`).
-- **Indexes:** four composite entries in `firestore.indexes.json`: (requestedByUid, sectionId, createdAt desc)
-  for the adviser's list; (status, schoolYear, createdAt) for Waiting; (schoolYear, decidedAt desc) and
-  (schoolYear, gradeLevel, decidedAt desc) for Decided. A withdrawn request has no `decidedAt`, so Decided lists
-  only approved and rejected ones.
+- **Indexes:** five composite entries in `firestore.indexes.json`: (requestedByUid, sectionId, createdAt desc)
+  for the adviser's list; (status, schoolYear, createdAt) for Waiting (administrators); (status, schoolYear,
+  gradeLevel, createdAt) for the Waiting list and badge of coordinators and Curriculum Advisers;
+  (schoolYear, decidedAt desc) and (schoolYear, gradeLevel, decidedAt desc) for Decided. All five must be READY
+  before the handlers go live. A withdrawn request has no `decidedAt`, so Decided lists only approved and
+  rejected ones.
 
 ## Backend
 
@@ -113,9 +115,9 @@ New `functions/src/handlers/learnerRequests.js` with the pure rules in `shared/l
 | `requestLearnerRemovalFn` | Adviser of the section | Learner must be enrolled in this section; reason code and note; dedupe; write a pending removal; audit `learner.removalRequested`. |
 | `withdrawLearnerRequestFn` | The requester | Pending to withdrawn; clear address and contact fields; audit `learner.requestWithdrawn`. |
 | `getLearnerRequestsFn` | Adviser | `{ sectionId }`: the caller's requests for that section, newest first, 50 at most. |
-| `listLearnerRequestsFn` | Reviewer | `{ view: 'waiting' \| 'decided', cursor }`. Waiting is oldest first; Decided is approved and rejected, newest first, 50 per page. Waiting adds carry the existing-LRN flag (below). |
+| `listLearnerRequestsFn` | Reviewer | `{ view: 'waiting' \| 'decided', cursor }`. Waiting is oldest first; Decided is approved and rejected, newest first, 50 per page. Waiting adds carry the existing-LRN flag (below). Waiting returns at most the 200 oldest and sets `truncated` when more were pending. |
 | `resolveLearnerRequestFn` | Reviewer | `{ requestId, approve, reason }`; the approval transaction. |
-| `getLearnerRequestCountFn` | Reviewer | How many pending requests the caller may decide. |
+| `getLearnerRequestCountFn` | Reviewer | How many pending requests the caller may decide: `{ count, truncated }`. |
 
 **Who files.** The caller holds the current-year `adviser` assignment for that section, the same assignment the
 roster and flagging calls require. Administrators and coordinators do not file; they use SIMS.
@@ -269,10 +271,16 @@ Everything below is on the Class tab and hides once the school year has ended.
 1. Functions and indexes first (backward compatible; nothing calls them yet). The production backend is deployed
    by name from a prepared tree, so that tree needs the new function files, `shared/learnerRequests.js`, the
    `reviewGrades` export and the account-deletion change.
-2. SIMS "Learner requests" page through the SIMS release-tree process: a new preparer wrapping
-   `docs/releases/2026-10-21-caps-names/prepare.mjs`, hosting only, with `Shell.jsx`, `access.js`,
-   `navigation.js` and `App.jsx` ported onto the tree's own copies. `reviewGrades` becomes an export of
-   `shared/schoolAccess.js`, so the tree's older copy gets the same one-word patch.
+2. SIMS "Learner requests" page through the SIMS release-tree process, hosting only, on top of the CURRENT
+   live SIMS tree: reconstruct it exactly as the latest deployment record describes
+   (`docs/audits/deployments/2026-10-27-sims-recent-sections/README.md` and the records it cites, on
+   `origin/master`), rebuild a baseline and byte-match it against live (`baseline-verification.json`, SHA-256
+   per file), and only then overlay this feature, with `Shell.jsx`, `access.js`, `navigation.js` and `App.jsx`
+   ported onto the tree's own copies. A preparer that wraps only
+   `docs/releases/2026-10-21-caps-names/prepare.mjs` would remove the later live features (PR #90, #91 and #93
+   and the legacy-adviser changes). `reviewGrades` becomes an export of `shared/schoolAccess.js`, so the tree's
+   older copy gets the same one-word patch. The release notes
+   (`docs/releases/2026-10-22-learner-requests/README.md`) give the full sequence.
 3. Parent App last, with `npm run deploy:parent` from fresh `origin/master` (keeps PR #74), so requests cannot
    arrive before approvers have a page.
 4. Update `docs/parent-portal-adviser-guide.md` (adding and removing learners) and record the deployment under
