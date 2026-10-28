@@ -25,7 +25,8 @@ export const waitingState = (data) => ({ requests: data.requests, ended: data.en
 export const noticeText = (message, result) => (typeof message === 'function' ? message(result) : message);
 
 // The Waiting and Decided lists and one decision lock shared by every card. The server filters both lists to
-// what this person may see; a failed decision is kept per card so it shows where the person is looking.
+// what this person may see; a failed decision is kept per card so it shows where the person is looking, and
+// `pendingId` names the request being decided so its own button can say so.
 export function useLearnerRequestLists() {
   const [waiting, setWaiting] = useState(null); // { requests, ended, truncated }
   const [decided, setDecided] = useState(null); // { requests, nextCursor }
@@ -34,6 +35,7 @@ export function useLearnerRequestLists() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [pending, setPending] = useState(false);
+  const [pendingId, setPendingId] = useState('');
   const [failures, setFailures] = useState({});
   const lock = useRef(false);
   const sequence = useRef(0);
@@ -71,7 +73,7 @@ export function useLearnerRequestLists() {
   // notice, or a function of the server's answer ({ ok, mode }) so the notice says what actually happened.
   const decide = useCallback(async (request, approve, reason, message) => {
     if (lock.current) return false;
-    lock.current = true; setPending(true); setError(''); setNotice('');
+    lock.current = true; setPending(true); setPendingId(request.id); setError(''); setNotice('');
     setFailures((current) => { const { [request.id]: _gone, ...rest } = current; return rest; });
     try {
       const result = await invoke('resolveLearnerRequestFn', { requestId: request.id, approve, reason });
@@ -85,10 +87,13 @@ export function useLearnerRequestLists() {
       // refresh clears the page error first, so a refusal whose card is gone is set after it
       if (requestLeftList(reloaded, request.id)) setError(text);
       return false;
-    } finally { lock.current = false; setPending(false); }
+    } finally { lock.current = false; setPending(false); setPendingId(''); }
   }, [refresh]);
 
   const clearError = useCallback(() => setError(''), []);
+  // Not part of refresh: decide sets the notice and then refreshes, and the notice must outlive that reload. Only a
+  // person's own Refresh or change of tab drops it, so a finished decision's message does not sit above newer data.
+  const clearNotice = useCallback(() => setNotice(''), []);
 
-  return { waiting, decided, loading, loadedAt, error, notice, pending, failures, refresh, loadDecided, decide, clearError };
+  return { waiting, decided, loading, loadedAt, error, notice, pending, pendingId, failures, refresh, loadDecided, decide, clearError, clearNotice };
 }

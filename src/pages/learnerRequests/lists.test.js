@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import RequestCard, { rejectRequest } from './RequestCard.jsx';
+import RequestCard, { closesRejectForm, rejectRequest } from './RequestCard.jsx';
 import WaitingList from './WaitingList.jsx';
 import DecidedList from './DecidedList.jsx';
 
@@ -85,6 +86,55 @@ describe('RequestCard', () => {
   });
 });
 
+describe('RequestCard progress', () => {
+  it('says Working and marks the Approve button busy on the card being decided only', () => {
+    const html = card(add, { disabled: true, busy: true });
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('Working…');
+    expect(html).not.toContain('>Approve<');
+    expect(html).toContain('>Reject<'); // the other button keeps its label, just disabled
+    expect(html.match(/disabled=""/g)).toHaveLength(2);
+  });
+  it('keeps a plain disabled Approve on a card that is not the one being decided', () => {
+    const html = card(add, { disabled: true, busy: false });
+    expect(html).toContain('>Approve<');
+    expect(html).not.toContain('aria-busy');
+    expect(html).not.toContain('Working…');
+  });
+  it('shows no progress on an idle card', () => {
+    const html = card(add);
+    expect(html).toContain('>Approve<');
+    expect(html).not.toContain('aria-busy');
+  });
+});
+
+describe('closesRejectForm', () => {
+  it('closes the form on Escape, like Cancel', () => {
+    expect(closesRejectForm('Escape', false)).toBe(true);
+    expect(closesRejectForm('Escape', undefined)).toBe(true);
+  });
+  it('ignores other keys and ignores Escape while a decision is running', () => {
+    expect(closesRejectForm('Enter', false)).toBe(false);
+    expect(closesRejectForm('a', false)).toBe(false);
+    expect(closesRejectForm('Escape', true)).toBe(false);
+  });
+});
+
+// Focus and keys need a browser to run; this suite has none, so the wiring is read from the card's source.
+describe('RequestCard Reject form keyboard wiring', () => {
+  const source = readFileSync(new URL('./RequestCard.jsx', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  it('closes the form on Escape through the same function as Cancel', () => {
+    expect(source).toContain('onKeyDown={event => { if (closesRejectForm(event.key, disabled)) { event.preventDefault(); cancelReject(); } }}');
+    expect(source).toContain('onClick={cancelReject}>Cancel</Btn>');
+  });
+  it('hands focus back to the Reject button after the form has closed, only for Cancel and Escape', () => {
+    expect(source).toContain('const cancelReject = () => { backToButtons.current = true; setRejecting(false); };');
+    expect(source).toContain('if (!rejecting && backToButtons.current) { backToButtons.current = false; rejectButton.current?.focus(); }');
+    expect(source).toContain('<Btn ref={rejectButton} variant="ghost"');
+    expect(source.match(/backToButtons\.current = true/g)).toHaveLength(1);
+  });
+});
+
 describe('rejectRequest', () => {
   it('passes the request and the reason on and gives back the answer', async () => {
     const seen = [];
@@ -111,6 +161,19 @@ describe('WaitingList', () => {
     const html = renderToStaticMarkup(h(WaitingList, { requests: [needs, remove], ended: false, pending: false, failures: {}, onApprove: noop, onReject: noop }));
     expect(html.indexOf('ANA CRUZ')).toBeGreaterThan(-1);
     expect(html.indexOf('ANA CRUZ')).toBeLessThan(html.indexOf('CARA LIM'));
+  });
+  it('marks only the request being decided as busy', () => {
+    const other = { ...remove, id: 'r2' };
+    const html = renderToStaticMarkup(h(WaitingList, { requests: [add, remove, other], ended: false, pending: true, pendingId: 'r1', failures: {}, onApprove: noop, onReject: noop }));
+    expect(html.match(/aria-busy="true"/g)).toHaveLength(1);
+    expect(html.match(/Working…/g)).toHaveLength(1);
+    expect(html.match(/>Approve</g)).toHaveLength(2);
+    expect(html.match(/disabled=""/g)).toHaveLength(6); // every card is locked meanwhile
+    expect(html.indexOf('Working…')).toBeGreaterThan(html.indexOf('ANA CRUZ'));
+  });
+  it('shows nobody as busy when no decision is running', () => {
+    const html = renderToStaticMarkup(h(WaitingList, { requests: [add, remove], ended: false, pending: false, pendingId: '', failures: {}, onApprove: noop, onReject: noop }));
+    expect(html).not.toContain('aria-busy');
   });
   it('disables every action once the school year has ended', () => {
     const html = renderToStaticMarkup(h(WaitingList, { requests: [add], ended: true, pending: false, failures: {}, onApprove: noop, onReject: noop }));

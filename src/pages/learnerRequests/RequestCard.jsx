@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge, Btn, Field, Inp } from '../../components/ui.jsx';
 import { T } from '../../styles.js';
 import { relativeAge } from '../../lib/schoolAssignments.js';
@@ -12,11 +12,22 @@ const wrap = { overflowWrap: 'anywhere' };
 export const rejectRequest = (onReject, request, text) =>
   Promise.resolve().then(() => onReject(request, text)).then((ok) => Boolean(ok), () => false);
 
+// Escape backs out of the Reject form like Cancel does, except while a decision is running.
+export const closesRejectForm = (key, disabled) => key === 'Escape' && !disabled;
+
 // One waiting request. Approve is one tap; Reject asks for a reason first. A request that needs an
-// administrator is shown without actions to everyone else.
-export default function RequestCard({ request, disabled, failure, onApprove, onReject }) {
+// administrator is shown without actions to everyone else. `disabled` locks every card while a decision runs;
+// `busy` marks the one being decided.
+export default function RequestCard({ request, disabled, busy, failure, onApprove, onReject }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
+  const rejectButton = useRef(null);
+  const backToButtons = useRef(false);
+  // The Reject button is not on screen while the form is open, so focus goes back to it only after the form has closed.
+  useEffect(() => {
+    if (!rejecting && backToButtons.current) { backToButtons.current = false; rejectButton.current?.focus(); }
+  }, [rejecting]);
+  const cancelReject = () => { backToButtons.current = true; setRejecting(false); };
   const flag = existingFlag(request);
   const effect = approveEffect(request);
   const keeps = keepsDetailsText(request);
@@ -48,17 +59,17 @@ export default function RequestCard({ request, disabled, failure, onApprove, onR
     </details>}
     {failure && <p role="alert" className="sims-feedback" style={{ marginTop: 10 }}>{failure}</p>}
     {request.decidable && (rejecting
-      ? <form onSubmit={submitReject} style={{ marginTop: 12 }}>
+      ? <form onSubmit={submitReject} onKeyDown={event => { if (closesRejectForm(event.key, disabled)) { event.preventDefault(); cancelReject(); } }} style={{ marginTop: 12 }}>
         <p style={{ fontSize: 13, margin: '0 0 8px' }}>Tell the adviser why. They see this in the parent app.</p>
         <Field label="Reason"><Inp autoFocus required maxLength={500} value={reason} disabled={disabled} onChange={e => setReason(e.target.value)} /></Field>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <Btn type="submit" disabled={disabled || !reason.trim()}>{disabled ? 'Working…' : 'Reject request'}</Btn>
-          <Btn variant="ghost" type="button" disabled={disabled} onClick={() => setRejecting(false)}>Cancel</Btn>
+          <Btn variant="ghost" type="button" disabled={disabled} onClick={cancelReject}>Cancel</Btn>
         </div>
       </form>
       : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-        <Btn disabled={disabled} onClick={() => onApprove(request)}>Approve</Btn>
-        <Btn variant="ghost" disabled={disabled} onClick={() => setRejecting(true)}>Reject</Btn>
+        <Btn disabled={disabled} loading={busy} onClick={() => onApprove(request)}>{busy ? 'Working…' : 'Approve'}</Btn>
+        <Btn ref={rejectButton} variant="ghost" disabled={disabled} onClick={() => setRejecting(true)}>Reject</Btn>
       </div>)}
   </li>;
 }

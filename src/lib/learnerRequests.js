@@ -71,6 +71,13 @@ export const outcomeText = (request) => `${request.status === 'approved' ? 'Appr
 export const orderWaiting = (requests) => [...requests.filter((r) => r.decidable), ...requests.filter((r) => !r.decidable)];
 export const decidableCount = (requests) => requests.filter((r) => r.decidable).length;
 
+// The Waiting tab's label. The server stops at 200, so a cut list is a floor and gets a plus.
+export const waitingTabLabel = (count, truncated) => `Waiting${count ? ` (${count}${truncated ? '+' : ''})` : ''}`;
+
+// The sidebar badge text, for the expanded sidebar, the narrow rail and the drawer alike: three digits do not
+// fit beside the rail's icon, and a cut count is only a floor, so over 99 or cut reads 99+.
+export const badgeCountText = (count, truncated) => (truncated || count > 99 ? '99+' : String(count));
+
 // The note after a decision, worded from what the server did. A card can be stale (an "Add" may move a learner
 // another approval just created), so the server's `mode` decides: new, moved, enrolled, removed or rejected.
 // A missing or unknown mode falls back to a plain approval.

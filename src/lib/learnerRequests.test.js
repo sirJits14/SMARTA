@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  approveEffect, classText, decidableCount, decisionNotice, detailRows, existingFlag, keepsDetailsText, kindLabel, orderWaiting, outcomeText, personText, placeText, removalText,
-  waitingCutNote, whenText,
+  approveEffect, badgeCountText, classText, decidableCount, decisionNotice, detailRows, existingFlag, keepsDetailsText, kindLabel, orderWaiting, outcomeText, personText, placeText, removalText,
+  waitingCutNote, waitingTabLabel, whenText,
 } from './learnerRequests.js';
 
 const add = {
@@ -123,6 +123,35 @@ describe('the notice after a decision', () => {
     expect(decisionNotice(add, {})).toBe(plain);
     expect(decisionNotice(add, undefined)).toBe(plain);
     expect(decisionNotice(add, null)).toBe(plain);
+  });
+});
+
+describe('the sidebar badge text', () => {
+  it('shows the number up to 99 and 99+ beyond, so it fits the narrow rail', () => {
+    expect(badgeCountText(0, false)).toBe('0');
+    expect(badgeCountText(1, false)).toBe('1');
+    expect(badgeCountText(99, false)).toBe('99');
+    expect(badgeCountText(100, false)).toBe('99+');
+    expect(badgeCountText(206, false)).toBe('99+');
+  });
+  it('reads 99+ whenever the server cut its count, even for a small number', () => {
+    expect(badgeCountText(200, true)).toBe('99+');
+    expect(badgeCountText(5, true)).toBe('99+');
+    expect(badgeCountText(1, undefined)).toBe('1');
+  });
+});
+
+describe('the Waiting tab label', () => {
+  it('shows the count the person can decide, and nothing when there is none', () => {
+    expect(waitingTabLabel(9, false)).toBe('Waiting (9)');
+    expect(waitingTabLabel(200, false)).toBe('Waiting (200)');
+    expect(waitingTabLabel(0, false)).toBe('Waiting');
+    expect(waitingTabLabel(0, undefined)).toBe('Waiting');
+  });
+  it('adds a plus when the list was cut at its limit', () => {
+    expect(waitingTabLabel(200, true)).toBe('Waiting (200+)');
+    expect(waitingTabLabel(150, true)).toBe('Waiting (150+)');
+    expect(waitingTabLabel(0, true)).toBe('Waiting');
   });
 });
 

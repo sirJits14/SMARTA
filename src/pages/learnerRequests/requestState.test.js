@@ -64,7 +64,7 @@ describe('waitingState', () => {
 // The sidebar badge is module state shared by every listener, so each test starts from a fresh module.
 describe('learner request badge count', () => {
   let badge;
-  const answer = async (index, count) => { calls[index].resolve({ data: { count } }); await Promise.resolve(); };
+  const answer = async (index, count, truncated) => { calls[index].resolve({ data: { count, truncated } }); await Promise.resolve(); };
   beforeEach(async () => {
     calls.length = 0;
     vi.resetModules();
@@ -83,6 +83,32 @@ describe('learner request badge count', () => {
     await Promise.all([first, second]);
     expect(seen).toEqual([['a', 3], ['b', 3]]);
     expect(badge.currentLearnerRequestCount()).toBe(3);
+  });
+
+  it('carries truncated to every listener and forgets it with the number', async () => {
+    const seen = [];
+    const stopA = badge.subscribeLearnerRequestCount((n, cut) => seen.push(['a', n, cut]));
+    const stopB = badge.subscribeLearnerRequestCount((n, cut) => seen.push(['b', n, cut]));
+    const done = badge.refreshLearnerRequestCount();
+    await answer(0, 200, true);
+    await done;
+    expect(seen).toEqual([['a', 200, true], ['b', 200, true]]);
+    expect(badge.currentLearnerRequestCount()).toBe(200);
+    expect(badge.currentLearnerRequestTruncated()).toBe(true);
+    stopA();
+    expect(badge.currentLearnerRequestTruncated()).toBe(true); // someone is still watching
+    stopB();
+    expect(badge.currentLearnerRequestTruncated()).toBe(false);
+  });
+
+  it('treats an answer without truncated as not cut', async () => {
+    const seen = [];
+    badge.subscribeLearnerRequestCount((n, cut) => seen.push([n, cut]));
+    const done = badge.refreshLearnerRequestCount();
+    await answer(0, 7);
+    await done;
+    expect(seen).toEqual([[7, false]]);
+    expect(badge.currentLearnerRequestTruncated()).toBe(false);
   });
 
   it('forgets the number when the last listener leaves', async () => {

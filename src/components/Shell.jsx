@@ -5,6 +5,7 @@ import DialogFrame from './DialogFrame.jsx';
 import NavIcon from './NavIcon.jsx';
 import { NAV_ITEMS } from '../lib/navigation.js';
 import { canOpen, isAdmin } from '../lib/access.js';
+import { badgeCountText } from '../lib/learnerRequests.js';
 import { useSchoolPendingCount } from '../hooks/useSchoolPendingCount.js';
 import { useLearnerRequestCount } from '../hooks/useLearnerRequestCount.js';
 import smartaWordmark from '../assets/smarta-wordmark-sidebar.png';
@@ -25,9 +26,10 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
   const pendingSchool = useSchoolPendingCount(isAdmin(me));
   const waitingLearners = useLearnerRequestCount(canOpen(me, 'learnerRequests'));
   // Counts on nav items: pending school access requests (administrators) and learner requests this person can decide.
+  // `text` is what the badge shows when it is not the plain number (the learner request count reads 99+ when long or cut).
   const badgeFor = item => item.key === 'guardians' ? { count: pendingSchool, label: 'pending school access requests' }
-    : item.key === 'learnerRequests' ? { count: waitingLearners, label: 'learner requests waiting' } : null;
-  const navLabel = item => { const badge = badgeFor(item); return badge?.count ? `${item.label}, ${badge.count} ${badge.label}` : item.label; };
+    : item.key === 'learnerRequests' ? { count: waitingLearners.count, text: badgeCountText(waitingLearners.count, waitingLearners.truncated), label: 'learner requests waiting' } : null;
+  const navLabel = item => { const badge = badgeFor(item); return badge?.count ? `${item.label}, ${badge.text ?? badge.count} ${badge.label}` : item.label; };
   const collapsed = !mobile && (preference ?? width < 1024);
   useEffect(() => {
     const resize = () => { setWidth(window.innerWidth); setTooltip(null); if (window.innerWidth >= 768) setDrawer(false); };
@@ -57,7 +59,7 @@ export default function Shell({ me, page, setPage, schoolYear, onLogout, childre
       {items.map(item => <button key={item.key} className="sims-nav-item" aria-current={page === item.key ? 'page' : undefined}
         aria-label={collapsed ? navLabel(item) : undefined} onClick={() => navigate(item.key)} {...hint(item.label)}>
         <NavIcon name={item.icon} size={18}/><span className={collapsed ? 'sims-nav-tooltip' : ''}>{item.label}</span>
-        {badgeFor(item)?.count > 0 && <CountBadge count={badgeFor(item).count} label={badgeFor(item).label} />}
+        {badgeFor(item)?.count > 0 && <CountBadge count={badgeFor(item).text ?? badgeFor(item).count} label={badgeFor(item).label} />}
       </button>)}
     </nav>
     <AccountMenu me={me} collapsed={collapsed} onLogout={onLogout} hint={hint} />
