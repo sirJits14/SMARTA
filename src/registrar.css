@@ -238,6 +238,7 @@
   .sims-ui .sims-stat strong { line-height:1.1; }
   .sims-ui .sims-dashboard-charts { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:20px; margin-bottom:24px; }
   .sims-ui .sims-chart-card,.sims-ui .sims-coverage,.sims-ui .sims-recent { padding:24px; }
+  .sims-ui .sims-recent-sections { margin-bottom:24px; }
   .sims-ui .sims-grade-chart { display:flex; align-items:flex-end; gap:16px; margin-top:28px; }
   .sims-ui .sims-grade-column { flex:1; min-width:0; text-align:center; display:flex; flex-direction:column; gap:10px; }
   .sims-ui .sims-grade-column strong { font-size:13px; font-variant-numeric:tabular-nums; }

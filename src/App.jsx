@@ -162,7 +162,7 @@ export default function App() {
           {shown==='dashboard' && <DashboardPage me={me} schoolYear={schoolYear} setPage={setPage} />}
           {shown==='students' && <StudentsPage me={me} schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
           {shown==='learnerRequests' && <LearnerRequestsPage schoolYear={schoolYear} />}
-          {shown==='sections' && <SectionsPage me={me} schoolYear={schoolYear} />}
+          {shown==='sections' && <SectionsPage me={me} schoolYear={schoolYear} schoolName={settings?.schoolName} />}
           {shown==='schedules' && <SchedulesPage me={me} schoolYear={schoolYear} />}
           {shown==='enroll' && <EnrollPage me={me} schoolYear={schoolYear} />}
           {shown==='attendance' && <AttendanceArea me={me} key={navigationSequence} schoolYear={schoolYear} entry={pageParams?.attendanceEntry} />}

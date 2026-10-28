@@ -1,5 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { activeStudentCount, enrolledCount, countByGrade, todayAttendance, recentEnrollments, unassignedCount } from './dashboardStats.js';
+import { activeStudentCount, enrolledCount, countByGrade, todayAttendance, recentEnrollments, recentEnrolledSections, unassignedCount } from './dashboardStats.js';
+
+describe('recentEnrolledSections', () => {
+  it('groups current enrolled records by section and orders them by latest date', () => {
+    const rows = [
+      { sectionId: 'a', schoolYear: 'year', status: 'enrolled', dateEnrolled: '2026-06-01' },
+      { sectionId: 'a', schoolYear: 'year', status: 'enrolled', dateEnrolled: '2026-07-01' },
+      { sectionId: 'b', schoolYear: 'year', status: 'enrolled', dateEnrolled: '2026-08-01' },
+      { sectionId: 'c', schoolYear: 'year', status: 'enrolled' },
+      { sectionId: 'a', schoolYear: 'year', status: 'dropped', dateEnrolled: '2026-09-01' },
+      { sectionId: 'a', schoolYear: 'old', status: 'enrolled', dateEnrolled: '2026-09-01' },
+      { schoolYear: 'year', status: 'enrolled' },
+    ];
+    expect(recentEnrolledSections(rows, 'year')).toEqual([
+      { sectionId: 'b', count: 1, latestDate: '2026-08-01' },
+      { sectionId: 'a', count: 2, latestDate: '2026-07-01' },
+      { sectionId: 'c', count: 1, latestDate: '' },
+    ]);
+  });
+
+  it('limits the result to thirty sections', () => {
+    const rows = Array.from({ length: 32 }, (_, i) => ({ sectionId: String(i), schoolYear: 'year', status: 'enrolled', dateEnrolled: new Date(Date.UTC(2026, 5, i + 1)).toISOString().slice(0, 10) }));
+    expect(recentEnrolledSections(rows, 'year')).toHaveLength(30);
+    expect(recentEnrolledSections(rows, 'year')[0].sectionId).toBe('31');
+  });
+});
 
 describe('activeStudentCount', () => {
   it('counts only active students', () => {

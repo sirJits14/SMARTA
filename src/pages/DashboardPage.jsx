@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { useLocalToday } from '../hooks/useLocalToday.js';
 import { fullName } from '../lib/roster.js';
-import { activeStudentCount, enrolledCount, countByGrade, attendanceCoverage, recentEnrollments, unassignedCount } from '../lib/dashboardStats.js';
+import { activeStudentCount, enrolledCount, countByGrade, attendanceCoverage, recentEnrollments, recentEnrolledSections, unassignedCount } from '../lib/dashboardStats.js';
 import { UNASSIGNED } from '../lib/constants.js';
 import { isAdmin, grades, scopeRoster } from '../lib/access.js';
 import { Btn, Card, EmptyState, ResourceState } from '../components/ui.jsx';
@@ -11,6 +11,7 @@ import AttentionPanel from '../components/dashboard/AttentionPanel.jsx';
 import CoveragePanel from '../components/dashboard/CoveragePanel.jsx';
 import NavIcon from '../components/NavIcon.jsx';
 export default function DashboardPage({ me, schoolYear, setPage }) {
+  const [showMoreSections, setShowMoreSections] = useState(false);
   const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
   const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
   const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
@@ -24,6 +25,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
   const today = useLocalToday();
   const coverage = useMemo(() => attendanceCoverage({ students,sections,enrollments,attendance,schoolYear,date:today }),[students,sections,enrollments,attendance,schoolYear,today]);
   const recent = useMemo(() => recentEnrollments(enrollments,schoolYear,5),[enrollments,schoolYear]);
+  const recentSections = useMemo(() => recentEnrolledSections(enrollments,schoolYear),[enrollments,schoolYear]);
   const studentsById = useMemo(() => Object.fromEntries(students.map(s => [s.id,s])),[students]);
   const sectionsById = useMemo(() => Object.fromEntries(sections.map(s => [s.id,s])),[sections]);
   const stats = [
@@ -48,6 +50,19 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
         </Card>
         <CoveragePanel {...coverage}/>
       </div>
+      <Card surface="summary" className="sims-recent sims-recent-sections"><div className="sims-section-label"><h2>Recently enrolled sections</h2><span>This school year</span></div>
+        {recentSections.length ? <>
+          <div className="sims-table-scroll" role="region" aria-label="Recently enrolled sections" tabIndex={0}>
+            <table><thead><tr><th>Section</th><th>Latest enrollment</th><th>Enrolled learners</th></tr></thead><tbody>
+              {recentSections.slice(0,showMoreSections ? 30 : 5).map(({sectionId,count,latestDate}) => {
+                const section = sectionsById[sectionId];
+                return <tr key={sectionId}><td><strong>{section ? [section.gradeLevel && `Grade ${section.gradeLevel}`, section.name, section.strand].filter(Boolean).join(' · ') : 'Unavailable section'}</strong></td><td>{latestDate || '—'}</td><td>{count.toLocaleString()}</td></tr>;
+              })}
+            </tbody></table>
+          </div>
+          {recentSections.length > 5 && <Btn variant="quiet" aria-expanded={showMoreSections} onClick={()=>setShowMoreSections(value=>!value)}>{showMoreSections ? 'Show fewer sections' : 'Show more sections'}</Btn>}
+        </> : <EmptyState title="No enrolled sections" hint="Sections with enrollments this school year will appear here."/>}
+      </Card>
       <Card surface="summary" className="sims-recent"><div className="sims-section-label"><h2>Recent enrollments</h2><span>This school year</span></div>
         {recent.length ? <div className="sims-table-scroll" role="region" aria-label="Recent enrollments" tabIndex={0}>
           <table><thead><tr><th>Learner</th><th>Section</th><th>Enrolled</th></tr></thead><tbody>
