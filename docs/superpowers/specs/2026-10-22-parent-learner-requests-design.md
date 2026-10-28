@@ -93,7 +93,11 @@ decision:        decidedAt, decidedByUid, decidedByEmail, decidedByName, decisio
   and `contactNumber` are removed. The request keeps the rest of the submission (so a rejected add can be sent
   again with most of the form filled) and the facts of the decision. Audit rows carry the LRN, name, section and grade and,
   for removals, the reason code, never free text or contact details.
-- **Dedupe:** at most one pending request per `dedupeKey`. The check is a query inside the transaction.
+- **Dedupe:** at most one pending request per `dedupeKey`. The check is a query inside the transaction. A second tap
+  or second device of the same adviser gets the waiting request back. A waiting request filed by someone else is never
+  handed back: if that person no longer holds the class (a new adviser, or a disabled account) it is withdrawn in the
+  same transaction (reason "Adviser changed", audit `learner.requestWithdrawn`) and the caller's own is filed;
+  if they still hold it, the caller is told "Another adviser of this class already sent this request."
 - **Limits:** 20 pending requests per adviser, 30 requests per hour per adviser (`enforceRateLimit`, action
   `learnerRequest`).
 - **Indexes:** five composite entries in `firestore.indexes.json`: (requestedByUid, sectionId, createdAt desc)
@@ -116,7 +120,7 @@ New `functions/src/handlers/learnerRequests.js` with the pure rules in `shared/l
 | `withdrawLearnerRequestFn` | The requester | Pending to withdrawn; clear address and contact fields; audit `learner.requestWithdrawn`. |
 | `getLearnerRequestsFn` | Adviser | `{ sectionId }`: the caller's requests for that section, newest first, 50 at most. |
 | `listLearnerRequestsFn` | Reviewer | `{ view: 'waiting' \| 'decided', cursor }`. Waiting is oldest first; Decided is approved and rejected, newest first, 50 per page. Waiting adds carry the existing-LRN flag (below). Waiting returns at most the 200 oldest and sets `truncated` when more were pending. |
-| `resolveLearnerRequestFn` | Reviewer | `{ requestId, approve, reason }`; the approval transaction. |
+| `resolveLearnerRequestFn` | Reviewer | `{ requestId, approve, reason }`; the approval transaction. Returns `{ ok, mode }` (`new`, `enrolled`, `moved`, `removed` or `rejected`), which the page words its notice from. |
 | `getLearnerRequestCountFn` | Reviewer | How many pending requests the caller may decide: `{ count, truncated }`. |
 
 **Who files.** The caller holds the current-year `adviser` assignment for that section, the same assignment the
@@ -142,7 +146,7 @@ current-year enrollment.
 
 1. Re-read the request (still pending), the actor, the section (same school year and grade), and the
    requester's `school_accounts` assignments. If the requester no longer holds an adviser assignment for the
-   section, fail with "The adviser no longer holds this class. Reject this request." The school year must not
+   section (a disabled account holds none), fail with "The adviser no longer holds this class. Reject this request." The school year must not
    have ended.
 2. No student with that LRN: create the student (`status: 'active'`, `DOCS_DEFAULT`, `createdAt` today in
    Manila, coordinator scope fields) and the enrollment `<studentId>_<schoolYear>` (grade, section, track,
@@ -155,7 +159,7 @@ current-year enrollment.
    the request's type, and set the scope fields.
 6. For cases 3 to 5 the submitted details are ignored; SIMS keeps what it has.
 7. Mark the request approved, clear address and contact fields, write audit `learner.addApproved` (mode `new`,
-   `enrolled` or `moved`, previous section when moved) and the adviser's Inbox note (below).
+   `enrolled` or `moved`; student id, and the previous section and status when the learner already existed) and the adviser's Inbox note (below).
 
 ### Approving a removal (one transaction)
 
