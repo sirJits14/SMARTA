@@ -4,6 +4,8 @@ Spec: `docs/superpowers/specs/2026-10-22-parent-learner-requests-design.md`
 Plan: `docs/superpowers/plans/2026-10-22-parent-learner-requests.md`
 Builds on: `docs/releases/2026-10-22-sf2-export/README.md` (the shared `Sheet` component and the Class actions row).
 
+**Status: deployed on 2026-10-28** (PR #95, merged as `f11ea4f`), together with the SF2 export: indexes, ten functions (the nine below plus `exportSchoolSf2Fn`), SIMS and the Parent App. What was run, the byte checks and the rollback targets are in `docs/audits/deployments/2026-10-28-learner-requests/README.md`. One correction to "Order" step 3 below: live SIMS had also moved past PR #93 (an unrecorded PR #94 release, `efaeff0`), so the baseline was PR #93 plus `git diff --binary efaeff0^ efaeff0 -- src`. The next SIMS release should start from the chain in that record.
+
 A Class Adviser asks, from the Parent App, to add a learner to their advisory or to remove one with a reason. An Administrator, or whoever covers the learner's grade, decides in SIMS. Nothing changes in SIMS until a request is approved.
 
 ## What ships

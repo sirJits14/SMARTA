@@ -1,0 +1,131 @@
+{
+  "featureRevision": "7f29726",
+  "featureRevisionFull": "7f2972659833bd28a81eb464d9b231b9de451de4",
+  "featureNote": "Learner requests (PR #95 content); 7f29726 = origin/master 636faaa plus the feature branch (last branch commit before the merge: 6ebc1b5). SF2 refactor excluded.",
+  "baseline": {
+    "description": "Live SIMS rebuilt: caps-names preparer + 13:04Z legacy-adviser port + PR #90 files + PR #91 (cb9e0db..bf3a892) + PR #93 (1887cb0^..1887cb0, context adapted to useCollectionResource) + PR #94 (efaeff0^..efaeff0).",
+    "liveRelease": {
+      "version": "2f5dc87237b13def",
+      "releaseTime": "2026-10-27T08:03:02.831Z",
+      "message": "SIMS recent sections expanded to 30 PR 94 source 8e63984"
+    },
+    "mainScript": "assets/index-B51jXNNR.js",
+    "files": 61,
+    "mismatched": 0,
+    "verifiedAt": "2026-10-28T05:50:03.152Z",
+    "verification": "baseline-verification.json",
+    "sourceFiles": {
+      "src/lib/dashboardStats.js": "479c323b87778223f875b34dc6d2d3fc1670b67fffceaf4ccb4256ccceef4acd",
+      "src/lib/dashboardStats.test.js": "a88fa919387651203933bd79895f8d902a812cd7a00d0d16d7af5021cfb494bd",
+      "src/pages/DashboardPage.jsx": "2c14907d8eb03fd044c6e67bafc93da7783059b4cbebc55ea6fbeb274211497e",
+      "src/pages/ImportStudentsWizard.jsx": "b7bcbace413a710b2e921c612ec5d6b6ce2f06979cf9bf612af3b22b7e30e061",
+      "src/lib/importPreview.js": "b7c9a44954ee0b38c026de13426b35177b96045d051c661c5d7e53ef4ccfc382",
+      "src/lib/importPreview.test.js": "2ddb040d65028009e589ad3120e0cd0672d21ae497bc9507e3d2274945121c79",
+      "src/pages/SectionsPage.jsx": "491447f4bc8632bf3ff87e7b5c7a5e3e6bf95528c956312fd64fc569b1943c6d",
+      "src/pages/SectionsPage.test.js": "75499919f42fb0a438bce0dab1281c34c20d4ec9705d05a520eb4e0d32469410",
+      "src/lib/downloadBlob.js": "0e6e11d48677b40585306ed2d7c79a6739b7132cc9804963ffa590bbff79ce5e",
+      "src/lib/gradeSummary.js": "84b5b744b63e60fa1c987bea5135783ca7aea2f5f7ed8ef38501775f040c0b28",
+      "src/lib/gradeSummaryImage.js": "e39e24d0c0e0f1c7d3b16db12cc17e270df406042a7c00d0933c7af1f4c69acb"
+    }
+  },
+  "overlay": {
+    "shared/learnerRequests.js": {
+      "sha256": "cd24ae2deef291b66b9a93d85dd6717d35f1ae55d9910be74c004044a986db76",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "shared/learnerRequests.test.js": {
+      "sha256": "bc98993a83fa5f303e0c6a25f9dcd4d9a01bb7f0bd9f75191973f34cbc579b8e",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/components/Shell.test.js": {
+      "sha256": "36da79afdf5a5a7b09731f39984cc78d57f42096167270aca1074af8c2b39a81",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/hooks/useLearnerRequestCount.js": {
+      "sha256": "4515d0dea6e4aadece109acf2411b5f7ba0c298229887b085bdc437c066d0356",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/lib/learnerRequests.js": {
+      "sha256": "d04f9b04d12b541bf75f8da8a78fe7a7e56fabbb83637cc00f5c891a8a3b9559",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/lib/learnerRequests.test.js": {
+      "sha256": "14951aa73ce7ebe0a4625564642afd49afb7a1c087faaf246dd5dcc3338529d4",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/LearnerRequestsPage.jsx": {
+      "sha256": "8addb1a194d743f190864915e2e40bcca4057cbc0212b73a7d6e34b02cd7518b",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/LearnerRequestsPage.test.js": {
+      "sha256": "9979d5f046b99d08dea37aa7e0014ebe030053e2e43b36dd32f35143aeddd81b",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/learnerRequests/DecidedList.jsx": {
+      "sha256": "a88267379979db3c4f52e4fdfc53194e0865f329b3f7263ae6999922b707b509",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/learnerRequests/RequestCard.jsx": {
+      "sha256": "5ff804209e63c3ab5035671405dd97f931c81e6bd49a3045c0ef5c4250e16db5",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/learnerRequests/WaitingList.jsx": {
+      "sha256": "7f2a4d8af16a20ebfc5d87a41ed994d8406bc98a3dec472b0ab104ba58d7881d",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/learnerRequests/lists.test.js": {
+      "sha256": "e30c577431fac8fc0b5c296bca39602539fb6b376aa677de078fdfc78b2ce658",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/learnerRequests/requestState.test.js": {
+      "sha256": "ec493b0b6d6d2eae0e300c41e173e84be2d39927e9f8c19f1d98a45ef562742a",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/learnerRequests/useLearnerRequestLists.js": {
+      "sha256": "b49c56a4162412da9f6ae94c1a66387101d17b9166752de4f4d0db2950a95770",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/pages/learnerRequests/useLearnerRequestLists.test.js": {
+      "sha256": "1c91eb8481fb081a2ce24c4aeed1b641b7acb4e95e1c30d2d2da0bf2d1dc52c5",
+      "method": "new file, copied unchanged from 7f29726"
+    },
+    "src/App.jsx": {
+      "sha256": "d7c3f479e25ec3cfbc0e100b571af47713be44d34a64fb9492eef1815474fec4",
+      "method": "feature hunks applied with git apply; result equals the 7f29726 copy"
+    },
+    "src/components/Shell.jsx": {
+      "sha256": "3b6dc9d40235d022fd98195fd820a52566e76c7041f10568a9fefde3c872646f",
+      "method": "feature hunks applied with git apply; result equals the 7f29726 copy"
+    },
+    "src/lib/navigation.js": {
+      "sha256": "58eedfa92108e7595e1650d30f2a3496117b70f7ff3edfbda2804af7fe705f73",
+      "method": "feature hunks applied with git apply; result equals the 7f29726 copy"
+    },
+    "src/registrar.css": {
+      "sha256": "ed1890d2f30ee3fb361aee7c52f22a5165f13258523d6849d8531dd4a8c9a179",
+      "method": "feature hunks applied with git apply; result equals the 7f29726 copy"
+    },
+    "src/lib/access.js": {
+      "sha256": "94cce6d675398a71e22c6e5b304d3fbd5aad485c40bb64d24542e55b240bedbc",
+      "method": "hunk-ported onto the tree copy: feature hunk (learnerRequests in COORDINATOR_PAGES) applied to the tree copy with git apply; the rest of the tree copy kept"
+    },
+    "src/lib/access.test.js": {
+      "sha256": "01c483888543896cb53c5c304460f7b0a8257f4456540a659e106b0172b2b8ae",
+      "method": "hunk-ported onto the tree copy: feature hunks applied to the tree copy with git apply; the rest of the tree copy kept"
+    },
+    "shared/schoolAccess.js": {
+      "sha256": "9ac02c41e43d36e2f06fc34db9ad18cc89b0165b1e0c2cb6c2d42a0a38cea1d7",
+      "method": "hunk-ported onto the tree copy: master reviewGrades added as an export after currentAssignments; canReviewSection / canCorrectSession / role lists left as the tree has them"
+    },
+    "parent/src/lib/school.js": {
+      "sha256": "c86d68d03f391d8b932f14b861615c88362bb1cc85c1df7694655c96a2a3a4ed",
+      "method": "hunk-ported onto the tree copy: two feature hunks by hand (learner_request inbox destination; schoolError fallback argument); learnerPath (not part of the feature) not added"
+    }
+  },
+  "build": {
+    "mainScript": "index-BYw7kGJV.js",
+    "mainScriptPath": "assets/index-BYw7kGJV.js",
+    "files": 65,
+    "vite": "main checkout node_modules, VITE_USE_EMULATORS=false, no App Check debug token"
+  }
+}
