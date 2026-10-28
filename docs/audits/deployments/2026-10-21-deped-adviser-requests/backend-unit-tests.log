@@ -1,0 +1,8 @@
+ RUN  v4.1.11 C:/Users/jitsb/OneDrive - Department of Education/Desktop/APPS/bnhs-sims/.claude/worktrees/user-registration-redesign-d2e186/.superpowers/releases/deped-adviser/backend/functions
+
+
+ Test Files  22 passed (22)
+      Tests  168 passed (168)
+   Start at  07:18:59
+   Duration  4.86s (transform 1.49s, setup 0ms, import 8.77s, tests 368ms, environment 7ms)
+
