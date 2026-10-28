@@ -83,7 +83,7 @@ Commits: end each commit message with the attribution line your session was give
 | `functions/src/handlers/learnerRequests.js` | create | the seven callables |
 | `functions/src/lib/learnerRequestCleanup.js` | create | clearing contact fields, withdrawing pending requests |
 | `functions/src/handlers/schoolAccess.js`, `functions/src/callable.js`, `functions/index.js` | modify | account deletion hook, the rate limit, the exports |
-| `firestore.rules`, `firestore.indexes.json` | modify | explicit deny, four indexes |
+| `firestore.rules`, `firestore.indexes.json` | modify | explicit deny, five indexes |
 | `parent/src/lib/learnerRequests.js`, `parent/src/hooks/useLearnerRequests.js` | create | form checks, payloads, request lists, the loader |
 | `parent/src/screens/school/AddLearnerSheet.jsx`, `RemoveLearnerSheet.jsx`, `RequestsSheet.jsx` | create | the three sheets |
 | `parent/src/screens/school/ClassActions.jsx`, `ClassTab.jsx`, `LearnerHistory.jsx`, `ClassTab.css`, `parent/src/strings.js`, `parent/src/lib/school.js` | modify | wiring, copy, Inbox destination |
@@ -1399,7 +1399,7 @@ Expected: PASS already. The rules have no catch-all, so a new collection is deni
      match /attendance_corrections/{id} { allow read, write: if false; }
 ```
 
-Four composite indexes serve the adviser's list, the Waiting list, and the Decided list for administrators and for coordinators (the emulator does not enforce indexes, so these are only exercised in production):
+Five composite indexes serve the adviser's list, the Waiting list (administrators, and coordinators and Curriculum Advisers scoped by grade), and the Decided list for administrators and for coordinators (the emulator does not enforce indexes, so these are only exercised in production). The fifth, (status, schoolYear, gradeLevel, createdAt), was added after review; the diff below shows all five. In the committed `firestore.indexes.json` they sit before the `audit_log` entry, which must stay last because `docs/releases/2026-10-18-school-family/prepareRules.mjs` expects it there:
 
 ```diff
 --- a/firestore.indexes.json
@@ -1417,7 +1417,9 @@ Four composite indexes serve the adviser's list, the Waiting list, and the Decid
 +    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
 +      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] },
 +    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
-+      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] }
++      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] },
++    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
++      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" } ] }
    ],
    "fieldOverrides": [
      { "collectionGroup": "devices", "fieldPath": "refreshedAt", "indexes": [
@@ -3205,7 +3207,7 @@ Builds on: `docs/releases/2026-10-22-sf2-export/README.md` (the shared `Sheet` c
 ## What ships
 
 - **Functions (7 callables):** `requestLearnerAddFn`, `requestLearnerRemovalFn`, `withdrawLearnerRequestFn`, `getLearnerRequestsFn`, `listLearnerRequestsFn`, `resolveLearnerRequestFn`, `getLearnerRequestCountFn`. Also the `learnerRequest` rate limit in `callable.js` and the `deleteSchoolAccess` change in `schoolAccess.js` (withdraws an adviser's pending learner requests).
-- **Firestore:** four composite indexes on `learner_change_requests`. Deploy them and wait until they are READY before the SIMS page is used. The rules gain an explicit deny; production already denies the collection by default, so no rules deploy is needed.
+- **Firestore:** five composite indexes on `learner_change_requests`. Deploy them and wait until they are READY before the SIMS page is used. The rules gain an explicit deny; production already denies the collection by default, so no rules deploy is needed.
 - **SIMS:** the Learner requests page, the sidebar badge, and the access and navigation changes.
 - **Parent App:** the Add learner, Remove from class and Requests sheets on the Class tab and learner history.
 
