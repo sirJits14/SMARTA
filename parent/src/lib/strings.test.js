@@ -86,7 +86,10 @@ describe('strings', () => {
       'requestsPast', 'requestReasonLabel', 'requestSendAgain', 'learnerAddVerb', 'learnerRemoveVerb', 'learnerStatusPending', 'learnerStatusApproved',
       'learnerStatusRejected', 'learnerStatusWithdrawn'])
       expect(typeof S[k], k).toBe('string');
-    expect(S.learnerSent).toBe('Sent for approval. You get an Inbox note when it is decided.');
+    expect(S.learnerSent).toBe('Sent for approval. The decision arrives in your Inbox.');
+    // Both hints name every approver: an administrator, or the coordinator or Curriculum Adviser for the grade.
+    expect(S.addLearnerHint).toBe('An administrator, or the coordinator or Curriculum Adviser for your grade, approves this before the learner joins your class.');
+    expect(S.removeHint).toBe('stays in your class until an administrator, or the coordinator or Curriculum Adviser for your grade, approves this.');
   });
   it('calls the family role Parent/Guardian and drops Subject Teacher copy', () => {
     expect(S.joinFamily).toBe('Parent/Guardian');

@@ -17,10 +17,17 @@ export const requestLeftList = (reloaded, requestId) => Array.isArray(reloaded) 
 // Decided tab, which clears the old message with clearError and tries once.
 export const shouldLoadDecided = ({ view, decided, loading, error }) => view === 'decided' && !decided && !loading && !error;
 
+// The Waiting state kept from the server's answer. `truncated` is true when more requests were pending than the
+// server returns, so the page can say the list is cut.
+export const waitingState = (data) => ({ requests: data.requests, ended: data.ended, truncated: Boolean(data.truncated) });
+
+// The notice after a decision: a string as written, or a function of what the server answered ({ ok, mode }).
+export const noticeText = (message, result) => (typeof message === 'function' ? message(result) : message);
+
 // The Waiting and Decided lists and one decision lock shared by every card. The server filters both lists to
 // what this person may see; a failed decision is kept per card so it shows where the person is looking.
 export function useLearnerRequestLists() {
-  const [waiting, setWaiting] = useState(null); // { requests, ended }
+  const [waiting, setWaiting] = useState(null); // { requests, ended, truncated }
   const [decided, setDecided] = useState(null); // { requests, nextCursor }
   const [loading, setLoading] = useState(false);
   const [loadedAt, setLoadedAt] = useState(null);
@@ -40,7 +47,7 @@ export function useLearnerRequestLists() {
     try {
       const data = await invoke('listLearnerRequestsFn', { view: 'waiting' });
       if (request !== sequence.current) return null;
-      setWaiting({ requests: data.requests, ended: data.ended }); setDecided(null); setLoadedAt(Date.now());
+      setWaiting(waitingState(data)); setDecided(null); setLoadedAt(Date.now());
       refreshLearnerRequestCount(); // the sidebar badge follows every reload, including the page's own Refresh
       return data.requests;
     } catch (e) {
@@ -60,14 +67,15 @@ export function useLearnerRequestLists() {
     finally { if (call === decidedSequence.current) setLoading(false); }
   }, [decided?.nextCursor]);
 
-  // Approve, or reject with a reason. Resolves true when the server accepted the decision.
+  // Approve, or reject with a reason. Resolves true when the server accepted the decision. `message` is the
+  // notice, or a function of the server's answer ({ ok, mode }) so the notice says what actually happened.
   const decide = useCallback(async (request, approve, reason, message) => {
     if (lock.current) return false;
     lock.current = true; setPending(true); setError(''); setNotice('');
     setFailures((current) => { const { [request.id]: _gone, ...rest } = current; return rest; });
     try {
-      await invoke('resolveLearnerRequestFn', { requestId: request.id, approve, reason });
-      setNotice(message);
+      const result = await invoke('resolveLearnerRequestFn', { requestId: request.id, approve, reason });
+      setNotice(noticeText(message, result));
       await refresh();
       return true;
     } catch (e) {

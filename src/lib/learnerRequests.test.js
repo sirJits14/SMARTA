@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  approveEffect, classText, decidableCount, detailRows, existingFlag, keepsDetailsText, kindLabel, orderWaiting, outcomeText, personText, placeText, removalText, whenText,
+  approveEffect, classText, decidableCount, decisionNotice, detailRows, existingFlag, keepsDetailsText, kindLabel, orderWaiting, outcomeText, personText, placeText, removalText,
+  waitingCutNote, whenText,
 } from './learnerRequests.js';
 
 const add = {
@@ -97,5 +98,39 @@ describe('lists', () => {
     // 20:00 UTC on Oct 21 is 04:00 on Oct 22 in Manila, so a dropped timeZone would show Oct 21.
     expect(whenText(Date.UTC(2026, 9, 21, 20, 0))).toContain('Oct 22, 2026');
     expect(whenText(null)).toBe('');
+  });
+});
+
+describe('the notice after a decision', () => {
+  const tail = ' The adviser gets an inbox note.';
+  it('words each approval from what the server did', () => {
+    expect(decisionNotice(add, { ok: true, mode: 'new' })).toBe(`Added JUAN SANTOS DELA CRUZ JR to Grade 7 · Rizal.${tail}`);
+    expect(decisionNotice(add, { ok: true, mode: 'moved' })).toBe(`Moved JUAN SANTOS DELA CRUZ JR to Grade 7 · Rizal.${tail}`);
+    expect(decisionNotice(add, { ok: true, mode: 'enrolled' })).toBe(`Enrolled JUAN SANTOS DELA CRUZ JR in Grade 7 · Rizal.${tail}`);
+    expect(decisionNotice(remove('dropped_out'), { ok: true, mode: 'removed' })).toBe(`Removed ANA B. CRUZ from Grade 7 · Rizal.${tail}`);
+  });
+  it('follows the server, not the card: an Add that moved a learner says Moved', () => {
+    expect(decisionNotice(add, { ok: true, mode: 'moved' })).toMatch(/^Moved /);
+  });
+  it('words a rejection without a name', () => {
+    expect(decisionNotice(add, { ok: true, mode: 'rejected' })).toBe('Rejected. The adviser sees your reason.');
+    expect(decisionNotice(remove('moved_section'), { ok: true, mode: 'rejected' })).toBe('Rejected. The adviser sees your reason.');
+  });
+  it('falls back to a plain approval for an unknown or missing mode', () => {
+    const plain = `Approved JUAN SANTOS DELA CRUZ JR.${tail}`;
+    expect(decisionNotice(add, { ok: true, mode: 'something-new' })).toBe(plain);
+    expect(decisionNotice(add, { ok: true })).toBe(plain);
+    expect(decisionNotice(add, {})).toBe(plain);
+    expect(decisionNotice(add, undefined)).toBe(plain);
+    expect(decisionNotice(add, null)).toBe(plain);
+  });
+});
+
+describe('the note under a cut Waiting list', () => {
+  it('shows only when the server says more than 200 were pending', () => {
+    expect(waitingCutNote({ requests: [], truncated: true })).toBe('Showing the 200 oldest requests. Decide some to see the rest.');
+    expect(waitingCutNote({ requests: [], truncated: false })).toBe('');
+    expect(waitingCutNote({ requests: [] })).toBe('');
+    expect(waitingCutNote(null)).toBe('');
   });
 });

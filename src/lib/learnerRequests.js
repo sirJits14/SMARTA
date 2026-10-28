@@ -70,3 +70,22 @@ export const outcomeText = (request) => `${request.status === 'approved' ? 'Appr
 // Requests the signed-in person can decide come first, then the ones that need an administrator.
 export const orderWaiting = (requests) => [...requests.filter((r) => r.decidable), ...requests.filter((r) => !r.decidable)];
 export const decidableCount = (requests) => requests.filter((r) => r.decidable).length;
+
+// The note after a decision, worded from what the server did. A card can be stale (an "Add" may move a learner
+// another approval just created), so the server's `mode` decides: new, moved, enrolled, removed or rejected.
+// A missing or unknown mode falls back to a plain approval.
+export function decisionNotice(request, result) {
+  if (result?.mode === 'rejected') return 'Rejected. The adviser sees your reason.';
+  const name = nameText(request);
+  const inbox = 'The adviser gets an inbox note.';
+  switch (result?.mode) {
+    case 'new': return `Added ${name} to ${classText(request)}. ${inbox}`;
+    case 'moved': return `Moved ${name} to ${classText(request)}. ${inbox}`;
+    case 'enrolled': return `Enrolled ${name} in ${classText(request)}. ${inbox}`;
+    case 'removed': return `Removed ${name} from ${classText(request)}. ${inbox}`;
+    default: return `Approved ${name}. ${inbox}`;
+  }
+}
+
+// Shown on the Waiting tab when the server cut the list at its limit; '' otherwise.
+export const waitingCutNote = (waiting) => (waiting?.truncated ? 'Showing the 200 oldest requests. Decide some to see the rest.' : '');

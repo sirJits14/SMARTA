@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Btn } from '../components/ui.jsx';
 import { T, S } from '../styles.js';
 import { relativeAge } from '../lib/schoolAssignments.js';
-import { decidableCount, nameText } from '../lib/learnerRequests.js';
+import { decidableCount, decisionNotice, waitingCutNote } from '../lib/learnerRequests.js';
 import SubTabs from './guardians/school/SubTabs.jsx';
 import WaitingList from './learnerRequests/WaitingList.jsx';
 import DecidedList from './learnerRequests/DecidedList.jsx';
@@ -17,6 +17,7 @@ export default function LearnerRequestsPage({ schoolYear }) {
   const [, tick] = useState(0);
   const count = waiting ? decidableCount(waiting.requests) : 0;
   const ended = Boolean(waiting?.ended);
+  const cutNote = waitingCutNote(waiting);
   // Depends on loading and error too, so Decided opened during a reload loads when it ends, and Refresh after a failure retries.
   useEffect(() => { if (shouldLoadDecided({ view, decided, loading, error })) lists.loadDecided(false); }, [view, decided, loading, error]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const timer = setInterval(() => tick(n => n + 1), 60000); return () => clearInterval(timer); }, []);
@@ -40,9 +41,13 @@ export default function LearnerRequestsPage({ schoolYear }) {
       <SubTabs id="learner-requests" label="Learner request views" tabs={tabs} value={view} onChange={openView} />
       <div role="tabpanel" id="learner-requests-panel" aria-labelledby={`learner-requests-tab-${view}`}>
         {view === 'waiting'
-          ? <WaitingList requests={waiting.requests} ended={ended} pending={pending} failures={failures}
-            onApprove={request => lists.decide(request, true, '', `Approved ${nameText(request)}. The adviser gets an inbox note.`)}
-            onReject={(request, reason) => lists.decide(request, false, reason, 'Rejected. The adviser sees your reason.')} />
+          ? <>
+            {cutNote && <p role="status" className="sims-feedback is-success" style={{ margin: '0 0 12px' }}>{cutNote}</p>}
+            <WaitingList requests={waiting.requests} ended={ended} pending={pending} failures={failures}
+              onApprove={request => lists.decide(request, true, '', result => decisionNotice(request, result))}
+              // Rejecting is always a rejection, whatever mode an older server sends back.
+              onReject={(request, reason) => lists.decide(request, false, reason, result => decisionNotice(request, { ...result, mode: 'rejected' }))} />
+          </>
           : <DecidedList decided={decided} loading={loading} onMore={() => lists.loadDecided(true)} />}
       </div>
     </>}

@@ -6,7 +6,7 @@ vi.mock('firebase/functions', () => ({
 }));
 vi.mock('../../firebase.js', () => ({ functions: {} }));
 
-import { requestLeftList, shouldLoadDecided } from './useLearnerRequestLists.js';
+import { noticeText, requestLeftList, shouldLoadDecided, waitingState } from './useLearnerRequestLists.js';
 
 describe('requestLeftList', () => {
   const list = [{ id: 'a' }, { id: 'b' }];
@@ -37,6 +37,27 @@ describe('shouldLoadDecided', () => {
     expect(shouldLoadDecided({ ...failed, error: '', loading: false })).toBe(true); // Refresh finished: one attempt
     expect(shouldLoadDecided({ ...idle, loading: true })).toBe(false); // Decided opened while a reload runs
     expect(shouldLoadDecided(idle)).toBe(true); // the reload ended: it loads now
+  });
+});
+
+describe('noticeText', () => {
+  it('uses a string as written and calls a function with what the server answered', () => {
+    expect(noticeText('Rejected.', { mode: 'rejected' })).toBe('Rejected.');
+    expect(noticeText((result) => `Did ${result.mode}.`, { mode: 'moved' })).toBe('Did moved.');
+  });
+  it('passes nothing on safely when the server sent no answer', () => {
+    expect(noticeText((result) => String(result?.mode), undefined)).toBe('undefined');
+  });
+});
+
+describe('waitingState', () => {
+  it('keeps the requests, whether the year ended and whether the list was cut', () => {
+    const requests = [{ id: 'a' }];
+    expect(waitingState({ requests, ended: true, truncated: true })).toEqual({ requests, ended: true, truncated: true });
+    expect(waitingState({ requests, ended: false, truncated: false })).toEqual({ requests, ended: false, truncated: false });
+  });
+  it('treats a missing truncated as not cut', () => {
+    expect(waitingState({ requests: [], ended: false }).truncated).toBe(false);
   });
 });
 
