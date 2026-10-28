@@ -57,3 +57,67 @@ describe('endSchoolYear', () => {
     expect((await db().collection('school_years').get()).size).toBe(0);
   });
 });
+
+describe('endSchoolYear and learner requests', () => {
+  const NEXT = '2027-2028';
+  const student = (lrn) => ({ lrn, lastName: 'Reyes', firstName: 'Rita', sex: 'F', birthdate: '2012-01-01', guardianName: 'Rosa Reyes',
+    guardianRelationship: 'Mother', address: '9 Mabini St.', guardianContact: '09171111111', contactNumber: '09182222222' });
+  const request = (over) => ({ kind: 'add', status: 'pending', schoolYear: SY, sectionId: 'SEC1', gradeLevel: 7, sectionName: 'Rizal',
+    requestedByUid: 'teacher', requestedByName: 'Tina Teacher', displayName: 'Rita Reyes', enrollType: 'new', student: student('400000000001'), ...over });
+  const seeded = {
+    pendingAdd: request({}),
+    pendingRemoval: request({ kind: 'remove', studentId: 'S1', lrn: '100000000001', displayName: 'Ana B. Cruz', reasonCode: 'dropped_out',
+      note: 'Stopped attending in September', student: undefined }),
+    approvedAdd: request({ status: 'approved', decidedByName: 'Ada Admin', decisionReason: 'Approved', student: student('400000000002') }),
+    otherYear: request({ schoolYear: NEXT, student: student('400000000003') }),
+  };
+  const CONTACT = ['address', 'guardianContact', 'contactNumber'];
+  const requestDoc = async (id) => (await db().doc(`learner_change_requests/${id}`).get()).data();
+  const endedAudits = async () => (await db().collection('audit_log').where('action', '==', 'schoolyear.ended').get()).docs;
+
+  beforeEach(async () => {
+    const b = db().batch();
+    for (const [id, data] of Object.entries(seeded)) {
+      b.set(db().doc(`learner_change_requests/${id}`), Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)));
+    }
+    await b.commit();
+  });
+
+  it('withdraws the year\'s pending requests, removes an add\'s address and phone numbers, and leaves the rest alone', async () => {
+    const r = await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
+    expect(r).toEqual({ codesRevoked: 2, advisorySlipsRevoked: 0, linksExpired: 3, accountsNotified: 2 });
+
+    const add = await requestDoc('pendingAdd');
+    expect(add).toMatchObject({ status: 'withdrawn', decisionReason: 'School year ended' });
+    expect(add.withdrawnAt).toBeTruthy();
+    for (const field of CONTACT) expect(add.student).not.toHaveProperty(field);
+    expect(add.student).toEqual({ lrn: '400000000001', lastName: 'Reyes', firstName: 'Rita', sex: 'F', birthdate: '2012-01-01',
+      guardianName: 'Rosa Reyes', guardianRelationship: 'Mother' });
+    expect(add).toMatchObject({ kind: 'add', schoolYear: SY, sectionId: 'SEC1', requestedByUid: 'teacher', displayName: 'Rita Reyes', enrollType: 'new' });
+
+    const removal = await requestDoc('pendingRemoval');
+    expect(removal).toMatchObject({ status: 'withdrawn', decisionReason: 'School year ended', kind: 'remove', studentId: 'S1', lrn: '100000000001',
+      reasonCode: 'dropped_out', note: 'Stopped attending in September' });
+    expect(removal.withdrawnAt).toBeTruthy();
+    expect(removal).not.toHaveProperty('student');
+
+    // A request somebody already decided is not this change's business, and neither is another year's.
+    expect(await requestDoc('approvedAdd')).toEqual(seeded.approvedAdd);
+    expect(await requestDoc('otherYear')).toEqual(seeded.otherYear);
+
+    const [row, ...more] = await endedAudits();
+    expect(more).toEqual([]);
+    expect(row.data().details).toEqual({ codesRevoked: 2, advisorySlipsRevoked: 0, linksExpired: 3, accountsNotified: 2, learnerRequestsClosed: 2 });
+  });
+  it('closes nothing further when it is run again', async () => {
+    await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
+    const [first] = await endedAudits();
+    const closed = await requestDoc('pendingAdd');
+    const r = await endSchoolYear(staff(), { schoolYear: SY, confirmText: SY });
+    expect(r).toEqual({ codesRevoked: 0, advisorySlipsRevoked: 0, linksExpired: 0, accountsNotified: 0 });
+    const second = (await endedAudits()).find((d) => d.id !== first.id);
+    expect(second.data().details).toMatchObject({ learnerRequestsClosed: 0 });
+    expect(await requestDoc('pendingAdd')).toEqual(closed);
+    expect(await requestDoc('approvedAdd')).toEqual(seeded.approvedAdd);
+  });
+});

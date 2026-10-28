@@ -5,7 +5,7 @@ export { sectionEditSchoolYears } from '../../shared/sectionEditing.js';
 
 // Every page/permission decision the SIMS app makes about the signed-in staff
 // member. Pages ask here; nothing else compares role strings.
-const COORDINATOR_PAGES = ['dashboard', 'students', 'sections', 'schedules', 'attendance', 'announcements'];
+const COORDINATOR_PAGES = ['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements'];
 export const DISABLED_MESSAGE = 'This account has been disabled. Contact an administrator.';
 
 export const isAdmin = (me) => roleOf(me) === 'admin';

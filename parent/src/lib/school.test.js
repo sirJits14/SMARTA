@@ -26,6 +26,16 @@ describe('school access presentation', () => {
     expect(inboxDestination({ type: 'school_access' })).toBe('/settings');
     expect(inboxDestination({ type: 'school_access', rejected: true })).toBe('/settings/school-access');
   });
+  it('sends a learner request note to the Class tab', () => {
+    expect(inboxDestination({ type: 'learner_request' })).toBe('/school');
+    expect(inboxDestination({ type: 'learner_request', rejected: true })).toBe('/school');
+  });
+  it('keeps each school access request status on its own label', () => {
+    expect(REQUEST_STATUS.pending).toBe('Waiting for review');
+    expect(REQUEST_STATUS.approved).toBe('Approved');
+    expect(REQUEST_STATUS.rejected).toBe('Not approved');
+    expect(REQUEST_STATUS.withdrawn).toBe('Withdrawn');
+  });
   it('offers requestable roles and sections grouped by grade', () => {
     expect(REQUESTABLE_ROLES).toEqual(['adviser']);
     expect(ROLE_LABELS).toEqual({ adviser: 'Adviser', curriculum_adviser: 'Curriculum Adviser' });
@@ -69,6 +79,24 @@ describe('scopeLabel', () => {
     expect(scopeLabel({ sectionId: '', gradeLevel: 8 }, sections)).toBe('Grade 8');
     expect(REQUEST_STATUS.fulfilled).toBeTruthy();
     expect(REQUEST_STATUS.superseded).toBeTruthy();
+  });
+});
+
+describe('schoolError', () => {
+  const GENERIC = 'Could not complete this action. Check your connection and try again.';
+  it('shows the server’s own message for the codes it chooses to send', () => {
+    expect(schoolError({ code: 'functions/resource-exhausted', message: 'Too many exports. Try again in a few minutes. [429]' })).toBe('Too many exports. Try again in a few minutes.');
+    expect(schoolError({ code: 'functions/resource-exhausted', message: 'Too many exports.' }, 'Custom fallback')).toBe('Too many exports.');
+  });
+  it('uses the generic text for anything else', () => {
+    expect(schoolError(new Error('boom'))).toBe(GENERIC);
+    expect(schoolError({ code: 'functions/internal', message: 'internal' })).toBe(GENERIC);
+    expect(schoolError(undefined)).toBe(GENERIC);
+  });
+  it('uses the caller’s fallback instead of the generic text when given', () => {
+    expect(schoolError(new Error('boom'), 'Could not prepare the SF2. Try again.')).toBe('Could not prepare the SF2. Try again.');
+    expect(schoolError({ code: 'functions/internal', message: 'internal' }, 'Could not prepare the SF2. Try again.')).toBe('Could not prepare the SF2. Try again.');
+    expect(schoolError({ code: 'functions/permission-denied' }, 'Custom fallback')).toBe('Custom fallback');
   });
 });
 

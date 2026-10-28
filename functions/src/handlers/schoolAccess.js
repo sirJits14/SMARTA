@@ -5,6 +5,7 @@ import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
 import { SCHOOL_ROLES, REQUESTABLE_ROLES, assignmentKey, canApproveRoleRequest, isGradeRole, isDepedEmail } from '../../shared/schoolAccess.js';
 import { enforceRateLimit } from '../callable.js';
 import { groupLegacyAdvisers, sampleStudentIds } from '../lib/legacyAdvisers.js';
+import { pendingLearnerRequests, withdrawLearnerRequests } from '../lib/learnerRequestCleanup.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
 const DEPED_ONLY = 'Class Adviser requests need a @deped.gov.ph account.';
@@ -318,8 +319,9 @@ const row = snap => ({ id: snap.id, ...snap.data() });
 export async function deleteSchoolAccess(db, uid) {
   return db.runTransaction(async tx => {
     const ref = db.doc(`school_accounts/${uid}`);
-    const [account, pending] = await Promise.all([
+    const [account, pending, learnerRequests] = await Promise.all([
       tx.get(ref), tx.get(db.collection('school_role_requests').where('uid', '==', uid).where('status', '==', 'pending')),
+      tx.get(pendingLearnerRequests(db, uid)),
     ]);
     const advisers = (account.data()?.assignments || []).filter(a => a.role === 'adviser');
     const locks = await Promise.all(advisers.map(a => tx.get(lockRef(db, a))));
@@ -327,6 +329,7 @@ export async function deleteSchoolAccess(db, uid) {
     for (const lock of locks) if (lock.data()?.uid === uid) tx.delete(lock.ref);
     for (const section of sections) if (section.data()?.schoolAdviserUid === uid) tx.update(section.ref, { schoolAdviserUid: FieldValue.delete() });
     for (const request of pending.docs) tx.update(request.ref, { status: 'withdrawn', reason: 'Account deleted', reviewedAt: FieldValue.serverTimestamp() });
+    withdrawLearnerRequests(tx, learnerRequests.docs, 'Account deleted');
     tx.delete(ref);
   });
 }

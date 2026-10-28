@@ -355,6 +355,8 @@ service cloud.firestore {
     // by client-provided roles or cached account metadata.
     match /school_accounts/{id} { allow read, write: if false; }
     match /school_role_requests/{id} { allow read, write: if false; }
+    // Adviser requests to add or remove a learner (spec 2026-10-22). Callables only.
+    match /learner_change_requests/{id} { allow read, write: if false; }
     match /school_adviser_locks/{id} { allow read, write: if false; }
     match /advisory_slips/{id} { allow read, write: if false; }
     match /attendance_corrections/{id} { allow read, write: if false; }

@@ -11,11 +11,21 @@ import { initials } from '../../lib/format.js';
 import { Banner, Btn, Inp, Sel, Spinner, EmptyState } from '../../components/ui.jsx';
 import Icon from '../../components/Icon.jsx';
 import UndoToast from './UndoToast.jsx';
+import ClassActions from './ClassActions.jsx';
+import { sf2MonthOptions, base64ToFile, saveFile, saveWithFallback } from '../../lib/sf2.js';
+import { useLearnerRequests } from '../../hooks/useLearnerRequests.js';
+import { addPayload, pendingRemovalIds, pendingRequests, prefillFrom } from '../../lib/learnerRequests.js';
+import S from '../../strings.js';
 import './ClassTab.css';
 
 const FlagSheet = lazy(() => import('./FlagSheet.jsx'));
+const Sf2Sheet = lazy(() => import('./Sf2Sheet.jsx'));
+const AddLearnerSheet = lazy(() => import('./AddLearnerSheet.jsx'));
+const RequestsSheet = lazy(() => import('./RequestsSheet.jsx'));
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
+// A share or download that went through; 'cancelled' and 'blocked' keep the sheet open for another try.
+const saved = (outcome) => outcome === 'shared' || outcome === 'downloaded';
 const rosterKey = (sectionId, date) => `roster:${auth.currentUser?.uid || ''}:${sectionId}:${date}`;
 
 export default function ClassTab({ sections, ended, navigate }) {
@@ -36,8 +46,8 @@ export default function ClassTab({ sections, ended, navigate }) {
   const sequence = useRef(0);
   const saveLock = useRef(false);
   const sheetOpen = useRef(false);
-  sheetOpen.current = Boolean(sheet);
   const validSection = sections.some((s) => s.id === sectionId) ? sectionId : sections[0]?.id || '';
+  const section = sections.find((s) => s.id === validSection);
 
   useEffect(() => {
     if (!validSection) return undefined;
@@ -69,7 +79,71 @@ export default function ClassTab({ sections, ended, navigate }) {
   const canCorrect = Boolean(roster?.canCorrect) && !ended && isToday;
   const refresh = () => setReload((n) => n + 1);
 
+  // SF2: pick a month in a sheet, the server builds the workbook, and the phone saves it. The prepared
+  // file is kept (sf2File) so that, when the browser refuses the share because the tap was too long ago,
+  // a fresh tap on Save can still open the share sheet.
+  const [sf2Open, setSf2Open] = useState(false);
+  const [sf2Busy, setSf2Busy] = useState(false);
+  const [sf2Error, setSf2Error] = useState('');
+  const [sf2File, setSf2File] = useState(null);
+  const sf2Lock = useRef(false);
+  // Returning from the phone's share sheet fires focus, so the roster must not reload behind either sheet.
+  sheetOpen.current = Boolean(sheet) || sf2Open;
+  const downloadSf2 = async (month) => {
+    if (sf2Lock.current) return;
+    sf2Lock.current = true; setSf2Busy(true); setSf2Error('');
+    try {
+      const { data } = await callable('exportSchoolSf2Fn')({ sectionId: validSection, month });
+      const file = base64ToFile(data.contentBase64, data.filename, data.contentType);
+      // The file is ready: do not keep the sheet locked while the share dialog is open (the ref lock stays until saveFile settles).
+      setSf2File(file); setSf2Busy(false);
+      // From here the file exists, so a failure to save it is not a failure to prepare it.
+      try {
+        if (saved(await saveFile(file))) setSf2Open(false);
+      } catch { setSf2Error(S.sf2SaveFailed); }
+    } catch (e) { setSf2Error(schoolError(e, S.sf2Failed)); }
+    finally { sf2Lock.current = false; setSf2Busy(false); }
+  };
+  // The Save button: a fresh tap may open the share sheet; if the browser still refuses, download so the person is never stuck.
+  const saveSf2 = async () => {
+    if (!sf2File || sf2Lock.current) return;
+    sf2Lock.current = true; setSf2Error('');
+    try {
+      if (saved(await saveWithFallback(sf2File))) setSf2Open(false);
+    } catch { setSf2Error(S.sf2SaveFailed); }
+    finally { sf2Lock.current = false; }
+  };
+
+  // Learner requests: the adviser asks and SIMS decides, so the roster changes only after approval.
+  const requests = useLearnerRequests(validSection, !ended);
+  const [addForm, setAddForm] = useState(null); // { initial } while the Add learner sheet is open
+  const [requestsOpen, setRequestsOpen] = useState(false);
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const requestLock = useRef(false);
+  const removalIds = useMemo(() => pendingRemovalIds(requests.requests), [requests.requests]);
+  const runRequest = async (work) => {
+    if (requestLock.current) return false;
+    requestLock.current = true; setRequestBusy(true); setRequestError('');
+    try { await work(); return true; }
+    catch (e) { setRequestError(schoolError(e)); return false; }
+    // Refresh after a failure too: "already decided" means the list on screen is stale.
+    finally { requestLock.current = false; setRequestBusy(false); requests.refresh(); }
+  };
+  const submitAdd = async (form) => {
+    if (await runRequest(() => callable('requestLearnerAddFn')(addPayload(validSection, form)))) {
+      setAddForm(null);
+      setToast({ id: Date.now(), message: S.learnerSent, undo: null });
+    }
+  };
+  const withdrawRequest = async (requestId) => {
+    if (await runRequest(() => callable('withdrawLearnerRequestFn')({ requestId }))) setToast({ id: Date.now(), message: S.learnerRequestWithdrawn, undo: null });
+  };
+
   useEffect(() => { import('./FlagSheet.jsx').catch(() => {}); }, []);
+  useEffect(() => { import('./Sf2Sheet.jsx').catch(() => {}); }, []);
+  useEffect(() => { import('./AddLearnerSheet.jsx').catch(() => {}); }, []);
+  useEffect(() => { import('./RequestsSheet.jsx').catch(() => {}); }, []);
   useEffect(() => {
     if (!canCorrect || !groups.inSchool.length) { setSelecting(false); setSelected(new Set()); }
   }, [validSection, date, canCorrect, groups.inSchool.length]);
@@ -143,6 +217,10 @@ export default function ClassTab({ sections, ended, navigate }) {
           {!isToday && <Inp type="date" aria-label="School day" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ width: 'auto', minHeight: 44 }} />}
         </div>
       </section>
+      <ClassActions onAddLearner={ended ? undefined : () => { setRequestError(''); setAddForm({ initial: null }); }}
+        onSf2={ended ? undefined : () => { setSf2Error(''); setSf2File(null); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''}
+        requestTotal={(requests.requests || []).length} requestWaiting={pendingRequests(requests.requests).length}
+        onOpenRequests={() => { setRequestError(''); setRequestsOpen(true); }} />
       {error && <Banner tone="danger" action={<Btn variant="ghost" onClick={refresh}>Try again</Btn>}>{error}</Banner>}
       {loading && !roster && <Spinner label="Loading your class" />}
       {roster && !isToday && <p className="class-note">Past days are view-only. Your coordinator corrects earlier days in SIMS.</p>}
@@ -150,9 +228,9 @@ export default function ClassTab({ sections, ended, navigate }) {
       {roster && (
         <>
           <RowGroup title="In school" hint={groups.inSchool.length ? (canCorrect ? (selecting ? 'Tick each learner who isn’t in class, then Flag.' : 'Tap a learner for history, or Flag one who isn’t in class.') : null) : 'No gate entries yet for this session.'}
-            rows={groups.inSchool} session={session} selecting={selecting} selected={selected} onPick={canCorrect ? (row) => pick(row, 'flag') : null} onOpen={open} flagLabel="Flag" />
-          <RowGroup title="Flagged" rows={groups.flagged} session={session} onPick={canCorrect ? (row) => pick(row, 'restore') : null} onOpen={open} flagLabel="Restore" collapsible />
-          <RowGroup title="Absent or no gate entry" rows={groups.noEntry} session={session} onOpen={open} collapsible />
+            rows={groups.inSchool} session={session} selecting={selecting} selected={selected} onPick={canCorrect ? (row) => pick(row, 'flag') : null} onOpen={open} flagLabel="Flag" removalIds={removalIds} />
+          <RowGroup title="Flagged" rows={groups.flagged} session={session} onPick={canCorrect ? (row) => pick(row, 'restore') : null} onOpen={open} flagLabel="Restore" collapsible removalIds={removalIds} />
+          <RowGroup title="Absent or no gate entry" rows={groups.noEntry} session={session} onOpen={open} collapsible removalIds={removalIds} />
         </>
       )}
       {selecting && (
@@ -166,16 +244,35 @@ export default function ClassTab({ sections, ended, navigate }) {
           <FlagSheet rows={sheet.rows} session={session} mode={sheet.mode} busy={saving} error={sheetError} onConfirm={confirm} onClose={() => { if (!saving) setSheet(null); }} />
         </Suspense>
       )}
+      {sf2Open && (
+        <Suspense fallback={null}>
+          <Sf2Sheet sectionLabel={sectionLabel(section)} months={sf2MonthOptions(section?.schoolYear, today)} busy={sf2Busy} error={sf2Error}
+            file={sf2File} onDownload={downloadSf2} onSave={saveSf2} onMonthChange={() => { setSf2File(null); setSf2Error(''); }} onClose={() => setSf2Open(false)} />
+        </Suspense>
+      )}
+      {addForm && (
+        <Suspense fallback={null}>
+          <AddLearnerSheet classLabel={sectionLabel(section)} initial={addForm.initial} busy={requestBusy} error={requestError}
+            onSubmit={submitAdd} onClose={() => setAddForm(null)} />
+        </Suspense>
+      )}
+      {requestsOpen && requests.requests && (
+        <Suspense fallback={null}>
+          <RequestsSheet requests={requests.requests} busy={requestBusy} error={requestError || requests.error}
+            onWithdraw={withdrawRequest} onClose={() => setRequestsOpen(false)}
+            onSendAgain={(request) => { setRequestsOpen(false); setRequestError(''); setAddForm({ initial: prefillFrom(request) }); }} />
+        </Suspense>
+      )}
       {toast && <UndoToast key={toast.id} message={toast.message} onUndo={toast.undo} onDone={() => setToast(null)} />}
     </div>
   );
 }
 
-function RowGroup({ title, hint, rows, session, selecting = false, selected, onPick, onOpen, flagLabel, collapsible = false }) {
+function RowGroup({ title, hint, rows, session, selecting = false, selected, onPick, onOpen, flagLabel, collapsible = false, removalIds }) {
   if (collapsible && !rows.length) return null;
   const list = (
     <ul className="learner-list class-list" aria-label={title}>
-      {rows.map((row) => <ClassRow key={row.studentId} row={row} session={session} selecting={selecting} checked={Boolean(selected?.has(row.studentId))} onPick={onPick ? () => onPick(row) : null} onOpen={() => onOpen(row)} flagLabel={flagLabel} />)}
+      {rows.map((row) => <ClassRow key={row.studentId} row={row} session={session} selecting={selecting} checked={Boolean(selected?.has(row.studentId))} onPick={onPick ? () => onPick(row) : null} onOpen={() => onOpen(row)} flagLabel={flagLabel} removalPending={Boolean(removalIds?.has(row.studentId))} />)}
     </ul>
   );
   if (collapsible) {
@@ -192,7 +289,7 @@ function RowGroup({ title, hint, rows, session, selecting = false, selected, onP
 
 const flagReason = (reason) => (reason || '').replace(/^Not in class(?::\s*|$)/, '');
 
-function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel }) {
+function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel, removalPending = false }) {
   const status = row[session] || {};
   const entered = enteredFor(row, session);
   const preview = status.overrideActive
@@ -207,6 +304,7 @@ function ClassRow({ row, session, selecting, checked, onPick, onOpen, flagLabel 
       <span className="learner-row-body">
         <span className="learner-row-top">
           <span className="learner-row-name">{row.displayName}</span>
+          {removalPending && <span className="class-chip">{S.removePending}</span>}
           {entered && !status.overrideActive && <span className="learner-row-time">{formatScanTime(entered)}</span>}
         </span>
         <span className={`learner-row-preview${status.overrideActive ? ' class-preview--flagged' : ''}`}>{preview}</span>

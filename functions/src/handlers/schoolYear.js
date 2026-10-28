@@ -4,6 +4,7 @@ import { audit } from '../audit.js';
 import { logEvent } from '../log.js';
 import { str } from '../lib/validators.js';
 import { schoolYearRef } from '../lib/schoolYears.js';
+import { contactCleared } from '../lib/learnerRequestCleanup.js';
 
 // A links page can write one inbox doc per link as well, so 200 keeps every
 // batch at or under 400 writes (Firestore's batch limit is 500).
@@ -66,8 +67,18 @@ export async function endSchoolYear(ctx, data) {
       b.update(d.ref, { status: 'expired', expiredAt: FieldValue.serverTimestamp(), expiredReason: 'school-year-ended' });
     }));
 
+  // Nobody can decide a learner request once the year has ended, so a request still waiting would keep
+  // an add's address and phone numbers for good. Closing it removes them (spec 2026-10-22).
+  const learnerRequestsClosed = await drain(db,
+    db.collection('learner_change_requests').where('schoolYear', '==', schoolYear).where('status', '==', 'pending'),
+    (docs, b) => docs.forEach((d) => b.update(d.ref, {
+      status: 'withdrawn', withdrawnAt: FieldValue.serverTimestamp(), decisionReason: 'School year ended', ...contactCleared(d.data()),
+    })));
+
+  // The returned object is what the SIMS card shows; the closed requests are counted in the audit row and log only.
   const result = { codesRevoked, advisorySlipsRevoked, linksExpired, accountsNotified: notified.size };
-  await audit(db, { action: 'schoolyear.ended', actorType: 'staff', actorUid: email, targetType: 'school_year', targetId: schoolYear, details: result });
-  logEvent('school_year_ended', { schoolYear, ...result });
+  await audit(db, { action: 'schoolyear.ended', actorType: 'staff', actorUid: email, targetType: 'school_year', targetId: schoolYear,
+    details: { ...result, learnerRequestsClosed } });
+  logEvent('school_year_ended', { schoolYear, ...result, learnerRequestsClosed });
   return result;
 }

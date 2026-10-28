@@ -5,20 +5,12 @@ import { fullName, depedSort } from '../lib/roster.js';
 import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
 import { markFor, summarizeMonth, scanTitle as dayScanTitle } from '../lib/attendance.js';
 import { buildSF2Workbook } from '../lib/sf2.js';
+import { firstFridayOfJune } from '../../shared/sf2/calendar.js';
 import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S, MARK_COLOR } from '../styles.js';
 import { Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
 import SectionPicker from '../components/SectionPicker.jsx';
 import { grades, scopeRoster } from '../lib/access.js';
-
-// DepEd's "Enrolment as of 1st Friday of June" cutoff for a given school
-// year (e.g. "2026-2027" -> the 1st Friday of June 2026).
-function firstFridayOfJune(schoolYear) {
-  const year = Number(schoolYear.split('-')[0]);
-  const d = new Date(year, 5, 1); // June 1
-  for (let i = 0; i < 7 && d.getDay() !== 5; i++) d.setDate(d.getDate() + 1); // 5 = Friday, at most 6 steps
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 export default function AttendanceSummaryPage({ me, schoolYear }) {
   const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });

@@ -1,6 +1,7 @@
 export const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
   { key: 'students', label: 'Students', icon: 'students' },
+  { key: 'learnerRequests', label: 'Learner requests', icon: 'enroll' },
   { key: 'sections', label: 'Sections', icon: 'sections' },
   { key: 'schedules', label: 'Schedules', icon: 'calendar' },
   { key: 'enroll', label: 'Enrollment', icon: 'enroll' },

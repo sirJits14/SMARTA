@@ -1,5 +1,7 @@
-import { useCallback, useLayoutEffect, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useLayoutEffect, useEffect, useRef, useState } from 'react';
 import { callable } from '../../firebase.js';
+import { useLearnerRequests } from '../../hooks/useLearnerRequests.js';
+import { removalFor, removalPayload } from '../../lib/learnerRequests.js';
 import S from '../../strings.js';
 import { Btn, Banner, Spinner, EmptyState } from '../../components/ui.jsx';
 import { Bubble, DayDivider } from '../../components/Bubble.jsx';
@@ -11,6 +13,11 @@ import { eventTitle, latestScanToday, nameCase } from '../../lib/format.js';
 import { historyThread } from '../../lib/thread.js';
 import { schoolError } from '../../lib/school.js';
 import { formatScanTime, localDate } from '../../../../shared/dates.js';
+// The remove link, chip, inline error and Remove sheet are styled here. CSS is split per route chunk,
+// so a reload or deep link to this screen must load the stylesheet itself (Vite de-duplicates it).
+import './ClassTab.css';
+
+const RemoveLearnerSheet = lazy(() => import('./RemoveLearnerSheet.jsx'));
 
 // Same scan line as the guardian's History.
 function eventMeta(ev) {
@@ -65,6 +72,27 @@ export default function LearnerHistory({ sectionId, studentId, navigate }) {
     load(null); return () => { ++sequence.current; };
   }, [load]);
 
+  // Asking to take the learner out of the class: SIMS approves it, and the learner stays until then.
+  const requests = useLearnerRequests(sectionId);
+  const removal = requests.requests ? removalFor(requests.requests, studentId) : null;
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const requestLock = useRef(false);
+  const runRequest = async (work) => {
+    if (requestLock.current) return false;
+    requestLock.current = true; setRequestBusy(true); setRequestError('');
+    try { await work(); return true; }
+    catch (e) { setRequestError(schoolError(e)); return false; }
+    // Refresh after a failure too: "already decided" means the list on screen is stale.
+    finally { requestLock.current = false; setRequestBusy(false); requests.refresh(); }
+  };
+  const sendRemoval = async (input) => {
+    if (await runRequest(() => callable('requestLearnerRemovalFn')(removalPayload(sectionId, studentId, input)))) setRemoveOpen(false);
+  };
+  const withdrawRemoval = () => runRequest(() => callable('withdrawLearnerRequestFn')({ requestId: removal.id }));
+  useEffect(() => { import('./RemoveLearnerSheet.jsx').catch(() => {}); }, []);
+
   const loadOlder = () => { keepFromBottom.current = document.documentElement.scrollHeight - window.scrollY; load(cursor); };
   useLayoutEffect(() => {
     const page = document.documentElement;
@@ -110,7 +138,23 @@ export default function LearnerHistory({ sectionId, studentId, navigate }) {
                 </div>
               </div>
             ))}
+            {requests.requests && (
+              <div className="learner-actions">
+                {removal ? (
+                  <>
+                    <span className="class-chip">{S.removePending}</span>
+                    <button type="button" className="class-link" disabled={requestBusy} onClick={withdrawRemoval}>{S.withdrawRequest}</button>
+                  </>
+                ) : <button type="button" className="class-link class-link--quiet" onClick={() => { setRequestError(''); setRemoveOpen(true); }}>{S.removeFromClass}</button>}
+                {requestError && !removeOpen && <span className="learner-field-error" role="alert">{requestError}</span>}
+              </div>
+            )}
           </div>}
+      {removeOpen && learner && (
+        <Suspense fallback={null}>
+          <RemoveLearnerSheet displayName={learner.displayName} busy={requestBusy} error={requestError} onSubmit={sendRemoval} onClose={() => setRemoveOpen(false)} />
+        </Suspense>
+      )}
     </>
   );
 }
