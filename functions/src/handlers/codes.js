@@ -9,6 +9,7 @@ import { generateCode, normalizeCode, isValidCode, hashCode } from '../lib/activ
 import { sectionLabel, learnerIdentity, formalName, manilaDateTime } from '../lib/format.js';
 import { schoolYearRef, isEnded, schoolYearEnded } from '../lib/schoolYears.js';
 import { ADVISER, isDepedEmail, slotFor, claimSlot, slotsFromLinks, isOpenStatus } from '../lib/codeSlots.js';
+import { sortIssuedSlips } from '../lib/slipOrder.js';
 
 // Guardian relationships. The class adviser (ADVISER) can only link through a
 // slip, never through requestAccess, so it is not in this list.
@@ -69,11 +70,11 @@ export async function issueActivationCodes(ctx, data) {
     if (student.activationRestricted === true) { skipped.push({ studentId, reason: 'restricted' }); continue; }
     const r = await issueCodeFor(db, { studentId, student, section, schoolYear, by: email, reason: 'reissued' });
     if (r.skipped) { skipped.push({ studentId, reason: r.skipped }); continue; }
-    slips.push(r.slip);
+    slips.push({ slip: r.slip, student });
   }
   await audit(db, { action: 'code.issued', actorType: 'staff', actorUid: email, targetType: 'section', targetId: sectionId, details: { schoolYear, count: slips.length, skipped: skipped.length } });
   logEvent('codes_issued', { sectionId, count: slips.length });
-  return { slips, skipped };
+  return { slips: sortIssuedSlips(slips), skipped };
 }
 
 // Staff. Replaces one learner's lost or damaged slip without touching the

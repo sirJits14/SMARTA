@@ -35,6 +35,18 @@ beforeEach(async () => {
 });
 
 describe('issueActivationCodes', () => {
+  it('returns slips male first, then female, sorted by last and first name', async () => {
+    const students = [
+      ['S3', 'Zara', 'Abad', 'F'], ['S4', 'Zed', 'Cruz', 'M'],
+      ['S5', 'Aaron', 'Cruz', 'M'], ['S6', 'Bea', 'Abad', 'F'],
+    ];
+    for (const [id, firstName, lastName, sex] of students) {
+      await db().doc(`students/${id}`).set({ firstName, lastName, sex, lrn: id });
+      await db().doc(`enrollments/${id}_2026-2027`).set({ studentId: id, sectionId: 'SEC1', schoolYear: '2026-2027', status: 'enrolled' });
+    }
+    const result = await issueActivationCodes(staff(), SEC);
+    expect(result.slips.map((slip) => slip.studentId)).toEqual(['S5', 'S4', 'S2', 'S6', 'S3', 'S1']);
+  });
   it('issues one code per enrolled learner, stores only hashes, skips restricted', async () => {
     await db().doc('students/S2').set({ activationRestricted: true }, { merge: true });
     const r = await issueActivationCodes(staff(), { sectionId: 'SEC1', schoolYear: '2026-2027' });
