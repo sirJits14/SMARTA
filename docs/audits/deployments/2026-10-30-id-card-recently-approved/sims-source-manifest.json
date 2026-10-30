@@ -1,0 +1,66 @@
+{
+  "featureRevision": "e2aa92d",
+  "featureRevisionFull": "e2aa92d889bf0e87425baa5e36e5fb06f5f0066c",
+  "featureNote": "ID Cards: Recently approved (PR #98, branch claude/student-approval-qr-printing-04f9fa); branch started from origin/master merge 24337fa. Only the SIMS files of the feature are overlaid; the branch functions changes (backfill script, approvedCards lib, learnerRequests handler) are not part of this hosting release.",
+  "baseline": {
+    "description": "Live SIMS rebuilt from the 2026-10-28 learner-requests record: caps-names preparer + legacy-adviser port + PR #90 files (d27b213) + PR #91 (cb9e0db..bf3a892) + PR #93 (1887cb0^..1887cb0, context adapted to useCollectionResource) + PR #94 (efaeff0^..efaeff0 -- src) + learner-requests overlay (23 files from 7f29726, all 23 hashes equal sims-source-manifest.json of the 10-28 record).",
+    "liveRelease": {
+      "release": "1793169140530000",
+      "version": "c710ecc0a091f5d4",
+      "releaseTime": "2026-10-28T06:32:20.530Z",
+      "message": "SIMS learner requests page (PR 95 source 7f29726) over live PR 94 release 2f5dc87"
+    },
+    "mainScript": "assets/index-BYw7kGJV.js",
+    "files": 65,
+    "mismatched": 0,
+    "verifiedAt": "2026-10-30T14:36:06.302Z",
+    "verification": "sims-baseline-verification.json",
+    "tests": {
+      "files": 76,
+      "tests": 796
+    },
+    "learnerRequestsOverlayHashesMatched": 23,
+    "baselineSourceFilesHashesMatched": 11
+  },
+  "overlay": {
+    "src/data/idCards.js": {
+      "sha256": "ea18f1d289a04ab4c0000302f60fe7b479e6381e7f343eb0ee1e2c9c92cd424e",
+      "method": "tree copy was identical to 24337fa (line endings aside); git diff --binary 24337fa HEAD applied with git apply; tree diff numstat equals the branch numstat; content equals the branch tip apart from CRLF line endings"
+    },
+    "src/lib/idCardQueue.js": {
+      "sha256": "dee953886ec93441c6ebbf583f65eb320ceb8d2d41c72a4ce08292c7b8bd8593",
+      "method": "tree copy was identical to 24337fa (line endings aside); git diff --binary 24337fa HEAD applied with git apply; tree diff numstat equals the branch numstat; content equals the branch tip apart from CRLF line endings"
+    },
+    "src/pages/IDCardsPage.jsx": {
+      "sha256": "601025690bb9215df5821b2edd0c543b47b7850176be39697a22861eaa164823",
+      "method": "tree copy was identical to 24337fa (line endings aside); git diff --binary 24337fa HEAD applied with git apply; tree diff numstat equals the branch numstat; content equals the branch tip apart from CRLF line endings"
+    },
+    "src/data/idCards.test.js": {
+      "sha256": "d302c5b1d03d8ed6eb02e566d4875fbcb33dcde8c37722427642920bd791e7e2",
+      "method": "tree copy was identical to 24337fa (line endings aside); git diff --binary 24337fa HEAD applied with git apply; tree diff numstat equals the branch numstat; content equals the branch tip apart from CRLF line endings"
+    },
+    "src/lib/idCardQueue.test.js": {
+      "sha256": "18bdb19456686b7a114a8d167427f1141f36f54be76512308759dc2efb678dd7",
+      "method": "tree copy was identical to 24337fa (line endings aside); git diff --binary 24337fa HEAD applied with git apply; tree diff numstat equals the branch numstat; content equals the branch tip apart from CRLF line endings"
+    },
+    "src/pages/idCards/RecentlyApprovedTab.jsx": {
+      "sha256": "c4117fe8205714d74d82f51d22626dec7e431c5c7b64333c31123cd037596385",
+      "method": "new file, git diff --binary 24337fa HEAD applied with git apply; content equals the branch tip apart from CRLF line endings"
+    },
+    "src/pages/idCards/RecentlyApprovedTab.test.js": {
+      "sha256": "e4322643bf68941bd6f384f92978e403b022ecc7e7c227933dde338cc2010e7a",
+      "method": "new file, git diff --binary 24337fa HEAD applied with git apply; content equals the branch tip apart from CRLF line endings"
+    }
+  },
+  "tests": {
+    "files": 77,
+    "tests": 808
+  },
+  "build": {
+    "mainScript": "index-CH2PMZML.js",
+    "mainScriptPath": "assets/index-CH2PMZML.js",
+    "files": 65,
+    "secondBuildIdentical": true,
+    "vite": "main checkout node_modules, VITE_USE_EMULATORS=false, no App Check debug token"
+  }
+}
