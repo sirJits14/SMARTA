@@ -1,0 +1,54 @@
+{
+  "feature": "ID Cards: Recently approved (PR #98)",
+  "branch": "claude/student-approval-qr-printing-04f9fa",
+  "treeRevision": "e2aa92d889bf0e87425baa5e36e5fb06f5f0066c",
+  "preparedWith": "node docs/releases/2026-10-18-school-family/prepareBackend.mjs .superpowers/releases/idcard-approved-fn/backend (no --copy-dependencies; functions/node_modules junctioned to the main checkout's)",
+  "config": "firebase.id-card-approved-functions-release.json, placed at the prepared tree root (source \"functions\" and the predeploy path are relative to the config file)",
+  "deploy": "--project bnhs-sims --non-interactive --only \"functions:resolveLearnerRequestFn\" (no --force); one-line functions/.env PORTAL_URL=https://bnhs-parent.web.app written for the deploy only and deleted afterwards",
+  "function": { "name": "resolveLearnerRequestFn", "region": "asia-southeast1", "runtime": "nodejs22" },
+  "liveBefore": {
+    "observedAt": "2026-10-30",
+    "revision": "resolvelearnerrequestfn-00001-man",
+    "updateTime": "2026-10-28T06:11:42.474700106Z",
+    "sourceGeneration": "1793167888625467",
+    "sourceZipSha256": "a25cef5abc1f286ada1d57fca58c7931373280624a12281312d2c2b6cd5bec18",
+    "functionCount": 73
+  },
+  "preservedScanSha256": "49ee1a2ecfdf370852b38332a0636979c3ada9cba314dcefc2f69edd8ecf575f",
+  "generatedTreeManifestSha256": "43cd4f3848a25403dce06520e3bf8fb179e4873b7d46fb27bfee2974d5372dd2",
+  "changedFiles": {
+    "src/handlers/learnerRequests.js": "75d5f8f60574ffc891944f6cd073bc1374af950cd6e4b02fe268304b4a6e473e",
+    "src/lib/approvedCards.js": "2d5a7d172eda272e1e1cccb216d36007704bda98f1f285a2599847a01f474cf1"
+  },
+  "featureFilesNotRunByTheFunction": {
+    "scripts/backfillApprovedCards.mjs": "56c123527969996169d7c2bf1787ea6aa4b0a294d10aa3062fcd8f35a9f99ad0",
+    "src/lib/approvedCardBackfill.js": "7dab94c68e1dae1802094e4fb44c04985510785e7fa0a6d6fb76951b41d03018",
+    "test/emulator/approvedCardBackfill.test.js": "0e59c1d18b60080d4b7ec537485f57f052da3486db0311336b54315b6a97f967",
+    "test/emulator/learnerRequests.test.js": "c5436be3f45b0515c20abfff057d6cc0e94aff3d7e07690e24ea43fb13b37536"
+  },
+  "lineEndingOnlyDifferencesFromLive": [
+    "shared/learnerRequests.js",
+    "shared/sf2/calendar.js",
+    "shared/sf2/months.js",
+    "shared/sf2/names.js",
+    "src/handlers/sf2Export.js",
+    "src/handlers/sf2Export.test.js",
+    "src/lib/learnerRequestCleanup.js",
+    "test/emulator/sf2Export.test.js"
+  ],
+  "lineEndingNote": "Live copies are LF; the prepared copies are CRLF (worktree checkout, core.autocrlf=true; git stores LF). Identical after CRLF->LF normalization.",
+  "unchangedFromLive": {
+    "index.js": "b3d16d93fd2c11c947a536cd306d48326399fc8001e77574da4b3a7c80cdccc9",
+    "package.json": "68cd9e789ebcbf39984c664ce8df90e022f66767127cf6fd9c47179acfee81d1",
+    "otherIdenticalFiles": 113
+  },
+  "handlerImportGraph": {
+    "entries": ["src/handlers/learnerRequests.js", "src/callable.js"],
+    "files": [
+      "shared/dates.js", "shared/learnerRequests.js", "shared/schoolAccess.js", "shared/staffRoles.js",
+      "src/callable.js", "src/errors.js", "src/handlers/learnerRequests.js", "src/handlers/schoolAccess.js",
+      "src/lib/approvedCards.js", "src/lib/format.js", "src/lib/learnerRequestCleanup.js", "src/lib/legacyAdvisers.js", "src/lib/rateLimit.js"
+    ],
+    "heldCodeReached": []
+  }
+}
