@@ -30,7 +30,7 @@ vi.mock('firebase/firestore', () => ({
 }));
 vi.mock('../firebase.js', () => ({ db: { kind: 'db' } }));
 
-import { markIdCardsPrinted, addToIdCardBatch, removeFromIdCardBatch, clearIdCardBatch, markBatchPrinted } from './idCards.js';
+import { markIdCardsPrinted, addToIdCardBatch, removeFromIdCardBatch, clearIdCardBatch, markBatchPrinted, addApprovedToBatch, dismissApproved } from './idCards.js';
 
 const me = { email: 'admin@bnhs.edu.ph' };
 const mark = (lrn) => ({ idCard: { printedAt: 'SERVER_TIME', printedBy: 'admin@bnhs.edu.ph', lrn } });
@@ -45,17 +45,19 @@ beforeEach(() => {
 });
 
 describe('markIdCardsPrinted', () => {
-  it('merges the printed mark, with the LRN that was printed, into each learner', async () => {
+  it('merges the printed mark into each learner and takes them off Recently approved', async () => {
     await markIdCardsPrinted([{ id: 's1', lrn: '111' }, { id: 's2', lrn: '222' }], me);
     expect(firestore.batches[0].ops).toEqual([
       ['set', { path: 'students/s1' }, mark('111'), { merge: true }],
+      ['delete', { path: 'id_card_approved/s1' }],
       ['set', { path: 'students/s2' }, mark('222'), { merge: true }],
+      ['delete', { path: 'id_card_approved/s2' }],
     ]);
     expect(firestore.batches[0].commit).toHaveBeenCalledTimes(1);
   });
-  it('splits 501 learners into batches of 500 and 1', async () => {
+  it('splits 501 learners into batches of 250, 250 and 1 learners (2 operations each)', async () => {
     await markIdCardsPrinted(learners(501), me);
-    expect(sizes()).toEqual([500, 1]);
+    expect(sizes()).toEqual([500, 500, 2]);
     firestore.batches.forEach((b) => expect(b.commit).toHaveBeenCalledTimes(1));
   });
   it('writes nothing for an empty list', async () => {
@@ -81,18 +83,47 @@ describe('saved batch', () => {
 });
 
 describe('markBatchPrinted', () => {
-  it('marks each learner and removes them from the batch in the same write', async () => {
+  it('marks each learner and removes them from the batch and Recently approved in the same write', async () => {
     await markBatchPrinted([{ id: 's1', lrn: '111' }, { id: 's2', lrn: '222' }], me);
     expect(firestore.batches).toHaveLength(1);
     expect(firestore.batches[0].ops).toEqual([
       ['set', { path: 'students/s1' }, mark('111'), { merge: true }],
       ['delete', { path: 'id_card_batch/s1' }],
+      ['delete', { path: 'id_card_approved/s1' }],
       ['set', { path: 'students/s2' }, mark('222'), { merge: true }],
       ['delete', { path: 'id_card_batch/s2' }],
+      ['delete', { path: 'id_card_approved/s2' }],
     ]);
   });
-  it('splits 300 learners into batches of 500 and 100 operations (250 learners per batch)', async () => {
+  it('splits 300 learners into 166 and 134 learners (3 operations each)', async () => {
     await markBatchPrinted(learners(300), me);
-    expect(sizes()).toEqual([500, 100]);
+    expect(sizes()).toEqual([498, 402]);
+  });
+});
+
+describe('Recently approved', () => {
+  it('moves learners to the saved batch and off Recently approved in one write', async () => {
+    await addApprovedToBatch(['s1', 's2'], me);
+    expect(firestore.batches).toHaveLength(1);
+    expect(firestore.batches[0].ops).toEqual([
+      ['set', { path: 'id_card_batch/s1' }, { addedAt: 'SERVER_TIME', addedBy: 'admin@bnhs.edu.ph' }],
+      ['delete', { path: 'id_card_approved/s1' }],
+      ['set', { path: 'id_card_batch/s2' }, { addedAt: 'SERVER_TIME', addedBy: 'admin@bnhs.edu.ph' }],
+      ['delete', { path: 'id_card_approved/s2' }],
+    ]);
+  });
+  it('moves 251 learners in batches of 500 and 2 operations', async () => {
+    await addApprovedToBatch(Array.from({ length: 251 }, (_, i) => `s${i}`), me);
+    expect(sizes()).toEqual([500, 2]);
+  });
+  it('dismisses learners in batches of at most 500 deletes', async () => {
+    await dismissApproved(Array.from({ length: 501 }, (_, i) => `s${i}`));
+    expect(sizes()).toEqual([500, 1]);
+    expect(firestore.batches[1].ops).toEqual([['delete', { path: 'id_card_approved/s500' }]]);
+  });
+  it('writes nothing for an empty selection', async () => {
+    await addApprovedToBatch([], me);
+    await dismissApproved([]);
+    expect(firestore.batches).toHaveLength(0);
   });
 });
