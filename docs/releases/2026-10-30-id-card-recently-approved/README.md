@@ -18,7 +18,7 @@ The Parent App is unchanged. Do not deploy `hosting:parent`.
 
 `master` holds the coordinator rollout, which is still on hold. Production runs from release trees, and publishing from the root config would switch it on under the live SIMS bundle, which still reads whole collections.
 
-- **Rules:** `firebase deploy --only firestore:rules` from the root `firebase.json` would publish `master`'s `firestore.rules`, about 690 lines away from production's. Coordinators' SIMS would fail with permission errors. Production's rules are `docs/releases/2026-10-18-school-family/firestore.school-family.rules`.
+- **Rules:** `firebase deploy --only firestore:rules` from the root `firebase.json` would publish `master`'s `firestore.rules`, about 690 lines away from production's. Coordinators' SIMS would fail with permission errors. Production's rules are the live ruleset from the 2026-10-19 section-adviser-sync release, which sits on top of `docs/releases/2026-10-18-school-family/firestore.school-family.rules`.
 - **Functions:** production's backend is deployed by name from a prepared tree, not from `master` (`docs/releases/2026-10-22-learner-requests/README.md`, "Order" step 2).
 - **SIMS:** never publish a root build. It is rebuilt from the live release tree and this change is applied on top (`docs/releases/2026-10-22-learner-requests/README.md`, "Order" step 3).
 
@@ -29,23 +29,23 @@ Deploying needs the user's explicit approval in chat. Claude's own production de
 **Rules first, then SIMS, then the Function, then the backfill.**
 
 1. **Rules.** The new SIMS bundle deletes `id_card_approved/{id}` in the same write that marks a card printed. Without the rule that delete is denied and the whole write fails, so marking cards printed would break on every tab. This is the one step that must precede SIMS.
-   1. Add one line to the release copy, directly under the existing `id_card_batch` line (line 112) in `docs/releases/2026-10-18-school-family/firestore.school-family.rules`:
+   1. **Base the rules on the LIVE ruleset, not on `firestore.school-family.rules`.** Production's ruleset is the 2026-10-19 section-adviser-sync release (`docs/releases/2026-10-19-section-adviser-sync/`), which adds a `sections` block that the school-family copy lacks (`schoolAdviserUid` guards on create, update and delete). Publishing the school-family copy would silently remove it. Download the live ruleset read-only (firebase-tools `requireAuth` + `apiv2` `Client`, `GET https://firebaserules.googleapis.com/v1/projects/bnhs-sims/releases/cloud.firestore`, then the ruleset it names) and save it as `.superpowers/releases/id-card-approved/firestore.live.rules`. On 2026-10-30 the live ruleset was `7263ffa7-b9a7-4249-bb64-96d0388da0e0`, updated 2026-10-19 13:42Z.
+   2. Copy it to `firestore.rules` in the same folder and add two lines directly under the `id_card_batch` line:
 
       ```
           // Recently approved new learners (plan 2026-10-30): only the server creates them; admins read and dismiss.
           match /id_card_approved/{studentId} { allow read, delete: if isAdmin(); }
       ```
 
-      `prepareRules.mjs` regenerates that file from `firestore.before.rules`, so it would drop the line. Add it after the last preparer run, or extend the preparer in the same commit.
-   2. Confirm that copy is what production runs now: download the live ruleset read-only and diff it against the file before adding the line. The 2026-10-18 record gives ruleset `47a8d3f1…`, and the records since show no later rules deploy, but check. The only difference after your edit must be these two lines.
-   3. Deploy the rules only, with the release config:
+      The diff against the live file must be exactly those two lines.
+   3. Deploy the rules only, with a one-off config that holds just `{ "firestore": { "rules": ".superpowers/releases/id-card-approved/firestore.rules" } }`:
 
       ```powershell
       $env:NODE_OPTIONS = '--dns-result-order=ipv4first'
-      npx firebase deploy --project bnhs-sims --config firebase.school-family-release.json --non-interactive --only firestore:rules
+      npx firebase deploy --project bnhs-sims --config .superpowers/releases/id-card-approved/firebase.json --non-interactive --only firestore:rules
       ```
 
-      The config also lists hosting and functions, but `--only firestore:rules` publishes nothing else.
+      Afterwards download the live ruleset again and confirm its only change is those two lines.
 2. **SIMS**, through the release-tree process, hosting only, and only on top of the CURRENT live SIMS tree. Nothing is read or written by this build until the Function and backfill run, so the new tab is simply empty until then.
 
    Live SIMS at the last record is the PR #93 chain, PR #94 and the learner-requests overlay: release `c710ecc0a091f5d4`, main script `/assets/index-BYw7kGJV.js`, 65 files. The records are on `claude/learner-requests-deployment-record` (`docs/audits/deployments/2026-10-28-learner-requests/`, PR #96); read them with `git show <ref>:<path>` without checking it out. Release history may have moved since (PR #94 once went out with no record): list `sites/bnhs-sims/releases` first and rebuild the newest preparer's tree.
