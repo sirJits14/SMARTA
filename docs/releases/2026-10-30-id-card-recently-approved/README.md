@@ -38,7 +38,7 @@ Deploying needs the user's explicit approval in chat. Claude's own production de
       ```
 
       The diff against the live file must be exactly those two lines.
-   3. Deploy the rules only, with a one-off config that holds just `{ "firestore": { "rules": ".superpowers/releases/id-card-approved/firestore.rules" } }`:
+   3. Deploy the rules only, with a one-off config that holds just `{ "firestore": { "rules": "firestore.rules" } }` saved next to the rules file (the CLI resolves the path relative to the config file's folder):
 
       ```powershell
       $env:NODE_OPTIONS = '--dns-result-order=ipv4first'
