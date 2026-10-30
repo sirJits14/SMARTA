@@ -15,7 +15,6 @@ const firestore = vi.hoisted(() => {
       batches.push(batch);
       return batch;
     }),
-    setDoc: vi.fn().mockResolvedValue(undefined),
     deleteDoc: vi.fn().mockResolvedValue(undefined),
     serverTimestamp: vi.fn(() => 'SERVER_TIME'),
   };
@@ -24,7 +23,6 @@ const firestore = vi.hoisted(() => {
 vi.mock('firebase/firestore', () => ({
   doc: firestore.doc,
   writeBatch: firestore.writeBatch,
-  setDoc: firestore.setDoc,
   deleteDoc: firestore.deleteDoc,
   serverTimestamp: firestore.serverTimestamp,
 }));
@@ -40,7 +38,6 @@ const learners = (n) => Array.from({ length: n }, (_, i) => ({ id: `s${i}`, lrn:
 beforeEach(() => {
   firestore.batches.length = 0;
   firestore.writeBatch.mockClear();
-  firestore.setDoc.mockClear();
   firestore.deleteDoc.mockClear();
 });
 
@@ -67,9 +64,14 @@ describe('markIdCardsPrinted', () => {
 });
 
 describe('saved batch', () => {
-  it('adds a learner with who added them and when', async () => {
+  it('adds a learner with who added them and when, and takes them off Recently approved in one write', async () => {
     await addToIdCardBatch('s1', me);
-    expect(firestore.setDoc).toHaveBeenCalledWith({ path: 'id_card_batch/s1' }, { addedAt: 'SERVER_TIME', addedBy: 'admin@bnhs.edu.ph' });
+    expect(firestore.batches[0].ops).toEqual([
+      ['set', { path: 'id_card_batch/s1' }, { addedAt: 'SERVER_TIME', addedBy: 'admin@bnhs.edu.ph' }],
+      ['delete', { path: 'id_card_approved/s1' }],
+    ]);
+    expect(firestore.batches).toHaveLength(1);
+    expect(firestore.batches[0].commit).toHaveBeenCalledTimes(1);
   });
   it('removes a learner', async () => {
     await removeFromIdCardBatch('s1');

@@ -1,4 +1,4 @@
-import { doc, writeBatch, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
 const OPS_PER_BATCH = 500; // Firestore's hard limit per writeBatch
@@ -29,11 +29,6 @@ export const markIdCardsPrinted = (students, me) =>
     batch.delete(doc(db, APPROVED, student.id));
   });
 
-// The saved batch stores only who was added; the card's details are read
-// live from the learner's records when it prints.
-export const addToIdCardBatch = (studentId, me) =>
-  setDoc(doc(db, BATCH, studentId), { addedAt: serverTimestamp(), addedBy: me.email });
-
 export const removeFromIdCardBatch = (studentId) => deleteDoc(doc(db, BATCH, studentId));
 
 export const clearIdCardBatch = (studentIds) =>
@@ -58,3 +53,8 @@ export const addApprovedToBatch = (studentIds, me) =>
 
 export const dismissApproved = (studentIds) =>
   writeInChunks(studentIds, 1, (batch, id) => batch.delete(doc(db, APPROVED, id)));
+
+// The saved batch stores only who was added; the card's details are read
+// live from the learner's records when it prints. Adding also takes the
+// learner off Recently approved, so they cannot be printed from both lists.
+export const addToIdCardBatch = (studentId, me) => addApprovedToBatch([studentId], me);

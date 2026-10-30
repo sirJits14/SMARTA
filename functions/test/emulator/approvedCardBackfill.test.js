@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { db, clearAll } from './helpers.js';
 import { backfillApprovedCards } from '../../src/lib/approvedCardBackfill.js';
 
@@ -53,6 +53,23 @@ describe('backfillApprovedCards', () => {
       LOGGED: 'Already logged.', BATCHED: 'Already in the saved batch.',
     });
     expect((await db().collection('id_card_approved').get()).docs.map((d) => d.id).sort()).toEqual(['LOGGED', 'REPRINT']);
+  });
+
+  it('skips an audit row whose request no longer exists', async () => {
+    await approved('S1');
+    await db().doc('learner_change_requests/R-S1').delete();
+    expect(await backfillApprovedCards(db(), { apply: true })).toEqual({ added: [], skipped: [{ studentId: 'S1', reason: 'Request not found.' }] });
+    expect(await get('id_card_approved/S1')).toBeUndefined();
+  });
+
+  it('still logs a learner when neither the audit row nor the request has a time', async () => {
+    await approved('S1');
+    await db().doc('audit_log/A-S1').update({ at: FieldValue.delete() });
+    await db().doc('learner_change_requests/R-S1').update({ decidedAt: FieldValue.delete() });
+    expect(await backfillApprovedCards(db(), { apply: true })).toEqual({ added: ['S1'], skipped: [] });
+    const entry = await get('id_card_approved/S1');
+    expect(entry.approvedAt).toBeInstanceOf(Timestamp);
+    expect(entry.requestId).toBe('R-S1');
   });
 
   it('adds nothing the second time', async () => {

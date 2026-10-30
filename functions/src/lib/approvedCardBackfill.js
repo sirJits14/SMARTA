@@ -1,3 +1,4 @@
+import { Timestamp } from 'firebase-admin/firestore';
 import { APPROVED_CARDS, approvedCardEntry } from './approvedCards.js';
 
 const docId = (value) => typeof value === 'string' && value.length > 0 && !value.includes('/');
@@ -31,7 +32,7 @@ export async function backfillApprovedCards(db, { apply = false } = {}) {
     if (batched.exists) { skip('Already in the saved batch.'); continue; }
     if (apply) {
       await db.doc(`${APPROVED_CARDS}/${studentId}`).create(approvedCardEntry({
-        requestId: targetId, schoolYear: request.schoolYear, approvedByName: request.decidedByName, approvedAt: request.decidedAt ?? at,
+        requestId: targetId, schoolYear: request.schoolYear, approvedByName: request.decidedByName, approvedAt: request.decidedAt ?? at ?? Timestamp.now(),
       }));
     }
     result.added.push(studentId);
