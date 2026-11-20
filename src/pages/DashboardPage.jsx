@@ -13,7 +13,7 @@ import { AttentionCard, AttentionDetail } from '../components/dashboard/widgets/
 import { NoticeCard, NoticeDetail } from '../components/dashboard/widgets/NoticeWidget.jsx';
 import { CalendarCard, CalendarDetail, UpcomingCard } from '../components/dashboard/widgets/CalendarWidget.jsx';
 import { ActivityCard, ActivityDetail } from '../components/dashboard/widgets/ActivityWidget.jsx';
-import { attendanceTally, attentionQueues, unassignedCount } from '../lib/dashboardStats.js';
+import { attendanceTally, attentionQueues } from '../lib/dashboardStats.js';
 import { isWeekend } from '../lib/dates.js';
 import { canOpen } from '../lib/access.js';
 import { UNASSIGNED } from '../lib/constants.js';
@@ -31,7 +31,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
     [data.rosterMap, data.attendance, schoolYear, today]);
   const queues = attentionQueues({
     admin, canRequests: data.canRequests,
-    unassigned: unassignedCount(data.students, data.enrollments, schoolYear),
+    unassigned: data.unassignedTotal,
     pendingSections: isWeekend(today) ? 0 : data.coverage.pendingSections.length,
     requests: data.requests, idCards: data.idCardIds.length,
   });
@@ -87,6 +87,6 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
         <ActivityCard {...card('activity')} />
       </aside>
     </div>
-    {drawer && <WidgetDrawer title={drawer.title} pageLink={drawer.link} resources={drawer.resources} onNavigate={setPage} onClose={close}>{drawer.body}</WidgetDrawer>}
+    {drawer && <WidgetDrawer key={panel} title={drawer.title} pageLink={drawer.link} resources={drawer.resources} onNavigate={setPage} onClose={close}>{drawer.body}</WidgetDrawer>}
   </div>;
 }

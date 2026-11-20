@@ -209,9 +209,6 @@
 @media print { .sims-skip,.sims-rail-tooltip,.sims-pagebar,.sims-mobilebar { display:none!important; } .sims-dialog::backdrop { display:none; } }
 
 @media screen {
-  .sims-ui .sims-section-label { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
-  .sims-ui .sims-section-label > span { color:var(--t-muted); font-size:12px; }
-  .sims-ui .sims-card-label { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--t-subtle); }
   .sims-ui .sims-row-action { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--t-primary); flex-shrink:0; }
   .sims-ui .sims-grade-chart { display:flex; align-items:flex-end; gap:16px; margin-top:28px; }
   .sims-ui .sims-grade-column { flex:1; min-width:0; text-align:center; display:flex; flex-direction:column; gap:10px; }

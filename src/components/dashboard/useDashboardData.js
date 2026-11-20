@@ -5,7 +5,7 @@ import { useCollectionResource, useQueryResource, useStaffCollectionResource } f
 import { useLocalToday } from '../../hooks/useLocalToday.js';
 import { useLearnerRequestCount } from '../../hooks/useLearnerRequestCount.js';
 import { canOpen, grades, isAdmin, scopeRoster } from '../../lib/access.js';
-import { attendanceCoverage, rosterBySection } from '../../lib/dashboardStats.js';
+import { attendanceCoverage, rosterBySection, unassignedCount } from '../../lib/dashboardStats.js';
 
 // Everything the dashboard reads, loaded once and scoped to the signed-in person's grades.
 export function useDashboardData({ me, schoolYear }) {
@@ -32,12 +32,13 @@ export function useDashboardData({ me, schoolYear }) {
   const rosterMap = useMemo(() => rosterBySection(students, enrollments, schoolYear), [students, enrollments, schoolYear]);
   const coverage = useMemo(() => attendanceCoverage({ students, sections, enrollments, attendance, schoolYear, date: today }),
     [students, sections, enrollments, attendance, schoolYear, today]);
+  const unassignedTotal = useMemo(() => unassignedCount(students, enrollments, schoolYear), [students, enrollments, schoolYear]);
   // Post states depend on the clock; recomputed whenever posts or the day change.
   const nowMs = useMemo(() => Date.now(), [postsResource.data, today]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     me, admin, canRequests, schoolYear, today, nowMs,
-    students, sections, enrollments, attendance, studentsById, sectionsById, rosterMap, coverage, requests,
+    students, sections, enrollments, attendance, studentsById, sectionsById, rosterMap, coverage, requests, unassignedTotal,
     posts: postsResource.data,
     idCardIds,
     resources: {

@@ -1,12 +1,12 @@
 import NavIcon from '../../NavIcon.jsx';
 import { canOpen } from '../../../lib/access.js';
-import { activeStudentCount, enrolledCount, formatRate, unassignedCount } from '../../../lib/dashboardStats.js';
+import { activeStudentCount, enrolledCount, formatRate } from '../../../lib/dashboardStats.js';
 import { isWeekend } from '../../../lib/dates.js';
 import { UNASSIGNED } from '../../../lib/constants.js';
 
 // Headline numbers. A tile is a button only when it has somewhere this person may go.
 export default function KpiStrip({ data, todayRate, onNavigate, onOpenPanel }) {
-  const { me, admin, canRequests, students, enrollments, sections, schoolYear, coverage, requests, today } = data;
+  const { me, admin, canRequests, students, enrollments, sections, schoolYear, coverage, requests, today, unassignedTotal } = data;
   const rate = isWeekend(today) ? null : todayRate;
   const page = (name, params) => (canOpen(me, name) ? () => onNavigate(name, params ?? null) : null);
   const tiles = [
@@ -15,7 +15,7 @@ export default function KpiStrip({ data, todayRate, onNavigate, onOpenPanel }) {
     { label: 'Sections this school year', value: sections.filter((s) => s.schoolYear === schoolYear).length, icon: 'sections', go: page('sections') },
     { label: "Today's present rate", value: formatRate(rate), icon: 'attendance', go: () => onOpenPanel('attendance'),
       sub: rate == null ? (isWeekend(today) ? 'No school day today' : 'No attendance recorded today') : `${coverage.recordedCount} of ${coverage.totalSections} sections recorded` },
-    admin && { label: 'Unassigned learners', value: unassignedCount(students, enrollments, schoolYear), icon: 'students',
+    admin && { label: 'Unassigned learners', value: unassignedTotal, icon: 'students',
       go: page('students', { gradeFilter: UNASSIGNED, status: 'active' }) },
     canRequests && { label: 'Open learner requests', value: requests.truncated ? `${requests.count}+` : requests.count, icon: 'accounts',
       go: page('learnerRequests') },

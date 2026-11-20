@@ -63,7 +63,7 @@ Desktop, 1280px and wider: a main column (fluid) and a 320px rail, with a
 ┌──────────────────────────── main ─────────────────────────────┬──── rail 320px ────┐
 │ Your school day, at a glance.                  [Enroll ▸]     │                    │
 │ KPI  KPI  KPI                                                 │  Calendar (month)  │
-│ KPI  KPI  KPI   (4 tiles for grade-scoped staff)              │                    │
+│ KPI  KPI  KPI   (4-5 tiles for grade-scoped staff)            │                    │
 │ ┌ Enrollment by grade  ⤢ ┐ ┌ Weekly attendance [Week▾] ⤢ ┐   │  Upcoming posts  ⤢ │
 │ └────────────────────────┘ └─────────────────────────────┘   │                    │
 │ ┌ Learners by sex ⤢┐ ┌ Coverage today ⤢┐ ┌ Needs attention ⤢┐ │  Recent activity ⤢ │
@@ -159,8 +159,9 @@ tile is a button when it has a destination.
 | Unassigned learners | `unassignedCount` | admin | Students, `gradeFilter: UNASSIGNED` (the existing route) |
 | Open learner requests | `useLearnerRequestCount(canOpen(me,'learnerRequests'))` | `canOpen(me,'learnerRequests')` | Learner Requests |
 
-On a weekend, or on a weekday with nothing recorded, the present-rate tile
-shows "—" with the sub-line "No attendance recorded today".
+On a weekday with nothing recorded, the present-rate tile shows "—" with the
+sub-line "No attendance recorded today"; on a weekend it shows "—" with the
+sub-line "No school day today".
 
 ### `attendance`: Weekly attendance
 
@@ -420,8 +421,8 @@ and the enrollment drawer in src/pages/EnrollPage.jsx + src/enrollment.css.
 
 What to build
 - Rebuild the Dashboard page (and only that page) as a main column + 320px
-  right rail. It has a KPI strip (6 tiles for admins, 4 for grade-scoped
-  staff) and these widgets: Weekly attendance, Learners by sex, Enrollment by
+  right rail. It has a KPI strip (6 tiles for admins; 5 for coordinators who
+  can open learner requests, otherwise 4) and these widgets: Weekly attendance, Learners by sex, Enrollment by
   grade, Attendance coverage today, Needs attention, Notice board, Calendar,
   Upcoming posts, Recent activity.
 - Every widget has an expand icon button that opens a shared right-side
