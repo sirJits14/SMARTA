@@ -186,3 +186,83 @@ export const sectionTitle = (section) => (section
 
 export const formatUnits = (n) => n.toLocaleString('en-PH', { maximumFractionDigits: 1 });
 export const formatRate = (rate) => (rate == null ? '—' : `${rate}%`);
+
+export function postState(post, nowMs) {
+  if (post.status === 'scheduled') return 'scheduled';
+  const expires = toMillis(post.expiresAt);
+  if (post.status === 'published' && !(expires != null && expires <= nowMs)) return 'published';
+  return 'ended';
+}
+
+export const postDate = (post) =>
+  toMillis(post.status === 'scheduled' ? post.publishAt : (post.publishedAt ?? post.publishAt)) ?? 0;
+
+const STATE_RANK = { published: 0, scheduled: 1, ended: 2 };
+
+// Notice board order: what is live now (pinned first, then newest), then what is coming (soonest first).
+export function noticePosts(posts, { status = 'all', nowMs, limit = 4 }) {
+  const state = new Map(posts.map((p) => [p.id, postState(p, nowMs)]));
+  return posts
+    .filter((p) => (status === 'all' ? state.get(p.id) !== 'ended' : state.get(p.id) === status))
+    .sort((a, b) => {
+      const sa = state.get(a.id);
+      const sb = state.get(b.id);
+      if (sa !== sb) return STATE_RANK[sa] - STATE_RANK[sb];
+      if (sa === 'published' && Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+      const byDate = sa === 'scheduled' ? postDate(a) - postDate(b) : postDate(b) - postDate(a);
+      return byDate || a.id.localeCompare(b.id);
+    })
+    .slice(0, limit);
+}
+
+export function postsByDay(posts, nowMs) {
+  const out = {};
+  for (const post of posts) {
+    const ms = postDate(post);
+    if (!ms || postState(post, nowMs) === 'ended') continue;
+    (out[manilaDay(ms)] ||= []).push(post);
+  }
+  for (const list of Object.values(out)) list.sort((a, b) => postDate(a) - postDate(b) || a.id.localeCompare(b.id));
+  return out;
+}
+
+export function upcomingPosts({ posts, nowMs, day = null, limit = 3 }) {
+  if (day) return (postsByDay(posts, nowMs)[day] || []).slice(0, limit);
+  return posts
+    .filter((p) => p.status === 'scheduled' && postDate(p) > nowMs)
+    .sort((a, b) => postDate(a) - postDate(b) || a.id.localeCompare(b.id))
+    .slice(0, limit);
+}
+
+// Enrollments (by dateEnrolled) and posts (published: publishedAt; scheduled: when it was scheduled)
+// as one newest-first feed. Same day: posts before enrollments, then by key, so the order is stable.
+export function recentActivity({ enrollments, posts, schoolYear, kind = 'all', limit = 6 }) {
+  const items = [];
+  if (kind !== 'post') {
+    for (const e of enrollments) {
+      if (e.schoolYear !== schoolYear || e.status !== 'enrolled' || !e.dateEnrolled) continue;
+      items.push({ key: `e:${e.studentId}`, kind: 'enrollment', day: e.dateEnrolled, enrollment: e });
+    }
+  }
+  if (kind !== 'enrollment') {
+    for (const post of posts) {
+      if (post.status !== 'published' && post.status !== 'scheduled') continue;
+      const ms = toMillis(post.status === 'scheduled' ? post.createdAt : post.publishedAt);
+      if (!ms) continue;
+      items.push({ key: `p:${post.id}`, kind: 'post', day: manilaDay(ms), post, scheduled: post.status === 'scheduled' });
+    }
+  }
+  const rank = { post: 0, enrollment: 1 };
+  return items
+    .sort((a, b) => b.day.localeCompare(a.day) || rank[a.kind] - rank[b.kind] || a.key.localeCompare(b.key))
+    .slice(0, limit);
+}
+
+export function attentionQueues({ admin, canRequests, unassigned, pendingSections, requests, idCards }) {
+  return [
+    admin && { id: 'unassigned', label: 'Learners without a section', count: unassigned },
+    { id: 'attendance', label: 'Sections without attendance today', count: pendingSections },
+    canRequests && { id: 'requests', label: 'Learner requests waiting', count: requests.count, truncated: Boolean(requests.truncated) },
+    admin && { id: 'idcards', label: 'ID cards waiting to print', count: idCards },
+  ].filter((q) => q && q.count > 0);
+}

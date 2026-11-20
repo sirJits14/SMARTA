@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rosterBySection, attendanceTally, percentOf, sexBreakdown, shsBreakdown, unassignedStudents, unassignedCount, gradesInScope, sectionTitle, formatUnits, formatRate } from './dashboardStats.js';
+import { rosterBySection, attendanceTally, percentOf, sexBreakdown, shsBreakdown, unassignedStudents, unassignedCount, gradesInScope, sectionTitle, formatUnits, formatRate, postState, postDate, noticePosts, postsByDay, upcomingPosts, recentActivity, attentionQueues } from './dashboardStats.js';
 
 const SY = '2026-2027';
 
@@ -149,5 +149,79 @@ describe('labels', () => {
     expect(formatUnits(2.5)).toBe('2.5');
     expect(formatRate(50)).toBe('50%');
     expect(formatRate(null)).toBe('—');
+  });
+});
+
+const NOW = Date.UTC(2026, 10, 20, 4, 0); // 20 Nov 2026, 12:00 Manila
+const P = {
+  p1: { id: 'p1', status: 'published', publishedAt: Date.UTC(2026, 10, 19, 2), title: 'One' },
+  p2: { id: 'p2', status: 'published', publishedAt: Date.UTC(2026, 10, 18, 2), expiresAt: Date.UTC(2026, 10, 19, 0), title: 'Expired' },
+  p3: { id: 'p3', status: 'scheduled', publishAt: Date.UTC(2026, 10, 23, 1), createdAt: Date.UTC(2026, 10, 17, 1), title: 'Later' },
+  p4: { id: 'p4', status: 'unpublished', publishedAt: Date.UTC(2026, 10, 10, 2), title: 'Pulled' },
+  p5: { id: 'p5', status: 'scheduled', publishAt: Date.UTC(2026, 10, 21, 1), createdAt: Date.UTC(2026, 10, 18, 1), title: 'Soon' },
+  p6: { id: 'p6', status: 'published', publishedAt: Date.UTC(2026, 10, 20, 1), pinned: true, title: 'Pinned' },
+};
+const posts = Object.values(P);
+
+describe('posts', () => {
+  it('derives state with expiry', () => {
+    expect(['p1', 'p2', 'p3', 'p4'].map((id) => postState(P[id], NOW))).toEqual(['published', 'ended', 'scheduled', 'ended']);
+    expect(postDate(P.p3)).toBe(P.p3.publishAt);
+    expect(postDate({})).toBe(0);
+  });
+
+  it('orders the notice board: live first (pinned, newest), then scheduled (soonest)', () => {
+    expect(noticePosts(posts, { nowMs: NOW }).map((p) => p.id)).toEqual(['p6', 'p1', 'p5', 'p3']);
+    expect(noticePosts(posts, { nowMs: NOW, status: 'scheduled' }).map((p) => p.id)).toEqual(['p5', 'p3']);
+    expect(noticePosts(posts, { nowMs: NOW, status: 'ended', limit: 50 }).map((p) => p.id)).toEqual(['p2', 'p4']);
+    expect(noticePosts(posts, { nowMs: NOW, limit: 2 })).toHaveLength(2);
+  });
+
+  it('buckets current posts by Manila day, including just after midnight', () => {
+    const late = { id: 'p7', status: 'scheduled', publishAt: Date.UTC(2026, 10, 21, 16, 30) }; // 00:30 on the 22nd, Manila
+    const days = postsByDay([...posts, late], NOW);
+    expect(Object.keys(days).sort()).toEqual(['2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22', '2026-11-23']);
+    expect(days['2026-11-22'].map((p) => p.id)).toEqual(['p7']);
+  });
+
+  it('lists upcoming scheduled posts, or one day’s posts', () => {
+    expect(upcomingPosts({ posts, nowMs: NOW }).map((p) => p.id)).toEqual(['p5', 'p3']);
+    expect(upcomingPosts({ posts, nowMs: NOW, day: '2026-11-20' }).map((p) => p.id)).toEqual(['p6']);
+  });
+});
+
+describe('recentActivity', () => {
+  const enrollments = [
+    { studentId: 'a', sectionId: 'A', schoolYear: SY, status: 'enrolled', dateEnrolled: '2026-11-20' },
+    { studentId: 'b', sectionId: 'A', schoolYear: SY, status: 'enrolled', dateEnrolled: '2026-11-19' },
+    { studentId: 'c', sectionId: 'A', schoolYear: SY, status: 'enrolled', dateEnrolled: '' },
+    { studentId: 'd', sectionId: 'A', schoolYear: SY, status: 'dropped', dateEnrolled: '2026-11-20' },
+  ];
+
+  it('merges enrollments and posts newest first, posts before enrollments on the same day', () => {
+    const items = recentActivity({ enrollments, posts, schoolYear: SY, limit: 50 });
+    expect(items.map((i) => i.key)).toEqual(['p:p6', 'e:a', 'p:p1', 'e:b', 'p:p2', 'p:p5', 'p:p3']);
+    expect(items.find((i) => i.key === 'p:p5')).toMatchObject({ kind: 'post', day: '2026-11-18', scheduled: true });
+  });
+
+  it('filters by kind and limits', () => {
+    expect(recentActivity({ enrollments, posts, schoolYear: SY, kind: 'enrollment' }).map((i) => i.key)).toEqual(['e:a', 'e:b']);
+    expect(recentActivity({ enrollments, posts, schoolYear: SY })).toHaveLength(6);
+  });
+});
+
+describe('attentionQueues', () => {
+  const counts = { unassigned: 3, pendingSections: 2, requests: { count: 50, truncated: true }, idCards: 4 };
+
+  it('shows every non-empty queue to admins', () => {
+    expect(attentionQueues({ admin: true, canRequests: true, ...counts }).map((q) => [q.id, q.count])).toEqual([
+      ['unassigned', 3], ['attendance', 2], ['requests', 50], ['idcards', 4],
+    ]);
+    expect(attentionQueues({ admin: true, canRequests: true, ...counts })[2].truncated).toBe(true);
+  });
+
+  it('hides admin-only rows and empty queues', () => {
+    expect(attentionQueues({ admin: false, canRequests: false, ...counts }).map((q) => q.id)).toEqual(['attendance']);
+    expect(attentionQueues({ admin: true, canRequests: true, unassigned: 0, pendingSections: 0, requests: { count: 0 }, idCards: 0 })).toEqual([]);
   });
 });
