@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Btn, ResourceState } from '../components/ui.jsx';
 import NavIcon from '../components/NavIcon.jsx';
 import WidgetDrawer from '../components/dashboard/WidgetDrawer.jsx';
@@ -11,6 +11,7 @@ import { AttendanceCard, AttendanceDetail } from '../components/dashboard/widget
 import { SexCard, SexDetail } from '../components/dashboard/widgets/SexWidget.jsx';
 import { AttentionCard, AttentionDetail } from '../components/dashboard/widgets/AttentionWidget.jsx';
 import { NoticeCard, NoticeDetail } from '../components/dashboard/widgets/NoticeWidget.jsx';
+import { CalendarCard, CalendarDetail, UpcomingCard } from '../components/dashboard/widgets/CalendarWidget.jsx';
 import { attendanceTally, attentionQueues, unassignedCount } from '../lib/dashboardStats.js';
 import { isWeekend } from '../lib/dates.js';
 import { canOpen } from '../lib/access.js';
@@ -21,6 +22,8 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
   const data = useDashboardData({ me, schoolYear });
   const { panel, open, close } = useDashboardPanel();
   const { today, admin } = data;
+  const [month, setMonth] = useState(() => data.today.slice(0, 7));
+  const [selectedDay, setSelectedDay] = useState(null);
   const link = (label, page, params) => (canOpen(me, page) ? { label, page, params } : null);
   const takeAttendance = (section) => setPage('attendance', { attendanceEntry: { sectionId: section.id, date: today } });
   const todayTally = useMemo(() => attendanceTally({ roster: data.rosterMap, attendance: data.attendance, schoolYear, dates: [today] }),
@@ -47,6 +50,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
     attention: { title: 'Needs attention', link: null, resources: [...roster, ...data.resources.idCards],
       body: <AttentionDetail data={data} queues={queues} onQueue={(id) => { close(); onQueue(id); }} onTakeAttendance={takeAttendance} /> },
     notices: { title: 'Notice board', link: link('Open Announcements', 'announcements'), resources: data.resources.posts, body: <NoticeDetail data={data} /> },
+    calendar: { title: 'Calendar', link: link('Open Announcements', 'announcements'), resources: data.resources.posts, body: <CalendarDetail data={data} month={month} onMonth={setMonth} /> },
   };
   // A panel id with no drawer (not built yet, or drifted) counts as closed; clean it out of the URL.
   const drawer = panel && Object.prototype.hasOwnProperty.call(drawers, panel) ? drawers[panel] : null;
@@ -59,7 +63,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
       <div><h1>Your school day, at a glance.</h1><p className="sims-dashboard-date">{dateLabel}</p></div>
       {admin && <Btn onClick={() => setPage('enroll')}>Enroll a learner <NavIcon name="enroll" size={17} /></Btn>}
     </div>
-    <div className="sims-dash-layout">
+    <div className="sims-dash-layout has-rail">
       <div className="sims-dash-main">
         <ResourceState resources={roster} label="dashboard summary" inline>
           <KpiStrip data={data} todayRate={todayTally.days[0]?.rate ?? null} onNavigate={setPage} onOpenPanel={open} />
@@ -75,6 +79,10 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
         </div>
         <NoticeCard {...card('notices')} />
       </div>
+      <aside className="sims-dash-rail" aria-label="Calendar and activity">
+        <CalendarCard {...card('calendar')} month={month} onMonth={setMonth} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+        <UpcomingCard data={data} expanded={panel === 'calendar'} onExpand={() => open('calendar')} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+      </aside>
     </div>
     {drawer && <WidgetDrawer title={drawer.title} pageLink={drawer.link} resources={drawer.resources} onNavigate={setPage} onClose={close}>{drawer.body}</WidgetDrawer>}
   </div>;
