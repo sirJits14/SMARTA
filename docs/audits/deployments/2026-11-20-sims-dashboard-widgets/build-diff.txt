@@ -1,0 +1,47 @@
+CHANGED  assets/AccountsPage-Cot_FAiS.js -> assets/AccountsPage-Cw_EOlU8.js (7187 -> 7187 B)
+CHANGED  assets/AnnouncementsPage-zATC1YSu.js -> assets/AnnouncementsPage-D7XFLaHQ.js (15093 -> 11531 B)
+CHANGED  assets/AttendanceSummaryPage-IVq4oS_n.js -> assets/AttendanceSummaryPage-D16I0eWv.js (9924 -> 9969 B)
+CHANGED  assets/AttendanceTakePage-gqyxjqoh.js -> assets/AttendanceTakePage-DzxY7SkY.js (8452 -> 8497 B)
+SAME-CONTENT-RENAMED assets/AuditTab-c0CKbJXT.js -> assets/AuditTab-DS1u1b9d.js
+CHANGED  assets/CodesTab-BYmLCJ-t.js -> assets/CodesTab-BmsuvLpw.js (5929 -> 5929 B)
+ADDED    assets/DashboardPage-DgzRHRxQ.css (14995 B)
+CHANGED  assets/DashboardPage-Cbh_Z2Hu.js -> assets/DashboardPage-D8vJyiy9.js (11323 -> 42199 B)
+SAME-CONTENT-RENAMED assets/DevicesTab-DISrYpNN.js -> assets/DevicesTab-DOPv6FOQ.js
+SAME-CONTENT-RENAMED assets/EnrollPage-CVct6gtS.js -> assets/EnrollPage-GuEf6-Kq.js
+SAME-CONTENT-RENAMED assets/GradePills-BK_q9qoh.js -> assets/GradePills-CcznVMzK.js
+CHANGED  assets/GuardiansPage-CUFYBOBY.js -> assets/GuardiansPage-36i0atLq.js (4013 -> 4055 B)
+SAME-CONTENT-RENAMED assets/IDCardsPage-BlT9V9fB.js -> assets/IDCardsPage-uvNNwa6b.js
+CHANGED  assets/IdCardPrintConfirm-bhGSbrFz.js -> assets/IdCardPrintConfirm-Cv9ioPK5.js (7878 -> 7878 B)
+CHANGED  assets/LearnerRequestsPage-D5l32FeB.js -> assets/LearnerRequestsPage-xR9ZnHzh.js (9587 -> 9587 B)
+CHANGED  assets/LinksTab-AZJr2hDs.js -> assets/LinksTab-A6iqam-9.js (9549 -> 9549 B)
+SAME-CONTENT-RENAMED assets/PortalSettingsTab-Cf4LLtMG.js -> assets/PortalSettingsTab-ErK9FoN1.js
+SAME-CONTENT-RENAMED assets/ReportsTab-BPkUBkdU.js -> assets/ReportsTab-6MUAO0J-.js
+SAME-CONTENT-RENAMED assets/RequestsTab-BmS4kSgV.js -> assets/RequestsTab-Dvr13v3x.js
+CHANGED  assets/ScanLogTab-BkDcujYx.js -> assets/ScanLogTab-DwXSNlGM.js (3505 -> 3505 B)
+CHANGED  assets/SchedulesPage-B7ha6my-.js -> assets/SchedulesPage-QZqN7Tzp.js (6376 -> 6376 B)
+SAME-CONTENT-RENAMED assets/SchoolAccessTab-B-nCk7pw.js -> assets/SchoolAccessTab-BrjpIwYU.js
+SAME-CONTENT-RENAMED assets/SectionPicker-B_2octg-.js -> assets/SectionPicker-XA6qVGZM.js
+CHANGED  assets/SectionsPage-Dbn85dZU.js -> assets/SectionsPage-kcxh522w.js (27086 -> 27088 B)
+CHANGED  assets/SessionReviewPage-Bm9ldKUX.js -> assets/SessionReviewPage-DXueApiU.js (7156 -> 7156 B)
+SAME-CONTENT-RENAMED assets/SettingsPage-CRNPohvf.js -> assets/SettingsPage-DHX8ZxxP.js
+SAME-CONTENT-RENAMED assets/SlipPrintControls-CgrC8rIR.js -> assets/SlipPrintControls-mtOXKRE7.js
+CHANGED  assets/StudentForm-BaM8nEl6.js -> assets/StudentForm-BDV5zuaR.js (7690 -> 7690 B)
+CHANGED  assets/StudentsPage-0UTCuSQs.js -> assets/StudentsPage-RxRMDKzL.js (17590 -> 17590 B)
+SAME-CONTENT-RENAMED assets/SubTabs-MRPRR8Pf.js -> assets/SubTabs-CNspvc7F.js
+ADDED    assets/announcements-BTN-FFpy.js (3872 B)
+CHANGED  assets/attendance-BvbS_mzU.js -> assets/attendance-Voo87ab3.js (1871 -> 1198 B)
+SAME-CONTENT-RENAMED assets/browser-RUMZuqIm.js -> assets/browser-DlMTpxcZ.js
+CHANGED  assets/dates-BmMLuwUb.js -> assets/dates-owWDfcCO.js (669 -> 1581 B)
+SAME-CONTENT-RENAMED assets/downloadWorkbook-D1KcT3SP.js -> assets/downloadWorkbook-C2ro8OcB.js
+CHANGED  assets/enrollmentChange-OWFtda_x.js -> assets/enrollmentChange-iAe66gQz.js (486 -> 486 B)
+CHANGED  assets/enrollments-CmjfSxHn.js -> assets/enrollments-I5XcYjam.js (446 -> 446 B)
+SAME-CONTENT-RENAMED assets/guardians-B3NAazY-.js -> assets/guardians-MZ6mQCpT.js
+CHANGED  assets/index-6nx3eteX.css -> assets/index-Cg5UlzjP.css (34586 -> 30481 B)
+CHANGED  assets/index-CH2PMZML.js -> assets/index-hCVkXjug.js (213482 -> 213636 B)
+ADDED    assets/sessionAttendance-D0WR5V0K.js (744 B)
+SAME-CONTENT-RENAMED assets/slipIssue-B3nzSNft.js -> assets/slipIssue-CLUYPCfj.js
+CHANGED  assets/ui-DSCiEOWm.js -> assets/ui-Coz8_du3.js (691757 -> 692115 B)
+SAME-CONTENT-RENAMED assets/useAsyncAction-Do8JCL3m.js -> assets/useAsyncAction-Cwu8ut21.js
+SAME-CONTENT-RENAMED assets/useCollection-CDvjrv-X.js -> assets/useCollection-BDt4BIN2.js
+SAME-CONTENT-RENAMED assets/useSchoolPendingCount-YFmX7Z5D.js -> assets/useSchoolPendingCount-DZo23yYY.js
+identical after normalisation: 41/67
