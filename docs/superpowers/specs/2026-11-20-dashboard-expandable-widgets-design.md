@@ -1,7 +1,7 @@
 # SIMS dashboard: widget grid with expandable detail drawers
 
 Date: 2026-11-20
-Status: approved design, not yet implemented
+Status: implemented (see docs/superpowers/plans/2026-11-20-dashboard-expandable-widgets.md)
 Surface: SIMS registrar shell, Dashboard page only (Operate mode)
 
 ## Goal
