@@ -6,6 +6,7 @@ import { audienceLabel } from '../../../lib/announcements.js';
 import { shortDate } from '../../../lib/schoolAssignments.js';
 import { noticePosts, postDate, postState } from '../../../lib/dashboardStats.js';
 
+const LIMIT = 50;
 const EMPTY = {
   all: ['No current announcements', 'Published and scheduled announcements appear here.'],
   published: ['Nothing published', 'Live announcements appear here.'],
@@ -42,10 +43,12 @@ export function NoticeCard({ data, expanded, onExpand }) {
 
 export function NoticeDetail({ data }) {
   const [status, setStatus] = useState('all');
-  const posts = noticePosts(data.posts, { status, nowMs: data.nowMs, limit: 50 });
+  const all = noticePosts(data.posts, { status, nowMs: data.nowMs, limit: Number.MAX_SAFE_INTEGER });
+  const posts = all.slice(0, LIMIT);
   return <>
     <Segmented label="Announcement status" value={status} onChange={setStatus}
       options={[['all', 'All current'], ['published', 'Published'], ['scheduled', 'Scheduled'], ['ended', 'Ended']]} />
     {posts.length ? <NoticeList posts={posts} nowMs={data.nowMs} preview /> : <EmptyState title={EMPTY[status][0]} hint={EMPTY[status][1]} />}
+    {all.length > LIMIT && <p className="sims-widget-note">Showing {LIMIT} of {all.length.toLocaleString()}</p>}
   </>;
 }

@@ -21,7 +21,7 @@ function Sentence({ item, data }) {
 function Timeline({ items, data }) {
   return <ol className="sims-timeline">{items.map((item) => <li key={item.key}>
     <span className="sims-timeline-icon" aria-hidden="true"><NavIcon name={item.kind === 'post' ? 'announcements' : 'enroll'} size={14} /></span>
-    <div><p><Sentence item={item} data={data} /></p><small>{dayLabel(item.day, { month: 'short', day: 'numeric', year: 'numeric' })}</small></div>
+    <div><p><Sentence item={item} data={data} /></p><time dateTime={item.day}>{dayLabel(item.day, { month: 'short', day: 'numeric', year: 'numeric' })}</time></div>
   </li>)}</ol>;
 }
 
@@ -29,6 +29,7 @@ const useItems = (data, kind, limit) => useMemo(
   () => recentActivity({ enrollments: data.enrollments, posts: data.posts, schoolYear: data.schoolYear, kind, limit }),
   [data.enrollments, data.posts, data.schoolYear, kind, limit],
 );
+const LIMIT = 50;
 const EMPTY = ['No recent activity', 'Enrollments and announcements will appear here.'];
 
 export function ActivityCard({ data, expanded, onExpand }) {
@@ -41,9 +42,11 @@ export function ActivityCard({ data, expanded, onExpand }) {
 
 export function ActivityDetail({ data }) {
   const [kind, setKind] = useState('all');
-  const items = useItems(data, kind, 50);
+  const all = useItems(data, kind, Number.MAX_SAFE_INTEGER);
+  const items = all.slice(0, LIMIT);
   return <>
     <Segmented label="Activity type" value={kind} onChange={setKind} options={[['all', 'All'], ['enrollment', 'Enrollments'], ['post', 'Posts']]} />
     {items.length ? <Timeline items={items} data={data} /> : <EmptyState title={EMPTY[0]} hint={EMPTY[1]} />}
+    {all.length > LIMIT && <p className="sims-widget-note">Showing {LIMIT} of {all.length.toLocaleString()}</p>}
   </>;
 }
