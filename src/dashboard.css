@@ -181,3 +181,13 @@
   .sims-ui .sims-upcoming-row small { display:block; margin-top:2px; font-size:12px; color:var(--t-muted); }
   .sims-ui .sims-date-chip { display:inline-block; padding:2px 8px; border-radius:999px; background:var(--t-selected); color:var(--t-primary-deep); font-size:12px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; }
 }
+@media screen {
+  .sims-ui .sims-timeline { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .sims-ui .sims-timeline li { position:relative; display:grid; grid-template-columns:28px minmax(0,1fr); gap:12px; padding-bottom:16px; }
+  .sims-ui .sims-timeline li:last-child { padding-bottom:0; }
+  .sims-ui .sims-timeline li:not(:last-child)::before { content:""; position:absolute; left:13.5px; top:32px; bottom:4px; width:1px; background:var(--t-border); }
+  .sims-ui .sims-timeline-icon { display:grid; place-items:center; width:28px; height:28px; border-radius:999px; background:var(--t-hover); color:var(--t-muted); }
+  .sims-ui .sims-timeline p { margin:0; font-size:13px; line-height:1.5; color:var(--t-subtle); overflow-wrap:anywhere; }
+  .sims-ui .sims-timeline p strong { font-weight:500; color:var(--t-ink); }
+  .sims-ui .sims-timeline small { display:block; margin-top:2px; font-size:12px; color:var(--t-muted); }
+}

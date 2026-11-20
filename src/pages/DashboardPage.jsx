@@ -12,6 +12,7 @@ import { SexCard, SexDetail } from '../components/dashboard/widgets/SexWidget.js
 import { AttentionCard, AttentionDetail } from '../components/dashboard/widgets/AttentionWidget.jsx';
 import { NoticeCard, NoticeDetail } from '../components/dashboard/widgets/NoticeWidget.jsx';
 import { CalendarCard, CalendarDetail, UpcomingCard } from '../components/dashboard/widgets/CalendarWidget.jsx';
+import { ActivityCard, ActivityDetail } from '../components/dashboard/widgets/ActivityWidget.jsx';
 import { attendanceTally, attentionQueues, unassignedCount } from '../lib/dashboardStats.js';
 import { isWeekend } from '../lib/dates.js';
 import { canOpen } from '../lib/access.js';
@@ -51,6 +52,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
       body: <AttentionDetail data={data} queues={queues} onQueue={(id) => { close(); onQueue(id); }} onTakeAttendance={takeAttendance} /> },
     notices: { title: 'Notice board', link: link('Open Announcements', 'announcements'), resources: data.resources.posts, body: <NoticeDetail data={data} /> },
     calendar: { title: 'Calendar', link: link('Open Announcements', 'announcements'), resources: data.resources.posts, body: <CalendarDetail data={data} month={month} onMonth={setMonth} /> },
+    activity: { title: 'Recent activity', link: null, resources: [...roster, ...data.resources.posts], body: <ActivityDetail data={data} /> },
   };
   // A panel id with no drawer (not built yet, or drifted) counts as closed; clean it out of the URL.
   const drawer = panel && Object.prototype.hasOwnProperty.call(drawers, panel) ? drawers[panel] : null;
@@ -82,6 +84,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
       <aside className="sims-dash-rail" aria-label="Calendar and activity">
         <CalendarCard {...card('calendar')} month={month} onMonth={setMonth} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
         <UpcomingCard data={data} expanded={panel === 'calendar'} onExpand={() => open('calendar')} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+        <ActivityCard {...card('activity')} />
       </aside>
     </div>
     {drawer && <WidgetDrawer title={drawer.title} pageLink={drawer.link} resources={drawer.resources} onNavigate={setPage} onClose={close}>{drawer.body}</WidgetDrawer>}
