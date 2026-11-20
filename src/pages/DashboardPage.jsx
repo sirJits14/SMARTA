@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Btn, ResourceState } from '../components/ui.jsx';
 import NavIcon from '../components/NavIcon.jsx';
 import AttentionPanel from '../components/dashboard/AttentionPanel.jsx';
@@ -27,7 +27,10 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
     enrollment: { title: 'Enrollment by grade', link: link('Open Enrollment', 'enroll'), resources: roster, body: <EnrollmentDetail data={data} /> },
     coverage: { title: 'Attendance coverage', link: link('Open Attendance', 'attendance'), resources: roster, body: <CoverageDetail data={data} onTakeAttendance={takeAttendance} /> },
   };
-  const drawer = panel ? drawers[panel] : null;
+  // A panel id with no drawer (not built yet, or drifted) counts as closed; clean it out of the URL.
+  const drawer = panel && Object.hasOwn(drawers, panel) ? drawers[panel] : null;
+  const missingDrawer = Boolean(panel) && !drawer;
+  useEffect(() => { if (missingDrawer) close(); }, [missingDrawer, close]);
   const dateLabel = new Date(`${today}T12:00:00`).toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
   return <div className="sims-dashboard">

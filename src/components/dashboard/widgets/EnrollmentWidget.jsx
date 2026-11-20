@@ -22,14 +22,18 @@ export function EnrollmentDetail({ data }) {
   const shs = useMemo(() => shsBreakdown(enrollments, sections, schoolYear), [enrollments, sections, schoolYear]);
   const recent = useMemo(() => recentEnrollments(enrollments, schoolYear, 30), [enrollments, schoolYear]);
   return <>
-    <section className="sims-drawer-section"><h3>By grade</h3><GradeBarChart counts={countByGrade(enrollments, schoolYear)} /></section>
+    <section className="sims-drawer-section"><h3>By grade</h3>
+      {enrolledCount(enrollments, schoolYear)
+        ? <GradeBarChart counts={countByGrade(enrollments, schoolYear)} />
+        : <EmptyState title="No enrollments yet" hint="Enroll a learner to begin your school-year overview." />}
+    </section>
     <section className="sims-drawer-section"><h3>Sections</h3>
       <DataTable label="Enrolled learners by section" empty={['No enrolled sections', 'Sections with enrollments this school year will appear here.']}
         columns={[{ key: 'section', label: 'Section' }, { key: 'latest', label: 'Latest enrollment' }, { key: 'count', label: 'Enrolled learners', num: true }]}
         rows={bySection.map((r) => ({ key: r.sectionId, section: sectionTitle(sectionsById[r.sectionId]), latest: r.latestDate || '—', count: r.count.toLocaleString() }))} />
     </section>
     {shs.length > 0 && <section className="sims-drawer-section"><h3>Senior high track and strand</h3>
-      <DataTable label="Senior high enrollment by track and strand" empty={['', '']}
+      <DataTable label="Senior high enrollment by track and strand"
         columns={[{ key: 'track', label: 'Track' }, { key: 'strand', label: 'Strand' }, { key: 'count', label: 'Learners', num: true }]}
         rows={shs.map((r) => ({ key: `${r.track}|${r.strand}`, track: r.track, strand: r.strand, count: r.count.toLocaleString() }))} />
     </section>}
