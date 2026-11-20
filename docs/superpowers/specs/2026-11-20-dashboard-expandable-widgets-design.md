@@ -80,8 +80,10 @@ Desktop, 1280px and wider: a main column (fluid) and a 320px rail, with a
   full width.
 - Rail order: Calendar, Upcoming posts, Recent activity.
 - Below 1280px the rail moves under the main column as a 2-column grid.
-- Below 1100px row 2 and row 3 become one column, matching the existing
-  dashboard rule.
+- Rows 2 and 3 respond to the main column's own width (container queries):
+  the three-up row becomes two-up at 760px, and both rows become one column at
+  560px. This keeps cards readable whether the sidebar is expanded or
+  collapsed.
 - Below 768px everything is one column.
 - The content max-width (1440px) and the 4px spacing scale stay unchanged.
 
@@ -354,8 +356,8 @@ shows "—" with the sub-line "No attendance recorded today".
   targets on coarse pointers.
 - Calendar days are buttons with full-date accessible names, such as
   "Friday, 20 November 2026, 2 posts".
-- Drawer: focus moves to its heading on open and returns to the expand button
-  on close.
+- Drawer: the native dialog puts focus on its close button on open, and focus
+  returns to the expand button on close.
 
 ## Documentation
 
@@ -381,7 +383,8 @@ Update DESIGN.md:
    - Asia/Manila day bucketing for `publishAt` near midnight;
    - `attentionQueues` hides admin rows for non-admins.
 2. `useDashboardPanel` tests for: a valid id opens, an unknown id is stripped,
-   an id the user may not see is stripped, and close clears the param.
+   the `upcoming` alias maps to `calendar`, and close clears the param. Every
+   widget is visible to every staff role; admin-only rows live inside widgets.
 3. Run the full existing test suite. It must stay green.
 4. Do a browser check against the emulator, as set up for this repo:
    - admin and grade-scoped accounts;
