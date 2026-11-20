@@ -1,0 +1,462 @@
+{
+  "checkedAt": "2026-10-30T14:48:01.080Z",
+  "checked": 65,
+  "mismatched": 0,
+  "files": [
+    {
+      "path": "assets/AccountsPage-Cot_FAiS.js",
+      "sha256": "7e29bd8865f86aea7538f57dddb91e7ecbd2d91cccdb75d4b1375e2985e7c3f5",
+      "liveSha256": "7e29bd8865f86aea7538f57dddb91e7ecbd2d91cccdb75d4b1375e2985e7c3f5",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/AnnouncementsPage-zATC1YSu.js",
+      "sha256": "66352dd4021df5f7e38fbe5e82eee866570da6828775cacbe4a38d3834b18e44",
+      "liveSha256": "66352dd4021df5f7e38fbe5e82eee866570da6828775cacbe4a38d3834b18e44",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/AttendanceSummaryPage-IVq4oS_n.js",
+      "sha256": "4513851bfdf6c9c4f258bb1612e38e73552fc5331211707743c27a1f8e8c824b",
+      "liveSha256": "4513851bfdf6c9c4f258bb1612e38e73552fc5331211707743c27a1f8e8c824b",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/AttendanceTakePage-gqyxjqoh.js",
+      "sha256": "0cd15bd6af68663d12928ac9ee3fc15407a39d36f7d3a28b28801936c197170c",
+      "liveSha256": "0cd15bd6af68663d12928ac9ee3fc15407a39d36f7d3a28b28801936c197170c",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/AuditTab-c0CKbJXT.js",
+      "sha256": "92fed4305f65bf29d9fb780bd4129caff0d236a36c49136f42e3326591e4243b",
+      "liveSha256": "92fed4305f65bf29d9fb780bd4129caff0d236a36c49136f42e3326591e4243b",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/CodesTab-BYmLCJ-t.js",
+      "sha256": "9e7709219e3354de90b8ee6c41b0ef62050a407ca8d80244b4481d916e36f074",
+      "liveSha256": "9e7709219e3354de90b8ee6c41b0ef62050a407ca8d80244b4481d916e36f074",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/DashboardPage-Cbh_Z2Hu.js",
+      "sha256": "64cd020b99e34104b6182925fc58f7deab1a9aff29edcb23c88c782259473ba8",
+      "liveSha256": "64cd020b99e34104b6182925fc58f7deab1a9aff29edcb23c88c782259473ba8",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/DevicesTab-DISrYpNN.js",
+      "sha256": "ab9dcbd702b62b7cef019a4c1c139dcc88d7e732a278d76693001f91105215c3",
+      "liveSha256": "ab9dcbd702b62b7cef019a4c1c139dcc88d7e732a278d76693001f91105215c3",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/EnrollPage-CVct6gtS.js",
+      "sha256": "2e276af1fd51cadc3a1a39d6f900bc786728af1053dd14dc4c6ce3f5fd2f5c3d",
+      "liveSha256": "2e276af1fd51cadc3a1a39d6f900bc786728af1053dd14dc4c6ce3f5fd2f5c3d",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/EnrollPage-D_U-mfMh.css",
+      "sha256": "c48ab1550f3adc91bd017c0f5e4048b07b501185b293b4862e9add11398bf152",
+      "liveSha256": "c48ab1550f3adc91bd017c0f5e4048b07b501185b293b4862e9add11398bf152",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/GradePills-BK_q9qoh.js",
+      "sha256": "939c140428e7c3dd041daa245da48ce413ee85fd9e37744d0ddc3bf3635373e7",
+      "liveSha256": "939c140428e7c3dd041daa245da48ce413ee85fd9e37744d0ddc3bf3635373e7",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/GuardiansPage-CUFYBOBY.js",
+      "sha256": "f5630978fd1b6876545279ad42075c7b5565b562570dbbc5d64149e52fa60cc4",
+      "liveSha256": "f5630978fd1b6876545279ad42075c7b5565b562570dbbc5d64149e52fa60cc4",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/IDCardsPage-BlT9V9fB.js",
+      "sha256": "628db4fe3b80f35cb73cde4ba048e3e750e441f574db78361f3826a0d798b0e9",
+      "liveSha256": "628db4fe3b80f35cb73cde4ba048e3e750e441f574db78361f3826a0d798b0e9",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/IdCardPrintConfirm-bhGSbrFz.js",
+      "sha256": "8b8c70b68df84c0d0dc6334d20c7d6c4d2d45338223e7cc87b0832eee144c42d",
+      "liveSha256": "8b8c70b68df84c0d0dc6334d20c7d6c4d2d45338223e7cc87b0832eee144c42d",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/LearnerRequestsPage-D5l32FeB.js",
+      "sha256": "a650f4159ec9bca606c7c6cb61560974a82e0129d2459e4f4e1a2b315d90790b",
+      "liveSha256": "a650f4159ec9bca606c7c6cb61560974a82e0129d2459e4f4e1a2b315d90790b",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/LinksTab-AZJr2hDs.js",
+      "sha256": "88bbf9978566c9fe141dfd33d011c7414e67d703608036cbeac328ba561c176e",
+      "liveSha256": "88bbf9978566c9fe141dfd33d011c7414e67d703608036cbeac328ba561c176e",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/PortalSettingsTab-Cf4LLtMG.js",
+      "sha256": "ffebd1f8eba16a9e309c95505c8fd1c8dad7ae33bc32be8f5f2c8141e9c8970e",
+      "liveSha256": "ffebd1f8eba16a9e309c95505c8fd1c8dad7ae33bc32be8f5f2c8141e9c8970e",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/ReportsTab-BPkUBkdU.js",
+      "sha256": "7f80be21a678a68ddeed6a4e3ee48ddaff76211b6561df201cdf7db5097dea70",
+      "liveSha256": "7f80be21a678a68ddeed6a4e3ee48ddaff76211b6561df201cdf7db5097dea70",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/RequestsTab-BmS4kSgV.js",
+      "sha256": "6f7cc930feac510037f52c26dad42198d179c4461870c821ec1b8faaead32d15",
+      "liveSha256": "6f7cc930feac510037f52c26dad42198d179c4461870c821ec1b8faaead32d15",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/ScanLogTab-BkDcujYx.js",
+      "sha256": "9d7033452c20233c770d97ee278a5e3e4a40048f1086797aa37b759b78585a7c",
+      "liveSha256": "9d7033452c20233c770d97ee278a5e3e4a40048f1086797aa37b759b78585a7c",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SchedulesPage-B7ha6my-.js",
+      "sha256": "ea1696a578e18657544199d39bf26088e300485b980a711eaaec4cd034e6ef48",
+      "liveSha256": "ea1696a578e18657544199d39bf26088e300485b980a711eaaec4cd034e6ef48",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SchoolAccessTab-B-nCk7pw.js",
+      "sha256": "8d9c1b76c37717f01ab6e45061523b32a792beca7fa0105af4a6b180ab6570f9",
+      "liveSha256": "8d9c1b76c37717f01ab6e45061523b32a792beca7fa0105af4a6b180ab6570f9",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SectionPicker-B_2octg-.js",
+      "sha256": "7cbf65e0f8200d62e45892327acc422dbda98b87d1ef121de6a35335f7c4f015",
+      "liveSha256": "7cbf65e0f8200d62e45892327acc422dbda98b87d1ef121de6a35335f7c4f015",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SectionsPage-Dbn85dZU.js",
+      "sha256": "1c96eb42207cd2ef407b362213f8df5565e6f815f2637d2781139bd567fbe973",
+      "liveSha256": "1c96eb42207cd2ef407b362213f8df5565e6f815f2637d2781139bd567fbe973",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SessionReviewPage-Bm9ldKUX.js",
+      "sha256": "b7a7a0b2823de1f7b0962ff96d3ddb7c5617c6ec4ca6dfed6d87589c6d574678",
+      "liveSha256": "b7a7a0b2823de1f7b0962ff96d3ddb7c5617c6ec4ca6dfed6d87589c6d574678",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SettingsPage-CRNPohvf.js",
+      "sha256": "1f97e2a2c9b723a46a3d430ec83b5a6915348de03e3d3c6495269b25b553a83d",
+      "liveSha256": "1f97e2a2c9b723a46a3d430ec83b5a6915348de03e3d3c6495269b25b553a83d",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SlipPrintControls-CgrC8rIR.js",
+      "sha256": "78dbcf32389c7b9012b989757e9122e00d608977b10c4030a8b0b4927df9a396",
+      "liveSha256": "78dbcf32389c7b9012b989757e9122e00d608977b10c4030a8b0b4927df9a396",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/StudentForm-BaM8nEl6.js",
+      "sha256": "c63bf569e6860a3bced11c05bde718f00b52fdd90064201738eb8adb98396ad2",
+      "liveSha256": "c63bf569e6860a3bced11c05bde718f00b52fdd90064201738eb8adb98396ad2",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/StudentsPage-0UTCuSQs.js",
+      "sha256": "151b1389c0c84265bf304cc6e5488ac15e94100b7df24ad972a8eedd513b2920",
+      "liveSha256": "151b1389c0c84265bf304cc6e5488ac15e94100b7df24ad972a8eedd513b2920",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/SubTabs-MRPRR8Pf.js",
+      "sha256": "bf6f0b76d65bb15b75bf6fb545ea8e36205dc9ea2b5c17e04e2792d377b7baf9",
+      "liveSha256": "bf6f0b76d65bb15b75bf6fb545ea8e36205dc9ea2b5c17e04e2792d377b7baf9",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/attendance-BvbS_mzU.js",
+      "sha256": "1a6b609b3ba52664efa3b934eee80c125ba9e526261c33515be3c89251331093",
+      "liveSha256": "1a6b609b3ba52664efa3b934eee80c125ba9e526261c33515be3c89251331093",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/bnhs_logo-Zi4VGyiY.png",
+      "sha256": "a9df94b58c608213adf37dbcd82a485e0f2b0dc1b5db4a165480874af62f4081",
+      "liveSha256": "a9df94b58c608213adf37dbcd82a485e0f2b0dc1b5db4a165480874af62f4081",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/browser-RUMZuqIm.js",
+      "sha256": "e4a8684f866836138d8adf41fb5a7c077171c29b16953b163a3e5fbcf1a1b031",
+      "liveSha256": "e4a8684f866836138d8adf41fb5a7c077171c29b16953b163a3e5fbcf1a1b031",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/dates-BA2cdwe2.js",
+      "sha256": "8ac7f7815b4f928f661c4ed033b5f59f647913c8e7fdcb0ddd5a1bf5750b54df",
+      "liveSha256": "8ac7f7815b4f928f661c4ed033b5f59f647913c8e7fdcb0ddd5a1bf5750b54df",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/dates-BmMLuwUb.js",
+      "sha256": "2f0606a6da4bacf7a7c6a14b3945c9359552c53b847aaea8a58fe3adb8725adc",
+      "liveSha256": "2f0606a6da4bacf7a7c6a14b3945c9359552c53b847aaea8a58fe3adb8725adc",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/downloadBlob-vunXW3da.js",
+      "sha256": "d681cae8f5c7666f42070518aeab2cf1df9ecc802e757d4c32c9d49b768ed35d",
+      "liveSha256": "d681cae8f5c7666f42070518aeab2cf1df9ecc802e757d4c32c9d49b768ed35d",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/downloadWorkbook-D1KcT3SP.js",
+      "sha256": "dcd12ccc592dbc031cbc31272e7ed68d0643beecfc7f911a401bd0a794428068",
+      "liveSha256": "dcd12ccc592dbc031cbc31272e7ed68d0643beecfc7f911a401bd0a794428068",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/enrollmentChange-OWFtda_x.js",
+      "sha256": "91d1764dea0df92436c351fa64c2bf0c9b37f314cdd18184d789c6c2bb543be3",
+      "liveSha256": "91d1764dea0df92436c351fa64c2bf0c9b37f314cdd18184d789c6c2bb543be3",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/enrollments-CmjfSxHn.js",
+      "sha256": "1068f69159e8d2513cc4fb7686a22c1db6a43ec145d984713e42e4215f6558d2",
+      "liveSha256": "1068f69159e8d2513cc4fb7686a22c1db6a43ec145d984713e42e4215f6558d2",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/guardians-B3NAazY-.js",
+      "sha256": "185bd627d5395945b53c3b395ed31d04e17330cc397c12439de2ca3dafe95d20",
+      "liveSha256": "185bd627d5395945b53c3b395ed31d04e17330cc397c12439de2ca3dafe95d20",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/index-6nx3eteX.css",
+      "sha256": "6e7bf799d8620d7532f496c9aa14e6c79a0cad01321f5d17950f779aee1d94ae",
+      "liveSha256": "6e7bf799d8620d7532f496c9aa14e6c79a0cad01321f5d17950f779aee1d94ae",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/index-CH2PMZML.js",
+      "sha256": "be9709296d6087f545e6b373c3438ec15e03cd70c011ce3bb712317b5c0c6938",
+      "liveSha256": "be9709296d6087f545e6b373c3438ec15e03cd70c011ce3bb712317b5c0c6938",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/loading-CRLLHZYw.gif",
+      "sha256": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "liveSha256": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/roster-BT2lZVgZ.js",
+      "sha256": "5c328283801dfb699b205c4297feea651317b5b2d8975b8a52752399cc2921a7",
+      "liveSha256": "5c328283801dfb699b205c4297feea651317b5b2d8975b8a52752399cc2921a7",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/scheduleSessions-D6cHsNJm.js",
+      "sha256": "bcb23e44f44accd487db1c70812e52de7e53140d769ff4b5ef690782eed6b292",
+      "liveSha256": "bcb23e44f44accd487db1c70812e52de7e53140d769ff4b5ef690782eed6b292",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/school-BUOQKnEc.js",
+      "sha256": "efc2d5f610ff3922eb603422f7f3d07926d5c3a57d743d86baddaebd65327179",
+      "liveSha256": "efc2d5f610ff3922eb603422f7f3d07926d5c3a57d743d86baddaebd65327179",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/schoolAssignments-DSHEfsQj.js",
+      "sha256": "b9884e59cfb1df017d4b991b505eb2e0cc43f8eb1d2f3aa548f5b5fccd09593a",
+      "liveSha256": "b9884e59cfb1df017d4b991b505eb2e0cc43f8eb1d2f3aa548f5b5fccd09593a",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/search-BFFQz6fc.js",
+      "sha256": "154cdad295794accd313d7248b4c5c51ef3d106961568355ffa2c8a6c87b13d1",
+      "liveSha256": "154cdad295794accd313d7248b4c5c51ef3d106961568355ffa2c8a6c87b13d1",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/sf2-template-BDOGBomb.xlsx",
+      "sha256": "2fe5668f6fd86ce7cb7a1cc2f76ac2e6e35bc20d3b80d779ce459000c0c9d4ba",
+      "liveSha256": "2fe5668f6fd86ce7cb7a1cc2f76ac2e6e35bc20d3b80d779ce459000c0c9d4ba",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/sims-favicon-cSZ_7KH-.png",
+      "sha256": "7a36b7f1843f0e852289d83e019cdc3dc49732702131f65df7c24f3865c6cc68",
+      "liveSha256": "7a36b7f1843f0e852289d83e019cdc3dc49732702131f65df7c24f3865c6cc68",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/slipIssue-B3nzSNft.js",
+      "sha256": "2f1af78fb3baedd44b1a7369227e4f167de3b51b552cd9a8337df681240596b6",
+      "liveSha256": "2f1af78fb3baedd44b1a7369227e4f167de3b51b552cd9a8337df681240596b6",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/smarta-mark-CjebIss0.png",
+      "sha256": "506c234045fc059129e1077c50807e158795d417b460cb8090a67ed172e228c5",
+      "liveSha256": "506c234045fc059129e1077c50807e158795d417b460cb8090a67ed172e228c5",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/smarta-wordmark-sidebar-CRgRiWJ2.png",
+      "sha256": "9666f11f7ccadd7763a2951fffc46913eb8d940c1f883da2e957163077b9adb1",
+      "liveSha256": "9666f11f7ccadd7763a2951fffc46913eb8d940c1f883da2e957163077b9adb1",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/smarta-wordmark-sidebar-dark-CUOzCjZz.png",
+      "sha256": "7409f535c27959d997c19b61a31f0e0f705da0e96bfac7765492d23ace99879d",
+      "liveSha256": "7409f535c27959d997c19b61a31f0e0f705da0e96bfac7765492d23ace99879d",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/ui-DSCiEOWm.js",
+      "sha256": "50e0aac9f4c9754ffaa3df5f005ec2b30490eb68e707d2188da53d2696f830a6",
+      "liveSha256": "50e0aac9f4c9754ffaa3df5f005ec2b30490eb68e707d2188da53d2696f830a6",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/useAsyncAction-Do8JCL3m.js",
+      "sha256": "bada451e93d87ce5deb195577add34b873562323c19cf5ab2c2f2556b61ee8b3",
+      "liveSha256": "bada451e93d87ce5deb195577add34b873562323c19cf5ab2c2f2556b61ee8b3",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/useCollection-CDvjrv-X.js",
+      "sha256": "46d9c0bba7c54de4b12497a6f26d4a622bff516bcdf1a8d57b08d17d0086f832",
+      "liveSha256": "46d9c0bba7c54de4b12497a6f26d4a622bff516bcdf1a8d57b08d17d0086f832",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "assets/useSchoolPendingCount-YFmX7Z5D.js",
+      "sha256": "c69e28f4b06debd013b96be092469935478d1a74aa4aa47651f1289ab9376276",
+      "liveSha256": "c69e28f4b06debd013b96be092469935478d1a74aa4aa47651f1289ab9376276",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "icons/apple-touch-icon.png",
+      "sha256": "8d728917cea43e3b8fe64244ba2500b754434d45188153c85632a1aeb599d216",
+      "liveSha256": "8d728917cea43e3b8fe64244ba2500b754434d45188153c85632a1aeb599d216",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "icons/icon-192.png",
+      "sha256": "b4b63b43a1db1cba796148902e5b965c8b48e80b056925ab79b84893293e33c8",
+      "liveSha256": "b4b63b43a1db1cba796148902e5b965c8b48e80b056925ab79b84893293e33c8",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "icons/icon-512.png",
+      "sha256": "9174f4f7b85634b268d2dfebda14901aa82826078ef9878370533708b8d9f1e3",
+      "liveSha256": "9174f4f7b85634b268d2dfebda14901aa82826078ef9878370533708b8d9f1e3",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "icons/icon-maskable-512.png",
+      "sha256": "654bf10f07ea14a25bf762451f2ced38bb480df536496dc900d3e062bb26d3c7",
+      "liveSha256": "654bf10f07ea14a25bf762451f2ced38bb480df536496dc900d3e062bb26d3c7",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "index.html",
+      "sha256": "90af921c12a517df45ad76796f401dfae62513f091c79b6874a440ed6fa8cbc7",
+      "liveSha256": "90af921c12a517df45ad76796f401dfae62513f091c79b6874a440ed6fa8cbc7",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "manifest.webmanifest",
+      "sha256": "e408b75f44f6aa55b1f395f892900a6679dce9f641b82f7bf76afaa752e4f06c",
+      "liveSha256": "e408b75f44f6aa55b1f395f892900a6679dce9f641b82f7bf76afaa752e4f06c",
+      "status": 200,
+      "match": true
+    },
+    {
+      "path": "sw.js",
+      "sha256": "a40726e5fb84f1022c7fed955823bc4ecf3e3f102b9844731cce8ca649fd9b04",
+      "liveSha256": "a40726e5fb84f1022c7fed955823bc4ecf3e3f102b9844731cce8ca649fd9b04",
+      "status": 200,
+      "match": true
+    }
+  ]
+}

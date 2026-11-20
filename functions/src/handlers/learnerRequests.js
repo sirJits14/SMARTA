@@ -14,6 +14,7 @@ import {
 } from '../../shared/learnerRequests.js';
 import { fullName } from '../lib/format.js';
 import { contactCleared, pendingLearnerRequests, withdrawLearnerRequests } from '../lib/learnerRequestCleanup.js';
+import { APPROVED_CARDS, approvedCardEntry } from '../lib/approvedCards.js';
 
 const fail = (code, message) => { throw new CallableError(code, message); };
 const identifier = (value) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
@@ -374,6 +375,9 @@ export async function resolveLearnerRequest(deps, input) {
             status: 'active', documents: { ...NEW_LEARNER_DOCUMENTS }, createdAt: today, ...scopeFor(section.gradeLevel, request.schoolYear) });
           tx.set(db.doc(`enrollments/${studentRef.id}_${request.schoolYear}`), { studentId: studentRef.id, schoolYear: request.schoolYear, ...target,
             type: request.enrollType, dateEnrolled: today, status: 'enrolled' });
+          // A brand-new learner has never had a card: log them for Recently approved in ID Cards.
+          tx.set(db.doc(`${APPROVED_CARDS}/${studentRef.id}`), approvedCardEntry({ requestId: ref.id, schoolYear: request.schoolYear,
+            approvedByName: actor.displayName }));
         } else {
           const found = matches.docs[0];
           studentId = found.id;
