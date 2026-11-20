@@ -32,10 +32,13 @@ function MonthGrid({ month, onMonth, today, selectedDay, onSelectDay, marks }) {
   useEffect(() => {
     if (!pendingFocus.current) return;
     const el = gridRef.current?.querySelector(`[data-date="${pendingFocus.current}"]`);
-    if (el) { el.focus(); pendingFocus.current = null; }
+    if (el) el.focus();
+    pendingFocus.current = null; // always consumed, so a no-op move cannot refocus on a later render
   });
   const moveTo = (date) => {
-    pendingFocus.current = date;
+    const here = date.startsWith(month) ? gridRef.current?.querySelector(`[data-date="${date}"]`) : null;
+    if (here) here.focus(); // the cell is already on screen: focus it now, nothing to restore later
+    else pendingFocus.current = date; // the month changes: focus once the new cells exist
     setFocusDay(date);
     if (date.slice(0, 7) !== month) onMonth(date.slice(0, 7));
   };
