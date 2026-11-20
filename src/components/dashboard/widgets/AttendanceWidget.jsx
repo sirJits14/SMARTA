@@ -62,7 +62,7 @@ export function AttendanceDetail({ data }) {
       <DataTable label="Attendance by section" empty={['No attendance recorded', 'Sections appear here once attendance is saved in this period.']}
         columns={[{ key: 'section', label: 'Section' }, { key: 'days', label: 'Days recorded', num: true }, ...unitColumns]}
         rows={tally.sections.map((s) => ({ key: s.sectionId, section: sectionTitle(data.sectionsById[s.sectionId]), days: s.daysRecorded, ...unitCells(s) }))
-          .sort((a, b) => a.section.localeCompare(b.section))} />
+          .sort((a, b) => a.section.localeCompare(b.section, undefined, { numeric: true }))} />
     </section>
     <p className="sims-widget-note">Present includes late arrivals. A section-day without an attendance record is left out of the rate. Half-day absences count as half a day.</p>
   </>;

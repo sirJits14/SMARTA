@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import WidgetCard, { WidgetFilter } from '../WidgetCard.jsx';
 import { DataTable } from '../parts.jsx';
 import { EmptyState } from '../../ui.jsx';
-import { gradesInScope, percentOf, sexBreakdown } from '../../../lib/dashboardStats.js';
+import { gradesInScope, percentOf, sectionTitle, sexBreakdown } from '../../../lib/dashboardStats.js';
 
 const segmentsOf = (r) => [
   { key: 'male', label: 'Male', value: r.male },
@@ -71,7 +71,7 @@ export function SexDetail({ data }) {
     <section className="sims-drawer-section"><h3>By section</h3>
       <DataTable label="Learners by sex and section" empty={['No enrolled learners', 'Enrolled learners will be counted here.']}
         columns={sexColumns({ key: 'section', label: 'Section' })}
-        rows={r.bySection.map((s) => ({ key: s.sectionId, section: `Grade ${s.gradeLevel} · ${s.name}`, ...sexCells(s) }))} />
+        rows={r.bySection.map((s) => ({ key: s.sectionId, section: sectionTitle(data.sectionsById[s.sectionId]),...sexCells(s) }))} />
     </section>
     <p className="sims-widget-note">"Not recorded" counts learners whose sex is missing from their record.</p>
   </>;
