@@ -1,0 +1,3 @@
+requestSchoolRoleFn unauthenticated -> 401
+previewAdvisorySlipFn unauthenticated -> 401
+redeemAdvisorySlipFn unauthenticated -> 401
