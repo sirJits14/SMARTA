@@ -36,7 +36,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
     else if (id === 'requests') setPage('learnerRequests');
     else if (id === 'idcards') setPage('idcards');
   };
-  const card = (id) =>({ data, expanded: panel === id, onExpand: () => open(id) });
+  const card = (id) => ({ data, expanded: panel === id, onExpand: () => open(id) });
   const roster = data.resources.roster;
   const drawers = {
     enrollment: { title: 'Enrollment by grade', link: link('Open Enrollment', 'enroll'), resources: roster, body: <EnrollmentDetail data={data} /> },
