@@ -29,7 +29,7 @@
   }
 
   /* Count chips inside dashboard lists are calm teal, not the red navigation badge. */
-  .sims-ui .sims-dashboard .sims-count-badge { margin-left:0; min-width:24px; height:22px; color:var(--t-primary-deep); background:var(--t-tint-strong); }
+  .sims-ui .sims-dashboard .sims-count-badge { margin-left:0; min-width:24px; height:22px; padding:0 6px; color:var(--t-primary-deep); background:var(--t-tint-strong); }
 
   /* Actionable rows */
   .sims-ui .sims-list { list-style:none; margin:0; padding:0; }
@@ -58,6 +58,11 @@
   .sims-ui .sims-side-drawer-foot { position:sticky; bottom:0; display:flex; justify-content:flex-end; padding:12px 0 16px; background:var(--t-dialog); border-top:1px solid var(--t-border); }
   .sims-ui .sims-drawer-section h3 { margin:0 0 8px; font-size:13px; font-weight:600; color:var(--t-ink); }
   .sims-ui .sims-drawer-filters { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  /* Coarse pointers: drawer controls keep a 44px target (registrar.css shrinks them to 32/40px). */
+  @media (pointer:coarse) {
+    .sims-ui .sims-side-drawer .sims-dialog-close { --sims-control-height:44px; min-height:44px; min-width:44px; }
+    .sims-ui .sims-side-drawer .sims-segment { min-height:44px; }
+  }
   @keyframes sims-side-drawer-in { from { opacity:.7; transform:translateX(24px); } to { opacity:1; transform:none; } }
 }
 

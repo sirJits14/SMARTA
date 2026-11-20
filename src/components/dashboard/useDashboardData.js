@@ -18,6 +18,7 @@ export function useDashboardData({ me, schoolYear }) {
   const canRequests = canOpen(me, 'learnerRequests');
   // Rules let only admins read the ID card batch; everyone else never opens the listener.
   const idCardsResource = useQueryResource(() => (admin ? collection(db, 'id_card_batch') : null), [admin]);
+  const idCardIds = useMemo(() => idCardsResource.data.map((d) => d.id), [idCardsResource.data]);
   const requests = useLearnerRequestCount(canRequests);
   const today = useLocalToday();
 
@@ -38,7 +39,7 @@ export function useDashboardData({ me, schoolYear }) {
     me, admin, canRequests, schoolYear, today, nowMs,
     students, sections, enrollments, attendance, studentsById, sectionsById, rosterMap, coverage, requests,
     posts: postsResource.data,
-    idCardIds: idCardsResource.data.map((d) => d.id),
+    idCardIds,
     resources: {
       roster: [studentsResource, sectionsResource, enrollmentsResource, attendanceResource],
       posts: [postsResource],

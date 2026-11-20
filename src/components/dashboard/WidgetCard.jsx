@@ -25,9 +25,9 @@ export default function WidgetCard({ title, subtitle, filter, expanded = false, 
       </Btn>}
     </header>
     <div className="sims-widget-body">
-      <ResourceState resources={resources} label={label || title.toLowerCase()} inline>{children}</ResourceState>
+      <ResourceState resources={resources} label={label ?? String(title).toLowerCase()} inline>{children}</ResourceState>
     </div>
     {footer && <div className="sims-widget-foot">{footer}</div>}
-    {onExpand && <Btn variant="quiet" className="sims-widget-more" onClick={onExpand}>View details</Btn>}
+    {onExpand && <Btn variant="quiet" className="sims-widget-more" aria-label={`View details: ${title}`} aria-haspopup="dialog" aria-expanded={expanded} onClick={onExpand}>View details</Btn>}
   </Card>;
 }
