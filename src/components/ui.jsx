@@ -43,7 +43,7 @@ export function Field({ label, error, children }) {
 const EditorResourceContext = createContext([]);
 export const EditorResources = ({resources, children}) => <EditorResourceContext.Provider value={resources}>{children}</EditorResourceContext.Provider>;
 
-export function Modal({ children, onClose, width = 520, overlayClassName = '', title, labelledBy, dismissible = true }) {
+export function Modal({ children, onClose, width = 520, overlayClassName = '', title, labelledBy, dismissible = true, closeLabel = 'Close dialog' }) {
   const titleId = useId();
   const resources = useContext(EditorResourceContext);
   const unavailable = resources.some(r => r.loading || r.error);
@@ -52,7 +52,7 @@ export function Modal({ children, onClose, width = 520, overlayClassName = '', t
     style={{ width, maxWidth:'calc(100vw - 32px)' }}>
     {title && <div className="sims-dialog-head">
       <h2 id={titleId} className="sims-dialog-title">{title}</h2>
-      {dismissible && <button type="button" className="sims-btn sims-btn--icon sims-dialog-close" aria-label="Close dialog" onClick={onClose}><NavIcon name="close" size={18} /></button>}
+      {dismissible && <button type="button" className="sims-btn sims-btn--icon sims-dialog-close" aria-label={closeLabel} onClick={onClose}><NavIcon name="close" size={18} /></button>}
     </div>}
     {unavailable && <><ResourceState resources={resources}/>{dismissible && <Btn variant="ghost" onClick={onClose}>Close dialog</Btn>}</>}
     <fieldset disabled={unavailable} style={{border:0,padding:0,margin:0,minWidth:0}}>{children}</fieldset>
@@ -79,9 +79,11 @@ export function Confirm({ message, onYes, onNo, label = 'Delete', cancelLabel = 
     </div>
   </Modal>;
 }
-export function ResourceState({ resources, children, label = 'records' }) {
+export function ResourceState({ resources, children, label = 'records', inline = false }) {
   const failed = resources.filter(r => r.error);
-  if (failed.length) return <Card style={{ padding:24 }}><p role="alert" className="sims-feedback">Could not load {label}. Please try again.</p><Btn onClick={() => failed.forEach(r => r.retry())}>Try again</Btn></Card>;
+  const retry = () => failed.forEach(r => r.retry());
+  if (failed.length && inline) return <div className="sims-inline-error"><p role="alert" className="sims-feedback">Could not load {label}. Please try again.</p><Btn variant="ghost" onClick={retry}>Try again</Btn></div>;
+  if (failed.length) return <Card style={{ padding:24 }}><p role="alert" className="sims-feedback">Could not load {label}. Please try again.</p><Btn onClick={retry}>Try again</Btn></Card>;
   if (resources.some(r => r.loading)) return <div className="sims-loading" role="status"><span className="sims-sr-only">Loading {label}…</span><div className="sims-skeleton" aria-hidden="true"><span /><span /><span /></div></div>;
   return children;
 }

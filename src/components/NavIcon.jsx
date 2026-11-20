@@ -22,6 +22,8 @@ const paths = {
   more: 'M12 4.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2 M12 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2 M12 17.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2',
   chevrons: 'M7 15l5 5 5-5 M7 9l5-5 5 5',
   panel: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2 M9 3v18',
+  expand: 'M14 4h6v6 M20 4l-7 7 M10 20H4v-6 M4 20l7-7',
+  chevronRight: 'M10 7l5 5-5 5',
 };
 export default function NavIcon({ name, size = 20 }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.dashboard} /></svg>;
