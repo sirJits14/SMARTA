@@ -1,4 +1,7 @@
-import { depedSort } from './roster.js';
+import { depedSort, fullName } from './roster.js';
+import { attendanceUnits } from '../../shared/sessionAttendance.js';
+import { toMillis } from '../../shared/announcements.js';
+import { manilaDay } from './dates.js';
 export function activeStudentCount(students) {
   return students.filter((s) => s.status === 'active').length;
 }
@@ -69,4 +72,53 @@ export function attendanceCoverage({ students, sections, enrollments, attendance
   const totalSections = eligibleSections.length;
   return { eligibleSections, pendingSections, recordedCount: recorded.size, totalSections,
     percent: totalSections ? Math.round(recorded.size / totalSections * 100) : null };
+}
+
+export const percentOf = (part, whole) => (whole ? Math.round((part / whole) * 100) : null);
+
+// Enrolled learners per section for the school year, limited to the scoped student list.
+export function rosterBySection(students, enrollments, schoolYear) {
+  const ids = new Set(students.map((s) => s.id));
+  const out = new Map();
+  for (const e of enrollments) {
+    if (e.schoolYear !== schoolYear || e.status !== 'enrolled' || !e.sectionId || !ids.has(e.studentId)) continue;
+    if (!out.has(e.sectionId)) out.set(e.sectionId, []);
+    out.get(e.sectionId).push(e.studentId);
+  }
+  return out;
+}
+
+const zeroUnits = () => ({ present: 0, late: 0, absent: 0, excused: 0 });
+const addUnits = (into, u) => { into.present += u.present; into.late += u.late; into.absent += u.absent; into.excused += u.excused; };
+// Present already includes late (attendanceUnits counts L as present), so late is never added to the denominator.
+const withRate = (t) => ({ ...t, rate: percentOf(t.present, t.present + t.absent + t.excused) });
+
+// Attendance over a set of dates, from the same summarizer SF2 uses. A section-day counts only when a
+// student_attendance doc exists for it; inside a recorded doc, unmarked learners are present by default.
+export function attendanceTally({ roster, attendance, schoolYear, dates, sectionIds = null }) {
+  const wanted = new Set(dates);
+  const allowed = sectionIds ? new Set(sectionIds) : null;
+  const days = new Map(dates.map((date) => [date, { date, sectionsRecorded: 0, ...zeroUnits() }]));
+  const sections = new Map();
+  for (const doc of attendance) {
+    if (doc.schoolYear !== schoolYear || !wanted.has(doc.date) || !roster.has(doc.sectionId)) continue;
+    if (allowed && !allowed.has(doc.sectionId)) continue;
+    const day = days.get(doc.date);
+    const section = sections.get(doc.sectionId) || { sectionId: doc.sectionId, daysRecorded: 0, ...zeroUnits() };
+    day.sectionsRecorded += 1;
+    section.daysRecorded += 1;
+    for (const studentId of roster.get(doc.sectionId)) {
+      const units = attendanceUnits(doc, studentId);
+      addUnits(day, units);
+      addUnits(section, units);
+    }
+    sections.set(doc.sectionId, section);
+  }
+  const total = zeroUnits();
+  for (const day of days.values()) addUnits(total, day);
+  return {
+    days: [...days.values()].map(withRate),
+    sections: [...sections.values()].sort((a, b) => a.sectionId.localeCompare(b.sectionId)).map(withRate),
+    total: withRate(total),
+  };
 }
