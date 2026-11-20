@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rosterBySection, attendanceTally, percentOf } from './dashboardStats.js';
+import { rosterBySection, attendanceTally, percentOf, sexBreakdown, shsBreakdown, unassignedStudents, unassignedCount, gradesInScope, sectionTitle, formatUnits, formatRate } from './dashboardStats.js';
 
 const SY = '2026-2027';
 
@@ -71,5 +71,83 @@ describe('percentOf', () => {
   it('rounds and guards zero', () => {
     expect(percentOf(1, 3)).toBe(33);
     expect(percentOf(0, 0)).toBe(null);
+  });
+});
+
+describe('sexBreakdown', () => {
+  const students = [
+    { id: 'a', sex: 'M' }, { id: 'b', sex: 'F' }, { id: 'c', sex: '' }, { id: 'd', sex: 'M' },
+  ];
+  const sections = [{ id: 'A', name: 'Rizal', gradeLevel: 7 }, { id: 'B', name: 'Mabini', gradeLevel: 8 }];
+  const enrollments = [
+    { studentId: 'a', sectionId: 'A', gradeLevel: 7, schoolYear: SY, status: 'enrolled' },
+    { studentId: 'b', sectionId: 'A', gradeLevel: 7, schoolYear: SY, status: 'enrolled' },
+    { studentId: 'c', sectionId: 'B', gradeLevel: '8', schoolYear: SY, status: 'enrolled' },
+    { studentId: 'e', sectionId: 'A', gradeLevel: 7, schoolYear: SY, status: 'enrolled' }, // not in scoped students
+    { studentId: 'a', sectionId: 'A', gradeLevel: 7, schoolYear: '2025-2026', status: 'enrolled' },
+    { studentId: 'd', sectionId: 'A', gradeLevel: 7, schoolYear: SY, status: 'dropped' },
+  ];
+
+  it('counts enrolled learners in scope and keeps unknown sex as Not recorded', () => {
+    const r = sexBreakdown({ students, enrollments, sections, schoolYear: SY });
+    expect([r.male, r.female, r.unknown, r.total]).toEqual([1, 1, 1, 3]);
+    expect(r.byGrade).toEqual([
+      { grade: 7, male: 1, female: 1, unknown: 0, total: 2 },
+      { grade: 8, male: 0, female: 0, unknown: 1, total: 1 },
+    ]);
+    expect(r.bySection.map((s) => [s.name, s.total])).toEqual([['Rizal', 2], ['Mabini', 1]]);
+  });
+
+  it('filters to one grade', () => {
+    const r = sexBreakdown({ students, enrollments, sections, schoolYear: SY, grade: 8 });
+    expect([r.male, r.female, r.unknown, r.total]).toEqual([0, 0, 1, 1]);
+  });
+});
+
+describe('shsBreakdown', () => {
+  it('groups grades 11 and 12 by track and strand', () => {
+    const sections = [
+      { id: 's11', gradeLevel: 11, track: 'Academic', strand: 'STEM' },
+      { id: 's12', gradeLevel: 12, track: 'TVL', strand: 'ICT' },
+      { id: 's7', gradeLevel: 7 },
+    ];
+    const row = (sectionId, gradeLevel) => ({ studentId: sectionId + gradeLevel + Math.random(), sectionId, gradeLevel, schoolYear: SY, status: 'enrolled' });
+    const enrollments = [row('s11', 11), row('s11', 11), row('s12', 12), row('s7', 7), row('gone', 11)];
+    expect(shsBreakdown(enrollments, sections, SY)).toEqual([
+      { track: 'Academic', strand: 'STEM', count: 2 },
+      { track: 'No track', strand: 'No strand', count: 1 },
+      { track: 'TVL', strand: 'ICT', count: 1 },
+    ]);
+  });
+});
+
+describe('unassignedStudents', () => {
+  it('lists active learners without an enrolled row, sorted by name, and backs unassignedCount', () => {
+    const students = [
+      { id: 's1', status: 'active', lastName: 'Cruz', firstName: 'Ana' },
+      { id: 's2', status: 'active', lastName: 'Abad', firstName: 'Ben' },
+      { id: 's3', status: 'active', lastName: 'Diaz', firstName: 'Cy' },
+      { id: 's4', status: 'dropped', lastName: 'Ely', firstName: 'Di' },
+    ];
+    const enrollments = [{ studentId: 's3', schoolYear: SY, status: 'enrolled' }];
+    expect(unassignedStudents(students, enrollments, SY).map((s) => s.id)).toEqual(['s2', 's1']);
+    expect(unassignedCount(students, enrollments, SY)).toBe(2);
+  });
+});
+
+describe('labels', () => {
+  it('lists grades that have sections this school year', () => {
+    expect(gradesInScope([{ gradeLevel: '8', schoolYear: SY }, { gradeLevel: 7, schoolYear: SY }, { gradeLevel: 9, schoolYear: 'old' }], SY)).toEqual([7, 8]);
+  });
+  it('titles sections', () => {
+    expect(sectionTitle({ gradeLevel: 11, name: 'Rizal', strand: 'STEM' })).toBe('Grade 11 · Rizal · STEM');
+    expect(sectionTitle({ gradeLevel: 7, name: 'Mabini' })).toBe('Grade 7 · Mabini');
+    expect(sectionTitle(undefined)).toBe('Unavailable section');
+  });
+  it('formats units and rates', () => {
+    expect(formatUnits(1200)).toBe('1,200');
+    expect(formatUnits(2.5)).toBe('2.5');
+    expect(formatRate(50)).toBe('50%');
+    expect(formatRate(null)).toBe('—');
   });
 });

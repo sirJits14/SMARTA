@@ -6,13 +6,19 @@ export function activeStudentCount(students) {
   return students.filter((s) => s.status === 'active').length;
 }
 
-export function unassignedCount(students, enrollments, schoolYear) {
+export function unassignedStudents(students, enrollments, schoolYear) {
   const enrolledIds = new Set(
     enrollments
       .filter((e) => e.schoolYear === schoolYear && e.status === 'enrolled')
       .map((e) => e.studentId)
   );
-  return students.filter((s) => s.status === 'active' && !enrolledIds.has(s.id)).length;
+  return students
+    .filter((s) => s.status === 'active' && !enrolledIds.has(s.id))
+    .sort((a, b) => fullName(a).localeCompare(fullName(b)));
+}
+
+export function unassignedCount(students, enrollments, schoolYear) {
+  return unassignedStudents(students, enrollments, schoolYear).length;
 }
 
 export function enrolledCount(enrollments, schoolYear) {
@@ -122,3 +128,61 @@ export function attendanceTally({ roster, attendance, schoolYear, dates, section
     total: withRate(total),
   };
 }
+
+const sexTally = () => ({ male: 0, female: 0, unknown: 0, total: 0 });
+const bumpSex = (t, sex) => { t[sex === 'M' ? 'male' : sex === 'F' ? 'female' : 'unknown'] += 1; t.total += 1; };
+
+// Learners enrolled this school year by sex. Any value other than 'M' or 'F' is counted as unknown
+// ("Not recorded") so the totals always match enrollment.
+export function sexBreakdown({ students, enrollments, sections, schoolYear, grade = null }) {
+  const byId = new Map(students.map((s) => [s.id, s]));
+  const sectionById = new Map(sections.map((s) => [s.id, s]));
+  const total = sexTally();
+  const grades = new Map();
+  const bySection = new Map();
+  for (const e of enrollments) {
+    if (e.schoolYear !== schoolYear || e.status !== 'enrolled') continue;
+    const student = byId.get(e.studentId);
+    if (!student) continue;
+    const g = Number(e.gradeLevel);
+    if (grade != null && g !== Number(grade)) continue;
+    bumpSex(total, student.sex);
+    if (!grades.has(g)) grades.set(g, { grade: g, ...sexTally() });
+    bumpSex(grades.get(g), student.sex);
+    if (e.sectionId) {
+      if (!bySection.has(e.sectionId)) bySection.set(e.sectionId, { sectionId: e.sectionId, gradeLevel: g, name: sectionById.get(e.sectionId)?.name || 'Unavailable section', ...sexTally() });
+      bumpSex(bySection.get(e.sectionId), student.sex);
+    }
+  }
+  return {
+    ...total,
+    byGrade: [...grades.values()].sort((a, b) => a.grade - b.grade),
+    bySection: [...bySection.values()].sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
+  };
+}
+
+export function shsBreakdown(enrollments, sections, schoolYear) {
+  const byId = new Map(sections.map((s) => [s.id, s]));
+  const groups = new Map();
+  for (const e of enrollments) {
+    if (e.schoolYear !== schoolYear || e.status !== 'enrolled' || Number(e.gradeLevel) < 11) continue;
+    const section = byId.get(e.sectionId);
+    const track = section?.track || 'No track';
+    const strand = section?.strand || 'No strand';
+    const key = `${track}|${strand}`;
+    const group = groups.get(key) || { track, strand, count: 0 };
+    group.count += 1;
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => a.track.localeCompare(b.track) || a.strand.localeCompare(b.strand));
+}
+
+export const gradesInScope = (sections, schoolYear) =>
+  [...new Set(sections.filter((s) => s.schoolYear === schoolYear).map((s) => Number(s.gradeLevel)))].sort((a, b) => a - b);
+
+export const sectionTitle = (section) => (section
+  ? [section.gradeLevel && `Grade ${section.gradeLevel}`, section.name, section.strand].filter(Boolean).join(' · ')
+  : 'Unavailable section');
+
+export const formatUnits = (n) => n.toLocaleString('en-PH', { maximumFractionDigits: 1 });
+export const formatRate = (rate) => (rate == null ? '—' : `${rate}%`);
