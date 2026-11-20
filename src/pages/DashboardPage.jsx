@@ -10,6 +10,7 @@ import { CoverageCard, CoverageDetail } from '../components/dashboard/widgets/Co
 import { AttendanceCard, AttendanceDetail } from '../components/dashboard/widgets/AttendanceWidget.jsx';
 import { SexCard, SexDetail } from '../components/dashboard/widgets/SexWidget.jsx';
 import { AttentionCard, AttentionDetail } from '../components/dashboard/widgets/AttentionWidget.jsx';
+import { NoticeCard, NoticeDetail } from '../components/dashboard/widgets/NoticeWidget.jsx';
 import { attendanceTally, attentionQueues, unassignedCount } from '../lib/dashboardStats.js';
 import { isWeekend } from '../lib/dates.js';
 import { canOpen } from '../lib/access.js';
@@ -45,6 +46,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
     sex: { title: 'Learners by sex', link: link('Open Students', 'students'), resources: roster, body: <SexDetail data={data} /> },
     attention: { title: 'Needs attention', link: null, resources: [...roster, ...data.resources.idCards],
       body: <AttentionDetail data={data} queues={queues} onQueue={(id) => { close(); onQueue(id); }} onTakeAttendance={takeAttendance} /> },
+    notices: { title: 'Notice board', link: link('Open Announcements', 'announcements'), resources: data.resources.posts, body: <NoticeDetail data={data} /> },
   };
   // A panel id with no drawer (not built yet, or drifted) counts as closed; clean it out of the URL.
   const drawer = panel && Object.prototype.hasOwnProperty.call(drawers, panel) ? drawers[panel] : null;
@@ -71,6 +73,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
           <CoverageCard {...card('coverage')} onTakeAttendance={takeAttendance} />
           <AttentionCard {...card('attention')} queues={queues} onQueue={onQueue} />
         </div>
+        <NoticeCard {...card('notices')} />
       </div>
     </div>
     {drawer && <WidgetDrawer title={drawer.title} pageLink={drawer.link} resources={drawer.resources} onNavigate={setPage} onClose={close}>{drawer.body}</WidgetDrawer>}
