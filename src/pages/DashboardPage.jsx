@@ -28,7 +28,7 @@ export default function DashboardPage({ me, schoolYear, setPage }) {
     coverage: { title: 'Attendance coverage', link: link('Open Attendance', 'attendance'), resources: roster, body: <CoverageDetail data={data} onTakeAttendance={takeAttendance} /> },
   };
   // A panel id with no drawer (not built yet, or drifted) counts as closed; clean it out of the URL.
-  const drawer = panel && Object.hasOwn(drawers, panel) ? drawers[panel] : null;
+  const drawer = panel && Object.prototype.hasOwnProperty.call(drawers, panel) ? drawers[panel] : null;
   const missingDrawer = Boolean(panel) && !drawer;
   useEffect(() => { if (missingDrawer) close(); }, [missingDrawer, close]);
   const dateLabel = new Date(`${today}T12:00:00`).toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
