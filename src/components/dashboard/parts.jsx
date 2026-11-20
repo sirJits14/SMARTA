@@ -10,7 +10,7 @@ export function DataTable({ label, columns, rows, empty = ['Nothing to show', ''
       <thead><tr>{columns.map((c) => <th key={c.key} scope="col" className={c.num ? 'is-num' : undefined}>{c.label}</th>)}</tr></thead>
       <tbody>{rows.map((row) => <tr key={row.key}>{columns.map((c, i) => (i === 0
         ? <th key={c.key} scope="row">{row[c.key]}</th>
-        : <td key={c.key} className={c.num ? 'is-num' : undefined}>{row[c.key]}</td>))}</tr>)}</tbody>
+        : <td key={c.key} className={[c.num && 'is-num', c.nowrap && 'is-nowrap'].filter(Boolean).join(' ') || undefined}>{row[c.key]}</td>))}</tr>)}</tbody>
     </table>
   </div>;
 }

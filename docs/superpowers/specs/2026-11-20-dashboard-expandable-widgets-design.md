@@ -81,7 +81,7 @@ Desktop, 1280px and wider: a main column (fluid) and a 320px rail, with a
 - Rail order: Calendar, Upcoming posts, Recent activity.
 - Below 1280px the rail moves under the main column as a 2-column grid.
 - Rows 2 and 3 respond to the main column's own width (container queries):
-  the three-up row becomes two-up at 760px, and both rows become one column at
+  the three-up row becomes two-up at 900px (each card needs about 290px), and both rows become one column at
   560px. This keeps cards readable whether the sidebar is expanded or
   collapsed.
 - Below 768px everything is one column.

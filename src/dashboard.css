@@ -13,6 +13,7 @@
 
   /* Widget card */
   .sims-ui .sims-widget { display:flex; flex-direction:column; gap:16px; padding:20px; min-width:0; }
+  .sims-ui .sims-widget { container:widget / inline-size; }
   .sims-ui .sims-widget-head { display:flex; align-items:flex-start; gap:8px; }
   .sims-ui .sims-widget-titles { flex:1; min-width:0; }
   .sims-ui .sims-widget-titles h2 { margin:0; font-size:16px; font-weight:600; line-height:1.4; letter-spacing:-.01em; color:var(--t-ink); }
@@ -45,14 +46,17 @@
 
   /* Detail tables */
   .sims-ui .sims-widget-table { width:100%; border-collapse:collapse; font-size:13px; }
-  .sims-ui .sims-widget-table th[scope="col"] { padding:8px 12px; text-align:left; font-size:12px; font-weight:500; color:var(--t-muted); white-space:nowrap; }
-  .sims-ui .sims-widget-table th[scope="row"] { text-align:left; font-weight:500; color:var(--t-ink); }
-  .sims-ui .sims-widget-table th[scope="row"], .sims-ui .sims-widget-table td { padding:10px 12px; border-top:1px solid var(--t-border); }
+  .sims-ui .sims-widget-table th[scope="col"] { padding:8px; text-align:left; vertical-align:bottom; font-size:12px; font-weight:500; color:var(--t-muted); }
+  .sims-ui .sims-widget-table th[scope="row"] { min-width:7rem; text-align:left; font-weight:500; color:var(--t-ink); }
+  .sims-ui .sims-widget-table th[scope="row"], .sims-ui .sims-widget-table td { padding:10px 8px; border-top:1px solid var(--t-border); }
   .sims-ui .sims-widget-table td { color:var(--t-subtle); }
   .sims-ui .sims-widget-table .is-num { text-align:right; font-variant-numeric:tabular-nums; }
+  .sims-ui .sims-widget-table .is-nowrap { white-space:nowrap; } /* ISO dates would otherwise break at their hyphens */
 
   /* Drawer */
-  .sims-ui .sims-dialog.sims-side-drawer { margin:16px 16px 16px auto; height:calc(100dvh - 32px); max-height:calc(100dvh - 32px); padding:24px 24px 0; }
+  .sims-ui .sims-dialog.sims-side-drawer { margin:16px 16px 16px auto; height:calc(100dvh - 32px); max-height:calc(100dvh - 32px); padding:0 24px; }
+  /* The dialog is the scroller, so the title row sticks to its top edge and stays reachable on long drawers. */
+  .sims-ui .sims-side-drawer .sims-dialog-head { position:sticky; top:0; z-index:1; margin:0; padding:24px 0 16px; background:var(--t-dialog); }
   .sims-ui .sims-dialog.sims-side-drawer[open] { animation:sims-side-drawer-in 200ms cubic-bezier(.16,1,.3,1); }
   .sims-ui .sims-side-drawer-body { display:flex; flex-direction:column; gap:24px; padding-bottom:24px; }
   .sims-ui .sims-side-drawer-foot { position:sticky; bottom:0; display:flex; justify-content:flex-end; padding:12px 0 16px; background:var(--t-dialog); border-top:1px solid var(--t-border); }
@@ -66,7 +70,13 @@
   @keyframes sims-side-drawer-in { from { opacity:.7; transform:translateX(24px); } to { opacity:1; transform:none; } }
 }
 
-@container dash-main (max-width:760px) {
+/* A card too narrow for title, filter and expand button side by side drops the filter to its own row. */
+@container widget (max-width:250px) {
+  .sims-ui .sims-widget-head { flex-wrap:wrap; }
+  .sims-ui .sims-widget-head .sims-widget-filter { order:3; flex:1 0 100%; }
+}
+/* Three cards need about 290px each (title, one filter and the expand button share a header row). */
+@container dash-main (max-width:900px) {
   .sims-ui .sims-dash-row.is-three { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .sims-ui .sims-dash-row.is-three > :last-child { grid-column:1 / -1; }
 }
@@ -84,7 +94,8 @@
   .sims-ui .sims-dash-rail > :last-child:nth-child(odd) { grid-column:auto; }
   .sims-ui .sims-widget { padding:16px; }
   .sims-ui .sims-widget-more { display:inline-flex; }
-  .sims-ui .sims-dialog.sims-side-drawer { width:calc(100vw - 24px)!important; max-width:calc(100vw - 24px)!important; margin:12px; height:calc(100dvh - 24px); max-height:calc(100dvh - 24px); padding:20px 20px 0; }
+  .sims-ui .sims-dialog.sims-side-drawer { width:calc(100vw - 24px)!important; max-width:calc(100vw - 24px)!important; margin:12px; height:calc(100dvh - 24px); max-height:calc(100dvh - 24px); padding:0 20px; }
+  .sims-ui .sims-side-drawer .sims-dialog-head { padding:20px 0 12px; }
 }
 
 @media screen {
