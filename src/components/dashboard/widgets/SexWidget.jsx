@@ -10,20 +10,26 @@ const segmentsOf = (r) => [
   { key: 'unknown', label: 'Not recorded', value: r.unknown },
 ];
 
+const CUT = 2.4; // arc length of the card-colored cut between neighbouring segments
+
 function Donut({ segments, total }) {
   const r = 52;
   const c = 2 * Math.PI * r;
+  const shown = total > 0 ? segments.filter((s) => s.value) : [];
   let offset = 0;
+  const arcs = shown.map((s) => {
+    const len = (c * s.value) / total;
+    const arc = { key: s.key, len, start: offset };
+    offset += len;
+    return arc;
+  });
   return <figure className="sims-donut">
     <svg viewBox="0 0 136 136" aria-hidden="true">
       <circle cx="68" cy="68" r={r} className="sims-donut-track" />
-      {total > 0 && segments.filter((s) => s.value).map((s) => {
-        const len = (c * s.value) / total;
-        const arc = <circle key={s.key} cx="68" cy="68" r={r} className={`sims-donut-seg is-${s.key}`}
-          strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-offset} transform="rotate(-90 68 68)" />;
-        offset += len;
-        return arc;
-      })}
+      {arcs.map((a) => <circle key={a.key} cx="68" cy="68" r={r} className={`sims-donut-seg is-${a.key}`}
+        strokeDasharray={`${a.len} ${c - a.len}`} strokeDashoffset={-a.start} transform="rotate(-90 68 68)" />)}
+      {arcs.length > 1 && arcs.map((a) => <circle key={`cut-${a.key}`} cx="68" cy="68" r={r} className="sims-donut-cut"
+        strokeDasharray={`${CUT} ${c}`} transform={`rotate(${-90 + ((a.start - CUT / 2) / c) * 360} 68 68)`} />)}
     </svg>
     <figcaption><strong>{total.toLocaleString()}</strong><span>learners</span></figcaption>
   </figure>;
