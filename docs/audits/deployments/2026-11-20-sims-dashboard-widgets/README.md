@@ -141,8 +141,10 @@ The script:
 
 ## After publishing
 
-Not yet published. To be filled in after `publish-sims.ps1` runs: the new release id, the live main script
-(`index-hCVkXjug.js` expected), and the 68/68 result from `sims-hosting-verification.json`.
+Published on 2026-11-21 by the user, who ran `publish-sims.ps1` from their own terminal. The live main script is
+`assets/index-hCVkXjug.js`. `sims-hosting-verification.json` records the live byte comparison at 2026-11-21T04:25:08Z:
+68 of 68 files checked, 0 mismatched. The new Firebase release id was not captured; read it from the console's Release
+history if it is needed.
 
 ## Rollback
 
