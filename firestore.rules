@@ -191,8 +191,15 @@ service cloud.firestore {
     // ---------- kiosks ----------
     match /kiosks/{uid} {
       allow read: if isAdmin() || (own(uid) && resource.data.active == true);
-      allow create, delete: if false;                       // registerKiosk / deactivateKiosk callables
-      allow update: if own(uid) && affectedOnly(['lastSeenAt']);
+      allow create, delete: if false;                       // provisionKiosk / deleteKioskFn callables (admin SDK)
+      // Active kiosks heartbeat (lastSeenAt) and report their own Entrance/Exit
+      // toggle. SIMS writes mode through setKioskModeFn; last write wins.
+      allow update: if own(uid) && resource.data.active == true
+        && affectedOnly(['lastSeenAt', 'mode', 'modeChangedAt', 'modeChangedBy'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['mode', 'modeChangedAt', 'modeChangedBy'])
+          || (request.resource.data.mode in ['entrance', 'exit']
+            && request.resource.data.modeChangedBy == 'kiosk'
+            && request.resource.data.modeChangedAt == request.time));
     }
 
     // ---------- raw scan log (append-only) ----------
