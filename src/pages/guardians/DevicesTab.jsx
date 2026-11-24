@@ -70,6 +70,7 @@ export default function DevicesTab() {
   const [confirmReset, setConfirmReset] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmAll, setConfirmAll] = useState(null); // 'entrance' | 'exit' | null
+  const [bulkNote, setBulkNote] = useState(''); // result of the last Set-all
   const [credentials, setCredentials] = useState(null); // { label, email, password } | null
 
   const create = async () => {
@@ -95,8 +96,13 @@ export default function DevicesTab() {
     if (activeKiosks.length === 0) { setConfirmAll(null); return; }
     // action.run swallows errors into ActionFeedback; rethrow so Confirm keeps
     // the dialog open and shows its own error.
+    setBulkNote('');
     const result = await action.run('mode', () => call.setKioskMode({ uids: activeKiosks.map((k) => k.id), mode }));
     if (!result.ok) throw result.error || new Error('Another kiosk change is still in progress.');
+    const { updated, skipped } = result.value || {};
+    const n = Array.isArray(updated) ? updated.length : activeKiosks.length;
+    const skip = Array.isArray(skipped) ? skipped.length : 0;
+    setBulkNote(`Switched ${n} kiosk${n === 1 ? '' : 's'} to ${MODE_LABEL[mode]}${skip ? `, skipped ${skip} that ${skip === 1 ? 'was' : 'were'} no longer active` : ''}.`);
     setConfirmAll(null);
   };
 
@@ -118,7 +124,7 @@ export default function DevicesTab() {
         <p style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, margin: 0 }}>
           Online means the kiosk page is open and connected. Entrance/Exit can also be changed on the kiosk itself; the latest change wins.
         </p>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, minWidth: 0 }}>
           {MODES.map(([value, text]) => (
             <Btn key={value} variant="ghost" disabled={action.busy || activeKiosks.length === 0} onClick={() => setConfirmAll(value)}>
               Set all active kiosks to {text}
@@ -126,6 +132,7 @@ export default function DevicesTab() {
           ))}
         </div>
       </div>
+      {bulkNote && <p role="status" style={{ fontFamily: T.body, fontSize: 12, color: T.inkMuted, margin: '0 0 12px' }}>{bulkNote}</p>}
       <Card>
         <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: T.body, fontSize: 13 }}>
           <thead style={S.thead}><tr><th style={S.th}>Label</th><th style={S.th}>Status</th><th style={S.th}>Mode</th><th style={S.th}>Last seen</th><th style={S.th}></th></tr></thead>
@@ -136,14 +143,16 @@ export default function DevicesTab() {
                 <td style={S.td}><StatusCell kiosk={k} now={now} /></td>
                 <td style={S.td}><ModeCell kiosk={k} busy={action.busy} onChange={(mode) => setMode([k.id], mode)} /></td>
                 <td style={S.td}>{k.lastSeenAt?.toDate ? k.lastSeenAt.toDate().toLocaleString() : '—'}</td>
-                <td style={{ ...S.td, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  {k.active
-                    ? <>
-                        <Btn variant="ghost" onClick={() => setConfirmReset(k)}>Reset password</Btn>
-                        <Btn variant="ghost" onClick={() => setConfirm(k)}>Deactivate</Btn>
-                      </>
-                    : <Btn variant="ghost" onClick={() => action.run('action', () => call.registerKiosk({ uid: k.id, label: k.label }))}>Re-activate</Btn>}
-                  <Btn variant="ghost-danger" onClick={() => setConfirmDelete(k)}>Delete</Btn>
+                <td style={S.td}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+                    {k.active
+                      ? <>
+                          <Btn variant="ghost" onClick={() => setConfirmReset(k)}>Reset password</Btn>
+                          <Btn variant="ghost" onClick={() => setConfirm(k)}>Deactivate</Btn>
+                        </>
+                      : <Btn variant="ghost" onClick={() => action.run('action', () => call.registerKiosk({ uid: k.id, label: k.label }))}>Re-activate</Btn>}
+                    <Btn variant="ghost-danger" onClick={() => setConfirmDelete(k)}>Delete</Btn>
+                  </div>
                 </td>
               </tr>
             ))}
