@@ -12,6 +12,9 @@
   .sims-btn svg { flex-shrink:0; }
   .sims-btn:focus-visible { outline:2px solid var(--t-focus); outline-offset:2px; }
   .sims-btn:disabled { cursor:not-allowed; }
+  .sims-btn[aria-disabled="true"] { cursor:default; }
+  .sims-btn--primary[aria-disabled="true"]:not(:disabled):hover,.sims-btn--primary[aria-disabled="true"]:not(:disabled):active { background:var(--t-primary); }
+  .sims-btn--secondary[aria-disabled="true"]:not(:disabled):hover,.sims-btn--secondary[aria-disabled="true"]:not(:disabled):active { background:var(--t-surface); border-color:var(--t-border-strong); }
   .sims-btn--primary { background:var(--t-primary); color:var(--t-on-primary); }
   .sims-btn--primary:not(:disabled):hover { background:var(--t-primary-hover); }
   .sims-btn--primary:not(:disabled):active { background:var(--t-primary-active); }

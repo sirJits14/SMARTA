@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/firestore';
 import { setup, seedBaseline, as, anon, ok, denied, STAFF, KIOSK, KIOSK_INACTIVE, GUARDIAN_A, ANON } from './helpers.js';
+
+// rules-unit-testing hands out compat Firestore instances.
+const serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
 
 let env;
 beforeAll(async () => { env = await setup(); });
@@ -63,7 +68,10 @@ describe('student_attendance', () => {
 describe('kiosks', () => {
   it('kiosk reads its own doc and may only bump lastSeenAt', async () => {
     await ok(as(env, KIOSK).doc('kiosks/kiosk1').get());
-    await ok(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: new Date() }));
+    await ok(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: serverTimestamp() }));
+    // A heartbeat must carry the server time, never a client-supplied clock.
+    await denied(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: new Date() }));
+    await denied(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: new Date(2099, 0, 1) }));
     // Use a value that actually differs from the seeded doc (active: true) so
     // `active` is genuinely part of the write's affected keys — resending the
     // same value would not show up in diff().affectedKeys() and would let this
@@ -74,6 +82,22 @@ describe('kiosks', () => {
   it('nobody creates kiosk docs from a client, staff can read all', async () => {
     await denied(as(env, STAFF).doc('kiosks/new').set({ label: 'x', active: true }));
     await ok(as(env, STAFF).collection('kiosks').get());
+  });
+  it('active kiosk may report its own Entrance/Exit mode', async () => {
+    const own = () => as(env, KIOSK).doc('kiosks/kiosk1');
+    await ok(own().update({ mode: 'exit', modeChangedAt: serverTimestamp(), modeChangedBy: 'kiosk' }));
+    await ok(own().update({ mode: 'entrance', modeChangedAt: serverTimestamp(), modeChangedBy: 'kiosk', lastSeenAt: serverTimestamp() }));
+    await denied(own().update({ mode: 'sideways', modeChangedAt: serverTimestamp(), modeChangedBy: 'kiosk' }));
+    await denied(own().update({ mode: 'exit', modeChangedAt: serverTimestamp(), modeChangedBy: 'registrar@bnhs.edu' }));
+    await denied(own().update({ mode: 'exit', modeChangedAt: new Date(2020, 0, 1), modeChangedBy: 'kiosk' }));
+    await denied(own().update({ mode: 'exit', modeChangedAt: serverTimestamp(), modeChangedBy: 'kiosk', modeChangedByName: 'Sir Geths' }));
+    await denied(own().update({ deleted: true }));
+    await denied(own().update({ label: 'Renamed' }));
+  });
+  it('a kiosk cannot write another kiosk, and an inactive kiosk writes nothing', async () => {
+    await denied(as(env, KIOSK).doc('kiosks/kiosk9').update({ lastSeenAt: new Date() }));
+    await denied(as(env, KIOSK_INACTIVE).doc('kiosks/kiosk9').update({ lastSeenAt: new Date() }));
+    await denied(as(env, KIOSK_INACTIVE).doc('kiosks/kiosk9').update({ mode: 'exit', modeChangedAt: serverTimestamp(), modeChangedBy: 'kiosk' }));
   });
 });
 

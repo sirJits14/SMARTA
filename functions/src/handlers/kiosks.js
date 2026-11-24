@@ -31,6 +31,7 @@ export async function registerKiosk(ctx, data) {
   const label = str(data.label, { name: 'label', min: 2, max: 40 });
   const existing = await db.doc(`kiosks/${uid}`).get();
   if (!existing.exists) throw new CallableError('not-found', 'No such kiosk device to reactivate.');
+  if (existing.data()?.deleted === true) throw new CallableError('failed-precondition', 'This kiosk was deleted.');
   await assertKioskAccount(auth, uid);
   await db.doc(`kiosks/${uid}`).set({ label, active: true, createdBy: email, createdAt: FieldValue.serverTimestamp() }, { merge: true });
   await audit(db, { action: 'kiosk.registered', actorType: 'staff', actorUid: email, targetType: 'kiosk', targetId: uid, details: { label } });
@@ -86,4 +87,61 @@ export async function resetKioskPassword(ctx, data) {
   const userRecord = await auth.updateUser(uid, { password });
   await audit(db, { action: 'kiosk.password_reset', actorType: 'staff', actorUid: staffEmail, targetType: 'kiosk', targetId: uid });
   return { uid, email: userRecord.email, password };
+}
+
+// Permanently removes a device's sign-in. The kiosks/{uid} doc stays as a
+// tombstone (deleted: true, active: false) so Scan log rows keep showing the
+// gate name; SIMS hides tombstones from the device list and filters.
+export async function deleteKiosk(ctx, data) {
+  const { db, auth, email } = ctx;
+  const uid = str(data.uid, { name: 'uid', min: 4, max: 128 });
+  const ref = db.doc(`kiosks/${uid}`);
+  const snap = await ref.get();
+  const kiosk = snap.exists ? snap.data() : null;
+  if (!kiosk || kiosk.deleted === true) throw new CallableError('not-found', 'No such kiosk device.');
+  let authUserExists = true;
+  try { await assertKioskAccount(auth, uid); }
+  catch (e) { if (e.code === 'auth/user-not-found') authUserExists = false; else throw e; }
+  if (authUserExists) await auth.deleteUser(uid);
+  await ref.set({ active: false, deleted: true, deletedAt: FieldValue.serverTimestamp(), deletedBy: email }, { merge: true });
+  await audit(db, { action: 'kiosk.deleted', actorType: 'staff', actorUid: email, targetType: 'kiosk', targetId: uid, details: { label: kiosk.label || '' } });
+  return { ok: true };
+}
+
+const KIOSK_MODES = ['entrance', 'exit'];
+const MAX_MODE_UIDS = 100;
+
+// Remote Entrance/Exit switch. Each kiosk listens to its own kiosks/{uid}
+// doc and adopts `mode` live; the kiosk's own toggle writes the same field
+// (modeChangedBy: 'kiosk'), so whichever write lands last wins.
+export async function setKioskMode(ctx, data) {
+  const { db, email, profile } = ctx;
+  const mode = data.mode;
+  if (!KIOSK_MODES.includes(mode)) throw new CallableError('invalid-argument', 'mode must be entrance or exit');
+  if (!Array.isArray(data.uids) || data.uids.length < 1 || data.uids.length > MAX_MODE_UIDS) {
+    throw new CallableError('invalid-argument', `uids must list 1 to ${MAX_MODE_UIDS} kiosks`);
+  }
+  const uids = [...new Set(data.uids.map((u) => str(u, { name: 'uid', min: 4, max: 128 })))];
+  const refs = uids.map((uid) => db.doc(`kiosks/${uid}`));
+  const snaps = await Promise.all(refs.map((r) => r.get()));
+  const fields = {
+    mode, modeChangedAt: FieldValue.serverTimestamp(), modeChangedBy: email, modeChangedByName: profile?.name || email,
+  };
+  const batch = db.batch();
+  const updated = [];
+  const skipped = [];
+  snaps.forEach((snap, i) => {
+    const kiosk = snap.exists ? snap.data() : null;
+    if (!kiosk || kiosk.active !== true || kiosk.deleted === true) { skipped.push(uids[i]); return; }
+    batch.set(refs[i], fields, { merge: true });
+    updated.push(uids[i]);
+  });
+  if (updated.length) {
+    await batch.commit();
+    await audit(db, {
+      action: 'kiosk.mode_changed', actorType: 'staff', actorUid: email, targetType: 'kiosk',
+      targetId: updated.length === 1 ? updated[0] : 'multiple', details: { mode, uids: updated, count: updated.length },
+    });
+  }
+  return { updated, skipped };
 }
