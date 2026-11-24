@@ -4,9 +4,11 @@ import { ResourceState } from '../components/ui.jsx';
 import { S } from '../styles.js';
 import BySectionTab from './idCards/BySectionTab.jsx';
 import SavedBatchTab from './idCards/SavedBatchTab.jsx';
+import RecentlyApprovedTab from './idCards/RecentlyApprovedTab.jsx';
+import { approvedTabLabel } from '../lib/idCardQueue.js';
 
 // 'queue' is kept as the key so a remembered tab still opens the batch.
-const TABS = [['section', 'By section'], ['queue', 'Saved batch']];
+const TABS = [['section', 'By section'], ['queue', 'Saved batch'], ['approved', 'Recently approved']];
 const STORAGE = 'sims.idCards.tab';
 const readTab = () => {
   try { const v = localStorage.getItem(STORAGE); return TABS.some(([k]) => k === v) ? v : 'section'; }
@@ -18,6 +20,7 @@ export default function IDCardsPage({ me, schoolYear }) {
   const enrollmentsResource = useSchoolYearEnrollments(schoolYear);
   const studentsResource = useCollectionResource('students');
   const batchResource = useCollectionResource('id_card_batch');
+  const approvedResource = useCollectionResource('id_card_approved');
   const [tab, setTabState] = useState(readTab);
   const setTab = (next) => {
     setTabState(next);
@@ -47,12 +50,14 @@ export default function IDCardsPage({ me, schoolYear }) {
               if (next === null) return;
               event.preventDefault(); setTab(TABS[next][0]);
               document.getElementById(`id-cards-tab-${TABS[next][0]}`)?.focus();
-            }}>{label}</button>;
+            }}>{k === 'approved' ? approvedTabLabel(approvedResource.data.length) : label}</button>;
         })}
       </div>
 
       <div key={tab} role="tabpanel" id={`id-cards-panel-${tab}`} aria-labelledby={`id-cards-tab-${tab}`} className="sims-page-transition">
-        {tab === 'section' ? <BySectionTab {...data} /> : <ResourceState resources={[batchResource]}><SavedBatchTab {...data} batchDocs={batchResource.data} /></ResourceState>}
+        {tab === 'section' ? <BySectionTab {...data} />
+          : tab === 'queue' ? <ResourceState resources={[batchResource]}><SavedBatchTab {...data} batchDocs={batchResource.data} /></ResourceState>
+          : <ResourceState resources={[approvedResource]}><RecentlyApprovedTab {...data} approvedDocs={approvedResource.data} /></ResourceState>}
       </div>
     </div>
   );

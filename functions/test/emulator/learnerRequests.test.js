@@ -760,6 +760,25 @@ describe('approving an add', () => {
     await db().doc(`school_years/${year}`).set({ endedAt: new Date() });
     await expect(resolveLearnerRequest(deps('admin'), { requestId: next.id, approve: true })).rejects.toMatchObject({ code: 'failed-precondition', message: 'This school year has ended.' });
   });
+  it('logs a new learner for ID card printing, with who approved it', async () => {
+    const { id } = await file();
+    await resolveLearnerRequest(deps('ca7'), { requestId: id, approve: true });
+    const [created] = (await db().collection('students').where('lrn', '==', '200000000001').get()).docs;
+    expect(await get(`id_card_approved/${created.id}`)).toEqual({
+      approvedAt: expect.any(Timestamp), approvedByName: 'Cleo Curriculum', requestId: id, schoolYear: year,
+    });
+  });
+  it('logs nothing for a move, a re-enrollment, a rejection or a removal', async () => {
+    const moved = await file('teacher', { student: form({ lrn: '100000000002' }) });
+    await resolveLearnerRequest(deps('coord7'), { requestId: moved.id, approve: true });
+    const enrolled = await file('teacher', { student: form({ lrn: '100000000003' }) });
+    await resolveLearnerRequest(deps('admin'), { requestId: enrolled.id, approve: true });
+    const rejected = await file('teacher', { student: form({ lrn: '200000000009' }) });
+    await resolveLearnerRequest(deps('admin'), { requestId: rejected.id, approve: false, reason: 'Wrong section' });
+    const removed = await requestLearnerRemoval(deps('teacher'), removal());
+    await resolveLearnerRequest(deps('admin'), { requestId: removed.id, approve: true });
+    expect((await db().collection('id_card_approved').get()).size).toBe(0);
+  });
 });
 
 describe('approving a removal', () => {

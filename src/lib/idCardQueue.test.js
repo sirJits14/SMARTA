@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   isIdCardPrinted, sectionShortLabel, sortIdCardBatch, groupBySection, cardsLabel,
-  enrolledEntries, buildBatchView, sheetFillLabel,
+  enrolledEntries, buildBatchView, sheetFillLabel, buildApprovedView, approvedTabLabel, approvalText,
 } from './idCardQueue.js';
+import { personText, whenText } from './learnerRequests.js';
 
 const SY = '2026-2027';
 const rizal = { id: 'rizal', gradeLevel: 7, name: 'Rizal', schoolYear: SY };
@@ -162,5 +163,45 @@ describe('sheetFillLabel', () => {
     [172, '2 full sheets + 12 — 68 more fills the next sheet'],
   ])('%i cards → %s', (n, label) => {
     expect(sheetFillLabel(n)).toBe(label);
+  });
+});
+
+describe('buildApprovedView', () => {
+  const ana = learner('ana', 'Abad', 'F');
+  const ben = learner('ben', 'Bautista', 'M');
+  const gone = learner('gone', 'Cruz', 'M');
+  const students = [ana, ben, gone];
+  const enrolled = enrolledEntries({ students, enrollments: [enroll(ana, rizal), enroll(ben, rizal)], sections: [rizal], schoolYear: SY });
+  const approval = (id) => ({ id, approvedByName: 'Cleo Curriculum', requestId: `R-${id}`, schoolYear: SY, approvedAt: null });
+
+  it('pairs each enrolled learner with their section and approval, in print order', () => {
+    const { printable } = buildApprovedView({ approvedDocs: [approval('ana'), approval('ben')], enrolled, students });
+    expect(ids(printable)).toEqual(['ben', 'ana']);
+    expect(printable[0].section).toBe(rizal);
+    expect(printable[0].approval.requestId).toBe('R-ben');
+  });
+  it('lists a learner who is no longer enrolled, or whose record is gone, as not printable', () => {
+    const { printable, notPrintable } = buildApprovedView({ approvedDocs: [approval('gone'), approval('missing')], enrolled, students });
+    expect(printable).toEqual([]);
+    expect(notPrintable.map((e) => [e.id, e.student?.id ?? null, e.approval.requestId]))
+      .toEqual([['gone', 'gone', 'R-gone'], ['missing', null, 'R-missing']]);
+  });
+});
+
+describe('approvedTabLabel', () => {
+  it('shows the count only when someone is waiting', () => {
+    expect(approvedTabLabel(0)).toBe('Recently approved');
+    expect(approvedTabLabel(3)).toBe('Recently approved · 3');
+  });
+});
+
+describe('approvalText', () => {
+  it('names the approver and when', () => {
+    const ms = Date.UTC(2026, 9, 29, 1);
+    expect(approvalText({ approvedByName: 'Cleo Curriculum', approvedAt: { toMillis: () => ms } }))
+      .toBe(`Approved by ${personText('Cleo Curriculum')} · ${whenText(ms)}`);
+  });
+  it('leaves out a time the server has not filled in yet, and an unnamed approver reads "staff"', () => {
+    expect(approvalText({ approvedByName: '', approvedAt: null })).toBe('Approved by staff');
   });
 });

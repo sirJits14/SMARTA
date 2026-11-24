@@ -165,6 +165,8 @@ service cloud.firestore {
     }
     match /schedules/{id}   { allow read: if isAdmin() || isKiosk() || coordinatorMayReadSchedule(); allow write: if isAdmin(); }
     match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
+    // Recently approved new learners (plan 2026-10-30): only the server creates them; admins read and dismiss.
+    match /id_card_approved/{studentId} { allow read, delete: if isAdmin(); }
     match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
     match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isAdmin(); }
     match /users/{id} {

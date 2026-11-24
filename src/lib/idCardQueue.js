@@ -1,5 +1,6 @@
 import { byLastThenFirstName } from './roster.js';
 import { ID_CARD_PRINT_LAYOUT } from '../pages/idCardPrintLayout.js';
+import { personText, whenText } from './learnerRequests.js';
 
 // A card is current only if it was printed for the learner's present LRN:
 // the QR encodes the LRN, so a corrected LRN makes the old card wrong.
@@ -84,3 +85,21 @@ export function groupBySection(entries) {
 }
 
 export const cardsLabel = (n) => `${n} card${n === 1 ? '' : 's'}`;
+
+// Recently approved (plan 2026-10-30) splits like the saved batch, and keeps
+// each learner's approval for the "Approved by" line.
+export function buildApprovedView({ approvedDocs, enrolled, students }) {
+  const approvalById = new Map(approvedDocs.map((d) => [d.id, d]));
+  const { printable, notPrintable } = buildBatchView({ batchDocs: approvedDocs, enrolled, students });
+  return {
+    printable: printable.map((e) => ({ ...e, approval: approvalById.get(e.student.id) })),
+    notPrintable: notPrintable.map((e) => ({ ...e, approval: approvalById.get(e.id) })),
+  };
+}
+
+export const approvedTabLabel = (n) => (n > 0 ? `Recently approved · ${n}` : 'Recently approved');
+
+// approvedAt is a Firestore Timestamp, or null for a moment after the server writes it.
+export const approvalText = (approval) =>
+  [`Approved by ${personText(approval?.approvedByName) || 'staff'}`, whenText(approval?.approvedAt?.toMillis?.() ?? null)]
+    .filter(Boolean).join(' · ');
