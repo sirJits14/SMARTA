@@ -9,7 +9,7 @@ import { guardianIdentity, staffIdentity, schoolIdentity, passwordChangeIdentity
 import { issueActivationCodes, reissueActivationCode, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
 import { endSchoolYear } from './src/handlers/schoolYear.js';
 import { requestAccess, resolveAccessRequest, revokeLink, setActivationRestricted, changeLinkRelationship, correctLinkRelationship } from './src/handlers/links.js';
-import { registerKiosk, deactivateKiosk, provisionKiosk, resetKioskPassword, deleteKiosk } from './src/handlers/kiosks.js';
+import { registerKiosk, deactivateKiosk, provisionKiosk, resetKioskPassword, deleteKiosk, setKioskMode } from './src/handlers/kiosks.js';
 import { submitReport, resolveReport, correctEvent, addManualEvent } from './src/handlers/reports.js';
 import { deleteGuardianAccount } from './src/handlers/account.js';
 import { createStaffUser, updateStaffUser, setStaffUserDisabled, resetStaffPassword, deleteStaffUser, changeOwnPassword } from './src/handlers/users.js';
@@ -77,6 +77,7 @@ export const deactivateKioskFn = adminCall(deactivateKiosk);
 export const provisionKioskFn = adminCall(provisionKiosk);
 export const resetKioskPasswordFn = adminCall(resetKioskPassword);
 export const deleteKioskFn = adminCall(deleteKiosk);
+export const setKioskModeFn = adminCall(setKioskMode);
 
 export const submitReportFn = guardianCall(submitReport);
 export const resolveReportFn = adminCall(resolveReport);

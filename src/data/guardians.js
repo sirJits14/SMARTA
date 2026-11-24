@@ -20,6 +20,7 @@ export const call = {
   provisionKiosk: fn('provisionKioskFn'),
   resetKioskPassword: fn('resetKioskPasswordFn'),
   deleteKiosk: fn('deleteKioskFn'),
+  setKioskMode: fn('setKioskModeFn'),
   resolveReport: fn('resolveReportFn'),
   correctEvent: fn('correctEventFn'),
   addManualEvent: fn('addManualEventFn'),

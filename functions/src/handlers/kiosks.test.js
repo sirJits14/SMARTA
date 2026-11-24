@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { registerKiosk, provisionKiosk, resetKioskPassword, deleteKiosk } from './kiosks.js';
+import { registerKiosk, provisionKiosk, resetKioskPassword, deleteKiosk, setKioskMode } from './kiosks.js';
 import { audit } from '../audit.js';
 
 vi.mock('../audit.js', () => ({ audit: vi.fn() }));
@@ -185,5 +185,66 @@ describe('deleteKiosk', () => {
     const gone = kioskDb({ kiosk1: { label: 'Main Gate', active: false, deleted: true } });
     await expect(deleteKiosk({ db: gone.db, auth, email: 'r@bnhs.edu' }, { uid: 'kiosk1' })).rejects.toMatchObject({ code: 'not-found' });
     expect(auth.deleteUser).not.toHaveBeenCalled();
+  });
+});
+
+describe('setKioskMode', () => {
+  const staff = { email: 'registrar@bnhs.edu', profile: { name: 'Sir Geths' } };
+
+  it('sets the mode on active kiosks, skips inactive/deleted/missing, audits once', async () => {
+    vi.mocked(audit).mockClear();
+    const { db, batchSet, commit } = kioskDb({
+      kioskA: { label: 'A', active: true },
+      kioskB: { label: 'B', active: false },
+      kioskC: { label: 'C', active: false, deleted: true },
+      kioskD: { label: 'D', active: true },
+    });
+
+    const result = await setKioskMode({ db, ...staff }, { uids: ['kioskA', 'kioskB', 'kioskC', 'kioskD', 'kioskZ'], mode: 'exit' });
+
+    expect(result).toEqual({ updated: ['kioskA', 'kioskD'], skipped: ['kioskB', 'kioskC', 'kioskZ'] });
+    expect(batchSet).toHaveBeenCalledTimes(2);
+    expect(batchSet.mock.calls[0][0].path).toBe('kiosks/kioskA');
+    expect(batchSet.mock.calls[0][1]).toEqual(expect.objectContaining({
+      mode: 'exit', modeChangedBy: 'registrar@bnhs.edu', modeChangedByName: 'Sir Geths',
+    }));
+    expect(batchSet.mock.calls[0][1]).toHaveProperty('modeChangedAt');
+    expect(batchSet.mock.calls[0][2]).toEqual({ merge: true });
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(audit)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(audit)).toHaveBeenCalledWith(db, expect.objectContaining({
+      action: 'kiosk.mode_changed', details: { mode: 'exit', uids: ['kioskA', 'kioskD'], count: 2 },
+    }));
+  });
+
+  it('falls back to the email when the profile has no name', async () => {
+    const { db, batchSet } = kioskDb({ kioskA: { label: 'A', active: true } });
+    await setKioskMode({ db, email: 'r@bnhs.edu', profile: {} }, { uids: ['kioskA'], mode: 'entrance' });
+    expect(batchSet.mock.calls[0][1].modeChangedByName).toBe('r@bnhs.edu');
+  });
+
+  it('does not commit or audit when nothing is eligible', async () => {
+    vi.mocked(audit).mockClear();
+    const { db, commit } = kioskDb({ kioskB: { label: 'B', active: false } });
+    const result = await setKioskMode({ db, ...staff }, { uids: ['kioskB'], mode: 'exit' });
+    expect(result).toEqual({ updated: [], skipped: ['kioskB'] });
+    expect(commit).not.toHaveBeenCalled();
+    expect(vi.mocked(audit)).not.toHaveBeenCalled();
+  });
+
+  it('rejects a bad mode or uid list', async () => {
+    const { db } = kioskDb({});
+    await expect(setKioskMode({ db, ...staff }, { uids: ['kioskA'], mode: 'sideways' })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(setKioskMode({ db, ...staff }, { uids: [], mode: 'exit' })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(setKioskMode({ db, ...staff }, { uids: 'kioskA', mode: 'exit' })).rejects.toMatchObject({ code: 'invalid-argument' });
+    const tooMany = Array.from({ length: 101 }, (_, i) => `kiosk${i}`);
+    await expect(setKioskMode({ db, ...staff }, { uids: tooMany, mode: 'exit' })).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+
+  it('de-duplicates uids', async () => {
+    const { db, batchSet } = kioskDb({ kioskA: { label: 'A', active: true } });
+    const result = await setKioskMode({ db, ...staff }, { uids: ['kioskA', 'kioskA'], mode: 'exit' });
+    expect(result.updated).toEqual(['kioskA']);
+    expect(batchSet).toHaveBeenCalledTimes(1);
   });
 });

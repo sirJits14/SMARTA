@@ -107,3 +107,41 @@ export async function deleteKiosk(ctx, data) {
   await audit(db, { action: 'kiosk.deleted', actorType: 'staff', actorUid: email, targetType: 'kiosk', targetId: uid, details: { label: kiosk.label || '' } });
   return { ok: true };
 }
+
+const KIOSK_MODES = ['entrance', 'exit'];
+const MAX_MODE_UIDS = 100;
+
+// Remote Entrance/Exit switch. Each kiosk listens to its own kiosks/{uid}
+// doc and adopts `mode` live; the kiosk's own toggle writes the same field
+// (modeChangedBy: 'kiosk'), so whichever write lands last wins.
+export async function setKioskMode(ctx, data) {
+  const { db, email, profile } = ctx;
+  const mode = data.mode;
+  if (!KIOSK_MODES.includes(mode)) throw new CallableError('invalid-argument', 'mode must be entrance or exit');
+  if (!Array.isArray(data.uids) || data.uids.length < 1 || data.uids.length > MAX_MODE_UIDS) {
+    throw new CallableError('invalid-argument', `uids must list 1 to ${MAX_MODE_UIDS} kiosks`);
+  }
+  const uids = [...new Set(data.uids.map((u) => str(u, { name: 'uid', min: 4, max: 128 })))];
+  const refs = uids.map((uid) => db.doc(`kiosks/${uid}`));
+  const snaps = await Promise.all(refs.map((r) => r.get()));
+  const fields = {
+    mode, modeChangedAt: FieldValue.serverTimestamp(), modeChangedBy: email, modeChangedByName: profile?.name || email,
+  };
+  const batch = db.batch();
+  const updated = [];
+  const skipped = [];
+  snaps.forEach((snap, i) => {
+    const kiosk = snap.exists ? snap.data() : null;
+    if (!kiosk || kiosk.active !== true || kiosk.deleted === true) { skipped.push(uids[i]); return; }
+    batch.set(refs[i], fields, { merge: true });
+    updated.push(uids[i]);
+  });
+  if (updated.length) {
+    await batch.commit();
+    await audit(db, {
+      action: 'kiosk.mode_changed', actorType: 'staff', actorUid: email, targetType: 'kiosk',
+      targetId: updated.length === 1 ? updated[0] : 'multiple', details: { mode, uids: updated, count: updated.length },
+    });
+  }
+  return { updated, skipped };
+}
