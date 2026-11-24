@@ -7,6 +7,7 @@ import { fullName } from '../../lib/roster.js';
 import { localDate } from '../../lib/dates.js';
 import { formatScanTime } from '../../lib/attendance.js';
 import { learnerMatches } from '../../lib/search.js';
+import { visibleKiosks } from '../../lib/kioskPresence.js';
 import { currentEnrollmentByStudent } from '../../lib/enrollmentChange.js';
 import { GRADES, UNASSIGNED } from '../../lib/constants.js';
 import { T, S } from '../../styles.js';
@@ -52,7 +53,7 @@ export default function ScanLogTab({ schoolYear }) {
       <Card style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, auto auto 1fr)', gap: 12, alignItems: 'end' }}>
           <Field label="Date"><Inp type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Device"><Sel value={deviceId} onChange={(e) => setDeviceId(e.target.value)}><option value="">All</option>{kiosks.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}<option value="staff">School office (manual)</option></Sel></Field>
+          <Field label="Device"><Sel value={deviceId} onChange={(e) => setDeviceId(e.target.value)}><option value="">All</option>{visibleKiosks(kiosks).map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}<option value="staff">School office (manual)</option></Sel></Field>
           <div style={{ fontFamily: T.body, fontSize: 13, color: T.inkMuted, marginBottom: 14 }}>{rowsResource.loading || rowsResource.error ? '—' : <>{rows.length} raw events (append-only; corrections appear as separate rows){filterActive ? ` · ${filtered.length} shown` : ''}</>}</div>
         </div>
         <Field label="Filter by learner"><Inp type="search" value={filterQuery} onChange={(event) => setFilterQuery(event.target.value)} placeholder="Filter by learner first or last name" /></Field>
