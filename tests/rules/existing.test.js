@@ -68,7 +68,10 @@ describe('student_attendance', () => {
 describe('kiosks', () => {
   it('kiosk reads its own doc and may only bump lastSeenAt', async () => {
     await ok(as(env, KIOSK).doc('kiosks/kiosk1').get());
-    await ok(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: new Date() }));
+    await ok(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: serverTimestamp() }));
+    // A heartbeat must carry the server time, never a client-supplied clock.
+    await denied(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: new Date() }));
+    await denied(as(env, KIOSK).doc('kiosks/kiosk1').update({ lastSeenAt: new Date(2099, 0, 1) }));
     // Use a value that actually differs from the seeded doc (active: true) so
     // `active` is genuinely part of the write's affected keys — resending the
     // same value would not show up in diff().affectedKeys() and would let this
