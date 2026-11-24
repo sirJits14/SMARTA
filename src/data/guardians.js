@@ -19,6 +19,7 @@ export const call = {
   deactivateKiosk: fn('deactivateKioskFn'),
   provisionKiosk: fn('provisionKioskFn'),
   resetKioskPassword: fn('resetKioskPasswordFn'),
+  deleteKiosk: fn('deleteKioskFn'),
   resolveReport: fn('resolveReportFn'),
   correctEvent: fn('correctEventFn'),
   addManualEvent: fn('addManualEventFn'),
