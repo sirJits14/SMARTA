@@ -30,6 +30,12 @@ describe('kioskPresence', () => {
   it('is offline and never seen without lastSeenAt', () => {
     expect(kioskPresence({ active: true }, NOW)).toEqual({ state: 'offline', label: 'Offline · never seen' });
   });
+  it('treats null and invalid timestamps as never seen', () => {
+    const never = { state: 'offline', label: 'Offline · never seen' };
+    expect(kioskPresence({ active: true, lastSeenAt: null }, NOW)).toEqual(never);
+    expect(kioskPresence({ active: true, lastSeenAt: new Date('x') }, NOW)).toEqual(never);
+    expect(kioskPresence({ active: true, lastSeenAt: { toMillis: () => NaN } }, NOW)).toEqual(never);
+  });
 });
 
 describe('modeChangeNote', () => {
@@ -42,6 +48,9 @@ describe('modeChangeNote', () => {
     expect(modeChangeNote({ mode: 'exit', modeChangedBy: 'r@bnhs.edu', modeChangedByName: 'Sir Geths', modeChangedAt: ts(NOW) }))
       .toMatch(/^changed by Sir Geths, /);
     expect(modeChangeNote({ mode: 'entrance', modeChangedBy: 'r@bnhs.edu' })).toBe('changed by r@bnhs.edu');
+  });
+  it('omits the date suffix when the change time is invalid', () => {
+    expect(modeChangeNote({ mode: 'exit', modeChangedBy: 'kiosk', modeChangedAt: new Date('x') })).toBe('changed at the kiosk');
   });
 });
 

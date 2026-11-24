@@ -45,7 +45,8 @@ function ModeCell({ kiosk, busy, onChange }) {
       <div role="group" aria-label={`Scan mode for ${kiosk.label}`} style={{ display: 'inline-flex', gap: 4 }}>
         {MODES.map(([value, label]) => (
           <Btn key={value} variant={kiosk.mode === value ? 'solid' : 'ghost'} aria-pressed={kiosk.mode === value}
-            disabled={busy || kiosk.mode === value} onClick={() => onChange(value)}>{label}</Btn>
+            aria-disabled={kiosk.mode === value ? 'true' : undefined}
+            disabled={busy} onClick={() => { if (kiosk.mode !== value) onChange(value); }}>{label}</Btn>
         ))}
       </div>
       <span style={{ fontSize: 11, color: T.inkMuted }}>{modeChangeNote(kiosk)}</span>
@@ -90,7 +91,14 @@ export default function DevicesTab() {
   const deactivate = async (k) => { await call.deactivateKiosk({ uid: k.id, reason: 'Deactivated from SIMS' }); setConfirm(null); };
   const remove = async (k) => { await call.deleteKiosk({ uid: k.id }); setConfirmDelete(null); };
   const setMode = (uids, mode) => action.run('mode', () => call.setKioskMode({ uids, mode }));
-  const setAll = async (mode) => { await call.setKioskMode({ uids: activeKiosks.map((k) => k.id), mode }); setConfirmAll(null); };
+  const setAll = async (mode) => {
+    if (activeKiosks.length === 0) { setConfirmAll(null); return; }
+    // action.run swallows errors into ActionFeedback; rethrow so Confirm keeps
+    // the dialog open and shows its own error.
+    const result = await action.run('mode', () => call.setKioskMode({ uids: activeKiosks.map((k) => k.id), mode }));
+    if (!result.ok) throw result.error || new Error('Another kiosk change is still in progress.');
+    setConfirmAll(null);
+  };
 
   if ([kiosksResource].some(r => r.loading || r.error)) return <ResourceState resources={[kiosksResource]}/>;
 

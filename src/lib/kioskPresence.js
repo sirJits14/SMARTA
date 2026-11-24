@@ -4,7 +4,10 @@
 export const ONLINE_WINDOW_MS = 5 * 60_000;
 export const PRESENCE_TICK_MS = 30_000;
 
-const millis = (t) => (t?.toMillis ? t.toMillis() : t instanceof Date ? t.getTime() : null);
+const millis = (t) => {
+  const ms = t?.toMillis ? t.toMillis() : t instanceof Date ? t.getTime() : null;
+  return Number.isFinite(ms) ? ms : null;
+};
 
 export function formatAgo(ms, nowMs) {
   const seconds = Math.max(0, Math.round((nowMs - ms) / 1000));
