@@ -5,7 +5,7 @@ import { ActionFeedback, Badge, Btn, Inp, Field, Card, EmptyState, Confirm } fro
 import IdCardsPrintSheets from '../../components/IdCardsPrintable.jsx';
 import { useIdCardPrintConfirm } from '../../components/IdCardPrintConfirm.jsx';
 import { addToIdCardBatch, removeFromIdCardBatch, clearIdCardBatch, markBatchPrinted } from '../../data/idCards.js';
-import { enrolledEntries, buildBatchView, groupBySection, isIdCardPrinted, sheetFillLabel } from '../../lib/idCardQueue.js';
+import { enrolledEntries, buildBatchView, groupBySection, isIdCardPrinted, sheetFillLabel, sectionColorMap } from '../../lib/idCardQueue.js';
 import { buildLearnerIndex, searchLearners } from '../../lib/search.js';
 import { fullName } from '../../lib/roster.js';
 import { T } from '../../styles.js';
@@ -22,6 +22,7 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
     [batchDocs, enrolled, students]);
   const batchIds = useMemo(() => new Set(batchDocs.map((d) => d.id)), [batchDocs]);
   const groups = useMemo(() => groupBySection(printable), [printable]);
+  const sectionColors = useMemo(() => sectionColorMap(printable), [printable]);
   const printableStudents = useMemo(() => printable.map((e) => e.student), [printable]);
 
   const [query, setQuery] = useState('');
@@ -88,7 +89,10 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
 
             {groups.map(({ section, entries }) => (
               <Card key={section.id} style={{ padding: 16, marginBottom: 12 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{sectionLabel(section)} · {entries.length}</div>
+                <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span aria-hidden="true" title="Card border color when printed" style={{ width: 14, height: 14, borderRadius: 3, border: `3px solid ${sectionColors.get(section.id)}`, boxSizing: 'border-box', flex: 'none' }} />
+                  {sectionLabel(section)} · {entries.length}
+                </div>
                 <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
                   {entries.map(({ student }) => (
                     <li key={student.id} style={row}>
@@ -123,7 +127,7 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
         )}
       </div>
 
-      {printable.length > 0 && <div ref={printRoot}><IdCardsPrintSheets entries={printable} printOnly /></div>}
+      {printable.length > 0 && <div ref={printRoot}><IdCardsPrintSheets entries={printable} printOnly sectionCoded /></div>}
       {confirmDialog}
       {confirmClear && (
         <Confirm

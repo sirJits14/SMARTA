@@ -71,3 +71,24 @@ describe('ID card print layout', () => {
     );
   });
 });
+
+describe('section-coded ID card sheets', () => {
+  const codedRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\s*\{[^}]*\}/s)?.[0];
+
+  it('fits the color key plus a full 10-row sheet within the same 270mm as a plain sheet', () => {
+    expect(codedRule).toBeDefined();
+    const legendMm = Number(codedRule.match(/grid-template-rows:\s*([\d.]+)mm/)[1]);
+    const rowMm = Number(codedRule.match(/grid-auto-rows:\s*([\d.]+)mm/)[1]);
+    expect(legendMm + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
+  });
+
+  it('gives every card its own full frame in the section color, printed exactly', () => {
+    expect(ID_CARD_PRINT_STYLES).toMatch(
+      /\.id-cards-sheet\.section-coded \.id-card\s*\{[^}]*border: [\d.]+mm solid var\(--section-color\) !important;[^}]*print-color-adjust: exact;/s,
+    );
+  });
+
+  it('keeps the color key off screen', () => {
+    expect(ID_CARD_PRINT_STYLES).toMatch(/^\s*\.id-cards-legend \{ display: none; \}/m);
+  });
+});

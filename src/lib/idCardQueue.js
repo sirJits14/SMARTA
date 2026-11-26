@@ -84,3 +84,32 @@ export function groupBySection(entries) {
 }
 
 export const cardsLabel = (n) => `${n} card${n === 1 ? '' : 's'}`;
+
+// Translucent print colors for telling sections apart on a mixed batch sheet.
+// Ordered so each hue sits far from the one before it: sections are printed
+// packed one after another, so neighbours always get consecutive colors.
+export const SECTION_PRINT_COLORS = Object.freeze([
+  'rgba(0, 150, 160, 0.6)', // teal
+  'rgba(240, 120, 0, 0.6)', // orange
+  'rgba(130, 60, 200, 0.6)', // purple
+  'rgba(40, 160, 60, 0.6)', // green
+  'rgba(220, 40, 120, 0.6)', // magenta
+  'rgba(140, 85, 40, 0.6)', // brown
+  'rgba(30, 100, 220, 0.6)', // blue
+  'rgba(200, 160, 0, 0.65)', // gold
+  'rgba(90, 100, 115, 0.6)', // slate
+  'rgba(210, 40, 40, 0.6)', // red
+]);
+
+// Section id -> print color, in order of first appearance. Expects entries
+// in print order (see sortIdCardBatch).
+export function sectionColorMap(entries) {
+  const colors = new Map();
+  for (const { section } of entries) {
+    if (!colors.has(section.id)) colors.set(section.id, SECTION_PRINT_COLORS[colors.size % SECTION_PRINT_COLORS.length]);
+  }
+  return colors;
+}
+
+export const sectionLegendLabel = (section) =>
+  [`G${section.gradeLevel}`, section.name, section.strand].filter(Boolean).join(' ');

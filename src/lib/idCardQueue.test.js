@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isIdCardPrinted, sectionShortLabel, sortIdCardBatch, groupBySection, cardsLabel,
   enrolledEntries, buildBatchView, sheetFillLabel,
+  SECTION_PRINT_COLORS, sectionColorMap, sectionLegendLabel,
 } from './idCardQueue.js';
 
 const SY = '2026-2027';
@@ -162,5 +163,43 @@ describe('sheetFillLabel', () => {
     [172, '2 full sheets + 12 — 68 more fills the next sheet'],
   ])('%i cards → %s', (n, label) => {
     expect(sheetFillLabel(n)).toBe(label);
+  });
+});
+
+describe('sectionColorMap', () => {
+  const entry = (section, id) => ({ section, student: learner(id, 'Cruz', 'M') });
+  const sectionN = (n) => ({ id: `s${n}`, gradeLevel: 7, name: `S${n}`, schoolYear: SY });
+
+  it('colors sections in order of first appearance', () => {
+    const colors = sectionColorMap([entry(rizal, 'a'), entry(rizal, 'b'), entry(acacia, 'c'), entry(bonifacio, 'd')]);
+    expect([...colors.keys()]).toEqual(['rizal', 'acacia', 'bonifacio']);
+    expect([...colors.values()]).toEqual(SECTION_PRINT_COLORS.slice(0, 3));
+  });
+
+  it('never gives two neighbouring sections the same color', () => {
+    const sections = Array.from({ length: 20 }, (_, i) => sectionN(i));
+    const colors = sectionColorMap(sections.map((s, i) => entry(s, `l${i}`)));
+    for (let i = 1; i < sections.length; i += 1) {
+      expect(colors.get(sections[i].id)).not.toBe(colors.get(sections[i - 1].id));
+    }
+  });
+
+  it('wraps the palette once it runs out', () => {
+    const n = SECTION_PRINT_COLORS.length;
+    const sections = Array.from({ length: n + 1 }, (_, i) => sectionN(i));
+    const colors = sectionColorMap(sections.map((s, i) => entry(s, `l${i}`)));
+    expect(colors.get(sections[n].id)).toBe(SECTION_PRINT_COLORS[0]);
+  });
+
+  it('uses distinct translucent colors', () => {
+    expect(new Set(SECTION_PRINT_COLORS).size).toBe(SECTION_PRINT_COLORS.length);
+    for (const c of SECTION_PRINT_COLORS) expect(c).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/);
+  });
+});
+
+describe('sectionLegendLabel', () => {
+  it('gives a short grade-first label', () => {
+    expect(sectionLegendLabel(rizal)).toBe('G7 Rizal');
+    expect(sectionLegendLabel(acacia)).toBe('G11 Acacia STEM');
   });
 });
