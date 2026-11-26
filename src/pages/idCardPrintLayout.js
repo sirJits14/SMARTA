@@ -9,10 +9,13 @@ const rows = 10;
 // height so a roster that doesn't fill a whole sheet only reserves the rows
 // it actually uses, instead of always claiming the full page height.
 const ROW_HEIGHT_MM = 27;
-// Section-coded sheets (a mixed Saved batch) give up a strip at the top for
-// the color key. Card rows shrink so the key plus 10 rows still total 270mm,
-// keeping the same 11mm buffer as a plain sheet.
-const LEGEND_HEIGHT_MM = 6;
+// Section-coded sheets (a mixed Saved batch) start with a color key that is
+// as tall as its sections need, so no entry is ever clipped. A sheet that
+// uses all 10 rows is held at 270mm (the same 11mm buffer as a plain sheet)
+// and its card rows share whatever the key leaves; 6mm for the key is the
+// usual budget, which keeps rows at 26.4mm. A shorter sheet keeps 26.4mm rows
+// and simply grows, since the page has room below it.
+const CODED_SHEET_HEIGHT_MM = 270;
 const CODED_ROW_HEIGHT_MM = 26.4;
 const CARD_FRAME_MM = 0.8;
 const KEY_SWATCH_BORDER_MM = 0.8;
@@ -22,6 +25,9 @@ export const ID_CARD_PRINT_LAYOUT = Object.freeze({
   rows,
   cardsPerSheet: columns * rows,
 });
+
+// True when a sheet's cards reach the last row, so it must stay within one page.
+export const sheetUsesAllRows = (count) => count > (rows - 1) * columns;
 
 export function chunkIdCardsIntoSheets(items) {
   const sheets = [];
@@ -100,8 +106,12 @@ export const ID_CARD_PRINT_STYLES = `
        is a double line and cutting between them leaves each card a complete
        frame. The key above the grid keeps the stronger, solid shade. */
     .id-cards-sheet.section-coded {
-      grid-template-rows: ${LEGEND_HEIGHT_MM}mm;
+      grid-template-rows: auto;
       grid-auto-rows: ${CODED_ROW_HEIGHT_MM}mm;
+    }
+    .id-cards-sheet.section-coded.sheet-full {
+      height: ${CODED_SHEET_HEIGHT_MM}mm;
+      grid-auto-rows: minmax(0, 1fr);
     }
     .id-cards-sheet.section-coded .id-card {
       border: ${CARD_FRAME_MM}mm dashed var(--section-border) !important;
@@ -113,9 +123,9 @@ export const ID_CARD_PRINT_STYLES = `
       grid-column: 1 / -1;
       display: flex !important;
       flex-wrap: wrap;
-      align-content: center;
-      gap: 0.6mm 3mm;
-      overflow: hidden;
+      align-content: flex-start;
+      gap: 0.5mm 3mm;
+      padding: 0.5mm 0 1mm;
       font-size: 5.5pt;
       line-height: 1.15;
       -webkit-print-color-adjust: exact;

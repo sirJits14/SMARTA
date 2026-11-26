@@ -3,6 +3,7 @@ import {
   ID_CARD_PRINT_LAYOUT,
   ID_CARD_PRINT_STYLES,
   chunkIdCardsIntoSheets,
+  sheetUsesAllRows,
 } from './idCardPrintLayout.js';
 
 describe('ID card print layout', () => {
@@ -75,11 +76,31 @@ describe('ID card print layout', () => {
 describe('section-coded ID card sheets', () => {
   const codedRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\s*\{[^}]*\}/s)?.[0];
 
-  it('fits the color key plus a full 10-row sheet within the same 270mm as a plain sheet', () => {
-    expect(codedRule).toBeDefined();
-    const legendMm = Number(codedRule.match(/grid-template-rows:\s*([\d.]+)mm/)[1]);
+  const fullRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\.sheet-full\s*\{[^}]*\}/s)?.[0];
+  const legendRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-legend\s*\{\s*grid-column[^}]*\}/s)?.[0];
+
+  it('sizes the color key to its content and never clips it', () => {
+    expect(codedRule).toMatch(/grid-template-rows:\s*auto;/);
+    expect(legendRule).toBeDefined();
+    expect(legendRule).not.toMatch(/overflow:\s*hidden/);
+    expect(legendRule).not.toMatch(/align-content:\s*center/);
+  });
+
+  it('keeps 26.4mm card rows on a sheet that does not reach the last row, so the usual key leaves 270mm', () => {
     const rowMm = Number(codedRule.match(/grid-auto-rows:\s*([\d.]+)mm/)[1]);
-    expect(legendMm + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
+    expect(6 + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
+  });
+
+  it('holds a full 10-row sheet at 270mm, under the 281mm printable height, and lets the rows share what the key leaves', () => {
+    expect(fullRule).toBeDefined();
+    const heightMm = Number(fullRule.match(/height:\s*([\d.]+)mm/)[1]);
+    expect(heightMm).toBe(270);
+    expect(heightMm).toBeLessThan(281);
+    expect(fullRule).toMatch(/grid-auto-rows:\s*minmax\(0, 1fr\);/);
+  });
+
+  it.each([[1, false], [72, false], [73, true], [80, true]])('a sheet of %i cards uses all rows: %s', (count, full) => {
+    expect(sheetUsesAllRows(count)).toBe(full);
   });
 
   it('gives every card its own full 0.8mm dashed frame in the faint section shade, printed exactly', () => {

@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { fullName } from '../lib/roster.js';
 import { sectionShortLabel, sectionColorMap, sectionBorderColor, sectionLegendLabel, groupBySection } from '../lib/idCardQueue.js';
 import { T } from '../styles.js';
-import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets } from '../pages/idCardPrintLayout.js';
+import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets, sheetUsesAllRows } from '../pages/idCardPrintLayout.js';
 
 function IdCard({ student, section, color }) {
   const [qrSrc, setQrSrc] = useState(null);
@@ -49,20 +49,24 @@ function SheetLegend({ sheet, colors }) {
   );
 }
 
+const sheetClassName = (sectionCoded, sheet) => {
+  if (!sectionCoded) return 'id-cards-sheet';
+  return sheetUsesAllRows(sheet.length) ? 'id-cards-sheet section-coded sheet-full' : 'id-cards-sheet section-coded';
+};
+
 // entries: [{ student, section }] in print order. A batch may mix sections;
 // sectionCoded frames each card in its section's color and adds a color key.
 export default function IdCardsPrintSheets({ entries, printOnly = false, sectionCoded = false }) {
   const sheets = useMemo(() => chunkIdCardsIntoSheets(entries), [entries]);
   const colors = useMemo(() => (sectionCoded ? sectionColorMap(entries) : null), [entries, sectionCoded]);
   const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only paper' : 'id-cards-grid paper';
-  const sheetClassName = sectionCoded ? 'id-cards-sheet section-coded' : 'id-cards-sheet';
 
   return (
     <>
       <style>{ID_CARD_PRINT_STYLES}</style>
       <div className={gridClassName} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
         {sheets.map((sheet, i) => (
-          <div className={sheetClassName} key={i}>
+          <div className={sheetClassName(sectionCoded, sheet)} key={i}>
             {colors && <SheetLegend sheet={sheet} colors={colors} />}
             {sheet.map(({ student, section }) => (
               <IdCard key={student.id} student={student} section={section} color={colors?.get(section.id)} />

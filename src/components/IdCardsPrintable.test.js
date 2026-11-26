@@ -26,6 +26,14 @@ describe('IdCardsPrintSheets section coding', () => {
     expect(html).toContain('G11 Acacia STEM (1)');
   });
 
+  it('marks only a sheet that reaches the last row as full', () => {
+    const many = Array.from({ length: 73 }, (_, i) => entry(`m${i}`, i % 2 ? mabini : acacia));
+    expect(render({ entries: many, printOnly: true, sectionCoded: true })).toContain('class="id-cards-sheet section-coded sheet-full"');
+    const short = render({ entries: many.slice(0, 72), printOnly: true, sectionCoded: true });
+    expect(short).toContain('class="id-cards-sheet section-coded"');
+    expect(short).not.toContain('sheet-full');
+  });
+
   it('leaves single-section prints uncoded by default', () => {
     const html = render({ entries, printOnly: true });
     expect(html).toContain('class="id-cards-sheet"');
