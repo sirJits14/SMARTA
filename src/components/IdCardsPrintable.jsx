@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { fullName } from '../lib/roster.js';
-import { sectionShortLabel, sectionColorMap, sectionLegendLabel, groupBySection } from '../lib/idCardQueue.js';
+import { sectionShortLabel, sectionColorMap, sectionBorderColor, sectionLegendLabel, groupBySection } from '../lib/idCardQueue.js';
 import { T } from '../styles.js';
 import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets } from '../pages/idCardPrintLayout.js';
 
@@ -18,7 +18,7 @@ function IdCard({ student, section, color }) {
   }, [student.lrn]);
 
   return (
-    <div className="id-card" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, textAlign: 'center', boxShadow: T.cardShadow, ...(color && { '--section-color': color }) }}>
+    <div className="id-card" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, textAlign: 'center', boxShadow: T.cardShadow, ...(color && { '--section-border': sectionBorderColor(color) }) }}>
       {qrSrc ? (
         <img className="id-card-qr" src={qrSrc} alt={`QR code for LRN ${student.lrn}`} width={140} height={140} style={{ display: 'block', margin: '0 auto 10px' }} />
       ) : failed ? (

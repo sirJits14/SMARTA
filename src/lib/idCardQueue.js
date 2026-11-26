@@ -111,5 +111,9 @@ export function sectionColorMap(entries) {
   return colors;
 }
 
+// Card frames print fainter than the key: the same hue at 30% opacity.
+export const SECTION_BORDER_OPACITY = 0.3;
+export const sectionBorderColor = (color) => color.replace(/, [\d.]+\)$/, `, ${SECTION_BORDER_OPACITY})`);
+
 export const sectionLegendLabel = (section) =>
   [`G${section.gradeLevel}`, section.name, section.strand].filter(Boolean).join(' ');
