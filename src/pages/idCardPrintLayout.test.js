@@ -103,9 +103,9 @@ describe('section-coded ID card sheets', () => {
     expect(sheetUsesAllRows(count)).toBe(full);
   });
 
-  it('gives every card its own full 0.8mm dashed frame in the faint section shade, printed exactly', () => {
+  it('gives every card its own full 0.5mm dashed frame in the faint section shade, printed exactly', () => {
     expect(ID_CARD_PRINT_STYLES).toMatch(
-      /\.id-cards-sheet\.section-coded \.id-card\s*\{[^}]*border: 0\.8mm dashed var\(--section-border\) !important;[^}]*print-color-adjust: exact;/s,
+      /\.id-cards-sheet\.section-coded \.id-card\s*\{[^}]*border: 0\.5mm dashed var\(--section-border\) !important;[^}]*print-color-adjust: exact;/s,
     );
   });
 
