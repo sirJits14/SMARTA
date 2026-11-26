@@ -17,7 +17,7 @@ const ROW_HEIGHT_MM = 27;
 // and simply grows, since the page has room below it.
 const CODED_SHEET_HEIGHT_MM = 270;
 const CODED_ROW_HEIGHT_MM = 26.4;
-const CARD_FRAME_MM = 0.8;
+const CARD_FRAME_MM = 0.5;
 const KEY_SWATCH_BORDER_MM = 0.8;
 
 export const ID_CARD_PRINT_LAYOUT = Object.freeze({
