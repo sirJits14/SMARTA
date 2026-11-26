@@ -14,7 +14,7 @@ const ROW_HEIGHT_MM = 27;
 // keeping the same 11mm buffer as a plain sheet.
 const LEGEND_HEIGHT_MM = 6;
 const CODED_ROW_HEIGHT_MM = 26.4;
-const CARD_FRAME_MM = 0.5;
+const CARD_FRAME_MM = 0.8;
 const KEY_SWATCH_BORDER_MM = 0.8;
 
 export const ID_CARD_PRINT_LAYOUT = Object.freeze({
