@@ -1,0 +1,331 @@
+diff --git a/src/components/IdCardsPrintable.jsx b/src/components/IdCardsPrintable.jsx
+index dd45edd..2758802 100644
+--- a/src/components/IdCardsPrintable.jsx
++++ b/src/components/IdCardsPrintable.jsx
+@@ -1,11 +1,11 @@
+ import { useEffect, useMemo, useState } from 'react';
+ import QRCode from 'qrcode';
+ import { fullName } from '../lib/roster.js';
+-import { sectionShortLabel } from '../lib/idCardQueue.js';
++import { sectionShortLabel, sectionColorMap, sectionLegendLabel, groupBySection } from '../lib/idCardQueue.js';
+ import { T } from '../styles.js';
+ import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets } from '../pages/idCardPrintLayout.js';
+ 
+-function IdCard({ student, section }) {
++function IdCard({ student, section, color }) {
+   const [qrSrc, setQrSrc] = useState(null);
+   const [failed, setFailed] = useState(false);
+ 
+@@ -18,7 +18,7 @@ function IdCard({ student, section }) {
+   }, [student.lrn]);
+ 
+   return (
+-    <div className="id-card" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, textAlign: 'center', boxShadow: T.cardShadow }}>
++    <div className="id-card" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, textAlign: 'center', boxShadow: T.cardShadow, ...(color && { '--section-color': color }) }}>
+       {qrSrc ? (
+         <img className="id-card-qr" src={qrSrc} alt={`QR code for LRN ${student.lrn}`} width={140} height={140} style={{ display: 'block', margin: '0 auto 10px' }} />
+       ) : failed ? (
+@@ -35,18 +35,38 @@ function IdCard({ student, section }) {
+   );
+ }
+ 
+-// entries: [{ student, section }] in print order. A batch may mix sections.
+-export default function IdCardsPrintSheets({ entries, printOnly = false }) {
++// The color key printed above a section-coded sheet: only the sections on it.
++function SheetLegend({ sheet, colors }) {
++  return (
++    <div className="id-cards-legend" style={{ fontFamily: T.print, color: T.ink }}>
++      {groupBySection(sheet).map(({ section, entries }) => (
++        <span className="id-cards-legend-item" key={section.id} style={{ '--section-color': colors.get(section.id) }}>
++          <span className="id-cards-legend-swatch" aria-hidden="true" />
++          {sectionLegendLabel(section)} ({entries.length})
++        </span>
++      ))}
++    </div>
++  );
++}
++
++// entries: [{ student, section }] in print order. A batch may mix sections;
++// sectionCoded frames each card in its section's color and adds a color key.
++export default function IdCardsPrintSheets({ entries, printOnly = false, sectionCoded = false }) {
+   const sheets = useMemo(() => chunkIdCardsIntoSheets(entries), [entries]);
++  const colors = useMemo(() => (sectionCoded ? sectionColorMap(entries) : null), [entries, sectionCoded]);
+   const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only paper' : 'id-cards-grid paper';
++  const sheetClassName = sectionCoded ? 'id-cards-sheet section-coded' : 'id-cards-sheet';
+ 
+   return (
+     <>
+       <style>{ID_CARD_PRINT_STYLES}</style>
+       <div className={gridClassName} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+         {sheets.map((sheet, i) => (
+-          <div className="id-cards-sheet" key={i}>
+-            {sheet.map(({ student, section }) => <IdCard key={student.id} student={student} section={section} />)}
++          <div className={sheetClassName} key={i}>
++            {colors && <SheetLegend sheet={sheet} colors={colors} />}
++            {sheet.map(({ student, section }) => (
++              <IdCard key={student.id} student={student} section={section} color={colors?.get(section.id)} />
++            ))}
+           </div>
+         ))}
+       </div>
+diff --git a/src/components/IdCardsPrintable.test.js b/src/components/IdCardsPrintable.test.js
+new file mode 100644
+index 0000000..c700403
+--- /dev/null
++++ b/src/components/IdCardsPrintable.test.js
+@@ -0,0 +1,34 @@
++import React from 'react';
++import { renderToStaticMarkup } from 'react-dom/server';
++import { describe, expect, it } from 'vitest';
++import IdCardsPrintable from './IdCardsPrintable.jsx';
++import { SECTION_PRINT_COLORS } from '../lib/idCardQueue.js';
++
++const h = React.createElement;
++const mabini = { id: 'mabini', name: 'Mabini', gradeLevel: 7 };
++const acacia = { id: 'acacia', name: 'Acacia', gradeLevel: 11, strand: 'STEM' };
++const entry = (id, section) => ({ section, student: { id, lrn: `LRN${id}`, lastName: 'Cruz', firstName: id } });
++const entries = [entry('a', mabini), entry('b', mabini), entry('c', acacia)];
++const count = (html, text) => html.split(text).length - 1;
++// The markup only, without the shared print stylesheet that names every class.
++const render = (props) => renderToStaticMarkup(h(IdCardsPrintable, props)).replace(/<style>[\s\S]*?<\/style>/, '');
++
++describe('IdCardsPrintSheets section coding', () => {
++  it('frames each card in its section color and prints a key of the sections on the sheet', () => {
++    const html = render({ entries, printOnly: true, sectionCoded: true });
++    expect(html).toContain('class="id-cards-sheet section-coded"');
++    expect(count(html, `--section-color:${SECTION_PRINT_COLORS[0]}`)).toBe(3); // 2 cards + key
++    expect(count(html, `--section-color:${SECTION_PRINT_COLORS[1]}`)).toBe(2); // 1 card + key
++    expect(html).toContain('class="id-cards-legend"');
++    expect(html).toContain('G7 Mabini (2)');
++    expect(html).toContain('G11 Acacia STEM (1)');
++  });
++
++  it('leaves single-section prints uncoded by default', () => {
++    const html = render({ entries, printOnly: true });
++    expect(html).toContain('class="id-cards-sheet"');
++    expect(html).not.toContain('section-coded');
++    expect(html).not.toContain('--section-color');
++    expect(html).not.toContain('id-cards-legend');
++  });
++});
+diff --git a/src/lib/idCardQueue.js b/src/lib/idCardQueue.js
+index ccb413b..2bf3403 100644
+--- a/src/lib/idCardQueue.js
++++ b/src/lib/idCardQueue.js
+@@ -84,3 +84,32 @@ export function groupBySection(entries) {
+ }
+ 
+ export const cardsLabel = (n) => `${n} card${n === 1 ? '' : 's'}`;
++
++// Translucent print colors for telling sections apart on a mixed batch sheet.
++// Ordered so each hue sits far from the one before it: sections are printed
++// packed one after another, so neighbours always get consecutive colors.
++export const SECTION_PRINT_COLORS = Object.freeze([
++  'rgba(0, 150, 160, 0.6)', // teal
++  'rgba(240, 120, 0, 0.6)', // orange
++  'rgba(130, 60, 200, 0.6)', // purple
++  'rgba(40, 160, 60, 0.6)', // green
++  'rgba(220, 40, 120, 0.6)', // magenta
++  'rgba(140, 85, 40, 0.6)', // brown
++  'rgba(30, 100, 220, 0.6)', // blue
++  'rgba(200, 160, 0, 0.65)', // gold
++  'rgba(90, 100, 115, 0.6)', // slate
++  'rgba(210, 40, 40, 0.6)', // red
++]);
++
++// Section id -> print color, in order of first appearance. Expects entries
++// in print order (see sortIdCardBatch).
++export function sectionColorMap(entries) {
++  const colors = new Map();
++  for (const { section } of entries) {
++    if (!colors.has(section.id)) colors.set(section.id, SECTION_PRINT_COLORS[colors.size % SECTION_PRINT_COLORS.length]);
++  }
++  return colors;
++}
++
++export const sectionLegendLabel = (section) =>
++  [`G${section.gradeLevel}`, section.name, section.strand].filter(Boolean).join(' ');
+diff --git a/src/lib/idCardQueue.test.js b/src/lib/idCardQueue.test.js
+index b28ac23..11470f1 100644
+--- a/src/lib/idCardQueue.test.js
++++ b/src/lib/idCardQueue.test.js
+@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
+ import {
+   isIdCardPrinted, sectionShortLabel, sortIdCardBatch, groupBySection, cardsLabel,
+   enrolledEntries, buildBatchView, sheetFillLabel,
++  SECTION_PRINT_COLORS, sectionColorMap, sectionLegendLabel,
+ } from './idCardQueue.js';
+ 
+ const SY = '2026-2027';
+@@ -164,3 +165,41 @@ describe('sheetFillLabel', () => {
+     expect(sheetFillLabel(n)).toBe(label);
+   });
+ });
++
++describe('sectionColorMap', () => {
++  const entry = (section, id) => ({ section, student: learner(id, 'Cruz', 'M') });
++  const sectionN = (n) => ({ id: `s${n}`, gradeLevel: 7, name: `S${n}`, schoolYear: SY });
++
++  it('colors sections in order of first appearance', () => {
++    const colors = sectionColorMap([entry(rizal, 'a'), entry(rizal, 'b'), entry(acacia, 'c'), entry(bonifacio, 'd')]);
++    expect([...colors.keys()]).toEqual(['rizal', 'acacia', 'bonifacio']);
++    expect([...colors.values()]).toEqual(SECTION_PRINT_COLORS.slice(0, 3));
++  });
++
++  it('never gives two neighbouring sections the same color', () => {
++    const sections = Array.from({ length: 20 }, (_, i) => sectionN(i));
++    const colors = sectionColorMap(sections.map((s, i) => entry(s, `l${i}`)));
++    for (let i = 1; i < sections.length; i += 1) {
++      expect(colors.get(sections[i].id)).not.toBe(colors.get(sections[i - 1].id));
++    }
++  });
++
++  it('wraps the palette once it runs out', () => {
++    const n = SECTION_PRINT_COLORS.length;
++    const sections = Array.from({ length: n + 1 }, (_, i) => sectionN(i));
++    const colors = sectionColorMap(sections.map((s, i) => entry(s, `l${i}`)));
++    expect(colors.get(sections[n].id)).toBe(SECTION_PRINT_COLORS[0]);
++  });
++
++  it('uses distinct translucent colors', () => {
++    expect(new Set(SECTION_PRINT_COLORS).size).toBe(SECTION_PRINT_COLORS.length);
++    for (const c of SECTION_PRINT_COLORS) expect(c).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/);
++  });
++});
++
++describe('sectionLegendLabel', () => {
++  it('gives a short grade-first label', () => {
++    expect(sectionLegendLabel(rizal)).toBe('G7 Rizal');
++    expect(sectionLegendLabel(acacia)).toBe('G11 Acacia STEM');
++  });
++});
+diff --git a/src/pages/idCardPrintLayout.js b/src/pages/idCardPrintLayout.js
+index 9482b19..f634042 100644
+--- a/src/pages/idCardPrintLayout.js
++++ b/src/pages/idCardPrintLayout.js
+@@ -9,6 +9,12 @@ const rows = 10;
+ // height so a roster that doesn't fill a whole sheet only reserves the rows
+ // it actually uses, instead of always claiming the full page height.
+ const ROW_HEIGHT_MM = 27;
++// Section-coded sheets (a mixed Saved batch) give up a strip at the top for
++// the color key. Card rows shrink so the key plus 10 rows still total 270mm,
++// keeping the same 11mm buffer as a plain sheet.
++const LEGEND_HEIGHT_MM = 6;
++const CODED_ROW_HEIGHT_MM = 26.4;
++const CODED_BORDER_MM = 0.8;
+ 
+ export const ID_CARD_PRINT_LAYOUT = Object.freeze({
+   columns,
+@@ -27,6 +33,7 @@ export function chunkIdCardsIntoSheets(items) {
+ export const ID_CARD_PRINT_STYLES = `
+   .id-cards-sheet { display: contents; }
+   .id-cards-print-only { display: none !important; }
++  .id-cards-legend { display: none; }
+   @media print {
+     .app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading, .section-detail-modal-overlay, .sections-page-chrome { display: none !important; }
+     .app-shell { grid-template-columns: 1fr !important; height: auto !important; overflow: visible !important; }
+@@ -86,5 +93,33 @@ export const ID_CARD_PRINT_STYLES = `
+       margin-top: 0.4mm !important;
+     }
+     .id-card-section { display: none !important; }
++
++    /* Section-coded sheets: every card draws its own full colored frame, so
++       the seam between two cards is a double band and cutting down it leaves
++       each card a complete frame in its own section's color. */
++    .id-cards-sheet.section-coded {
++      grid-template-rows: ${LEGEND_HEIGHT_MM}mm;
++      grid-auto-rows: ${CODED_ROW_HEIGHT_MM}mm;
++    }
++    .id-cards-sheet.section-coded .id-card {
++      border: ${CODED_BORDER_MM}mm solid var(--section-color) !important;
++      padding: 0.6mm !important;
++      -webkit-print-color-adjust: exact;
++      print-color-adjust: exact;
++    }
++    .id-cards-legend {
++      grid-column: 1 / -1;
++      display: flex !important;
++      flex-wrap: wrap;
++      align-content: center;
++      gap: 0.6mm 3mm;
++      overflow: hidden;
++      font-size: 5.5pt;
++      line-height: 1.15;
++      -webkit-print-color-adjust: exact;
++      print-color-adjust: exact;
++    }
++    .id-cards-legend-item { display: inline-flex; align-items: center; gap: 1mm; white-space: nowrap; }
++    .id-cards-legend-swatch { width: 3mm; height: 2mm; border: ${CODED_BORDER_MM}mm solid var(--section-color); box-sizing: border-box; }
+   }
+ `;
+diff --git a/src/pages/idCardPrintLayout.test.js b/src/pages/idCardPrintLayout.test.js
+index 4ba6b4c..098931b 100644
+--- a/src/pages/idCardPrintLayout.test.js
++++ b/src/pages/idCardPrintLayout.test.js
+@@ -71,3 +71,24 @@ describe('ID card print layout', () => {
+     );
+   });
+ });
++
++describe('section-coded ID card sheets', () => {
++  const codedRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\s*\{[^}]*\}/s)?.[0];
++
++  it('fits the color key plus a full 10-row sheet within the same 270mm as a plain sheet', () => {
++    expect(codedRule).toBeDefined();
++    const legendMm = Number(codedRule.match(/grid-template-rows:\s*([\d.]+)mm/)[1]);
++    const rowMm = Number(codedRule.match(/grid-auto-rows:\s*([\d.]+)mm/)[1]);
++    expect(legendMm + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
++  });
++
++  it('gives every card its own full frame in the section color, printed exactly', () => {
++    expect(ID_CARD_PRINT_STYLES).toMatch(
++      /\.id-cards-sheet\.section-coded \.id-card\s*\{[^}]*border: [\d.]+mm solid var\(--section-color\) !important;[^}]*print-color-adjust: exact;/s,
++    );
++  });
++
++  it('keeps the color key off screen', () => {
++    expect(ID_CARD_PRINT_STYLES).toMatch(/^\s*\.id-cards-legend \{ display: none; \}/m);
++  });
++});
+diff --git a/src/pages/idCards/SavedBatchTab.jsx b/src/pages/idCards/SavedBatchTab.jsx
+index 7c6e670..888b42c 100644
+--- a/src/pages/idCards/SavedBatchTab.jsx
++++ b/src/pages/idCards/SavedBatchTab.jsx
+@@ -5,7 +5,7 @@ import { ActionFeedback, Badge, Btn, Inp, Field, Card, EmptyState, Confirm } fro
+ import IdCardsPrintSheets from '../../components/IdCardsPrintable.jsx';
+ import { useIdCardPrintConfirm } from '../../components/IdCardPrintConfirm.jsx';
+ import { addToIdCardBatch, removeFromIdCardBatch, clearIdCardBatch, markBatchPrinted } from '../../data/idCards.js';
+-import { enrolledEntries, buildBatchView, groupBySection, isIdCardPrinted, sheetFillLabel } from '../../lib/idCardQueue.js';
++import { enrolledEntries, buildBatchView, groupBySection, isIdCardPrinted, sheetFillLabel, sectionColorMap } from '../../lib/idCardQueue.js';
+ import { buildLearnerIndex, searchLearners } from '../../lib/search.js';
+ import { fullName } from '../../lib/roster.js';
+ import { T } from '../../styles.js';
+@@ -22,6 +22,7 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
+     [batchDocs, enrolled, students]);
+   const batchIds = useMemo(() => new Set(batchDocs.map((d) => d.id)), [batchDocs]);
+   const groups = useMemo(() => groupBySection(printable), [printable]);
++  const sectionColors = useMemo(() => sectionColorMap(printable), [printable]);
+   const printableStudents = useMemo(() => printable.map((e) => e.student), [printable]);
+ 
+   const [query, setQuery] = useState('');
+@@ -88,7 +89,10 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
+ 
+             {groups.map(({ section, entries }) => (
+               <Card key={section.id} style={{ padding: 16, marginBottom: 12 }}>
+-                <div style={{ fontWeight: 600, fontSize: 14 }}>{sectionLabel(section)} · {entries.length}</div>
++                <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
++                  <span aria-hidden="true" title="Card border color when printed" style={{ width: 14, height: 14, borderRadius: 3, border: `3px solid ${sectionColors.get(section.id)}`, boxSizing: 'border-box', flex: 'none' }} />
++                  {sectionLabel(section)} · {entries.length}
++                </div>
+                 <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0 }}>
+                   {entries.map(({ student }) => (
+                     <li key={student.id} style={row}>
+@@ -123,7 +127,7 @@ export default function SavedBatchTab({ me, students, enrollments, sections, sch
+         )}
+       </div>
+ 
+-      {printable.length > 0 && <div ref={printRoot}><IdCardsPrintSheets entries={printable} printOnly /></div>}
++      {printable.length > 0 && <div ref={printRoot}><IdCardsPrintSheets entries={printable} printOnly sectionCoded /></div>}
+       {confirmDialog}
+       {confirmClear && (
+         <Confirm
