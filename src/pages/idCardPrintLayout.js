@@ -14,7 +14,8 @@ const ROW_HEIGHT_MM = 27;
 // keeping the same 11mm buffer as a plain sheet.
 const LEGEND_HEIGHT_MM = 6;
 const CODED_ROW_HEIGHT_MM = 26.4;
-const CODED_BORDER_MM = 0.8;
+const CARD_FRAME_MM = 0.5;
+const KEY_SWATCH_BORDER_MM = 0.8;
 
 export const ID_CARD_PRINT_LAYOUT = Object.freeze({
   columns,
@@ -94,15 +95,16 @@ export const ID_CARD_PRINT_STYLES = `
     }
     .id-card-section { display: none !important; }
 
-    /* Section-coded sheets: every card draws its own full colored frame, so
-       the seam between two cards is a double band and cutting down it leaves
-       each card a complete frame in its own section's color. */
+    /* Section-coded sheets: every card draws its own full dashed frame in a
+       faint (30%) shade of its section color, so the seam between two cards
+       is a double line and cutting between them leaves each card a complete
+       frame. The key above the grid keeps the stronger, solid shade. */
     .id-cards-sheet.section-coded {
       grid-template-rows: ${LEGEND_HEIGHT_MM}mm;
       grid-auto-rows: ${CODED_ROW_HEIGHT_MM}mm;
     }
     .id-cards-sheet.section-coded .id-card {
-      border: ${CODED_BORDER_MM}mm solid var(--section-color) !important;
+      border: ${CARD_FRAME_MM}mm dashed var(--section-border) !important;
       padding: 0.6mm !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
@@ -120,6 +122,6 @@ export const ID_CARD_PRINT_STYLES = `
       print-color-adjust: exact;
     }
     .id-cards-legend-item { display: inline-flex; align-items: center; gap: 1mm; white-space: nowrap; }
-    .id-cards-legend-swatch { width: 3mm; height: 2mm; border: ${CODED_BORDER_MM}mm solid var(--section-color); box-sizing: border-box; }
+    .id-cards-legend-swatch { width: 3mm; height: 2mm; border: ${KEY_SWATCH_BORDER_MM}mm solid var(--section-color); box-sizing: border-box; }
   }
 `;

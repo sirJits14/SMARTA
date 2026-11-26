@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isIdCardPrinted, sectionShortLabel, sortIdCardBatch, groupBySection, cardsLabel,
   enrolledEntries, buildBatchView, sheetFillLabel,
-  SECTION_PRINT_COLORS, sectionColorMap, sectionLegendLabel,
+  SECTION_PRINT_COLORS, sectionColorMap, sectionLegendLabel, SECTION_BORDER_OPACITY, sectionBorderColor,
 } from './idCardQueue.js';
 
 const SY = '2026-2027';
@@ -194,6 +194,19 @@ describe('sectionColorMap', () => {
   it('uses distinct translucent colors', () => {
     expect(new Set(SECTION_PRINT_COLORS).size).toBe(SECTION_PRINT_COLORS.length);
     for (const c of SECTION_PRINT_COLORS) expect(c).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/);
+  });
+});
+
+describe('sectionBorderColor', () => {
+  it('keeps the hue and sets the card-frame opacity to 30%', () => {
+    expect(SECTION_BORDER_OPACITY).toBe(0.3);
+    expect(sectionBorderColor('rgba(0, 150, 160, 0.6)')).toBe('rgba(0, 150, 160, 0.3)');
+    expect(sectionBorderColor('rgba(200, 160, 0, 0.65)')).toBe('rgba(200, 160, 0, 0.3)');
+  });
+  it('turns every palette color into a distinct 30% shade', () => {
+    const shades = SECTION_PRINT_COLORS.map(sectionBorderColor);
+    expect(new Set(shades).size).toBe(SECTION_PRINT_COLORS.length);
+    for (const c of shades) expect(c).toMatch(/^rgba\(\d+, \d+, \d+, 0\.3\)$/);
   });
 });
 

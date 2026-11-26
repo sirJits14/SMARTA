@@ -82,10 +82,14 @@ describe('section-coded ID card sheets', () => {
     expect(legendMm + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
   });
 
-  it('gives every card its own full frame in the section color, printed exactly', () => {
+  it('gives every card its own full 0.5mm dashed frame in the faint section shade, printed exactly', () => {
     expect(ID_CARD_PRINT_STYLES).toMatch(
-      /\.id-cards-sheet\.section-coded \.id-card\s*\{[^}]*border: [\d.]+mm solid var\(--section-color\) !important;[^}]*print-color-adjust: exact;/s,
+      /\.id-cards-sheet\.section-coded \.id-card\s*\{[^}]*border: 0\.5mm dashed var\(--section-border\) !important;[^}]*print-color-adjust: exact;/s,
     );
+  });
+
+  it('keeps the key swatches solid in the stronger section shade', () => {
+    expect(ID_CARD_PRINT_STYLES).toMatch(/\.id-cards-legend-swatch \{[^}]*border: [\d.]+mm solid var\(--section-color\);/);
   });
 
   it('keeps the color key off screen', () => {
