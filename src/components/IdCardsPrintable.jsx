@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import { fullName } from '../lib/roster.js';
-import { sectionShortLabel } from '../lib/idCardQueue.js';
+import { sectionShortLabel, sectionColorMap, sectionLegendLabel, groupBySection } from '../lib/idCardQueue.js';
 import { T } from '../styles.js';
 import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets } from '../pages/idCardPrintLayout.js';
 
-function IdCard({ student, section }) {
+function IdCard({ student, section, color }) {
   const [qrSrc, setQrSrc] = useState(null);
   const [failed, setFailed] = useState(false);
 
@@ -18,7 +18,7 @@ function IdCard({ student, section }) {
   }, [student.lrn]);
 
   return (
-    <div className="id-card" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, textAlign: 'center', boxShadow: T.cardShadow }}>
+    <div className="id-card" style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, textAlign: 'center', boxShadow: T.cardShadow, ...(color && { '--section-color': color }) }}>
       {qrSrc ? (
         <img className="id-card-qr" src={qrSrc} alt={`QR code for LRN ${student.lrn}`} width={140} height={140} style={{ display: 'block', margin: '0 auto 10px' }} />
       ) : failed ? (
@@ -35,18 +35,38 @@ function IdCard({ student, section }) {
   );
 }
 
-// entries: [{ student, section }] in print order. A batch may mix sections.
-export default function IdCardsPrintSheets({ entries, printOnly = false }) {
+// The color key printed above a section-coded sheet: only the sections on it.
+function SheetLegend({ sheet, colors }) {
+  return (
+    <div className="id-cards-legend" style={{ fontFamily: T.print, color: T.ink }}>
+      {groupBySection(sheet).map(({ section, entries }) => (
+        <span className="id-cards-legend-item" key={section.id} style={{ '--section-color': colors.get(section.id) }}>
+          <span className="id-cards-legend-swatch" aria-hidden="true" />
+          {sectionLegendLabel(section)} ({entries.length})
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// entries: [{ student, section }] in print order. A batch may mix sections;
+// sectionCoded frames each card in its section's color and adds a color key.
+export default function IdCardsPrintSheets({ entries, printOnly = false, sectionCoded = false }) {
   const sheets = useMemo(() => chunkIdCardsIntoSheets(entries), [entries]);
+  const colors = useMemo(() => (sectionCoded ? sectionColorMap(entries) : null), [entries, sectionCoded]);
   const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only paper' : 'id-cards-grid paper';
+  const sheetClassName = sectionCoded ? 'id-cards-sheet section-coded' : 'id-cards-sheet';
 
   return (
     <>
       <style>{ID_CARD_PRINT_STYLES}</style>
       <div className={gridClassName} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
         {sheets.map((sheet, i) => (
-          <div className="id-cards-sheet" key={i}>
-            {sheet.map(({ student, section }) => <IdCard key={student.id} student={student} section={section} />)}
+          <div className={sheetClassName} key={i}>
+            {colors && <SheetLegend sheet={sheet} colors={colors} />}
+            {sheet.map(({ student, section }) => (
+              <IdCard key={student.id} student={student} section={section} color={colors?.get(section.id)} />
+            ))}
           </div>
         ))}
       </div>

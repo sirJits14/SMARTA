@@ -1,0 +1,3 @@
+CHANGED  assets/IDCardsPage-CDLVb7QL.js (12645 B) -> assets/IDCardsPage-BVc9_49g.js (12936 B)
+CHANGED  assets/IdCardPrintConfirm-BhGHr5Jp.js (7878 B) -> assets/IdCardPrintConfirm-DAE-aaRW.js (10050 B)
+identical after normalisation: 66

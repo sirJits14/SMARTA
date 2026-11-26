@@ -9,6 +9,12 @@ const rows = 10;
 // height so a roster that doesn't fill a whole sheet only reserves the rows
 // it actually uses, instead of always claiming the full page height.
 const ROW_HEIGHT_MM = 27;
+// Section-coded sheets (a mixed Saved batch) give up a strip at the top for
+// the color key. Card rows shrink so the key plus 10 rows still total 270mm,
+// keeping the same 11mm buffer as a plain sheet.
+const LEGEND_HEIGHT_MM = 6;
+const CODED_ROW_HEIGHT_MM = 26.4;
+const CODED_BORDER_MM = 0.8;
 
 export const ID_CARD_PRINT_LAYOUT = Object.freeze({
   columns,
@@ -27,6 +33,7 @@ export function chunkIdCardsIntoSheets(items) {
 export const ID_CARD_PRINT_STYLES = `
   .id-cards-sheet { display: contents; }
   .id-cards-print-only { display: none !important; }
+  .id-cards-legend { display: none; }
   @media print {
     .app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading, .section-detail-modal-overlay, .sections-page-chrome { display: none !important; }
     .app-shell { grid-template-columns: 1fr !important; height: auto !important; overflow: visible !important; }
@@ -86,5 +93,33 @@ export const ID_CARD_PRINT_STYLES = `
       margin-top: 0.4mm !important;
     }
     .id-card-section { display: none !important; }
+
+    /* Section-coded sheets: every card draws its own full colored frame, so
+       the seam between two cards is a double band and cutting down it leaves
+       each card a complete frame in its own section's color. */
+    .id-cards-sheet.section-coded {
+      grid-template-rows: ${LEGEND_HEIGHT_MM}mm;
+      grid-auto-rows: ${CODED_ROW_HEIGHT_MM}mm;
+    }
+    .id-cards-sheet.section-coded .id-card {
+      border: ${CODED_BORDER_MM}mm solid var(--section-color) !important;
+      padding: 0.6mm !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .id-cards-legend {
+      grid-column: 1 / -1;
+      display: flex !important;
+      flex-wrap: wrap;
+      align-content: center;
+      gap: 0.6mm 3mm;
+      overflow: hidden;
+      font-size: 5.5pt;
+      line-height: 1.15;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .id-cards-legend-item { display: inline-flex; align-items: center; gap: 1mm; white-space: nowrap; }
+    .id-cards-legend-swatch { width: 3mm; height: 2mm; border: ${CODED_BORDER_MM}mm solid var(--section-color); box-sizing: border-box; }
   }
 `;
