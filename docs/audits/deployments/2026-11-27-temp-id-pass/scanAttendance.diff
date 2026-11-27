@@ -1,0 +1,27 @@
+--- ../../../../docs/releases/2026-10-18-school-family/backend-source/live-scanAttendance.js	2026-11-27 09:53:05.045467300 +0800
++++ backend/functions/src/handlers/scanAttendance.js	2026-11-27 17:47:32.801560500 +0800
+@@ -1,5 +1,6 @@
+ import { FieldValue } from 'firebase-admin/firestore';
+ import { sessionOf } from '../../shared/scheduleSessions.js';
++import { isOfficialCardPrinted } from '../../shared/tempPass.js';
+ 
+ export async function rejectScanAttendance(db, eventId, reason) {
+   const ref = db.doc(`scan_events/${eventId}`);
+@@ -30,11 +31,17 @@
+       tx.get(db.doc(`students/${data.studentId}`)),
+       tx.get(db.doc(`sections/${data.sectionId}`)),
+     ]);
++    const usesPass = data.credential !== undefined || data.passCode !== undefined;
++    const pass = usesPass ? (await tx.get(db.doc(`temp_passes/${data.studentId}`))).data() : null;
+     if (device.data()?.active !== true) return reject('device');
+     const enrolled = enrollment.data();
+     if (!enrolled || enrolled.status !== 'enrolled' || enrolled.sectionId !== data.sectionId
+         || enrolled.studentId !== data.studentId || enrolled.schoolYear !== data.schoolYear
+         || !student.exists || !section.exists || section.data().schoolYear !== data.schoolYear) return reject('enrollment');
++    // A temporary pass works only while it is active and no official card is out.
++    if (usesPass && (data.credential !== 'temp_pass' || pass?.status !== 'active' || pass.code !== data.passCode
++        || pass.schoolYear !== data.schoolYear || pass.lrn !== student.data().lrn
++        || isOfficialCardPrinted(student.data()))) return reject('temp_pass_inactive');
+ 
+     const attendanceRef = db.doc(`student_attendance/${data.sectionId}_${date}`);
+     const attendanceSnap = await tx.get(attendanceRef);

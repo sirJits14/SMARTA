@@ -1,0 +1,308 @@
+{
+ "site": "https://bnhs-parent.web.app",
+ "checkedAt": "2026-11-27T14:18:02.638Z",
+ "total": 60,
+ "matched": 60,
+ "results": [
+  {
+   "path": "assets/AddLearnerSheet-qiVPrTvA.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/AnnouncementDetail-C0bTxbD_.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Announcements-PJpaLje9.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/ClassTab-CB7sze_u.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/ClassTab-D4RXEQU6.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Consent-C616rKdU.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/el-chamberlain-q-abellana-CjyvdR_u.jpg",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/emmanuel-candano-CRBeiAHY.jpg",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/firebase-BN6t3e8w.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/FlagSheet-DbYJWPv-.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/format-DtbKc1Cd.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/geths-van-c-villa-VCJQJD5z.jpg",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/History-BBMpcc3d.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Home-Y4MwIXoV.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Inbox-zNXkKxK1.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index-CuoSl-ld.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index-DKGPzOhZ.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index.esm-Ceoc1-uo.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index.esm-D7DjWegA.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index.esm-DbcDmF67.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index.esm-DcukWbrd.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/join-CmKNF0lB.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Join-DWcJHpAY.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/jsQR-BZfqIBYG.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/LearnerHistory-CacDUZpo.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/LegacyAdviserLinks-ydjSFXBs.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/loading-CRLLHZYw.gif",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/notifications-BNO6ZqVH.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/notificationState-B7HBXmcF.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/PageHeader-jcG4Wo4r.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/PhotosSheet-CNBqYriW.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/preload-helper-BZ1Pz5am.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/react-DK6rpPfu.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/relationships-DDrV7sTp.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/RelationshipSheet-BgPiRM1v.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/RemoveLearnerSheet-C6io4N3T.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Report-QFYntG8i.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/RequestAccess-C6Cmjc9O.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/RequestsSheet-YSdXNLKs.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/rolldown-runtime-CbXtAM7H.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/ScanSheet-G7BpBEJM.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/scheduleSessions-DGGON9uC.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/School-aU7ldUQA.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/schoolAccess-CrDLO-TF.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SessionSheet-CPVfAGiv.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SessionSheet-p5Rvd2i_.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Settings-BlvI_1R8.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Settings-CSDUHXqD.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Sf2Sheet-Cr33M0wW.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Sheet-BkUcvlVA.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/strings-Da-qTFaY.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/thread-CcLsv8oo.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/useLinks-BGbfzMvs.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/Verify-DGQSKjbm.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "firebase-messaging-sw.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-192.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-512.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-maskable-512.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "index.html",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "manifest.webmanifest",
+   "status": 200,
+   "match": true
+  }
+ ]
+}
