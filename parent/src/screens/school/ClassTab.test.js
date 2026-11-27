@@ -42,6 +42,14 @@ describe('ClassTab Download SF2 button', () => {
   });
 });
 
+// The request button waits for this class's list, so it can never act for a class that is not on screen.
+describe('ClassTab temporary pass button', () => {
+  const section = { id: 'sec-1', name: 'Rizal', gradeLevel: 7, schoolYear: '2026-2027' };
+  it('is not offered before the class list has arrived', () => {
+    expect(renderToStaticMarkup(createElement(ClassTab, { sections: [section], ended: false, navigate() {} }))).not.toContain('Request temporary pass');
+  });
+});
+
 // Same first-paint render: the Add learner button follows `ended` the same way.
 describe('ClassTab Add learner button', () => {
   const section = { id: 'sec-1', name: 'Rizal', gradeLevel: 7, schoolYear: '2026-2027' };

@@ -24,6 +24,7 @@ const Sf2Sheet = lazy(() => import('./Sf2Sheet.jsx'));
 const AddLearnerSheet = lazy(() => import('./AddLearnerSheet.jsx'));
 const RequestsSheet = lazy(() => import('./RequestsSheet.jsx'));
 const PhotosSheet = lazy(() => import('./PhotosSheet.jsx'));
+const PassRequestSheet = lazy(() => import('./PassRequestSheet.jsx'));
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
 // A share or download that went through; 'cancelled' and 'blocked' keep the sheet open for another try.
@@ -93,8 +94,12 @@ export default function ClassTab({ sections, ended, navigate }) {
   const [photosFor, setPhotosFor] = useState('');
   const canPhotos = canManagePhotos(roster, validSection, ended);
   const photosOpen = canPhotos && photosFor === validSection;
+  // Temporary pass requests belong to one class too, and wait for that class's list to be on screen.
+  const [passesFor, setPassesFor] = useState('');
+  const canPasses = !ended && Boolean(validSection) && roster?.section?.id === validSection;
+  const passesOpen = canPasses && passesFor === validSection;
   // Returning from the share sheet, file picker or camera prompt fires focus, so the roster must not reload behind a sheet.
-  sheetOpen.current = Boolean(sheet) || sf2Open || photosOpen;
+  sheetOpen.current = Boolean(sheet) || sf2Open || photosOpen || passesOpen;
   const downloadSf2 = async (month) => {
     if (sf2Lock.current) return;
     sf2Lock.current = true; setSf2Busy(true); setSf2Error('');
@@ -151,6 +156,7 @@ export default function ClassTab({ sections, ended, navigate }) {
   useEffect(() => { import('./AddLearnerSheet.jsx').catch(() => {}); }, []);
   useEffect(() => { import('./RequestsSheet.jsx').catch(() => {}); }, []);
   useEffect(() => { if (canPhotos) import('./PhotosSheet.jsx').catch(() => {}); }, [canPhotos]);
+  useEffect(() => { if (canPasses) import('./PassRequestSheet.jsx').catch(() => {}); }, [canPasses]);
   useEffect(() => {
     if (!canCorrect || !groups.inSchool.length) { setSelecting(false); setSelected(new Set()); }
   }, [validSection, date, canCorrect, groups.inSchool.length]);
@@ -226,6 +232,7 @@ export default function ClassTab({ sections, ended, navigate }) {
       </section>
       <ClassActions onAddLearner={ended ? undefined : () => { setRequestError(''); setAddForm({ initial: null }); }}
         onPhotos={canPhotos ? () => setPhotosFor(validSection) : undefined}
+        onPassRequest={canPasses ? () => setPassesFor(validSection) : undefined}
         onSf2={ended ? undefined : () => { setSf2Error(''); setSf2File(null); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''}
         requestTotal={(requests.requests || []).length} requestWaiting={pendingRequests(requests.requests).length}
         onOpenRequests={() => { setRequestError(''); setRequestsOpen(true); }} />
@@ -261,6 +268,11 @@ export default function ClassTab({ sections, ended, navigate }) {
       {photosOpen && (
         <Suspense fallback={null}>
           <PhotosSheet rows={roster.rows || []} onSaved={refresh} onClose={() => setPhotosFor('')} />
+        </Suspense>
+      )}
+      {passesOpen && (
+        <Suspense fallback={null}>
+          <PassRequestSheet key={validSection} sectionId={validSection} classLabel={sectionLabel(section)} onClose={() => setPassesFor('')} />
         </Suspense>
       )}
       {addForm && (
