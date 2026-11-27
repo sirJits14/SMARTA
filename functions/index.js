@@ -141,7 +141,8 @@ export const getLearnerRequestCountFn = schoolCall(getLearnerRequestCount);
 const photoCall = (fn) => schoolCall((deps, input) => fn({ ...deps, bucket: bucket() }, input));
 export const saveStudentPhotoFn = photoCall(saveStudentPhoto);
 export const getStudentPhotoFn = photoCall(getStudentPhoto);
-// Temporary ID passes (spec 2026-11-27): administrators and academic coordinators issue, administrators revoke.
+// Temporary ID passes (spec 2026-11-27): administrators, grade level coordinators and logistic operators issue;
+// administrators revoke.
 export const issueTempPassFn = staffCall(issueTempPasses, { timeoutSeconds: 120 });
 export const revokeTempPassFn = adminCall(revokeTempPass);
 // The pass is settled first, so a Storage failure only leaves the photo delete to retry.

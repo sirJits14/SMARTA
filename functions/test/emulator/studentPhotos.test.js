@@ -57,6 +57,12 @@ beforeEach(async () => {
     set(`users/${emailOf('jhs')}`, { uid: 'jhs', role: 'jhs_coord' }),
     set(`users/${emailOf('shs')}`, { uid: 'shs', role: 'shs_coord' }),
     set(`users/${emailOf('glc')}`, { uid: 'glc', role: 'glc', gradeLevel: 7 }),
+    set(`users/${emailOf('glc8')}`, { uid: 'glc8', role: 'glc', gradeLevel: 8 }),
+    set(`users/${emailOf('glcnone')}`, { uid: 'glcnone', role: 'glc' }),
+    set(`users/${emailOf('log')}`, { uid: 'log', role: 'logistic' }),
+    set(`users/${emailOf('logoff')}`, { uid: 'logoff', role: 'logistic', disabled: true }),
+    set(`users/${emailOf('logtemp')}`, { uid: 'logtemp', role: 'logistic', mustChangePassword: true }),
+    set(`users/${emailOf('logimp')}`, { uid: 'someone-else', role: 'logistic' }),
     set(`users/${emailOf('off')}`, { uid: 'off', role: 'admin', disabled: true }),
     // An administrator profile bound to another Auth account.
     set(`users/${emailOf('impostor')}`, { uid: 'someone-else', role: 'admin' }),
@@ -72,7 +78,7 @@ beforeEach(async () => {
 });
 
 describe('saveStudentPhoto', () => {
-  it.each(['admin', 'jhs', 'adv'])('lets %s save the photo of a learner', async (uid) => {
+  it.each(['admin', 'glc', 'log', 'adv'])('lets %s save the photo of a learner', async (uid) => {
     expect(await save(uid)).toEqual({ ok: true, updatedAt: NOW.getTime() });
     const file = bucket.files.get(PATH);
     expect(file.bytes.toString('base64')).toBe(jpeg());
@@ -85,11 +91,21 @@ describe('saveStudentPhoto', () => {
     expect(rows[0]).toMatchObject({ action: 'student.photoSaved', actorType: 'staff', actorUid: emailOf(uid), targetType: 'student', targetId: 'S1' });
   });
 
-  it('lets the SHS coordinator and the administrator save a grade 11 photo', async () => {
-    await save('shs', 'S11');
+  it('lets the logistic operator and the administrator save a grade 11 photo', async () => {
+    await save('log', 'S11');
+    expect((await student('S11')).photo.updatedBy).toBe(emailOf('log'));
     await save('admin', 'S11');
     expect([...bucket.files.keys()]).toEqual(['student_photos/S11.jpg']);
     expect((await student('S11')).photo.updatedBy).toBe(emailOf('admin'));
+  });
+
+  // Academic coordinators lost photo access, but keep what an adviser assignment gives them.
+  it('lets a coordinator who is also a class adviser save only for their own class', async () => {
+    await db().doc('school_accounts/jhs').set({ assignments: [{ role: 'adviser', schoolYear: '2026-2027', sectionId: 'SEC1', gradeLevel: 7 }] });
+    await expect(save('jhs', 'S11')).rejects.toMatchObject(denied);
+    await expectNothingWritten();
+    expect(await save('jhs')).toMatchObject({ ok: true });
+    expect((await read('jhs')).photo.contentBase64).toBe(jpeg());
   });
 
   it('replaces the previous photo', async () => {
@@ -117,9 +133,16 @@ describe('saveStudentPhoto', () => {
   });
 
   it.each([
-    ['jhs', 'S11', 'a JHS coordinator outside grades 7-10'],
-    ['shs', 'S1', 'an SHS coordinator outside grades 11-12'],
-    ['glc', 'S1', 'a grade level coordinator'],
+    ['jhs', 'S1', 'a JHS coordinator, inside their grades'],
+    ['jhs', 'S11', 'a JHS coordinator, outside their grades'],
+    ['shs', 'S11', 'an SHS coordinator, inside their grades'],
+    ['shs', 'S1', 'an SHS coordinator, outside their grades'],
+    ['glc', 'S11', 'a coordinator of another grade level'],
+    ['glc8', 'S1', 'the grade 8 coordinator for a grade 7 learner'],
+    ['glcnone', 'S1', 'a grade level coordinator without a grade'],
+    ['logoff', 'S1', 'a disabled logistic operator'],
+    ['logtemp', 'S1', 'a logistic operator who must change their password'],
+    ['logimp', 'S1', 'a logistic profile bound to another account'],
     ['cur', 'S1', 'a curriculum adviser'],
     ['adv', 'S11', 'an adviser of another section'],
     ['adv8', 'S1', 'the adviser of a different grade'],
@@ -140,20 +163,22 @@ describe('saveStudentPhoto', () => {
     await expectNothingWritten();
   });
 
-  it('denies everyone a learner who does not exist, even an administrator', async () => {
-    await expect(save('admin', 'NOPE')).rejects.toMatchObject(denied);
+  it.each(['admin', 'log'])('denies everyone a learner who does not exist, even %s', async (uid) => {
+    await expect(save(uid, 'NOPE')).rejects.toMatchObject(denied);
     await expectNothingWritten();
     expect((await db().doc('students/NOPE').get()).exists).toBe(false);
   });
 
-  it('lets only the administrator handle a learner who is not enrolled', async () => {
-    await save('admin', 'S3');
+  it.each(['admin', 'log'])('lets %s, who covers every grade, handle a learner who is not enrolled', async (uid) => {
+    await save(uid, 'S3');
     expect((await student('S3')).photo.path).toBe('student_photos/S3.jpg');
+    expect((await read(uid, 'S3')).photo.contentBase64).toBe(jpeg());
+    await expect(read('glc', 'S3')).rejects.toMatchObject(denied);
   });
 
   it('denies coordinators and advisers when the enrolled section belongs to another school year', async () => {
     await db().doc('sections/SEC1').update({ schoolYear: '2025-2026' });
-    for (const uid of ['jhs', 'adv']) await expect(save(uid)).rejects.toMatchObject(denied);
+    for (const uid of ['glc', 'adv']) await expect(save(uid)).rejects.toMatchObject(denied);
     await expectNothingWritten();
   });
 
@@ -284,7 +309,7 @@ describe('saveStudentPhoto when the transaction fails', () => {
 describe('getStudentPhoto', () => {
   beforeEach(() => save('admin'));
 
-  it.each(['admin', 'jhs', 'adv', 'gA', 'gB'])('shows the photo to %s', async (uid) => {
+  it.each(['admin', 'glc', 'log', 'adv', 'gA', 'gB'])('shows the photo to %s', async (uid) => {
     expect(await read(uid)).toEqual({ photo: { contentBase64: jpeg(), updatedAt: NOW.getTime() } });
   });
 
@@ -293,9 +318,14 @@ describe('getStudentPhoto', () => {
     ['gR', 'a link with relationship Adviser'],
     ['gS', 'a link in the adviser slot'],
     ['gX', 'a link document that names another guardian'],
-    ['glc', 'a grade level coordinator'],
+    ['jhs', 'a JHS academic coordinator'],
+    ['shs', 'an SHS academic coordinator'],
+    ['glc8', 'the coordinator of another grade level'],
+    ['glcnone', 'a grade level coordinator without a grade'],
+    ['logoff', 'a disabled logistic operator'],
+    ['logtemp', 'a logistic operator who must change their password'],
+    ['logimp', 'a logistic profile bound to another account'],
     ['cur', 'a curriculum adviser'],
-    ['shs', 'a coordinator of other grades'],
     ['adv8', 'the adviser of another section'],
     ['old', 'last year’s adviser'],
     ['blocked', 'an adviser whose school account is disabled'],
@@ -310,7 +340,14 @@ describe('getStudentPhoto', () => {
     await save('admin', 'S11');
     await expect(read('gA', 'S11')).rejects.toMatchObject(denied);
     await expect(read('adv', 'S11')).rejects.toMatchObject(denied);
-    await expect(read('jhs', 'S11')).rejects.toMatchObject(denied);
+    await expect(read('glc', 'S11')).rejects.toMatchObject(denied);
+  });
+
+  it('shows a logistic operator the photos of every grade', async () => {
+    await save('log', 'S11', jpeg(300, 300));
+    expect((await read('log')).photo.contentBase64).toBe(jpeg());
+    expect((await read('log', 'S11')).photo.contentBase64).toBe(jpeg(300, 300));
+    for (const uid of ['jhs', 'shs']) await expect(read(uid, 'S11')).rejects.toMatchObject(denied);
   });
 
   it('stops the adviser once the school year has ended, but not the administrator', async () => {

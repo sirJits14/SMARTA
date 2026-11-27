@@ -12,9 +12,41 @@ const validGrade = grade => Number.isInteger(grade) && grade >= 7 && grade <= 12
 const audit = (actorUid, action, studentId, details) => ({ action, actorType: 'staff', actorUid,
   targetType: 'temp_pass', targetId: studentId, details, at: FieldValue.serverTimestamp() });
 
+// Issues or keeps one learner's pass inside the caller's transaction. `grades` is passGrades(profile).
+// Performs all its reads before any write: the caller may write after it but must not read.
+// `newCode` replaces the code of a live pass, which stops the old sheet from working.
+export async function issueInTransaction(db, tx, { studentId, schoolYear, grades, email, newCode = false }) {
+  const passRef = db.doc(`temp_passes/${studentId}`);
+  const [student, enrollment, pass] = await Promise.all([
+    tx.get(db.doc(`students/${studentId}`)), tx.get(db.doc(`enrollments/${studentId}_${schoolYear}`)), tx.get(passRef),
+  ]);
+  const sectionId = enrollment.data()?.sectionId;
+  const section = identifier(sectionId) ? (await tx.get(db.doc(`sections/${sectionId}`))).data() : undefined;
+  const blocker = tempPassBlocker({ student: student.data(), enrollment: enrollment.data(), section, schoolYear });
+  // Scope is checked before the learner's own details are described.
+  if (grades !== null && section && !grades.includes(section.gradeLevel)) return { skip: 'out-of-scope' };
+  if (blocker) return { skip: blocker };
+  // An incomplete section record skips its learner instead of failing the whole batch.
+  if (!validGrade(section.gradeLevel)) return { skip: 'not-enrolled' };
+  // Reads end here.
+  const placement = { sectionId, gradeLevel: section.gradeLevel };
+  const current = pass.data();
+  const lrn = student.data().lrn;
+  const live = current?.status === 'active' && current.lrn === lrn && current.schoolYear === schoolYear;
+  if (live && !newCode) {
+    if (current.sectionId !== sectionId || current.gradeLevel !== section.gradeLevel) tx.update(passRef, placement);
+    return { code: current.code, replaced: false };
+  }
+  const code = makePassCode(randomInt);
+  tx.set(passRef, { code, status: 'active', lrn, ...placement, schoolYear, issuedBy: email, issuedAt: FieldValue.serverTimestamp() });
+  // Codes are gate credentials: neither the old one nor the new one goes in the audit.
+  tx.set(db.collection('audit_log').doc(), audit(email, live ? 'tempPass.replaced' : 'tempPass.issued', studentId, placement));
+  return { code, replaced: live };
+}
+
 export async function issueTempPasses(deps, input) {
   const { db, uid, email, profile, now } = deps;
-  if (!canManagePasses(profile)) fail('permission-denied', 'Temporary passes are for administrators and academic coordinators.');
+  if (!canManagePasses(profile)) fail('permission-denied', 'Temporary passes are for administrators, grade level coordinators and logistic operators.');
   const ids = Array.isArray(input.studentIds) ? [...new Set(input.studentIds)] : [];
   if (!ids.length || ids.length > 200 || !ids.every(identifier)) fail('invalid-argument', 'Choose 1–200 learners.');
   await enforceRateLimit(db, uid, 'tempPass', LIMITS.tempPass, now().getTime());
@@ -23,31 +55,7 @@ export async function issueTempPasses(deps, input) {
   const grades = passGrades(profile);
   const issued = []; const skipped = [];
   for (const studentId of ids) {
-    const result = await db.runTransaction(async tx => {
-      const passRef = db.doc(`temp_passes/${studentId}`);
-      const [student, enrollment, pass] = await Promise.all([
-        tx.get(db.doc(`students/${studentId}`)), tx.get(db.doc(`enrollments/${studentId}_${schoolYear}`)), tx.get(passRef),
-      ]);
-      const sectionId = enrollment.data()?.sectionId;
-      const section = identifier(sectionId) ? (await tx.get(db.doc(`sections/${sectionId}`))).data() : undefined;
-      const blocker = tempPassBlocker({ student: student.data(), enrollment: enrollment.data(), section, schoolYear });
-      // Scope is checked before the learner's own details are described.
-      if (grades !== null && section && !grades.includes(section.gradeLevel)) return { skip: 'out-of-scope' };
-      if (blocker) return { skip: blocker };
-      // An incomplete section record skips its learner instead of failing the whole batch.
-      if (!validGrade(section.gradeLevel)) return { skip: 'not-enrolled' };
-      const placement = { sectionId, gradeLevel: section.gradeLevel };
-      const current = pass.data();
-      const lrn = student.data().lrn;
-      if (current?.status === 'active' && current.lrn === lrn && current.schoolYear === schoolYear) {
-        if (current.sectionId !== sectionId || current.gradeLevel !== section.gradeLevel) tx.update(passRef, placement);
-        return { code: current.code };
-      }
-      const code = makePassCode(randomInt);
-      tx.set(passRef, { code, status: 'active', lrn, ...placement, schoolYear, issuedBy: email, issuedAt: FieldValue.serverTimestamp() });
-      tx.set(db.collection('audit_log').doc(), audit(email, 'tempPass.issued', studentId, placement));
-      return { code };
-    });
+    const result = await db.runTransaction(tx => issueInTransaction(db, tx, { studentId, schoolYear, grades, email }));
     if (result.code) issued.push({ studentId, code: result.code }); else skipped.push({ studentId, reason: result.skip });
   }
   return { issued, skipped };

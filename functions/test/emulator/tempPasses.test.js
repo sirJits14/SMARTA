@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Timestamp } from 'firebase-admin/firestore';
 import { db, auth, clearAll, clearAllAuthUsers, seedSchool } from './helpers.js';
-import { issueTempPasses, revokeTempPass, reconcileTempPass } from '../../src/handlers/tempPasses.js';
+import { issueTempPasses, issueInTransaction, revokeTempPass, reconcileTempPass } from '../../src/handlers/tempPasses.js';
 import { issueTempPassFn, revokeTempPassFn, onStudentWritten, onEnrollmentWritten } from '../../index.js';
 import { LIMITS } from '../../src/callable.js';
 import { isTempPassCode } from '../../shared/tempPass.js';
@@ -17,8 +17,10 @@ const staff = {
   admin: { uid: 'admin', email: 'admin@x.test', profile: { uid: 'admin', role: 'admin' } },
   jhs: { uid: 'jhs', email: 'jhs@x.test', profile: { uid: 'jhs', role: 'jhs_coord' } },
   shs: { uid: 'shs', email: 'shs@x.test', profile: { uid: 'shs', role: 'shs_coord' } },
-  glc: { uid: 'glc', email: 'glc@x.test', profile: { uid: 'glc', role: 'glc', gradeLevel: 7 } },
+  glc7: { uid: 'glc7', email: 'glc7@x.test', profile: { uid: 'glc7', role: 'glc', gradeLevel: 7 } },
+  logistic: { uid: 'log', email: 'log@x.test', profile: { uid: 'log', role: 'logistic' } },
 };
+const DENIED = 'Temporary passes are for administrators, grade level coordinators and logistic operators.';
 const deps = who => ({ db: db(), now: () => NOW, ...staff[who] });
 const issue = (studentIds = ['S1'], who = 'admin') => issueTempPasses(deps(who), { studentIds });
 const revoke = (studentId = 'S1') => revokeTempPass(deps('admin'), { studentId });
@@ -26,7 +28,7 @@ const read = async path => (await db().doc(path).get()).data();
 const pass = (id = 'S1') => read(`temp_passes/${id}`);
 const audits = async () => (await db().collection('audit_log').where('targetType', '==', 'temp_pass').get()).docs.map(d => d.data());
 const actions = async () => (await audits()).map(a => a.action).sort();
-// A learner who may receive a pass: enrolled, active, with an LRN and a photo.
+// A learner who may receive a pass: enrolled, active, with an LRN. A photo is optional.
 async function learner(id, sectionId = 'SEC1', over = {}) {
   await db().doc(`students/${id}`).set({ lrn: `lrn-${id}`, firstName: id, lastName: 'Test', photo: { path: `student_photos/${id}.jpg` }, ...over });
   await db().doc(`enrollments/${id}_${year}`).set({ studentId: id, sectionId, schoolYear: year, status: 'enrolled' });
@@ -76,18 +78,28 @@ describe('issuing temporary passes', () => {
   });
   it('skips each ineligible learner with its reason and issues the rest', async () => {
     await Promise.all([
-      learner('noPhoto', 'SEC1', { photo: null }),
+      learner('noLrn', 'SEC1', { lrn: ' ' }),
       learner('printed', 'SEC1', { idCard: { printedAt: Timestamp.fromDate(NOW), lrn: 'lrn-printed' } }),
       learner('dropped', 'SEC1', { status: 'dropped' }),
     ]);
-    const result = await issue(['NOPE', 'S2', 'noPhoto', 'printed', 'dropped', 'S1']);
+    const result = await issue(['NOPE', 'S2', 'noLrn', 'printed', 'dropped', 'S1']);
     expect(result.skipped).toEqual([
       { studentId: 'NOPE', reason: 'not-found' }, { studentId: 'S2', reason: 'not-enrolled' },
-      { studentId: 'noPhoto', reason: 'no-photo' }, { studentId: 'printed', reason: 'official-printed' },
+      { studentId: 'noLrn', reason: 'no-lrn' }, { studentId: 'printed', reason: 'official-printed' },
       { studentId: 'dropped', reason: 'inactive' },
     ]);
     expect(result.issued.map(r => r.studentId)).toEqual(['S1']);
     expect((await db().collection('temp_passes').get()).docs.map(d => d.id)).toEqual(['S1']);
+  });
+  it('issues passes to learners without a photo', async () => {
+    await learner('nullPhoto', 'SEC1', { photo: null });
+    await db().doc('students/noPhotoField').set({ lrn: 'lrn-noPhotoField', firstName: 'No', lastName: 'Photo' });
+    await db().doc(`enrollments/noPhotoField_${year}`).set({ studentId: 'noPhotoField', sectionId: 'SEC1', schoolYear: year, status: 'enrolled' });
+    const result = await issue(['nullPhoto', 'noPhotoField']);
+    expect(result.skipped).toEqual([]);
+    expect(result.issued.map(r => r.studentId)).toEqual(['nullPhoto', 'noPhotoField']);
+    expect(await pass('nullPhoto')).toMatchObject({ status: 'active', code: result.issued[0].code });
+    expect(await pass('noPhotoField')).toMatchObject({ status: 'active', code: result.issued[1].code });
   });
   it.each([undefined, null, '7', 7.5, 6, 13])('skips a learner whose section grade is %s and issues the rest', async gradeLevel => {
     await db().doc('sections/BROKEN').set({ name: 'Broken', schoolYear: year, ...(gradeLevel === undefined ? {} : { gradeLevel }) });
@@ -99,16 +111,49 @@ describe('issuing temporary passes', () => {
     expect(await pass('broken')).toBeUndefined();
     expect(await actions()).toEqual(['tempPass.issued', 'tempPass.issued']);
   });
-  it('limits coordinators to their grades without describing other learners', async () => {
-    // No photo, so a leak of the learner's own blocker would show here.
-    await learner('senior', 'SEC11', { photo: null });
-    expect(await issue(['senior', 'S1'], 'jhs')).toMatchObject({
-      issued: [{ studentId: 'S1' }], skipped: [{ studentId: 'senior', reason: 'out-of-scope' }] });
-    expect((await issue(['S1'], 'shs')).skipped).toEqual([{ studentId: 'S1', reason: 'out-of-scope' }]);
-    expect(await pass('senior')).toBeUndefined();
+  it.each(['jhs', 'shs'])('refuses the %s academic coordinator for every grade', async who => {
+    await learner('senior', 'SEC11');
+    await expect(issue(['S1', 'senior'], who)).rejects.toMatchObject({ code: 'permission-denied', message: DENIED });
+    expect((await db().collection('temp_passes').get()).size).toBe(0);
+    expect(await audits()).toEqual([]);
   });
-  it('refuses grade level coordinators, bad input and an ended year', async () => {
-    await expect(issue(['S1'], 'glc')).rejects.toMatchObject({ code: 'permission-denied' });
+  it('limits a grade level coordinator to their grade without describing other learners', async () => {
+    // Each has a blocker of their own, so a leak of it would show here.
+    await Promise.all([
+      learner('senior', 'SEC11', { status: 'dropped' }),
+      learner('eight', 'SEC8', { idCard: { printedAt: Timestamp.fromDate(NOW), lrn: 'lrn-eight' } }),
+    ]);
+    const result = await issue(['senior', 'eight', 'S1'], 'glc7');
+    expect(result.issued.map(r => r.studentId)).toEqual(['S1']);
+    expect(result.skipped).toEqual([{ studentId: 'senior', reason: 'out-of-scope' }, { studentId: 'eight', reason: 'out-of-scope' }]);
+    expect((await db().collection('temp_passes').get()).docs.map(d => d.id)).toEqual(['S1']);
+    expect(await pass()).toMatchObject({ gradeLevel: 7, issuedBy: 'glc7@x.test' });
+  });
+  it('does not hand a grade level coordinator the code of a pass outside their grade', async () => {
+    await learner('senior', 'SEC11');
+    await issue(['senior']);
+    const before = await pass('senior');
+    expect(await issue(['senior'], 'glc7')).toEqual({ issued: [], skipped: [{ studentId: 'senior', reason: 'out-of-scope' }] });
+    expect(await pass('senior')).toEqual(before);
+  });
+  it('lets a logistic operator issue for every grade', async () => {
+    await Promise.all([learner('eight', 'SEC8'), learner('senior', 'SEC11')]);
+    const result = await issue(['S1', 'eight', 'senior'], 'logistic');
+    expect(result.skipped).toEqual([]);
+    expect(result.issued.map(r => r.studentId)).toEqual(['S1', 'eight', 'senior']);
+    expect(await pass('senior')).toMatchObject({ gradeLevel: 11, issuedBy: 'log@x.test' });
+  });
+  it.each([
+    ['a grade level coordinator without a grade', { role: 'glc' }],
+    ['a grade level coordinator with an impossible grade', { role: 'glc', gradeLevel: 13 }],
+    ['an unknown role', { role: 'teacher' }],
+    ['no staff profile', undefined],
+  ])('refuses %s', async (_, profile) => {
+    await expect(issueTempPasses({ ...deps('admin'), profile }, { studentIds: ['S1'] }))
+      .rejects.toMatchObject({ code: 'permission-denied', message: DENIED });
+    expect(await pass()).toBeUndefined();
+  });
+  it('refuses bad input and an ended year', async () => {
     for (const studentIds of [undefined, 'S1', [], Array.from({ length: 201 }, (_, i) => `L${i}`), ['S1', 'a/b'], ['S1', 7], ['']]) {
       await expect(issueTempPasses(deps('admin'), { studentIds })).rejects.toMatchObject({ code: 'invalid-argument' });
     }
@@ -120,6 +165,95 @@ describe('issuing temporary passes', () => {
     await db().doc('rate_limits/admin').set({ tempPass: { windowStartMs: NOW.getTime(), count: LIMITS.tempPass.max } });
     await expect(issue()).rejects.toMatchObject({ code: 'resource-exhausted' });
     expect(await pass()).toBeUndefined();
+  });
+});
+
+describe('issuing inside a caller’s transaction', () => {
+  const options = over => ({ studentId: 'S1', schoolYear: year, grades: null, email: 'log@x.test', ...over });
+  const inTransaction = over => db().runTransaction(tx => issueInTransaction(db(), tx, options(over)));
+  const KEYS = ['code', 'gradeLevel', 'issuedAt', 'issuedBy', 'lrn', 'schoolYear', 'sectionId', 'status'];
+
+  it('replaces the code of an active pass and never records the old one', async () => {
+    const old = (await issue()).issued[0].code;
+    const result = await inTransaction({ newCode: true });
+    expect(result).toEqual({ code: expect.any(String), replaced: true });
+    expect(isTempPassCode(result.code)).toBe(true);
+    expect(result.code).not.toBe(old);
+    const stored = await pass();
+    expect(stored.code).toBe(result.code);
+    expect(stored.code).not.toBe(old);
+    expect(Object.keys(stored).sort()).toEqual(KEYS);
+    expect(stored).toMatchObject({ status: 'active', issuedBy: 'log@x.test' });
+    expect(await actions()).toEqual(['tempPass.issued', 'tempPass.replaced']);
+    const rows = await audits();
+    expect(rows.find(a => a.action === 'tempPass.replaced')).toEqual({ action: 'tempPass.replaced', actorType: 'staff', actorUid: 'log@x.test',
+      targetType: 'temp_pass', targetId: 'S1', details: { sectionId: 'SEC1', gradeLevel: 7 }, at: expect.any(Timestamp) });
+    expect(JSON.stringify(rows)).not.toContain(old);
+    expect(JSON.stringify(rows)).not.toContain(result.code);
+  });
+  it.each([{ newCode: false }, {}])('keeps the code of an active pass with %j', async over => {
+    const old = (await issue()).issued[0].code;
+    const before = await pass();
+    expect(await inTransaction(over)).toEqual({ code: old, replaced: false });
+    expect(await pass()).toEqual(before);
+    expect(await actions()).toEqual(['tempPass.issued']);
+  });
+  it('keeps the code and moves the placement without calling it a replacement', async () => {
+    const old = (await issue()).issued[0].code;
+    await db().doc(`enrollments/S1_${year}`).update({ sectionId: 'SEC8' });
+    expect(await inTransaction()).toEqual({ code: old, replaced: false });
+    expect(await pass()).toMatchObject({ code: old, sectionId: 'SEC8', gradeLevel: 8 });
+    expect(await actions()).toEqual(['tempPass.issued']);
+  });
+  it.each([
+    ['there is no pass', async () => {}],
+    ['the pass was revoked', async () => { await issue(); await revoke(); }],
+    ['the pass is for an earlier LRN', async () => { await issue(); await db().doc('students/S1').update({ lrn: '100000000009' }); }],
+    ['the pass is for an earlier school year', async () => { await issue(); await db().doc('temp_passes/S1').update({ schoolYear: '2025-2026' }); }],
+  ])('issues rather than replaces a new code when %s', async (_, arrange) => {
+    await arrange();
+    const old = (await pass())?.code;
+    const issuedBefore = (await actions()).filter(a => a === 'tempPass.issued').length;
+    const result = await inTransaction({ newCode: true });
+    expect(result).toEqual({ code: expect.any(String), replaced: false });
+    expect(result.code).not.toBe(old);
+    expect(await pass()).toMatchObject({ code: result.code, status: 'active' });
+    expect((await actions()).filter(a => a === 'tempPass.issued')).toHaveLength(issuedBefore + 1);
+    expect(await actions()).not.toContain('tempPass.replaced');
+  });
+  it.each([
+    ['out-of-scope', { grades: [8] }, async () => {}],
+    ['official-printed', {}, () => db().doc('students/S1').update({ idCard: { printedAt: Timestamp.fromDate(NOW), lrn: '100000000001' } })],
+    ['not-enrolled', {}, () => db().doc(`enrollments/S1_${year}`).update({ status: 'dropped' })],
+    ['not-found', {}, () => db().doc('students/S1').delete()],
+  ])('returns the skip %s and leaves the active pass alone', async (skip, over, arrange) => {
+    await issue();
+    const before = await pass();
+    await arrange();
+    expect(await inTransaction({ newCode: true, ...over })).toEqual({ skip });
+    expect(await pass()).toEqual(before);
+    expect(await actions()).toEqual(['tempPass.issued']);
+  });
+  it('lets the caller read before it and write after it, in one commit', async () => {
+    const request = db().doc('temp_pass_requests/R1');
+    await request.set({ status: 'pending' });
+    const result = await db().runTransaction(async tx => {
+      await Promise.all([tx.get(request), tx.get(db().doc('temp_passes/S1'))]);
+      const issued = await issueInTransaction(db(), tx, options());
+      tx.update(request, { passCode: issued.code });
+      return issued;
+    });
+    expect(await read('temp_pass_requests/R1')).toEqual({ status: 'pending', passCode: result.code });
+    expect((await pass()).code).toBe(result.code);
+  });
+  it('writes nothing when the caller’s transaction fails', async () => {
+    const old = (await issue()).issued[0].code;
+    await expect(db().runTransaction(async tx => {
+      await issueInTransaction(db(), tx, options({ newCode: true }));
+      throw new Error('caller failed');
+    })).rejects.toThrow('caller failed');
+    expect((await pass()).code).toBe(old);
+    expect(await actions()).toEqual(['tempPass.issued']);
   });
 });
 
@@ -254,20 +388,24 @@ describe('record triggers', () => {
 });
 
 describe('temporary pass callables', () => {
-  const request = (who, data) => ({ app: { appId: 'local-test' }, auth: { uid: who, token: {
+  const request = (who, data) => ({ app: { appId: 'local-test' }, auth: { uid: staff[who].uid, token: {
     email: staff[who].email, auth_time: Math.floor(Date.now() / 1000) + 5, firebase: { sign_in_provider: 'password' },
   } }, data });
   beforeEach(async () => {
     await clearAllAuthUsers();
-    for (const who of ['admin', 'jhs']) {
-      await auth().createUser({ uid: who, email: staff[who].email, password: 'local-test-password' });
+    for (const who of ['admin', 'jhs', 'shs', 'glc7', 'logistic']) {
+      await auth().createUser({ uid: staff[who].uid, email: staff[who].email, password: 'local-test-password' });
       await db().doc(`users/${staff[who].email}`).set(staff[who].profile);
     }
   });
-  it('lets a coordinator issue but only an administrator revoke', async () => {
-    await expect(issueTempPassFn.run(request('jhs', { studentIds: ['S1'] }))).resolves.toMatchObject({ issued: [{ studentId: 'S1' }] });
-    await expect(revokeTempPassFn.run(request('jhs', { studentId: 'S1' }))).rejects.toMatchObject({ code: 'permission-denied' });
-    expect(await pass()).toMatchObject({ status: 'active', issuedBy: 'jhs@x.test' });
+  it.each(['glc7', 'logistic'])('lets %s issue but only an administrator revoke', async who => {
+    await expect(issueTempPassFn.run(request(who, { studentIds: ['S1'] }))).resolves.toMatchObject({ issued: [{ studentId: 'S1' }] });
+    await expect(revokeTempPassFn.run(request(who, { studentId: 'S1' }))).rejects.toMatchObject({ code: 'permission-denied' });
+    expect(await pass()).toMatchObject({ status: 'active', issuedBy: staff[who].email });
     await expect(revokeTempPassFn.run(request('admin', { studentId: 'S1' }))).resolves.toEqual({ revoked: 1 });
+  });
+  it.each(['jhs', 'shs'])('refuses %s through the callable', async who => {
+    await expect(issueTempPassFn.run(request(who, { studentIds: ['S1'] }))).rejects.toMatchObject({ code: 'permission-denied', message: DENIED });
+    expect(await pass()).toBeUndefined();
   });
 });
