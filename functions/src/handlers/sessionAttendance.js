@@ -89,9 +89,13 @@ export async function getSchoolRoster(deps, input) {
     const attendance = snap.data(); validAttendance(attendance, section, input.date);
     historicalScope(actor, section, attendance);
     const students = await Promise.all(enrollments.docs.map(doc => tx.get(deps.db.doc(`students/${doc.data().studentId}`))));
-    const rows = students.filter(s => s.exists).map(s => ({ ...projection(attendance, s.id), displayName: fullName(s.data()) }));
+    const rows = students.filter(s => s.exists).map(s => {
+      const photoUpdatedAt = s.data().photo?.updatedAt?.toMillis?.();
+      return { ...projection(attendance, s.id), displayName: fullName(s.data()), ...(photoUpdatedAt ? { photoUpdatedAt } : {}) };
+    });
     rows.sort((a, b) => a.displayName.localeCompare(b.displayName));
-    return { section, date: input.date, rows, canCorrect, schedule: bellTimes(scheduleSnap?.data()) };
+    const canEditPhotos = actor.isAdmin === true || actor.assignments.some(a => a.role === 'adviser' && a.sectionId === section.id);
+    return { section, date: input.date, rows, canCorrect, canEditPhotos, schedule: bellTimes(scheduleSnap?.data()) };
   });
 }
 

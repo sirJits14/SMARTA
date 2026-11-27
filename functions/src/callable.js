@@ -23,6 +23,8 @@ export const LIMITS = {
   learnerRequest: { windowMs: 60 * 60 * 1000, max: 30 },
   // SF2 downloads from the Class tab (spec 2026-10-22). Each builds a workbook, so keep it modest.
   sf2Export: { windowMs: 60 * 60 * 1000, max: 20 },
+  // Learner photos: an adviser may photograph a whole class, with retakes.
+  studentPhoto: { windowMs: 60 * 60 * 1000, max: 300 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 

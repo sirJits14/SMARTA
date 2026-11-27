@@ -36,4 +36,5 @@ export const learnerIdentity = (student, section, schoolYear) => ({
   lastName: (student.lastName || '').trim(), firstName: (student.firstName || '').trim(),
   sex: student.sex === 'M' || student.sex === 'F' ? student.sex : '',
   sectionLabel: sectionLabel(section), schoolYear,
+  ...(student.photo?.updatedAt ? { photoUpdatedAt: student.photo.updatedAt } : {}),
 });

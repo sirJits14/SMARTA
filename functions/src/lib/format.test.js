@@ -53,6 +53,17 @@ describe('learnerIdentity', () => {
   it('stores an empty sex rather than an unexpected value', () => {
     expect(learnerIdentity({ firstName: 'A', lastName: 'B', sex: 'x' }, null, 'SY').sex).toBe('');
   });
+  it('carries the photo time only when the learner has a photo', () => {
+    const updatedAt = { seconds: 1, nanoseconds: 0 };
+    const photo = { path: 'student_photos/S1.jpg', updatedAt, updatedBy: 'staff@x' };
+    const id = learnerIdentity({ firstName: 'A', lastName: 'B', photo }, null, 'SY');
+    expect(id.photoUpdatedAt).toBe(updatedAt);
+    // The path and the staff member's email stay off the parent projection.
+    expect(id).not.toHaveProperty('photo');
+    for (const student of [{}, { photo: null }, { photo: {} }]) {
+      expect(learnerIdentity({ firstName: 'A', lastName: 'B', ...student }, null, 'SY')).not.toHaveProperty('photoUpdatedAt');
+    }
+  });
 });
 
 describe('manilaDateTime', () => {
