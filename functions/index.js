@@ -27,6 +27,10 @@ import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement }
 import { requestLearnerAdd, requestLearnerRemoval, withdrawLearnerRequest, getLearnerRequests, listLearnerRequests, resolveLearnerRequest, getLearnerRequestCount } from './src/handlers/learnerRequests.js';
 import { saveStudentPhoto, getStudentPhoto, deletePhotoFile } from './src/handlers/studentPhotos.js';
 import { issueTempPasses, revokeTempPass, reconcileTempPass } from './src/handlers/tempPasses.js';
+import {
+  requestTempPasses, withdrawTempPassRequest, getTempPassRequests, listTempPassRequests, fulfilTempPassRequests, markTempPassRequestsPrinted,
+  declineTempPassRequest,
+} from './src/handlers/tempPassRequests.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -145,6 +149,15 @@ export const getStudentPhotoFn = photoCall(getStudentPhoto);
 // administrators revoke.
 export const issueTempPassFn = staffCall(issueTempPasses, { timeoutSeconds: 120 });
 export const revokeTempPassFn = adminCall(revokeTempPass);
+// Adviser requests for temporary passes (spec 2026-11-27 requests): advisers file from the Parent App;
+// administrators, grade level coordinators and logistic operators prepare, print or decline in SIMS.
+export const requestTempPassesFn = schoolCall(requestTempPasses);
+export const withdrawTempPassRequestFn = schoolCall(withdrawTempPassRequest);
+export const getTempPassRequestsFn = schoolCall(getTempPassRequests);
+export const listTempPassRequestsFn = staffCall(listTempPassRequests, { timeoutSeconds: 120 });
+export const fulfilTempPassRequestsFn = staffCall(fulfilTempPassRequests, { timeoutSeconds: 120 });
+export const markTempPassRequestsPrintedFn = staffCall(markTempPassRequestsPrinted);
+export const declineTempPassRequestFn = staffCall(declineTempPassRequest);
 // The pass is settled first, so a Storage failure only leaves the photo delete to retry.
 export const onStudentWritten = onDocumentWritten({ document: 'students/{studentId}', retry: true }, async (event) => {
   const { studentId } = event.params;
