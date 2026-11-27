@@ -139,6 +139,7 @@ describe('temporary ID pass scans', () => {
     ['the pass is superseded', { status: 'superseded' }, withPass()],
     ['the pass is revoked', { status: 'revoked' }, withPass()],
     ['the pass is from another school year', { schoolYear: '2025-2026' }, withPass()],
+    ['the learner LRN has changed since the pass was issued', { lrn: '100000000009' }, withPass()],
     ['the credential has no code', {}, scanDoc({ credential: 'temp_pass' })],
     ['the code has no credential', {}, scanDoc({ passCode: CODE })],
     ['the credential is unknown', {}, withPass({ credential: 'official_id' })],

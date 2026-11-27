@@ -8,6 +8,7 @@ import { makePassCode, passGrades, canManagePasses, tempPassBlocker, isOfficialC
 // Temporary ID Passes (spec 2026-11-27). temp_passes/{studentId} is written only here.
 const fail = (code, message) => { throw new CallableError(code, message); };
 const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+const validGrade = grade => Number.isInteger(grade) && grade >= 7 && grade <= 12;
 const audit = (actorUid, action, studentId, details) => ({ action, actorType: 'staff', actorUid,
   targetType: 'temp_pass', targetId: studentId, details, at: FieldValue.serverTimestamp() });
 
@@ -33,6 +34,8 @@ export async function issueTempPasses(deps, input) {
       // Scope is checked before the learner's own details are described.
       if (grades !== null && section && !grades.includes(section.gradeLevel)) return { skip: 'out-of-scope' };
       if (blocker) return { skip: blocker };
+      // An incomplete section record skips its learner instead of failing the whole batch.
+      if (!validGrade(section.gradeLevel)) return { skip: 'not-enrolled' };
       const placement = { sectionId, gradeLevel: section.gradeLevel };
       const current = pass.data();
       const lrn = student.data().lrn;
@@ -91,9 +94,10 @@ export async function reconcileTempPass(db, studentId) {
       return status;
     }
     const { sectionId } = enrollment.data();
-    if (sectionId === pass.sectionId) return 'kept';
+    // Throwing on an incomplete record would retry forever, so the old placement stays.
+    if (sectionId === pass.sectionId || !identifier(sectionId)) return 'kept';
     const section = (await tx.get(db.doc(`sections/${sectionId}`))).data();
-    if (!section) return 'kept';
+    if (!validGrade(section?.gradeLevel)) return 'kept';
     tx.update(ref, { sectionId, gradeLevel: section.gradeLevel });
     return 'moved';
   });

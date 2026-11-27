@@ -89,6 +89,16 @@ describe('issuing temporary passes', () => {
     expect(result.issued.map(r => r.studentId)).toEqual(['S1']);
     expect((await db().collection('temp_passes').get()).docs.map(d => d.id)).toEqual(['S1']);
   });
+  it.each([undefined, null, '7', 7.5, 6, 13])('skips a learner whose section grade is %s and issues the rest', async gradeLevel => {
+    await db().doc('sections/BROKEN').set({ name: 'Broken', schoolYear: year, ...(gradeLevel === undefined ? {} : { gradeLevel }) });
+    await learner('broken', 'BROKEN');
+    await learner('after', 'SEC8');
+    const result = await issue(['S1', 'broken', 'after']);
+    expect(result.skipped).toEqual([{ studentId: 'broken', reason: 'not-enrolled' }]);
+    expect(result.issued.map(r => r.studentId)).toEqual(['S1', 'after']);
+    expect(await pass('broken')).toBeUndefined();
+    expect(await actions()).toEqual(['tempPass.issued', 'tempPass.issued']);
+  });
   it('limits coordinators to their grades without describing other learners', async () => {
     // No photo, so a leak of the learner's own blocker would show here.
     await learner('senior', 'SEC11', { photo: null });
@@ -167,6 +177,19 @@ describe('reconciling a pass with current records', () => {
     await enrollment().update({ sectionId: 'GONE' });
     expect(await reconcileTempPass(db(), 'S1')).toBe('kept');
     expect(await pass()).toMatchObject({ status: 'active', sectionId: 'SEC1', gradeLevel: 7 });
+  });
+  it.each(['', 'a/b'])('leaves the pass unchanged when the enrollment section id is "%s"', async sectionId => {
+    const before = await pass();
+    await enrollment().update({ sectionId });
+    expect(await reconcileTempPass(db(), 'S1')).toBe('kept');
+    expect(await pass()).toEqual(before);
+  });
+  it.each([undefined, '8', 13])('leaves the pass unchanged when the new section grade is %s', async gradeLevel => {
+    await db().doc('sections/BROKEN').set({ name: 'Broken', schoolYear: year, ...(gradeLevel === undefined ? {} : { gradeLevel }) });
+    const before = await pass();
+    await enrollment().update({ sectionId: 'BROKEN' });
+    expect(await reconcileTempPass(db(), 'S1')).toBe('kept');
+    expect(await pass()).toEqual(before);
   });
   it('keeps the pass after an unrelated edit or a card printed for an earlier LRN', async () => {
     const before = await pass();

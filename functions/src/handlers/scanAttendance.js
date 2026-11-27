@@ -40,7 +40,8 @@ export async function applyScanAttendance(db, { eventId, data, date, scanTime })
         || !student.exists || !section.exists || section.data().schoolYear !== data.schoolYear) return reject('enrollment');
     // A temporary pass works only while it is active and no official card is out.
     if (usesPass && (data.credential !== 'temp_pass' || pass?.status !== 'active' || pass.code !== data.passCode
-        || pass.schoolYear !== data.schoolYear || isOfficialCardPrinted(student.data()))) return reject('temp_pass_inactive');
+        || pass.schoolYear !== data.schoolYear || pass.lrn !== student.data().lrn
+        || isOfficialCardPrinted(student.data()))) return reject('temp_pass_inactive');
     const sectionGrade = section.data().gradeLevel;
     const validGrade = grade => Number.isInteger(grade) && grade >= 7 && grade <= 12;
     if (!validGrade(sectionGrade)) return reject('grade');
