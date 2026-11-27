@@ -1,0 +1,93 @@
+{
+ "site": "https://bnhs-student-kiosk.web.app",
+ "checkedAt": "2026-11-27T14:18:08.024Z",
+ "total": 17,
+ "matched": 17,
+ "results": [
+  {
+   "path": "assets/bnhs_logo-0qrzEHkg.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/CameraScanner-BBHUE6Ad.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index-BaNwrw5q.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index-Cv6O8St9.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/kiosk-bg-Cjd0lAIZ.mp4",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/kiosk-bg-CsgmotLt.jpg",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/loading-CRLLHZYw.gif",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/norwester-PLQpes8D.otf",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/qr-scanner-worker.min-CJaXo3yu.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/qr-scanner.min-UTORdHLG.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/s-ribbon-BlN6MQma.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/smarta-kiosk-oyN-yirM.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-192.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-512.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-maskable-512.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "index.html",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "manifest.webmanifest",
+   "status": 200,
+   "match": true
+  }
+ ]
+}
