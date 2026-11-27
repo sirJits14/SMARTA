@@ -73,6 +73,18 @@ describe('strings', () => {
       'addRoleRow', 'addRoleRowHint', 'addRoleRowHintParent', 'schoolRequestsRow', 'requestFulfilled', 'requestSuperseded'])
       expect(typeof S[k], k).toBe('string');
   });
+  it('has the learner photo strings', () => {
+    expect(S).toMatchObject({
+      photosButton: 'Learner photos', photosTitle: 'Learner photos', photosHint: 'Used on temporary ID passes.',
+      photoAdded: 'Photo added', photoMissing: 'No photo yet', photoAdd: 'Add photo', photoReplace: 'Replace photo', photoSave: 'Save photo',
+      photoSaving: 'Saving…', photoChooseFile: 'Choose a file', photoUseCamera: 'Use camera', photoCapture: 'Capture',
+      photoCameraUnavailable: 'The camera is not available. Choose a file instead.', photoBadFile: 'That file could not be opened as a picture.',
+      photoCropLabel: 'Photo crop. Drag or use the arrow keys to position.', photoZoom: 'Zoom',
+      photoSaveFailed: 'Could not save the photo. Check your connection and try again.',
+    });
+    for (const k of ['photoOpening', 'photoCameraStarting', 'photoCameraPreview', 'photoPrepareFailed', 'photoCount', 'photoCurrent', 'photosClose'])
+      expect(typeof S[k], k).toBe('string');
+  });
   it('has the SF2 download strings', () => {
     for (const k of ['classActions', 'sf2Button', 'sf2Title', 'sf2Hint', 'sf2Month', 'sf2Download', 'sf2Preparing', 'sf2Close', 'sf2NoLearners', 'sf2NoMonths', 'sf2Ready', 'sf2Save', 'sf2Failed', 'sf2SaveFailed'])
       expect(typeof S[k], k).toBe('string');

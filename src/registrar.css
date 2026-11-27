@@ -294,3 +294,20 @@
 
 /* Name fields show capitals as they are typed; the stored value keeps its case (see capsName in lib/roster.js). */
 .sims-caps { text-transform: uppercase; }
+
+/* ---------- Learner photo upload ---------- */
+@media screen {
+  .sims-photo-current { display:flex; justify-content:center; margin-bottom:16px; }
+  .sims-photo-current img { box-sizing:content-box; width:160px; height:160px; object-fit:cover; border:1px solid var(--t-border); border-radius:8px; }
+  .sims-photo-note { margin:0; font-size:13px; color:var(--t-muted); }
+  .sims-photo-cropper { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .sims-photo-cropper > .sims-field { width:280px; max-width:100%; margin:0; }
+  .sims-photo-tools { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+  .sims-photo-frame { display:block; box-sizing:border-box; width:280px; max-width:100%; height:auto; aspect-ratio:1; border:1px solid var(--t-border); border-radius:8px; }
+  video.sims-photo-frame { object-fit:cover; background:var(--t-bg); }
+  .sims-photo-crop { touch-action:none; cursor:grab; }
+  .sims-photo-crop:active { cursor:grabbing; }
+  .sims-photo-crop[aria-disabled="true"] { cursor:default; }
+  .sims-photo-crop:focus-visible { outline:2px solid var(--t-primary); outline-offset:2px; }
+  .sims-photo-zoom { width:100%; min-height:var(--sims-control-height); margin:0; accent-color:var(--t-primary); }
+}

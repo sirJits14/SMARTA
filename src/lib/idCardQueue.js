@@ -1,11 +1,10 @@
 import { byLastThenFirstName } from './roster.js';
 import { ID_CARD_PRINT_LAYOUT } from '../pages/idCardPrintLayout.js';
+import { isOfficialCardPrinted } from '../../shared/tempPass.js';
 
 // A card is current only if it was printed for the learner's present LRN:
 // the QR encodes the LRN, so a corrected LRN makes the old card wrong.
-export function isIdCardPrinted(student) {
-  return !!student?.idCard?.printedAt && student.idCard.lrn === student.lrn;
-}
+export const isIdCardPrinted = isOfficialCardPrinted;
 
 export const sectionShortLabel = (section) =>
   section ? [section.gradeLevel, section.name, section.strand].filter(Boolean).join(' · ') : '';

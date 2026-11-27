@@ -15,6 +15,7 @@ import ClassActions from './ClassActions.jsx';
 import { sf2MonthOptions, base64ToFile, saveFile, saveWithFallback } from '../../lib/sf2.js';
 import { useLearnerRequests } from '../../hooks/useLearnerRequests.js';
 import { addPayload, pendingRemovalIds, pendingRequests, prefillFrom } from '../../lib/learnerRequests.js';
+import { canManagePhotos } from '../../lib/studentPhoto.js';
 import S from '../../strings.js';
 import './ClassTab.css';
 
@@ -22,6 +23,7 @@ const FlagSheet = lazy(() => import('./FlagSheet.jsx'));
 const Sf2Sheet = lazy(() => import('./Sf2Sheet.jsx'));
 const AddLearnerSheet = lazy(() => import('./AddLearnerSheet.jsx'));
 const RequestsSheet = lazy(() => import('./RequestsSheet.jsx'));
+const PhotosSheet = lazy(() => import('./PhotosSheet.jsx'));
 const STATUS = { P: 'Present', L: 'Late', E: 'Excused', A: 'Absent' };
 const DAY = 86400000;
 // A share or download that went through; 'cancelled' and 'blocked' keep the sheet open for another try.
@@ -87,8 +89,12 @@ export default function ClassTab({ sections, ended, navigate }) {
   const [sf2Error, setSf2Error] = useState('');
   const [sf2File, setSf2File] = useState(null);
   const sf2Lock = useRef(false);
-  // Returning from the phone's share sheet fires focus, so the roster must not reload behind either sheet.
-  sheetOpen.current = Boolean(sheet) || sf2Open;
+  // Learner photos belong to one class: the sheet shows only while that class is the one on screen.
+  const [photosFor, setPhotosFor] = useState('');
+  const canPhotos = canManagePhotos(roster, validSection, ended);
+  const photosOpen = canPhotos && photosFor === validSection;
+  // Returning from the share sheet, file picker or camera prompt fires focus, so the roster must not reload behind a sheet.
+  sheetOpen.current = Boolean(sheet) || sf2Open || photosOpen;
   const downloadSf2 = async (month) => {
     if (sf2Lock.current) return;
     sf2Lock.current = true; setSf2Busy(true); setSf2Error('');
@@ -144,6 +150,7 @@ export default function ClassTab({ sections, ended, navigate }) {
   useEffect(() => { import('./Sf2Sheet.jsx').catch(() => {}); }, []);
   useEffect(() => { import('./AddLearnerSheet.jsx').catch(() => {}); }, []);
   useEffect(() => { import('./RequestsSheet.jsx').catch(() => {}); }, []);
+  useEffect(() => { if (canPhotos) import('./PhotosSheet.jsx').catch(() => {}); }, [canPhotos]);
   useEffect(() => {
     if (!canCorrect || !groups.inSchool.length) { setSelecting(false); setSelected(new Set()); }
   }, [validSection, date, canCorrect, groups.inSchool.length]);
@@ -218,6 +225,7 @@ export default function ClassTab({ sections, ended, navigate }) {
         </div>
       </section>
       <ClassActions onAddLearner={ended ? undefined : () => { setRequestError(''); setAddForm({ initial: null }); }}
+        onPhotos={canPhotos ? () => setPhotosFor(validSection) : undefined}
         onSf2={ended ? undefined : () => { setSf2Error(''); setSf2File(null); setSf2Open(true); }} sf2Hint={roster && !roster.rows?.length ? S.sf2NoLearners : ''}
         requestTotal={(requests.requests || []).length} requestWaiting={pendingRequests(requests.requests).length}
         onOpenRequests={() => { setRequestError(''); setRequestsOpen(true); }} />
@@ -248,6 +256,11 @@ export default function ClassTab({ sections, ended, navigate }) {
         <Suspense fallback={null}>
           <Sf2Sheet sectionLabel={sectionLabel(section)} months={sf2MonthOptions(section?.schoolYear, today)} busy={sf2Busy} error={sf2Error}
             file={sf2File} onDownload={downloadSf2} onSave={saveSf2} onMonthChange={() => { setSf2File(null); setSf2Error(''); }} onClose={() => setSf2Open(false)} />
+        </Suspense>
+      )}
+      {photosOpen && (
+        <Suspense fallback={null}>
+          <PhotosSheet rows={roster.rows || []} onSaved={refresh} onClose={() => setPhotosFor('')} />
         </Suspense>
       )}
       {addForm && (

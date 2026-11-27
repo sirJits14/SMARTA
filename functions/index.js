@@ -3,7 +3,7 @@ import { onDocumentCreated, onDocumentWritten, onDocumentWrittenWithAuthContext 
 import { onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineString } from 'firebase-functions/params';
-import { db, auth, messaging } from './src/admin.js';
+import { db, auth, messaging, bucket } from './src/admin.js';
 import { handleScanEvent } from './src/handlers/scanEvent.js';
 import { guardianIdentity, staffIdentity, schoolIdentity, passwordChangeIdentity, assertUnrestrictedSession, adminIdentity, toHttpsError } from './src/callable.js';
 import { issueActivationCodes, reissueActivationCode, revokeCode, activateCode, acceptConsent } from './src/handlers/codes.js';
@@ -25,6 +25,8 @@ import { retireSubjectTeachers } from './src/handlers/retireSubjectTeachers.js';
 import { getSchoolRoster, setSessionAbsence, getFamilyAttendance, getSchoolLearnerAttendance, getSchoolLearnerHistory, handleAttendanceCorrection, sendDueAttendanceUpdates } from './src/handlers/sessionAttendance.js';
 import { getPortalAnnouncements, getPortalAnnouncement, savePortalAnnouncement } from './src/handlers/portalAnnouncements.js';
 import { requestLearnerAdd, requestLearnerRemoval, withdrawLearnerRequest, getLearnerRequests, listLearnerRequests, resolveLearnerRequest, getLearnerRequestCount } from './src/handlers/learnerRequests.js';
+import { saveStudentPhoto, getStudentPhoto, deletePhotoFile } from './src/handlers/studentPhotos.js';
+import { issueTempPasses, revokeTempPass, reconcileTempPass } from './src/handlers/tempPasses.js';
 
 setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
 
@@ -135,6 +137,24 @@ export const getLearnerRequestsFn = schoolCall(getLearnerRequests);
 export const listLearnerRequestsFn = schoolCall(listLearnerRequests);
 export const resolveLearnerRequestFn = schoolCall(resolveLearnerRequest);
 export const getLearnerRequestCountFn = schoolCall(getLearnerRequestCount);
+// Learner photos (spec 2026-11-27). The handlers decide who may see or replace one.
+const photoCall = (fn) => schoolCall((deps, input) => fn({ ...deps, bucket: bucket() }, input));
+export const saveStudentPhotoFn = photoCall(saveStudentPhoto);
+export const getStudentPhotoFn = photoCall(getStudentPhoto);
+// Temporary ID passes (spec 2026-11-27): administrators and academic coordinators issue, administrators revoke.
+export const issueTempPassFn = staffCall(issueTempPasses, { timeoutSeconds: 120 });
+export const revokeTempPassFn = adminCall(revokeTempPass);
+// The pass is settled first, so a Storage failure only leaves the photo delete to retry.
+export const onStudentWritten = onDocumentWritten({ document: 'students/{studentId}', retry: true }, async (event) => {
+  const { studentId } = event.params;
+  await reconcileTempPass(db, studentId);
+  const before = event.data?.before?.data();
+  if (before?.photo && !event.data?.after?.exists) await deletePhotoFile(bucket(), studentId);
+});
+export const onEnrollmentWritten = onDocumentWritten({ document: 'enrollments/{id}', retry: true }, async (event) => {
+  const data = event.data?.after?.data() || event.data?.before?.data();
+  if (typeof data?.studentId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(data.studentId)) await reconcileTempPass(db, data.studentId);
+});
 // The SF2 workbook for a section and month, built on the server so phones never load ExcelJS (spec 2026-10-22).
 // The handler (and ExcelJS with it) loads on the first request, so it does not slow the cold start of every
 // other callable, the kiosk scan included.

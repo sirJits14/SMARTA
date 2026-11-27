@@ -1,10 +1,17 @@
 import { collection, query, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { scopedGrades } from '../../shared/staffRoles.js';
+import { passGrades } from '../../shared/tempPass.js';
 
 // Queries must prove the same grade boundary as the Firestore read rules.
 export function staffCollectionQuery(path, { me, schoolYear, sectionId, date } = {}) {
   if (!me) return null;
+  // Pass staff differ from roster staff: grade level coordinators get none.
+  if (path === 'temp_passes') {
+    const grades = passGrades(me);
+    if (grades === null) return query(collection(db, path));
+    return grades.length ? query(collection(db, path), where('gradeLevel', 'in', grades)) : null;
+  }
   const allowed = scopedGrades(me);
   // Attendance taking needs an empty successful query before the first save.
   // A missing document get cannot prove a coordinator's grade boundary.
