@@ -16,6 +16,8 @@ the old scan handler ignores `credential` / `passCode` and would apply a pass sc
 ### 1. Prerequisites
 
 - [ ] Enable Cloud Storage in the Firebase console for `bnhs-sims` so the default bucket exists.
+      Choose **production mode** (deny all). Test mode leaves files open until `storage.rules` is
+      deployed.
 - [ ] Confirm the Functions runtime configuration names that bucket (`storageBucket`) and the
       runtime service account can read and write it.
 - [ ] Deploy `storage.rules` (denies every client). A plain `firebase deploy` now includes storage
@@ -28,7 +30,10 @@ the old scan handler ignores `credential` / `passCode` and would apply a pass sc
       ask for `--force`; compare `functions:list` with the exports first.
 - [ ] Changed: `onScanEventCreated`. The live `scanAttendance.js` differs from master. Port only the
       pass check (the `temp_passes` read and the `temp_pass_inactive` rejection) onto the live
-      source; see the 2026-10-15 PM session functions record.
+      source; see the 2026-10-15 PM session functions record. The prepared tree's `shared/` must
+      contain `tempPass.js` and `staffRoles.js`, or the deploy fails at analysis.
+      Porting only the pass check leaves scans without `photoUpdatedAt`; also port that line of
+      `functions/src/lib/format.js` if scans should fill it in.
 - [ ] Changed: `getSchoolRosterFn` (adds `canEditPhotos`, `photoUpdatedAt`). Ship it from the
       prepared backend tree, as for earlier session-attendance releases.
 - [ ] Changed: functions that write `learners/*` through `learnerIdentity` (activation, access
@@ -92,3 +97,7 @@ Record each deploy under `docs/audits/deployments/`.
   server" for that one scan.
 - Rules do not re-check the pass LRN or the printed card; the scan function rejects those.
 - Photos are checked as square JPEG headers, not fully decoded.
+- If a first photo save fails part-way and the learner record is deleted later, the unreadable file
+  stays in Storage (the delete trigger removes files only for records that had a photo).
+- Not yet run end to end: the Storage emulator was never started, so uploads were tested against a
+  fake bucket and the screens against stand-in data.
