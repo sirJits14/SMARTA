@@ -84,20 +84,21 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
     return next;
   });
   const toggleAll = () => setPicked(allSelected ? new Set() : new Set(printableIds));
-  // The waiting requests are reloaded first: if any selected learner's request changed meanwhile, nothing
-  // is prepared and the list shows the change. (The server also refuses a plain pass for a requested learner.)
-  const [checking, setChecking] = useState(false);
+  // The waiting requests are reloaded first, while the tab is busy preparing: if any selected learner's
+  // request changed meanwhile, nothing is prepared and the list shows the change. (The server also refuses
+  // a plain pass for a learner with a waiting request.)
   const [changed, setChanged] = useState(false);
-  const prepare = async () => {
-    if (checking) return;
+  const prepare = () => {
     const targets = selected.map((id) => ({ studentId: id, requestId: requestOf.get(id)?.id, student: rowsById.get(id).student, section }));
     setChanged(false);
-    setChecking(true);
-    let fresh;
-    try { fresh = onRequestsChanged ? await onRequestsChanged() : pending.requests; } finally { setChecking(false); }
-    if (!fresh) return;
-    if (requestsChanged(targets, fresh)) { setChanged(true); return; }
-    printing.prepare(targets);
+    printing.prepare(targets, {
+      beforeIssue: async () => {
+        const fresh = onRequestsChanged ? await onRequestsChanged() : pending.requests;
+        if (!fresh) return false;
+        if (requestsChanged(targets, fresh)) { setChanged(true); return false; }
+        return true;
+      },
+    });
   };
 
   const nameOf = ({ studentId }) => {
@@ -135,7 +136,7 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
                 <Btn variant="ghost" disabled={printableIds.length === 0 || preparing} onClick={toggleAll}>
                   {allSelected ? 'Clear selection' : 'Select all printable'}
                 </Btn>
-                <PrintButtons printing={printing} count={selected.length} canPrepare={canPrepare && !checking} onPrepare={prepare} />
+                <PrintButtons printing={printing} count={selected.length} canPrepare={canPrepare} onPrepare={prepare} />
               </div>
             )}
           </div>

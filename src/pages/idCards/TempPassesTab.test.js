@@ -85,6 +85,7 @@ describe('temporary passes tab', () => {
   ])('holds printing back until the waiting requests are known (%o)', (state, text) => {
     const html = render({ role: 'admin' }, { pending: { requests: [], truncated: false, loading: false, error: null, ...state } });
     expect(html).toContain(text);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Prepare passes \(0\)<\/button>/);
   });
   it('waits for the waiting requests before preparing', () => {
     expect(pendingBlocksPrinting({ requests: [], loading: true })).toBe(true);

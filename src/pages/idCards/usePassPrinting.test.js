@@ -13,7 +13,7 @@ vi.mock('../../data/photos.js', () => ({
 }));
 vi.mock('../../components/TempPassPrintable.jsx', () => ({ TEMP_PASS_LOGO_URL: 'logo.png' }));
 
-import { splitTargets, preparePasses, markableRequestIds, notifiedText } from './usePassPrinting.js';
+import { splitTargets, preparePasses, markableRequestIds, notifiedText, stillCurrent, PREPARE_ABORTED } from './usePassPrinting.js';
 
 const section = { id: 'g8', gradeLevel: 8, name: 'Rizal', schoolYear: '2026-2027' };
 const student = (id, over = {}) => ({ id, firstName: 'Ana', lastName: id.toUpperCase(), lrn: `L${id}`, photo: { path: `student_photos/${id}.jpg` }, ...over });
@@ -107,6 +107,43 @@ describe('preparePasses', () => {
     expect(calls.fulfil.map((c) => c.length)).toEqual([200, 1]);
     expect(items).toHaveLength(201);
   }, 60000); // 201 real QR codes
+});
+
+describe('a selection that stops being current while preparing', () => {
+  it('asks the server for nothing when it is already stale', async () => {
+    const result = await preparePasses({ targets: [target('s1', 'r1', { photo: null }), target('s2', undefined, { photo: null })], principalName: 'P', principalTitle: 'T' },
+      { load, isCurrent: () => false });
+    expect(result).toBe(PREPARE_ABORTED);
+    expect(calls.fulfil).toEqual([]);
+    expect(calls.issue).toEqual([]);
+  });
+  it('asks the server for nothing when it changes while the photos load', async () => {
+    let current = true;
+    calls.photos = { s1: { photo: { contentBase64: 'P1' } } };
+    const { getStudentPhoto } = await import('../../data/photos.js');
+    getStudentPhoto.mockImplementationOnce(async (id) => { calls.photo.push(id); current = false; return calls.photos[id]; });
+    const result = await preparePasses({ targets: [target('s1', 'r1'), target('s2')], principalName: 'P', principalTitle: 'T' }, { load, isCurrent: () => current });
+    expect(result).toBe(PREPARE_ABORTED);
+    expect(calls.fulfil).toEqual([]);
+    expect(calls.issue).toEqual([]);
+  });
+  it('stops before the next batch once it changes', async () => {
+    let current = true;
+    calls.fulfilResult = (ids) => { current = false; return { issued: [], skipped: ids.map((requestId) => ({ requestId, studentId: '', reason: 'not-found' })) }; };
+    const targets = Array.from({ length: 201 }, (_, i) => target(`s${i}`, `r${i}`, { photo: null }));
+    expect(await preparePasses({ targets, principalName: 'P', principalTitle: 'T' }, { load, isCurrent: () => current })).toBe(PREPARE_ABORTED);
+    expect(calls.fulfil).toHaveLength(1);
+  });
+});
+
+describe('stillCurrent', () => {
+  const at = { ticket: 3, key: 'k' };
+  it('is current only while mounted, with the same run and the same selection', () => {
+    expect(stillCurrent(at, { mounted: true, ticket: 3, key: 'k' })).toBe(true);
+    expect(stillCurrent(at, { mounted: false, ticket: 3, key: 'k' })).toBe(false);
+    expect(stillCurrent(at, { mounted: true, ticket: 4, key: 'k' })).toBe(false);
+    expect(stillCurrent(at, { mounted: true, ticket: 3, key: 'other' })).toBe(false);
+  });
 });
 
 describe('markableRequestIds', () => {

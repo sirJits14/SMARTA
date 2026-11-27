@@ -34,7 +34,14 @@ export function splitTargets(targets) {
 // so such a request is never prepared (a prepared request can only be marked printed, not declined).
 // Each card is then built from the target the server answered for, and only when the server's learner
 // is that target's learner.
-export async function preparePasses({ targets, principalName, principalTitle }, { load = loadImage } = {}) {
+// Returned instead of a result when the selection stopped being current before the server was asked.
+export const PREPARE_ABORTED = undefined;
+// started: { ticket, key } when Prepare was clicked; now: { mounted, ticket, key } at this moment.
+export const stillCurrent = (started, now) => now.mounted && now.ticket === started.ticket && now.key === started.key;
+
+// isCurrent() is checked before every server call: passes are never issued (a Lost request's old code is
+// never replaced) for a selection that changed, a tab that was left or a page that was closed meanwhile.
+export async function preparePasses({ targets, principalName, principalTitle }, { load = loadImage, isCurrent = () => true } = {}) {
   const notPrepared = [];
   const unique = [];
   const seen = new Set();
@@ -66,6 +73,7 @@ export async function preparePasses({ targets, principalName, principalTitle }, 
   const byStudent = new Map(ready.filter((t) => !t.requestId).map((t) => [t.studentId, t]));
   const issued = [];
   for (const ids of chunks(requestIds)) {
+    if (!isCurrent()) return PREPARE_ABORTED;
     const result = await fulfilTempPassRequests(ids);
     for (const { requestId, studentId, code } of result?.issued ?? []) {
       const target = byRequest.get(requestId);
@@ -78,6 +86,7 @@ export async function preparePasses({ targets, principalName, principalTitle }, 
     }
   }
   for (const ids of chunks(studentIds)) {
+    if (!isCurrent()) return PREPARE_ABORTED;
     const result = await issueTempPasses(ids);
     for (const { studentId, code } of result?.issued ?? []) {
       const target = byStudent.get(studentId);
@@ -163,17 +172,26 @@ export function usePassPrinting({ principalName, principalTitle, passesById, sel
 
   const printReady = !!preview && preview.items.length > 0 && !!liveCheck?.allLive;
 
-  const prepare = (targets) => {
-    const ticket = ++run.current;
-    const startKey = selectionKey;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  // beforeIssue: optional async check run inside the same busy state (so every control preparing
+  // disables stays disabled); returning false stops quietly. The selection is re-checked after it and
+  // before every server call, so a changed selection, a left tab or a closed page never issues passes.
+  const prepare = (targets, { beforeIssue } = {}) => {
+    const started = { ticket: ++run.current, key: selectionKey };
     setPreview(null);
     setStale('');
     setDone('');
-    // A late answer (or error) for an earlier filter, section or selection is ignored.
-    const current = () => ticket === run.current && startKey === keyRef.current;
+    const current = () => stillCurrent(started, { mounted: mounted.current, ticket: run.current, key: keyRef.current });
+    const abandoned = () => {
+      if (mounted.current) setStale('The selection changed while the passes were being prepared, so nothing was prepared. Prepare the passes again.');
+    };
     return action.run('prepare', ignoreWhenStale(async () => {
-      const result = await preparePasses({ targets, principalName, principalTitle });
-      if (!current()) return;
+      if (beforeIssue && !(await beforeIssue())) return;
+      if (!current()) { abandoned(); return; }
+      const result = await preparePasses({ targets, principalName, principalTitle }, { isCurrent: current });
+      if (result === PREPARE_ABORTED || !current()) { abandoned(); return; }
       setPreview({ ...result, confirmed: new Set(), printed: false });
       onPrepared?.();
     }, current));
