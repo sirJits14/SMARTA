@@ -6,7 +6,7 @@ import { endSession, isEndingSession, reloadAfterOutsideSignOut, takeStoredSignO
 import { shouldReloadAfterSignOut } from './lib/session.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
-import { canOpen, canLoadStaffData, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
+import { canOpen, homePage, canLoadStaffData, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
@@ -78,7 +78,8 @@ export default function App() {
   const [me, setMe] = useState(undefined);
   const [passwordChangePending, setPasswordChangePending] = useState(false);
   const [notice, setNotice] = useState(startupNotice);
-  const [page, setPageRaw] = useState('dashboard');
+  // null until the first navigation: the profile, and so the home page, is not known yet.
+  const [page, setPageRaw] = useState(null);
   const [pageParams, setPageParams] = useState(null);
   const [navigationSequence, setNavigationSequence] = useState(0);
   const setPage = (next, params = null) => { if (!shouldStartNavigation(page, next, params)) return; setPageRaw(next); setPageParams(params); setNavigationSequence(n => n + 1); };
@@ -151,8 +152,8 @@ export default function App() {
   }} /></>;
   if (!canLoadStaffData(me, false, authTime)) return <BootLoader />;
 
-  // A page this role can't open (stale state, or a role change) falls back to the dashboard.
-  const shown = canOpen(me, page) ? page : 'dashboard';
+  // No page chosen yet, or one this role can't open (stale state, a role change): the role's home page.
+  const shown = canOpen(me, page) ? page : homePage(me);
 
   return (
     <>

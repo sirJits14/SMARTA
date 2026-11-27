@@ -11,7 +11,8 @@ import StudentForm from './StudentForm.jsx';
 import ImportStudentsWizard from './ImportStudentsWizard.jsx';
 import StudentPhotoDialog from '../components/StudentPhotoDialog.jsx';
 import { currentEnrollmentByStudent } from '../lib/enrollmentChange.js';
-import { isAdmin, canManagePhotos, grades, gradeOptions, singleGrade, scopeRoster } from '../lib/access.js';
+import { isAdmin, canManagePhotos, studentListGrades, singleGrade, scopeRoster } from '../lib/access.js';
+import { ALL_GRADES } from '../../shared/staffRoles.js';
 
 const PAGE_SIZE = 100;
 
@@ -22,8 +23,11 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
   const admin = isAdmin(me);
   const photos = canManagePhotos(me);
   const oneGrade = singleGrade(me);
+  // null for administrators and logistic operators, who list every grade.
+  const listGrades = studentListGrades(me);
+  const everyGrade = listGrades === null;
   const { students, sections, enrollments } = useMemo(() => scopeRoster(
-    { students: studentsResource.data, sections: sectionsResource.data, enrollments: enrollmentsResource.data }, grades(me), schoolYear),
+    { students: studentsResource.data, sections: sectionsResource.data, enrollments: enrollmentsResource.data }, studentListGrades(me), schoolYear),
     [studentsResource.data, sectionsResource.data, enrollmentsResource.data, me, schoolYear]);
   const [q, setQ] = useState(''); const [status, setStatus] = useState(initialStatus || '');
   const [gradeFilter, setGradeFilter] = useState(initialGradeFilter || ''); const [sectionFilter, setSectionFilter] = useState('');
@@ -82,27 +86,28 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
           <div style={{ minWidth: 160 }}>
             <Field label="Status"><Sel value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All statuses</option>{STUDENT_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-              {admin && <option value={UNASSIGNED}>No Section Assigned</option>}
+              {everyGrade && <option value={UNASSIGNED}>No Section Assigned</option>}
             </Sel></Field>
           </div>
           {!oneGrade && <div style={{ minWidth: 140 }}>
             <Field label="Grade"><Sel value={gradeFilter} onChange={(e) => setGradeFilterAndReset(e.target.value)}>
               <option value="">All grades</option>
-              {gradeOptions(me).map((g) => <option key={g} value={g}>Grade {g}</option>)}
-              {admin && <option value={UNASSIGNED}>Unassigned</option>}
+              {(listGrades ?? ALL_GRADES).map((g) => <option key={g} value={g}>Grade {g}</option>)}
+              {everyGrade && <option value={UNASSIGNED}>Unassigned</option>}
             </Sel></Field>
           </div>}
           <div style={{ minWidth: 160 }}>
             <Field label="Section"><Sel value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)} disabled={!oneGrade && gradeFilter === UNASSIGNED}>
               <option value="">All sections</option>
               {sectionsForGradeFilter.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              {admin && <option value={UNASSIGNED}>No Section Assigned</option>}
+              {everyGrade && <option value={UNASSIGNED}>No Section Assigned</option>}
             </Sel></Field>
           </div>
         </div>
         {rows.length === 0 ? (filtering
           ? <EmptyState title={searchQuery.trim() ? `No learners match “${searchQuery.trim()}”` : 'No learners match these filters'} hint="Try another name, LRN or filter." />
-          : <EmptyState title="No learners yet" hint={admin ? 'Add your first learner with the button above.' : 'No learners are enrolled in your grade levels this school year.'} />) : (
+          : <EmptyState title="No learners yet" hint={admin ? 'Add your first learner with the button above.'
+            : everyGrade ? 'No learners are enrolled this school year.' : 'No learners are enrolled in your grade levels this school year.'} />) : (
           <div style={{ overflowX: 'auto' }}>
             <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr style={S.thead}>

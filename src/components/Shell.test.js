@@ -3,9 +3,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const waiting = vi.hoisted(() => ({ count: 0, truncated: false }));
+const asked = vi.hoisted(() => ({ learnerRequests: [], schoolAccess: [] }));
 vi.mock('../firebase.js', () => ({ functions: {} }));
-vi.mock('../hooks/useLearnerRequestCount.js', () => ({ useLearnerRequestCount: () => waiting }));
-vi.mock('../hooks/useSchoolPendingCount.js', () => ({ useSchoolPendingCount: () => 0 }));
+vi.mock('../hooks/useLearnerRequestCount.js', () => ({ useLearnerRequestCount: (enabled) => { asked.learnerRequests.push(enabled); return waiting; } }));
+vi.mock('../hooks/useSchoolPendingCount.js', () => ({ useSchoolPendingCount: (enabled) => { asked.schoolAccess.push(enabled); return 0; } }));
 vi.mock('../hooks/useTheme.js', () => ({ useTheme: () => ({ pref: 'auto', theme: 'light', setPref() {} }) }));
 
 import Shell from './Shell.jsx';
@@ -13,13 +14,27 @@ import Shell from './Shell.jsx';
 const admin = { role: 'registrar', email: 'admin@deped.gov.ph', displayName: 'Ada Admin' };
 // The shell reads the window's width for the sidebar and has no storage here, so it opens expanded at 1280 and
 // as the narrow rail at 900.
-const shell = (width) => {
+const shell = (width, me = admin, page = 'dashboard') => {
   globalThis.window = { innerWidth: width };
-  return renderToStaticMarkup(React.createElement(Shell, { me: admin, page: 'dashboard', setPage() {}, schoolYear: '2026-2027', onLogout() {} }));
+  return renderToStaticMarkup(React.createElement(Shell, { me, page, setPage() {}, schoolYear: '2026-2027', onLogout() {} }));
 };
 const badge = (html) => html.match(/<span class="sims-count-badge">.*?<\/span><\/span>/)?.[0] ?? '';
 
-afterEach(() => { delete globalThis.window; waiting.count = 0; waiting.truncated = false; });
+afterEach(() => { delete globalThis.window; waiting.count = 0; waiting.truncated = false; asked.learnerRequests = []; asked.schoolAccess = []; });
+
+describe('the shell for a logistic operator', () => {
+  const logistic = { role: 'logistic', email: 'logistics@deped.gov.ph', name: 'Lo Gistic' };
+  it('lists only Students and ID Cards and names the role', () => {
+    const html = shell(1280, logistic, 'idcards');
+    expect([...html.matchAll(/<button class="sims-nav-item".*?<span class="">([^<]*)<\/span>/g)].map((m) => m[1])).toEqual(['Students', 'ID Cards']);
+    expect(html).toContain('Logistic Operator');
+    expect(html).toContain('<li aria-current="page">ID Cards</li>');
+  });
+  it('asks for neither sidebar count, which the role may not load', () => {
+    shell(1280, logistic, 'idcards');
+    expect(asked).toEqual({ learnerRequests: [false], schoolAccess: [false] });
+  });
+});
 
 describe('the Learner requests badge in the sidebar', () => {
   it('shows nothing when no request is waiting', () => {

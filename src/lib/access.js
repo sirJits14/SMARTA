@@ -7,27 +7,35 @@ export { sectionEditSchoolYears } from '../../shared/sectionEditing.js';
 // Every page/permission decision the SIMS app makes about the signed-in staff
 // member. Pages ask here; nothing else compares role strings.
 const COORDINATOR_PAGES = ['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements'];
+// Grade level coordinators also open ID Cards, for their grade's temporary passes.
+const PASS_COORDINATOR_PAGES = ['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'idcards', 'announcements'];
+// Logistic operators print passes and add learner photos, and nothing else. The first page is where they start.
+const LOGISTIC_PAGES = ['idcards', 'students'];
 export const DISABLED_MESSAGE = 'This account has been disabled. Contact an administrator.';
 
 export const isAdmin = (me) => roleOf(me) === 'admin';
 export const canEditSection = (me, section, currentSchoolYear) => isAdmin(me)
   || coordinatorCanEditSection(me, section, currentSchoolYear);
 export const grades = (me) => scopedGrades(me);
-// Learner photos follow the temporary pass staff: administrators and academic coordinators.
+// Learner photos follow the temporary pass staff: administrators, grade level coordinators and logistic operators.
 export const canManagePhotos = (me) => canManagePasses(me);
-// Academic coordinators also open ID Cards, where they see only Temporary passes.
-const PASS_COORDINATOR_PAGES = ['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'idcards', 'announcements'];
 export function allowedPages(me) {
   if (!roleOf(me)) return [];
   if (isAdmin(me)) return NAV_ITEMS.map((item) => item.key);
+  if (roleOf(me) === 'logistic') return LOGISTIC_PAGES;
   return canManagePasses(me) ? PASS_COORDINATOR_PAGES : COORDINATOR_PAGES;
 }
 export const canOpen = (me, page) => allowedPages(me).includes(page);
+// Where this person starts, and where a page they can't open falls back to.
+export const homePage = (me) => allowedPages(me)[0] ?? 'dashboard';
 export const canLoadStaffData = (me, passwordChangePending = false, authTime = 0) =>
   !!me && !me.mustChangePassword && !passwordChangePending
     && Number.isSafeInteger(me.sessionValidAfter ?? 0) && (me.sessionValidAfter ?? 0) >= 0
     && Number.isSafeInteger(authTime) && authTime >= (me.sessionValidAfter ?? 0);
 export const gradeOptions = (me) => grades(me) ?? ALL_GRADES;
+// The grades whose learners the Students page lists (null = every grade). Logistic operators
+// add photos for every grade there, although they have no general grade scope.
+export const studentListGrades = (me) => (roleOf(me) === 'logistic' ? null : grades(me));
 export function singleGrade(me) {
   const g = grades(me);
   return g && g.length === 1 ? g[0] : null;
