@@ -35,11 +35,16 @@ export function usePassRequestList(status, enabled = true) {
   const reload = useCallback(async () => {
     const mine = ++ticket.current;
     setState((s) => ({ ...(s.status === status ? s : { requests: [], truncated: false }), status, loading: true, error: null }));
+    // Resolves to the fresh requests, or null when the load failed or a newer one overtook it.
     try {
       const result = await listTempPassRequests(status);
-      if (mine === ticket.current) setState({ status, requests: result?.requests ?? [], truncated: !!result?.truncated, loading: false, error: null });
+      if (mine !== ticket.current) return null;
+      const requests = result?.requests ?? [];
+      setState({ status, requests, truncated: !!result?.truncated, loading: false, error: null });
+      return requests;
     } catch (error) {
       if (mine === ticket.current) setState((s) => ({ ...s, loading: false, error }));
+      return null;
     }
   }, [status]);
   useEffect(() => {
@@ -124,14 +129,15 @@ export default function PassRequestsTab({ me, schoolYear, sections, enrollments,
   const waiting = useMemo(() => pending?.requests ?? [], [pending]);
   const targetOf = useMemo(() => new Map(requestTargets(waiting, { studentsById, enrolled, sectionsById }).map((t) => [t.requestId, t])),
     [waiting, studentsById, enrolled, sectionsById]);
-  // A prepared request is printed and marked, never declined (the server refuses), so a blocker does not hold it back.
-  const tickable = useCallback((r) => (r.prepared || !r.blocker) && targetOf.has(r.id), [targetOf]);
+  // A request that can no longer be met is declined, even when prepared (the server allows that), never printed.
+  const tickable = useCallback((r) => !r.blocker && targetOf.has(r.id), [targetOf]);
   const printableIds = useMemo(() => waiting.filter(tickable).map((r) => r.id), [waiting, tickable]);
 
   const [picked, setPicked] = useState(() => new Set());
   const selected = useMemo(() => printableIds.filter((id) => picked.has(id)), [printableIds, picked]);
   const allSelected = printableIds.length > 0 && selected.length === printableIds.length;
-  const selectionKey = previewKey({ sectionId: `requests:${filter}`, principalName, principalTitle,
+  // The selection does not depend on the filter, so the filter is not part of the key.
+  const selectionKey = previewKey({ sectionId: 'requests', principalName, principalTitle,
     learners: selected.map((requestId) => {
       const { studentId, student, section } = targetOf.get(requestId);
       return { id: studentId, name: fullName(student), lrn: student.lrn, requestId, photo: student.photo?.path, sectionLine: passSectionLine(section) };
@@ -213,7 +219,7 @@ export default function PassRequestsTab({ me, schoolYear, sections, enrollments,
                 </tr></thead>
                 <tbody>{rows.map((r) => {
                   const name = nameOfRequest(r);
-                  const suggest = isWaiting && r.blocker && !r.prepared;
+                  const suggest = isWaiting && !!r.blocker;
                   const missing = isWaiting && !suggest && !targetOf.has(r.id);
                   return (
                     <tr key={r.id}>
@@ -239,7 +245,7 @@ export default function PassRequestsTab({ me, schoolYear, sections, enrollments,
                       <td style={{ ...S.td, minWidth: 180, maxWidth: 320, overflowWrap: 'break-word' }}>{r.note || '—'}</td>
                       <td style={S.td}>{r.hasPhoto ? 'Yes' : <Badge tone="neutral">No photo</Badge>}</td>
                       {isWaiting && <td style={S.tdActions}>
-                        {!r.prepared && (
+                        {(!r.prepared || r.blocker) && (
                           <Btn variant="ghost-danger" aria-label={`Decline the request for ${name}`} disabled={preparing}
                             onClick={() => { setDeclined(''); setDeclining(r); }}>Decline</Btn>
                         )}

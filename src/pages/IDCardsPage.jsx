@@ -63,7 +63,8 @@ export default function IDCardsPage({ me, schoolYear }) {
   const pending = usePassRequestList('pending', printer);
   const setTab = (next) => {
     setTabState(next);
-    if (next === 'requests' && printer) pending.reload();
+    // Both pass tabs route learners with a waiting request through it, so they need a fresh list.
+    if (PASS_TAB_KEYS.includes(next) && printer) pending.reload();
     try { localStorage.setItem(STORAGE, next); } catch { /* the tab still switches without storage */ }
   };
   const labelOf = (k, label) => (k === 'requests' ? requestsTabLabel(pending.requests.length, pending.truncated) : label);

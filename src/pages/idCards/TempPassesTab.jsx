@@ -6,13 +6,22 @@ import { revokeTempPass } from '../../data/tempPasses.js';
 import { passGrades } from '../../../shared/tempPass.js';
 import { isAdmin } from '../../lib/access.js';
 import { depedSort, fullName } from '../../lib/roster.js';
-import { passRowStatus, previewKey } from '../../lib/tempPass.js';
+import { passRowStatus, passSectionLine, previewKey } from '../../lib/tempPass.js';
 import { S, T } from '../../styles.js';
 import { usePassPrinting } from './usePassPrinting.js';
 import { NotPreparedList, PrintButtons, PrintMessages } from './PassPrintParts.jsx';
 
 const sectionLabel = (s) => `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}`;
 const NO_REQUESTS = { requests: [] };
+
+// A learner with a waiting request must be printed through it (a Lost request replaces the lost code),
+// so nothing is prepared here until the waiting requests are known.
+export const pendingBlocksPrinting = (pending) => !!(pending?.loading || pending?.error);
+// selected: [{ studentId, requestId? }] as prepared; fresh: the reloaded waiting requests.
+export function requestsChanged(selected, fresh) {
+  const waitingFor = new Map(fresh.filter((r) => r.status === 'pending' && r.studentId).map((r) => [r.studentId, r.id]));
+  return selected.some(({ studentId, requestId }) => (waitingFor.get(studentId) ?? null) !== (requestId ?? null));
+}
 
 // pending: the waiting requests ({ requests }) from listTempPassRequests. A learner with one is
 // prepared through it, and "Mark as printed" then closes it, exactly as in the Requests tab.
@@ -23,7 +32,8 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
   const principalName = String(settingsResource.data?.principalName ?? '').trim();
   const principalTitle = String(settingsResource.data?.principalTitle ?? '').trim();
   const principalMissing = !settingsResource.loading && (!principalName || !principalTitle);
-  const canPrepare = !settingsResource.loading && !principalMissing;
+  const pendingBlocked = pendingBlocksPrinting(pending);
+  const canPrepare = !settingsResource.loading && !principalMissing && !pendingBlocked;
 
   const sectionsSY = useMemo(() => sections
     .filter((s) => s.schoolYear === schoolYear && (grades === null || grades.includes(Number(s.gradeLevel))))
@@ -59,7 +69,7 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
   const selectionKey = previewKey({ sectionId: section?.id, principalName, principalTitle,
     learners: selected.map((id) => {
       const s = rowsById.get(id).student;
-      return { id, name: fullName(s), lrn: s.lrn, requestId: requestOf.get(id)?.id, photo: s.photo?.path };
+      return { id, name: fullName(s), lrn: s.lrn, requestId: requestOf.get(id)?.id, photo: s.photo?.path, sectionLine: passSectionLine(section) };
     }) });
 
   const printing = usePassPrinting({ principalName, principalTitle, passesById: livePasses, selectionKey,
@@ -74,9 +84,21 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
     return next;
   });
   const toggleAll = () => setPicked(allSelected ? new Set() : new Set(printableIds));
-  const prepare = () => printing.prepare(selected.map((id) => ({
-    studentId: id, requestId: requestOf.get(id)?.id, student: rowsById.get(id).student, section,
-  })));
+  // The waiting requests are reloaded first: if any selected learner's request changed meanwhile, nothing
+  // is prepared and the list shows the change. (The server also refuses a plain pass for a requested learner.)
+  const [checking, setChecking] = useState(false);
+  const [changed, setChanged] = useState(false);
+  const prepare = async () => {
+    if (checking) return;
+    const targets = selected.map((id) => ({ studentId: id, requestId: requestOf.get(id)?.id, student: rowsById.get(id).student, section }));
+    setChanged(false);
+    setChecking(true);
+    let fresh;
+    try { fresh = onRequestsChanged ? await onRequestsChanged() : pending.requests; } finally { setChecking(false); }
+    if (!fresh) return;
+    if (requestsChanged(targets, fresh)) { setChanged(true); return; }
+    printing.prepare(targets);
+  };
 
   const nameOf = ({ studentId }) => {
     const student = rowsById.get(studentId)?.student ?? students.find((s) => s.id === studentId);
@@ -88,6 +110,17 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
       <div className="id-cards-controls" style={{ fontFamily: T.body, color: T.ink }}>
         <Card style={{ padding: 20, marginBottom: 16 }}>
           <PrintMessages printing={printing} admin={admin} principalMissing={principalMissing} />
+          {pending?.loading && <p role="status" style={{ margin: '0 0 8px', fontSize: 13 }}>Checking waiting requests…</p>}
+          {pending?.error && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+              <p role="alert" className="sims-feedback" style={{ margin: 0 }}>Could not load the waiting requests. Printing is paused so a requested pass is not printed here by mistake.</p>
+              {onRequestsChanged && <Btn variant="ghost" onClick={() => onRequestsChanged()}>Try again</Btn>}
+            </div>
+          )}
+          {pending?.truncated && (
+            <p role="alert" className="sims-feedback">More than 200 requests are waiting. A learner with a waiting request is printed from Requests.</p>
+          )}
+          {changed && <p role="status" style={{ margin: '0 0 8px', fontSize: 13 }}>Waiting requests changed for the selected learners. Check the list and prepare again.</p>}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ minWidth: 'min(260px, 100%)' }}>
               <Field label="Section">
@@ -102,7 +135,7 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
                 <Btn variant="ghost" disabled={printableIds.length === 0 || preparing} onClick={toggleAll}>
                   {allSelected ? 'Clear selection' : 'Select all printable'}
                 </Btn>
-                <PrintButtons printing={printing} count={selected.length} canPrepare={canPrepare} onPrepare={prepare} />
+                <PrintButtons printing={printing} count={selected.length} canPrepare={canPrepare && !checking} onPrepare={prepare} />
               </div>
             )}
           </div>

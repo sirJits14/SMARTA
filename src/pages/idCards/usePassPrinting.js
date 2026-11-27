@@ -125,10 +125,15 @@ export function usePassPrinting({ principalName, principalTitle, passesById, sel
   const keyRef = useRef(selectionKey);
   keyRef.current = selectionKey;
 
+  // Say so when a change (the user's, or a reloaded list) discards a preview that was shown.
+  const shown = useRef(false);
+  shown.current = !!preview;
+  const firstKey = useRef(true);
   useEffect(() => {
     run.current += 1;
+    if (firstKey.current) { firstKey.current = false; return; }
+    setStale(shown.current ? 'The selection or a learner’s record changed, so the preview was cleared. Prepare the passes again.' : '');
     setPreview(null);
-    setStale('');
   }, [selectionKey]);
 
   // A prepared pass that stops being active with its code and LRN must not stay printable.

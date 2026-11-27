@@ -50,6 +50,7 @@ const SKIP_REASONS = {
   'photo-unavailable': 'the photo could not be loaded',
   'qr-failed': 'the QR code could not be made',
   'not-pending': 'the request was already handled',
+  requested: 'Has a waiting request — print it from Requests',
 };
 export const skipReasonText = (reason) => SKIP_REASONS[reason] ?? 'could not be prepared';
 

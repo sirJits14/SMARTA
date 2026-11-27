@@ -75,10 +75,12 @@ describe('pass requests tab', () => {
     expect(diaz).not.toContain('Decline suggested');
     expect(diaz).not.toMatch(/<input[^>]*disabled=""/);
   });
-  it('never suggests declining a prepared request, even when it is blocked', () => {
-    const html = render({ role: 'logistic' }, { pending: { requests: [request('r3', 's3', { blocker: 'official-printed', prepared: true })], truncated: false, loading: false, error: null } });
-    expect(html).not.toContain('Decline suggested');
-    expect(html).not.toContain('>Decline<');
+  it('suggests declining a prepared request that can no longer be met, and keeps it from being ticked', () => {
+    const html = render({ role: 'logistic' }, { pending: { requests: [request('r3', 's3', { blocker: 'not-in-class', prepared: true })], truncated: false, loading: false, error: null } });
+    expect(html).toContain('>Decline suggested<');
+    expect(html).toContain('>Decline<');
+    expect(html).toContain('>Prepared<');
+    expect(html).toMatch(/<input[^>]*aria-label="Select CRUZ, ANA"[^>]*disabled=""/);
   });
   it('says when only the first 200 requests are shown', () => {
     expect(render({ role: 'logistic' })).not.toContain('first 200');

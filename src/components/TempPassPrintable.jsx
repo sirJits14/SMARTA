@@ -52,7 +52,8 @@ export function TempPassCard({ name, sectionLine, lrn, photoSrc, qrSrc, principa
     <svg className="temp-pass-card" viewBox="0 0 591 937" role="img" aria-label={`Temporary ID pass for ${name}`}
       xmlns="http://www.w3.org/2000/svg" fontFamily="Arial, Helvetica, sans-serif">
       <rect width="591" height="937" fill="#FFF8F1" />
-      <path d="M0 0H473V40C473 130 450 175 415 215V300H0Z" fill="#00BF63" />
+      {/* The green ends behind the 1 × 1 inch photo (x ≤ 386 from y 190), as in the reference. */}
+      <path d="M0 0H473V40C473 120 440 165 380 190V300H0Z" fill="#00BF63" />
       <image href={logoUrl} x="17" y="38" width="82" height="82" />
       <text x="122" y="75" fontSize="28" fontWeight="700" fill={INK}>BUKIDNON NATIONAL</text>
       <text x="122" y="104" fontSize="28" fontWeight="700" fill={INK}>HIGH SCHOOL</text>

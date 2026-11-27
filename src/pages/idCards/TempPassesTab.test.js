@@ -17,7 +17,7 @@ vi.mock('../../hooks/useCollection.js', () => ({
   useStaffCollectionResource: (path, { me }) => { fixture.subscribed.push(['staff', path, me?.role]); return { data: [], loading: false, error: null }; },
 }));
 
-import TempPassesTab from './TempPassesTab.jsx';
+import TempPassesTab, { pendingBlocksPrinting, requestsChanged } from './TempPassesTab.jsx';
 import IDCardsPage, { requestsTabLabel } from '../IDCardsPage.jsx';
 
 const h = React.createElement;
@@ -77,6 +77,26 @@ describe('temporary passes tab', () => {
     // In Bautista's own row.
     expect(html).toMatch(/BAUTISTA, ANA<\/td>(?:(?!<\/tr>)[\s\S])*>Requested</);
     expect(render({ role: 'admin' })).not.toContain('>Requested<');
+  });
+  it.each([
+    [{ loading: true }, 'Checking waiting requests…'],
+    [{ error: new Error('x') }, 'Could not load the waiting requests. Printing is paused so a requested pass is not printed here by mistake.'],
+    [{ truncated: true }, 'More than 200 requests are waiting. A learner with a waiting request is printed from Requests.'],
+  ])('holds printing back until the waiting requests are known (%o)', (state, text) => {
+    const html = render({ role: 'admin' }, { pending: { requests: [], truncated: false, loading: false, error: null, ...state } });
+    expect(html).toContain(text);
+  });
+  it('waits for the waiting requests before preparing', () => {
+    expect(pendingBlocksPrinting({ requests: [], loading: true })).toBe(true);
+    expect(pendingBlocksPrinting({ requests: [], error: new Error('x') })).toBe(true);
+    expect(pendingBlocksPrinting({ requests: [], truncated: true })).toBe(false);
+    expect(pendingBlocksPrinting({ requests: [] })).toBe(false);
+  });
+  it('sees a changed request before preparing', () => {
+    const selected = [{ studentId: 's1', requestId: 'r1' }, { studentId: 's2' }];
+    expect(requestsChanged(selected, [{ id: 'r1', studentId: 's1', status: 'pending' }])).toBe(false);
+    expect(requestsChanged(selected, [{ id: 'r1', studentId: 's1', status: 'pending' }, { id: 'r2', studentId: 's2', status: 'pending' }])).toBe(true);
+    expect(requestsChanged(selected, [])).toBe(true);
   });
   it('offers Revoke for an active pass to administrators only', () => {
     expect(render({ role: 'admin' })).toContain('>Revoke<');

@@ -46,6 +46,10 @@ describe('temporary pass card', () => {
     expect(html).toContain('<image href="data:image/jpeg;base64,AAAA" x="209" y="190" width="177" height="177"');
     expect(html).not.toContain('Attach 1×1 photo');
   });
+  it('ends the green header behind the photo, never beside it', () => {
+    const html = renderToStaticMarkup(h(TempPassCard, props));
+    expect(html).toContain('<path d="M0 0H473V40C473 120 440 165 380 190V300H0Z" fill="#00BF63"');
+  });
   it('draws a dashed frame to attach a photo when the learner has none', () => {
     const html = renderToStaticMarkup(h(TempPassCard, { ...props, photoSrc: null }));
     expect(html).toContain('<rect x="209" y="190" width="177" height="177" fill="#FFFFFF" stroke="#555555" stroke-width="2" stroke-dasharray="8 6"');
