@@ -140,3 +140,14 @@ describe('canIssueAdvisorySlip', () => {
     expect(canIssueAdvisorySlip({ role: 'bogus' }, { gradeLevel: 7 })).toBe(false);
   });
 });
+
+describe('learner photos', () => {
+  it('lets administrators and academic coordinators manage them, not grade coordinators', () => {
+    for (const me of [{ role: 'admin' }, { role: 'registrar' }, { role: 'jhs_coord' }, { role: 'shs_coord' }]) {
+      expect(access.canManagePhotos(me)).toBe(true);
+    }
+    for (const me of [{ role: 'glc', gradeLevel: 8 }, { role: 'subject_teacher' }, null]) {
+      expect(access.canManagePhotos(me)).toBe(false);
+    }
+  });
+});

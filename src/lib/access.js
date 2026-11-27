@@ -1,6 +1,7 @@
 import { roleOf, scopedGrades, ALL_GRADES } from '../../shared/staffRoles.js';
 import { NAV_ITEMS } from './navigation.js';
 import { coordinatorCanEditSection } from '../../shared/sectionEditing.js';
+import { canManagePasses } from '../../shared/tempPass.js';
 export { sectionEditSchoolYears } from '../../shared/sectionEditing.js';
 
 // Every page/permission decision the SIMS app makes about the signed-in staff
@@ -12,6 +13,8 @@ export const isAdmin = (me) => roleOf(me) === 'admin';
 export const canEditSection = (me, section, currentSchoolYear) => isAdmin(me)
   || coordinatorCanEditSection(me, section, currentSchoolYear);
 export const grades = (me) => scopedGrades(me);
+// Learner photos follow the temporary pass staff: administrators and academic coordinators.
+export const canManagePhotos = (me) => canManagePasses(me);
 export function allowedPages(me) {
   if (!roleOf(me)) return [];
   return isAdmin(me) ? NAV_ITEMS.map((item) => item.key) : COORDINATOR_PAGES;

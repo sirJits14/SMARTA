@@ -9,8 +9,9 @@ import { T, S } from '../styles.js';
 import { Badge, Btn, Inp, Sel, Field, Card, Confirm, EmptyState, RowMenu } from '../components/ui.jsx';
 import StudentForm from './StudentForm.jsx';
 import ImportStudentsWizard from './ImportStudentsWizard.jsx';
+import StudentPhotoDialog from '../components/StudentPhotoDialog.jsx';
 import { currentEnrollmentByStudent } from '../lib/enrollmentChange.js';
-import { isAdmin, grades, gradeOptions, singleGrade, scopeRoster } from '../lib/access.js';
+import { isAdmin, canManagePhotos, grades, gradeOptions, singleGrade, scopeRoster } from '../lib/access.js';
 
 const PAGE_SIZE = 100;
 
@@ -19,6 +20,7 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
   const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
   const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
   const admin = isAdmin(me);
+  const photos = canManagePhotos(me);
   const oneGrade = singleGrade(me);
   const { students, sections, enrollments } = useMemo(() => scopeRoster(
     { students: studentsResource.data, sections: sectionsResource.data, enrollments: enrollmentsResource.data }, grades(me), schoolYear),
@@ -27,6 +29,7 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
   const [gradeFilter, setGradeFilter] = useState(initialGradeFilter || ''); const [sectionFilter, setSectionFilter] = useState('');
   const [form, setForm] = useState(null); const [confirm, setConfirm] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [photoFor, setPhotoFor] = useState(null);
 
   const sectionsSY = useMemo(() =>
     sections.filter((s) => s.schoolYear === schoolYear).sort((a, b) => a.gradeLevel - b.gradeLevel || a.name.localeCompare(b.name)),
@@ -117,9 +120,12 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
                     <td style={S.td}>{en ? `Grade ${en.gradeLevel}` : 'Unassigned'}</td>
                     <td style={S.td}>{sec ? sec.name : 'Unassigned'}</td>
                     <td style={S.tdActions}>
-                      {admin && <span className="sims-row-actions">
-                        <Btn variant="ghost" onClick={() => setForm(s)}>Edit</Btn>
-                        <RowMenu label={`More actions for ${fullName(s)}`} items={[{ label: 'Delete', danger: true, onSelect: () => setConfirm(s) }]} />
+                      {(admin || photos) && <span className="sims-row-actions">
+                        {photos && <Btn variant="ghost" onClick={() => setPhotoFor(s)}>Photo</Btn>}
+                        {admin && <>
+                          <Btn variant="ghost" onClick={() => setForm(s)}>Edit</Btn>
+                          <RowMenu label={`More actions for ${fullName(s)}`} items={[{ label: 'Delete', danger: true, onSelect: () => setConfirm(s) }]} />
+                        </>}
                       </span>}
                     </td>
                   </tr>
@@ -136,6 +142,7 @@ export default function StudentsPage({ me, schoolYear, initialGradeFilter, initi
       </ResourceState>
       {form && <StudentForm students={students} editing={form.id ? form : null} sections={sections} enrollments={enrollments} schoolYear={schoolYear} onClose={() => setForm(null)} />}
       {confirm && <Confirm message={`Delete ${fullName(confirm)}? This cannot be undone.`} onYes={async () => { await deleteStudent(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
+      {photoFor && <StudentPhotoDialog key={photoFor.id} student={photoFor} onClose={() => setPhotoFor(null)} />}
       {importOpen && <ImportStudentsWizard students={students} sections={sections} schoolYear={schoolYear} onClose={() => setImportOpen(false)} />}
     </div></EditorResources>
   );
