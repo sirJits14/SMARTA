@@ -235,6 +235,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--t-primary); }
   letter-spacing: 0.02em;
 }
 .page-header-avatar--small { width: 32px; height: 32px; font-size: 12px; }
+.page-header-avatar--photo { object-fit: cover; }
 .page-header-expanded { padding: 12px 0 18px; }
 .page-header-title {
   margin: 0 0 2px;

@@ -5,6 +5,8 @@ import S from '../strings.js';
 import { Btn, Banner, Spinner, EmptyState } from '../components/ui.jsx';
 import { Bubble, DayDivider } from '../components/Bubble.jsx';
 import { useDoc } from '../hooks/useDoc.js';
+import { useStudentPhoto } from '../hooks/useStudentPhoto.js';
+import { photoVersion } from '../lib/studentPhoto.js';
 import { eventTitle, latestScanToday, nameCase } from '../lib/format.js';
 import { historyThread } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
@@ -31,6 +33,7 @@ function eventMeta(ev) {
 
 export default function History({ user, studentId, navigate, route }) {
   const { data: learner, error } = useDoc(`learners/${studentId}`);
+  const photo = useStudentPhoto(studentId, photoVersion(learner, error, studentId));
   // Session attendance opens on request, or straight away from an
   // "Attendance updated" notification (?date=…&session=…).
   const [sessionsOpen, setSessionsOpen] = useState(Boolean(route.query.date));
@@ -70,7 +73,7 @@ export default function History({ user, studentId, navigate, route }) {
   const today = localDate();
   return (
     <>
-      <PageHeader title={nameCase(learner?.displayName)} avatarName={learner?.displayName} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
+      <PageHeader title={nameCase(learner?.displayName)} avatarName={learner?.displayName} avatarSrc={photo} subtitle={learner && `${learner.sectionLabel} · ${S.historyTitle}`}
         status={learner && latestScanToday(learner.today, today)} onBack={() => navigate('/')}
         action={learner && !error && (
           <button type="button" className="page-header-icon-btn" aria-label={S.sessionButton} title={S.sessionButton}

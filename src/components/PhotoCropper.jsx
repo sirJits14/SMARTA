@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MAX_ZOOM, initialView, clampView } from '../../shared/studentPhoto.js';
 import { imageSize, drawCrop, exportPhoto, decodeImage, captureFrame, panView, keyView } from '../lib/photoCanvas.js';
-import { createCamera, createCropSettler } from '../lib/photoSession.js';
+import { createCamera, createCropSettler } from '../../shared/photoSession.js';
 import { Btn, Field } from './ui.jsx';
 
 export const CAMERA_UNAVAILABLE = 'The camera is not available. Choose a file instead.';

@@ -1,19 +1,21 @@
 // The two things in the photo cropper that finish later and can finish too late:
-// opening the camera, and encoding the crop.
+// opening the camera, and encoding the crop. Shared by SIMS and the Parent App.
 export const CAMERA_CONSTRAINTS = { video: { facingMode: 'environment', width: { ideal: 1280 } }, audio: false };
 
 const stopTracks = (stream) => stream?.getTracks().forEach((track) => track.stop());
 
 // One camera at a time. start() resolves to null when stop() or a newer start()
-// overtook it, and stops whatever that late request opened.
-export function createCamera(devices = () => globalThis.navigator?.mediaDevices) {
+// overtook it, and stops whatever that late request opened. onEnded() is called
+// when the open camera stops by itself (unplugged, taken by another app, or the
+// permission withdrawn); stopping it here does not count.
+export function createCamera(devices = () => globalThis.navigator?.mediaDevices, onEnded = () => {}) {
   let stream = null;
   let turn = 0;
-  const stop = () => { turn += 1; stopTracks(stream); stream = null; };
+  const close = () => { turn += 1; stopTracks(stream); stream = null; };
   return {
-    stop,
+    stop: close,
     async start() {
-      stop();
+      close();
       const mine = turn;
       let opened;
       try {
@@ -24,6 +26,8 @@ export function createCamera(devices = () => globalThis.navigator?.mediaDevices)
       }
       if (mine !== turn) { stopTracks(opened); return null; }
       stream = opened;
+      const ended = () => { if (mine !== turn) return; close(); onEnded(); };
+      opened.getTracks().forEach((track) => track.addEventListener?.('ended', ended));
       return opened;
     },
   };

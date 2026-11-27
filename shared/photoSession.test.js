@@ -10,6 +10,16 @@ const fakeStream = (count = 2) => {
   const tracks = Array.from({ length: count }, () => ({ stop: vi.fn() }));
   return { tracks, getTracks: () => tracks };
 };
+// Tracks that can report ending on their own, as a real MediaStreamTrack does.
+const listeningStream = () => {
+  const stream = fakeStream();
+  stream.tracks.forEach((track) => {
+    const heard = [];
+    track.addEventListener = (type, listener) => { if (type === 'ended') heard.push(listener); };
+    track.end = () => heard.forEach((listener) => listener());
+  });
+  return stream;
+};
 const stopped = (stream) => stream.tracks.every((t) => t.stop.mock.calls.length > 0);
 const running = (stream) => stream.tracks.every((t) => t.stop.mock.calls.length === 0);
 
@@ -63,6 +73,27 @@ describe('camera', () => {
     camera.stop();
     late.reject(new Error('NotAllowedError'));
     await expect(opening).resolves.toBeNull();
+  });
+  it('closes and says so once when the stream ends on its own', async () => {
+    const stream = listeningStream(); const ended = vi.fn();
+    const camera = createCamera(() => ({ getUserMedia: async () => stream }), ended);
+    await camera.start();
+    stream.tracks[0].end();
+    stream.tracks[1].end();
+    expect(ended).toHaveBeenCalledTimes(1);
+    expect(stopped(stream)).toBe(true);
+  });
+  it('ignores the end of a stream it has already closed or replaced', async () => {
+    const first = listeningStream(); const second = listeningStream(); const waiting = [first, second];
+    const ended = vi.fn();
+    const camera = createCamera(() => ({ getUserMedia: async () => waiting.shift() }), ended);
+    await camera.start();
+    await camera.start();
+    first.tracks[0].end();
+    expect(running(second)).toBe(true);
+    camera.stop();
+    second.tracks[0].end();
+    expect(ended).not.toHaveBeenCalled();
   });
 });
 
