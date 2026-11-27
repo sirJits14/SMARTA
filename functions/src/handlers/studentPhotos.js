@@ -6,6 +6,7 @@ import { roleOf } from '../../shared/staffRoles.js';
 import { isFamilyLink } from '../../shared/schoolAccess.js';
 import { photoPath, photoBytesError, PHOTO_MAX_BYTES } from '../../shared/studentPhoto.js';
 import { passGrades } from '../../shared/tempPass.js';
+import { logWarn } from '../log.js';
 
 // Learner photos (spec 2026-11-27). Storage rules deny every client, so this
 // file is the only door: it decides who may see or replace a photo.
@@ -39,6 +40,18 @@ async function photoAccess(deps, studentId) {
   return { actor, student: studentSnap.exists ? studentSnap.data() : null, canWrite, canRead: canWrite || guardian };
 }
 
+// A failed save can leave a file that no record points at. Remove it only once the
+// learner record is confirmed gone: while the record exists, the file at this path
+// may be their earlier photo, or one that a concurrent save is about to record.
+// Never throws, so the caller reports the error that failed the save.
+async function removeIfLearnerGone(db, bucket, studentId) {
+  try {
+    if (!(await db.doc(`students/${studentId}`).get()).exists) await deletePhotoFile(bucket, studentId);
+  } catch (e) {
+    logWarn('student_photo_cleanup_failed', { studentId, message: e?.message });
+  }
+}
+
 export async function saveStudentPhoto(deps, input) {
   const { db, bucket, uid } = deps;
   const { studentId, contentBase64 } = input;
@@ -63,6 +76,9 @@ export async function saveStudentPhoto(deps, input) {
     if (learner.exists) tx.update(learnerRef, { photoUpdatedAt: updatedAt });
     tx.set(db.collection('audit_log').doc(), { action: 'student.photoSaved', actorType: 'staff', actorUid: access.actor.email,
       targetType: 'student', targetId: studentId, details: {}, at: FieldValue.serverTimestamp() });
+  }).catch(async (error) => {
+    await removeIfLearnerGone(db, bucket, studentId);
+    throw error;
   });
   return { ok: true, updatedAt: updatedAt.toMillis() };
 }

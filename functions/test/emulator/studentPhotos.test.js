@@ -199,6 +199,88 @@ describe('saveStudentPhoto', () => {
   });
 });
 
+// The file is written before the Firestore transaction, so the learner can vanish
+// or the transaction can fail while the new file is already in the bucket.
+describe('saveStudentPhoto when the transaction fails', () => {
+  const gone = { code: 'not-found', message: 'Learner not found.' };
+  const deleteLearner = () => db().doc('students/S1').delete();
+
+  // Runs the hook right after the file lands, before the transaction starts.
+  function afterFileSaved(hook) {
+    const file = bucket.file;
+    bucket.file = (path) => {
+      const f = file(path);
+      return { ...f, async save(...args) { await f.save(...args); await hook(); } };
+    };
+  }
+
+  // Saves with a database that, once the file is saved, rejects the transaction
+  // (and, if asked, cannot read documents either).
+  function saveWithOutage({ during = async () => {}, readsFail = false } = {}) {
+    let down = false;
+    afterFileSaved(async () => { await during(); down = true; });
+    const flaky = new Proxy(db(), {
+      get(target, key) {
+        if (down && key === 'runTransaction') return async () => { throw new Error('firestore down'); };
+        if (down && readsFail && key === 'doc') return () => ({ async get() { throw new Error('read down'); } });
+        const value = Reflect.get(target, key);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    return saveStudentPhoto({ ...deps('admin'), db: flaky }, { studentId: 'S1', contentBase64: jpeg(300, 300) });
+  }
+
+  it('removes the file when the learner is deleted mid-save', async () => {
+    await save('admin', 'S11');
+    afterFileSaved(deleteLearner);
+    await expect(save('admin')).rejects.toMatchObject(gone);
+    expect([...bucket.files.keys()]).toEqual(['student_photos/S11.jpg']);
+    expect((await db().doc('students/S1').get()).exists).toBe(false);
+    expect((await audits()).map(r => r.targetId)).toEqual(['S11']);
+  });
+
+  it('removes the replacement of an earlier photo when the learner is deleted mid-save', async () => {
+    await save('admin');
+    afterFileSaved(deleteLearner);
+    await expect(save('admin', 'S1', jpeg(300, 300))).rejects.toMatchObject(gone);
+    expect(bucket.files.size).toBe(0);
+  });
+
+  it('removes the file when the transaction fails for another reason and the learner is gone', async () => {
+    await expect(saveWithOutage({ during: deleteLearner })).rejects.toThrow('firestore down');
+    expect(bucket.files.size).toBe(0);
+  });
+
+  it('reports the original error when the file cannot be removed', async () => {
+    const file = bucket.file;
+    let attempts = 0;
+    bucket.file = (path) => ({ ...file(path), async delete() { attempts += 1; throw new Error('storage down'); } });
+    afterFileSaved(deleteLearner);
+    await expect(save('admin')).rejects.toMatchObject(gone);
+    expect(attempts).toBe(1);
+  });
+
+  it('keeps the file of a learner who already had a photo', async () => {
+    await save('admin');
+    const before = await student();
+    await expect(saveWithOutage()).rejects.toThrow('firestore down');
+    expect([...bucket.files.keys()]).toEqual([PATH]);
+    expect(await student()).toEqual(before);
+  });
+
+  // A concurrent save may be about to record this same path, so it is left alone.
+  it('keeps the file while the learner record exists, even with no photo recorded', async () => {
+    await expect(saveWithOutage()).rejects.toThrow('firestore down');
+    expect([...bucket.files.keys()]).toEqual([PATH]);
+  });
+
+  it('keeps the file when it cannot confirm that the learner is gone', async () => {
+    await save('admin');
+    await expect(saveWithOutage({ readsFail: true })).rejects.toThrow('firestore down');
+    expect([...bucket.files.keys()]).toEqual([PATH]);
+  });
+});
+
 describe('getStudentPhoto', () => {
   beforeEach(() => save('admin'));
 
