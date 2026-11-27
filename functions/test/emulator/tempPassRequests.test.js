@@ -5,7 +5,7 @@ import {
   requestTempPasses, withdrawTempPassRequest, getTempPassRequests, listTempPassRequests, fulfilTempPassRequests,
   markTempPassRequestsPrinted, declineTempPassRequest,
 } from '../../src/handlers/tempPassRequests.js';
-import { issueTempPasses } from '../../src/handlers/tempPasses.js';
+import { issueTempPasses, revokeTempPass } from '../../src/handlers/tempPasses.js';
 import {
   requestTempPassesFn, withdrawTempPassRequestFn, getTempPassRequestsFn, listTempPassRequestsFn, fulfilTempPassRequestsFn,
   markTempPassRequestsPrintedFn, declineTempPassRequestFn,
@@ -195,7 +195,7 @@ describe('getTempPassRequests (3)', () => {
     expect(result.learners).toHaveLength(3);
     expect(result.requests.map((r) => r.id)).toEqual([second, first]);
     expect(result.requests[1]).toEqual({ id: first, studentId: 'S1', displayName: 'Ana B. Cruz', reason: 'new', note: '', status: 'declined',
-      declineReason: 'Wrong learner', createdAt: expect.any(Number), decidedAt: expect.any(Number) });
+      declineReason: 'Wrong learner', createdAt: expect.any(Number), decidedAt: expect.any(Number), prepared: false });
     expect(result.requests[0]).toMatchObject({ status: 'pending', decidedAt: null, declineReason: '' });
   });
   it('is for the class adviser only', async () => {
@@ -224,7 +224,7 @@ describe('printer callables (4)', () => {
   it("treat another grade's request as not found", async () => {
     const id = await filed('S1');
     expect((await list('glc8')).requests).toEqual([]);
-    expect(await fulfil([id], 'glc8')).toEqual({ issued: [], skipped: [{ requestId: id, studentId: 'S1', reason: 'out-of-scope' }] });
+    expect(await fulfil([id], 'glc8')).toEqual({ issued: [], skipped: [{ requestId: id, studentId: '', reason: 'out-of-scope' }] });
     await fulfil([id], 'glc7');
     expect(await markPrinted([id], 'glc8')).toEqual({ printed: 0 });
     await expect(decline(id, 'No', 'glc8')).rejects.toMatchObject({ code: 'not-found' });
@@ -232,7 +232,51 @@ describe('printer callables (4)', () => {
   });
 });
 
+describe('a prepared request (fulfilled, sheet not yet marked printed)', () => {
+  const WITHDRAW = 'This pass is already being printed. Ask the ID office.';
+  const DECLINE = 'This pass is already prepared. Mark it printed instead.';
+  const prepared = async (reason) => {
+    if (reason !== 'new') await issueDirect(['S1']);
+    const id = await filed('S1', reason);
+    await fulfil([id]);
+    return id;
+  };
+  const row = async (id) => (await getTempPassRequests(school('adv'), { sectionId: 'SEC1' })).requests.find((r) => r.id === id);
+  it.each(['new', 'lost'])('cannot be withdrawn or declined (%s)', async (reason) => {
+    const id = await prepared(reason);
+    expect(await row(id)).toMatchObject({ status: 'pending', prepared: true });
+    await expect(withdrawTempPassRequest(school('adv'), { requestId: id })).rejects.toMatchObject({ code: 'failed-precondition', message: WITHDRAW });
+    await expect(decline(id)).rejects.toMatchObject({ code: 'failed-precondition', message: DECLINE });
+    expect(await request(id)).toMatchObject({ status: 'pending' });
+    expect(await inbox('adv', id)).toBeUndefined();
+  });
+  it('can be withdrawn or declined again once its pass is revoked', async () => {
+    const a = await prepared('new');
+    await revokeTempPass(printer('admin'), { studentId: 'S1' });
+    expect(await row(a)).toMatchObject({ prepared: false });
+    await expect(withdrawTempPassRequest(school('adv'), { requestId: a })).resolves.toEqual({ ok: true });
+    const b = await filed('S1');
+    await fulfil([b]);
+    await revokeTempPass(printer('admin'), { studentId: 'S1' });
+    await expect(decline(b)).resolves.toEqual({ ok: true });
+  });
+  it('is not marked prepared before it is fulfilled', async () => {
+    const id = await filed('S1');
+    expect(await row(id)).toMatchObject({ prepared: false });
+  });
+});
+
 describe('listTempPassRequests (5)', () => {
+  it('says when the list was cut at 200', async () => {
+    expect((await list()).truncated).toBe(false);
+    const batch = db().batch();
+    for (let i = 0; i < 201; i++) batch.set(db().doc(`temp_pass_requests/T${String(i).padStart(3, '0')}`), { studentId: 'S1', sectionId: 'SEC1', gradeLevel: 7,
+      status: 'pending', schoolYear: year, reason: 'new', createdAt: Timestamp.fromMillis(Date.UTC(2026, 9, 1) + i * 1000) });
+    await batch.commit();
+    const result = await list();
+    expect(result.requests).toHaveLength(200);
+    expect(result.truncated).toBe(true);
+  }, 30000);
   it('lists pending requests of this year, oldest first, scoped by grade', async () => {
     const first = await filed('S1');
     const eight = await filed('S8', 'new', 'adv8');

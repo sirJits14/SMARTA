@@ -41,6 +41,7 @@ const READ_BATCH = 100;
 // per learner exact under concurrent calls. The queries run outside the transaction on purpose: the locks
 // already give them the right snapshot, and the Firestore emulator fails transactional queries under
 // contention with an error the SDK does not retry (production returns ABORTED).
+// Lock documents are intentionally permanent: they hold no state, so there is nothing to clean up.
 const lockRef = (db, key) => db.doc(`temp_pass_request_locks/${key}`);
 // The learner's waiting request for this school year (equality filters only: no composite index).
 const learnerPending = (db, studentId, schoolYear) => requestsOf(db).where('studentId', '==', studentId)
@@ -48,6 +49,18 @@ const learnerPending = (db, studentId, schoolYear) => requestsOf(db).where('stud
 // The adviser's waiting requests this school year; ids only, one past the limit is enough to know it is full.
 const adviserPending = (db, uid, schoolYear) => requestsOf(db).where('requestedByUid', '==', uid)
   .where('status', '==', 'pending').where('schoolYear', '==', schoolYear).select().limit(MAX_PENDING_PASS_REQUESTS + 1);
+
+// A fulfilled request whose code is still the learner's live pass: a sheet with that code exists (for a
+// Lost request the old card is already dead), so it may only be marked printed. If the pass was revoked or
+// replaced since, the request can be withdrawn or declined as before.
+const isPrepared = (request, pass, student, schoolYear) => Boolean(request?.passCode)
+  && isActivePassFor(pass, student, schoolYear) && pass.code === request.passCode;
+// Reads the learner's pass and record inside the transaction (before any write).
+async function preparedIn(db, tx, request, schoolYear) {
+  if (!request.passCode || !identifier(request.studentId)) return false;
+  const [pass, student] = await Promise.all([tx.get(db.doc(`temp_passes/${request.studentId}`)), tx.get(db.doc(`students/${request.studentId}`))]);
+  return isPrepared(request, pass.data(), student.data(), schoolYear);
+}
 
 function requireAdviser(actor, sectionId) {
   if (actor.ended) fail('failed-precondition', 'This school year has ended.');
@@ -133,6 +146,8 @@ export async function withdrawTempPassRequest(deps, input) {
     const request = (await tx.get(ref)).data();
     if (!request || request.requestedByUid !== uid) fail('not-found', 'Request not found.');
     if (request.status !== 'pending') fail('failed-precondition', 'This request was already handled.');
+    if (await preparedIn(db, tx, request, actor.schoolYear)) fail('failed-precondition', 'This pass is already being printed. Ask the ID office.');
+    // Reads end here.
     tx.update(ref, { status: 'withdrawn', decidedAt: FieldValue.serverTimestamp() });
     audit(db, tx, actor.email, 'tempPassRequest.withdrawn', ref.id, { studentId: request.studentId, sectionId: request.sectionId, gradeLevel: request.gradeLevel });
     return { ok: true };
@@ -176,14 +191,24 @@ export async function getTempPassRequests(deps, input) {
       studentId, displayName: fullName(student), hasPhoto: !!student.photo?.path, hasActivePass: isActivePassFor(pass, student, schoolYear),
       blocker: passRequestBlocker({ student, enrollment, sectionId: input.sectionId, schoolYear, pendingRequest }),
     }));
-  const requests = mine.docs
+  const latest = mine.docs
     .sort((a, b) => (millis(b.data().createdAt) ?? 0) - (millis(a.data().createdAt) ?? 0))
-    .slice(0, ADVISER_LIST)
-    .map((d) => {
-      const r = d.data();
-      return { id: d.id, studentId: r.studentId || '', displayName: r.displayName || '', reason: r.reason || '', note: r.note || '', status: r.status,
-        declineReason: r.status === 'declined' ? r.declineReason || '' : '', createdAt: millis(r.createdAt), decidedAt: millis(r.decidedAt) };
-    });
+    .slice(0, ADVISER_LIST);
+  // Only a waiting request with a code can be prepared; its learner's pass and record decide (see isPrepared).
+  const preparedIds = [...new Set(latest.map((d) => d.data()).filter((r) => r.status === 'pending' && r.passCode && identifier(r.studentId))
+    .map((r) => r.studentId))];
+  const [preparedPasses, preparedStudents] = await Promise.all([
+    readAll(db, preparedIds.map((id) => db.doc(`temp_passes/${id}`))),
+    readAll(db, preparedIds.map((id) => db.doc(`students/${id}`))),
+  ]);
+  const passOf = new Map(preparedIds.map((id, i) => [id, [preparedPasses[i], preparedStudents[i]]]));
+  const requests = latest.map((d) => {
+    const r = d.data();
+    const [pass, student] = passOf.get(r.studentId) || [];
+    return { id: d.id, studentId: r.studentId || '', displayName: r.displayName || '', reason: r.reason || '', note: r.note || '', status: r.status,
+      declineReason: r.status === 'declined' ? r.declineReason || '' : '', createdAt: millis(r.createdAt), decidedAt: millis(r.decidedAt),
+      prepared: r.status === 'pending' && isPrepared(r, pass, student, schoolYear) };
+  });
   return { learners, requests };
 }
 
@@ -210,8 +235,10 @@ export async function listTempPassRequests(deps, input) {
   let query = requestsOf(db).where('status', '==', status).where('schoolYear', '==', schoolYear);
   if (grades !== null) query = query.where('gradeLevel', 'in', grades);
   // Waiting requests are a queue (oldest first); printed and declined ones are history (newest first).
-  const snap = await query.orderBy('createdAt', status === 'pending' ? 'asc' : 'desc').limit(PRINTER_LIST).get();
-  const docs = snap.docs.filter((d) => canPrintGrade(profile, d.data().gradeLevel));
+  const snap = await query.orderBy('createdAt', status === 'pending' ? 'asc' : 'desc').limit(PRINTER_LIST + 1).get();
+  // One more than the cap is read only to know whether the list was cut.
+  const truncated = snap.size > PRINTER_LIST;
+  const docs = snap.docs.slice(0, PRINTER_LIST).filter((d) => canPrintGrade(profile, d.data().gradeLevel));
   const ids = [...new Set(docs.map((d) => d.data().studentId).filter(identifier))];
   const [students, enrollments] = await Promise.all([
     readAll(db, ids.map((id) => db.doc(`students/${id}`))),
@@ -232,7 +259,7 @@ export async function listTempPassRequests(deps, input) {
         : null,
     };
   });
-  return { requests };
+  return { requests, truncated };
 }
 
 export async function fulfilTempPassRequests(deps, input) {
@@ -249,8 +276,10 @@ export async function fulfilTempPassRequests(deps, input) {
       const ref = requestsOf(db).doc(requestId);
       const request = (await tx.get(ref)).data();
       const studentId = request?.studentId || '';
-      if (!request || request.schoolYear !== schoolYear || !identifier(studentId)) return { studentId, skip: 'not-found' };
-      if (!canPrintGrade(profile, request.gradeLevel)) return { studentId, skip: 'out-of-scope' };
+      if (!request) return { studentId: '', skip: 'not-found' };
+      // Scope first: another grade's request reveals neither its learner nor its school year.
+      if (!canPrintGrade(profile, request.gradeLevel)) return { studentId: '', skip: 'out-of-scope' };
+      if (request.schoolYear !== schoolYear || !identifier(studentId)) return { studentId, skip: 'not-found' };
       if (request.status !== 'pending') return { studentId, skip: 'not-pending' };
       // A Lost request replaces the code once. Preparing it again (a paper jam) keeps the replacement it
       // already produced, so the sheet just printed still works.
@@ -306,11 +335,14 @@ export async function declineTempPassRequest(deps, input) {
   const reason = typeof input.reason === 'string' ? cleanPassText(input.reason, DECLINE_REASON_MAX) : '';
   if (!reason) fail('invalid-argument', `Tell the adviser why. Enter a reason of 1–${DECLINE_REASON_MAX} characters.`);
   const ref = requestsOf(db).doc(input.requestId);
+  const { schoolYear } = await currentYear(db);
   return db.runTransaction(async (tx) => {
     const request = (await tx.get(ref)).data();
     // Another grade's request is reported exactly like a missing one.
     if (!request || !canPrintGrade(profile, request.gradeLevel)) fail('not-found', 'Request not found.');
     if (request.status !== 'pending') fail('failed-precondition', 'This request was already handled.');
+    if (await preparedIn(db, tx, request, schoolYear)) fail('failed-precondition', 'This pass is already prepared. Mark it printed instead.');
+    // Reads end here.
     tx.update(ref, { status: 'declined', declineReason: reason, decidedBy: email, decidedAt: FieldValue.serverTimestamp() });
     notify(db, tx, request, ref.id, 'declined', declinedNotice({ name: request.displayName || '', reason }));
     // The reason reaches the adviser and stays on the request; the audit row carries no free text.
