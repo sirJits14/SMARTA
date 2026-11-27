@@ -19,6 +19,7 @@ export const ADMIN_NEW = { uid: 'adm2', token: { email: 'admin2@bnhs.edu', email
 export const JHS = { uid: 'jhs1', token: { email: 'jhs@bnhs.edu', email_verified: false, firebase: password } };
 export const SHS = { uid: 'shs1', token: { email: 'shs@bnhs.edu', email_verified: false, firebase: password } };
 export const GLC8 = { uid: 'glc8', token: { email: 'glc8@bnhs.edu', email_verified: false, firebase: password } };
+export const LOGISTIC = { uid: 'log1', token: { email: 'logistic@bnhs.edu', email_verified: false, firebase: password } };
 export const DISABLED_ADMIN = { uid: 'off1', token: { email: 'off@bnhs.edu', email_verified: false, firebase: password } };
 // users/legacy@bnhs.edu is seeded per test with the profile shape under test.
 export const LEGACY = { uid: 'leg1', token: { email: 'legacy@bnhs.edu', email_verified: false, firebase: password } };
@@ -43,7 +44,7 @@ export async function seedBaseline(env) {
   await seed(env, async (db) => {
     // Exercise the deployed UID lookup path, including coordinator audience
     // writes near Firestore's expression budget. Legacy fallback has its own tests.
-    for (const who of [STAFF, ADMIN_NEW, JHS, SHS, GLC8, DISABLED_ADMIN, LEGACY]) {
+    for (const who of [STAFF, ADMIN_NEW, JHS, SHS, GLC8, LOGISTIC, DISABLED_ADMIN, LEGACY]) {
       await db.doc(`staff_profiles/${who.uid}`).set({ email: who.token.email });
     }
     await db.doc('users/registrar@bnhs.edu').set({ name: 'Registrar', role: 'registrar' });
