@@ -42,6 +42,18 @@ describe('staff collection query authorization filters', () => {
   it.each([undefined, null, '', '2026/2027', '2026-27', 2026, ' 2026-2027 ', 'abcd-efgh', '2026-2027\n'])('does not read coordinator students without a canonical active school year (%s)', schoolYear => {
     expect(staffCollectionQuery('students', { me: { role: 'jhs_coord' }, schoolYear })).toBeNull();
   });
+  it('lists every temporary pass for administrators', () => {
+    for (const me of [{ role: 'admin' }, {}]) {
+      expect(queryEqual(staffCollectionQuery('temp_passes', { me, schoolYear }), query(collection(db, 'temp_passes')))).toBe(true);
+    }
+  });
+  it.each([[{ role: 'jhs_coord' }, [7, 8, 9, 10]], [{ role: 'shs_coord' }, [11, 12]]])('lists only the pass grades of %j', (me, allowed) => {
+    expect(queryEqual(staffCollectionQuery('temp_passes', { me, schoolYear }),
+      query(collection(db, 'temp_passes'), where('gradeLevel', 'in', allowed)))).toBe(true);
+  });
+  it.each([{ role: 'glc', gradeLevel: 8 }, { role: 'unknown' }, undefined])('never lists temporary passes for %j', me => {
+    expect(staffCollectionQuery('temp_passes', { me, schoolYear })).toBeNull();
+  });
   it('does not expose an unsupported collection to coordinators', () => {
     expect(staffCollectionQuery('guardians', { me: { role: 'jhs_coord' }, schoolYear })).toBeNull();
   });

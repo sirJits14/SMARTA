@@ -57,7 +57,7 @@ describe('pages', () => {
     expect(allowedPages(admin)).toEqual(expect.arrayContaining(['dashboard', 'enroll', 'guardians', 'announcements', 'settings', 'accounts', 'learnerRequests']));
   });
   it('coordinators open the shared pages, including Announcements and Learner requests', () => {
-    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements']);
+    expect(allowedPages(glc8)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements']);
     expect(canOpen(glc8, 'learnerRequests')).toBe(true);
     expect(canOpen(glc8, 'attendance')).toBe(true);
     expect(canOpen(glc8, 'enroll')).toBe(false);
@@ -66,8 +66,14 @@ describe('pages', () => {
   it('no coordinator role is an administrator or reaches admin-only pages', () => {
     for (const me of [jhs, { role: 'shs_coord' }, glc8]) {
       expect(isAdmin(me)).toBe(false);
-      for (const page of ['enroll', 'idcards', 'guardians', 'settings', 'accounts']) expect(canOpen(me, page)).toBe(false);
+      for (const page of ['enroll', 'guardians', 'settings', 'accounts']) expect(canOpen(me, page)).toBe(false);
     }
+  });
+  it('lets academic coordinators, but not grade level coordinators, open ID Cards for temporary passes', () => {
+    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'idcards', 'announcements']);
+    expect(canOpen({ role: 'shs_coord' }, 'idcards')).toBe(true);
+    expect(canOpen(glc8, 'idcards')).toBe(false);
+    expect(canOpen({ role: 'teacher' }, 'idcards')).toBe(false);
   });
   it('a profile with no role is still an administrator (pre-roles accounts)', () => {
     expect(isAdmin({})).toBe(true);

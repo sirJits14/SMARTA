@@ -13,8 +13,9 @@ const JSX_LITERAL = /(?<![&\w])#[0-9a-fA-F]{3,8}\b|rgba?\(\s*255\s*,\s*255\s*,\s
 const CSS_LITERAL = /(?<![&\w-])#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/;
 const JSX_ROOTS = ['src', 'parent/src'];
 const THEMED_CSS = ['src/registrar.css', 'src/enrollment.css', 'src/dashboard.css', 'parent/src/app.css', 'parent/src/screens/school/ClassTab.css'];
-// The QR camera overlay is deliberately dark in both themes.
-const JSX_ALLOWED = new Set(['parent/src/components/ScanSheet.jsx']);
+// The QR camera overlay is deliberately dark in both themes. The temporary ID
+// pass is printed artwork in the school's fixed colors.
+const JSX_ALLOWED = new Set(['parent/src/components/ScanSheet.jsx', 'src/components/TempPassPrintable.jsx']);
 
 const walk = (dir) => readdirSync(dir, { withFileTypes: true })
   .flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
