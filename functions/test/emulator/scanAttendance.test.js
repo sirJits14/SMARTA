@@ -118,6 +118,56 @@ describe('server-derived kiosk attendance', () => {
   });
 });
 
+describe('temporary ID pass scans', () => {
+  const CODE = 'BNHS-TP-23456789AB';
+  const withPass = (over = {}) => scanDoc({ credential: 'temp_pass', passCode: CODE, ...over });
+  const setPass = (over = {}) => db().doc('temp_passes/S1').set({ code: CODE, status: 'active', lrn: '100000000001',
+    sectionId: 'SEC1', gradeLevel: 7, schoolYear: '2026-2027', ...over });
+  const printCard = () => db().doc('students/S1').update({ idCard: { printedAt: ts('2026-09-20T09:00:00+08:00'), lrn: '100000000001' } });
+  const receipt = async id => (await db().doc(`scan_events/${id}`).get()).data().attendanceResult;
+
+  it('applies a scan of the matching active pass like any other scan', async () => {
+    await setPass();
+    expect((await run('pass_in', withPass())).outcome).toBe('processed');
+    expect((await attendance().get()).data()).toMatchObject({ marks: { S1: 'P', S2: 'A' }, timeIn: { S1: '07:12' } });
+    expect(await receipt('pass_in')).toMatchObject({ status: 'applied', mark: 'P', scanTime: '07:12' });
+    expect((await db().doc('learners/S1/events/pass_in').get()).exists).toBe(true);
+  });
+  it.each([
+    ['there is no pass', null, withPass()],
+    ['the code differs', {}, withPass({ passCode: 'BNHS-TP-BA98765432' })],
+    ['the pass is superseded', { status: 'superseded' }, withPass()],
+    ['the pass is revoked', { status: 'revoked' }, withPass()],
+    ['the pass is from another school year', { schoolYear: '2025-2026' }, withPass()],
+    ['the credential has no code', {}, scanDoc({ credential: 'temp_pass' })],
+    ['the code has no credential', {}, scanDoc({ passCode: CODE })],
+    ['the credential is unknown', {}, withPass({ credential: 'official_id' })],
+    ['the official card is already printed', {}, withPass(), true],
+  ])('rejects a pass scan when %s', async (_, stored, data, printed = false) => {
+    if (stored) await setPass(stored);
+    if (printed) await printCard();
+    expect((await run('pass_bad', data)).outcome).toBe('rejected:temp_pass_inactive');
+    expect(await receipt('pass_bad')).toMatchObject({ status: 'rejected', reason: 'temp_pass_inactive' });
+    expect((await attendance().get()).exists).toBe(false);
+    expect((await db().doc('learners/S1').get()).exists).toBe(false);
+  });
+  it('keeps an applied pass scan applied when the pass ends before redelivery', async () => {
+    await setPass();
+    const data = withPass();
+    await run('pass_then_end', data);
+    await setPass({ status: 'superseded' });
+    expect((await handleScanEvent(deps(), { eventId: 'pass_then_end', data })).outcome).toBe('processed');
+    expect(await receipt('pass_then_end')).toMatchObject({ status: 'applied' });
+  });
+  it('leaves official ID scans unaffected by a revoked pass and a printed card', async () => {
+    await setPass({ status: 'revoked' });
+    await printCard();
+    expect((await run('official')).outcome).toBe('processed');
+    expect((await attendance().get()).data()).toMatchObject({ marks: { S1: 'P' }, timeIn: { S1: '07:12' } });
+    expect(await receipt('official')).toMatchObject({ status: 'applied', mark: 'P' });
+  });
+});
+
 describe('split-day (PM session) schedules', () => {
   beforeEach(async () => {
     await db().doc('schedules/AM').set({ timeIn: '08:00', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:00' });

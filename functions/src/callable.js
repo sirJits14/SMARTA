@@ -25,6 +25,8 @@ export const LIMITS = {
   sf2Export: { windowMs: 60 * 60 * 1000, max: 20 },
   // Learner photos: an adviser may photograph a whole class, with retakes.
   studentPhoto: { windowMs: 60 * 60 * 1000, max: 300 },
+  // Temporary passes: one call per print batch (up to 200 learners each).
+  tempPass: { windowMs: 60 * 60 * 1000, max: 300 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 

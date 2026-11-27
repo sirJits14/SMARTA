@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { sessionOf } from '../../shared/scheduleSessions.js';
+import { isOfficialCardPrinted } from '../../shared/tempPass.js';
 
 export async function rejectScanAttendance(db, eventId, reason) {
   const ref = db.doc(`scan_events/${eventId}`);
@@ -30,11 +31,16 @@ export async function applyScanAttendance(db, { eventId, data, date, scanTime })
       tx.get(db.doc(`students/${data.studentId}`)),
       tx.get(db.doc(`sections/${data.sectionId}`)),
     ]);
+    const usesPass = data.credential !== undefined || data.passCode !== undefined;
+    const pass = usesPass ? (await tx.get(db.doc(`temp_passes/${data.studentId}`))).data() : null;
     if (device.data()?.active !== true) return reject('device');
     const enrolled = enrollment.data();
     if (!enrolled || enrolled.status !== 'enrolled' || enrolled.sectionId !== data.sectionId
         || enrolled.studentId !== data.studentId || enrolled.schoolYear !== data.schoolYear
         || !student.exists || !section.exists || section.data().schoolYear !== data.schoolYear) return reject('enrollment');
+    // A temporary pass works only while it is active and no official card is out.
+    if (usesPass && (data.credential !== 'temp_pass' || pass?.status !== 'active' || pass.code !== data.passCode
+        || pass.schoolYear !== data.schoolYear || isOfficialCardPrinted(student.data()))) return reject('temp_pass_inactive');
     const sectionGrade = section.data().gradeLevel;
     const validGrade = grade => Number.isInteger(grade) && grade >= 7 && grade <= 12;
     if (!validGrade(sectionGrade)) return reject('grade');
