@@ -73,6 +73,10 @@ service cloud.firestore {
     function coordinatorMayReadGrade() {
       return isStaff() && coordinatorCoversGrade(resource.data.get('gradeLevel', null));
     }
+    // Mirrors passGrades() in shared/tempPass.js: GLCs do not handle passes.
+    function coordinatorMayReadPass() {
+      return isStaff() && role() in ['jhs_coord', 'shs_coord'] && coordinatorCoversGrade(resource.data.get('gradeLevel', null));
+    }
     function coordinatorMayReadStudent() {
       let year = get(/databases/$(database)/documents/settings/app).data.get('currentSchoolYear', null);
       return coordinatorMayReadGrade()
@@ -165,6 +169,11 @@ service cloud.firestore {
     }
     match /schedules/{id}   { allow read: if isAdmin() || isKiosk() || coordinatorMayReadSchedule(); allow write: if isAdmin(); }
     match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
+    // Temporary ID passes (spec 2026-11-27). Functions write them.
+    match /temp_passes/{studentId} {
+      allow read: if isAdmin() || coordinatorMayReadPass() || (isKiosk() && resource.data.status == 'active');
+      allow write: if false;
+    }
     match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
     match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isAdmin(); }
     match /users/{id} {
@@ -214,6 +223,15 @@ service cloud.firestore {
         && e.schoolYear == d.schoolYear && e.sectionId == d.sectionId
         && s.schoolYear == d.schoolYear;
     }
+    // Official cards send neither field. A temporary pass sends both and must still be active.
+    function validScanCredential(d) {
+      return !d.keys().hasAny(['credential', 'passCode'])
+        || (d.keys().hasAll(['credential', 'passCode']) && d.credential == 'temp_pass' && d.passCode is string
+          && activePass(get(/databases/$(database)/documents/temp_passes/$(d.studentId)).data, d));
+    }
+    function activePass(p, d) {
+      return p.status == 'active' && p.code == d.passCode && p.schoolYear == d.schoolYear;
+    }
     match /scan_events/{id} {
       allow list: if isAdmin();
       // Own-event reads support acknowledgement and reload-safe deduplication.
@@ -226,7 +244,7 @@ service cloud.firestore {
       allow create: if isKiosk()
         && id.matches(request.auth.uid + '_.*')
         && request.resource.data.keys().hasOnly(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
-             'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source'])
+             'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source', 'credential', 'passCode'])
         && request.resource.data.keys().hasAll(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
              'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source'])
         && request.resource.data.deviceId == request.auth.uid
@@ -244,7 +262,8 @@ service cloud.firestore {
         && request.resource.data.scannedDate.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
         && request.resource.data.scannedTime.matches('([01][0-9]|2[0-3]):[0-5][0-9]')
         && request.resource.data.receivedAt == request.time
-        && validScanEnrollment(request.resource.data);
+        && validScanEnrollment(request.resource.data)
+        && validScanCredential(request.resource.data);
       allow update, delete: if false;
     }
 
