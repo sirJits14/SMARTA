@@ -99,5 +99,7 @@ Record each deploy under `docs/audits/deployments/`.
 - Photos are checked as square JPEG headers, not fully decoded.
 - If a first photo save fails part-way and the learner record is deleted later, the unreadable file
   stays in Storage (the delete trigger removes files only for records that had a photo).
-- Not yet run end to end: the Storage emulator was never started, so uploads were tested against a
-  fake bucket and the screens against stand-in data.
+- Run end to end on local emulators only (2026-11-27, all 8 scenarios passed). Not covered: the
+  browser's print dialog and paper sheet, a gate-scanner read, kiosk camera scanning, real phones.
+- The kiosk's "Temporary pass expired. Please use your official ID." message also appears for a
+  revoked pass or a learner who left, who may have no official card.
