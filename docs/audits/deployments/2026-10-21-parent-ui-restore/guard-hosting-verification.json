@@ -1,0 +1,373 @@
+{
+  "verifiedAt": "2026-10-21T00:55:48.949Z",
+  "source": "99371bb2d49a8b47021586fc21c959794232e06a",
+  "site": "https://bnhs-parent.web.app",
+  "files": 51,
+  "matched": 51,
+  "checks": {
+    "sessionsIcon": true,
+    "settingsThemeControl": true,
+    "noFloatingThemeButton": true,
+    "latestDeveloperTitle": true
+  },
+  "mismatches": [],
+  "results": [
+    {
+      "file": "assets/AnnouncementDetail-DwxpERYg.js",
+      "status": 200,
+      "localHash": "fa6322cd70edebd524f4753103edbb332c7bca639467c8b0e805aa49b2d53f22",
+      "liveHash": "fa6322cd70edebd524f4753103edbb332c7bca639467c8b0e805aa49b2d53f22",
+      "matches": true
+    },
+    {
+      "file": "assets/Announcements-B6h2shXF.js",
+      "status": 200,
+      "localHash": "3c372669d62d1f276c51316c5355a89d2bf1df6a667d62e9003d1abaf70e9acc",
+      "liveHash": "3c372669d62d1f276c51316c5355a89d2bf1df6a667d62e9003d1abaf70e9acc",
+      "matches": true
+    },
+    {
+      "file": "assets/Consent-B7ToVgRD.js",
+      "status": 200,
+      "localHash": "c287904a1f773316fc4a1946c59619d5972a0ca54dfe1f90e98f0b0f115835d0",
+      "liveHash": "c287904a1f773316fc4a1946c59619d5972a0ca54dfe1f90e98f0b0f115835d0",
+      "matches": true
+    },
+    {
+      "file": "assets/el-chamberlain-q-abellana-CjyvdR_u.jpg",
+      "status": 200,
+      "localHash": "6fe7dc4afa78314aba43a981f4b2703d5541a94123ed3fc35087da15b5d9bb95",
+      "liveHash": "6fe7dc4afa78314aba43a981f4b2703d5541a94123ed3fc35087da15b5d9bb95",
+      "matches": true
+    },
+    {
+      "file": "assets/emmanuel-candano-CRBeiAHY.jpg",
+      "status": 200,
+      "localHash": "73e54e243286c1c0714cb33841e11eebd8abf54bdb44e5e2e0757cf28054bb33",
+      "liveHash": "73e54e243286c1c0714cb33841e11eebd8abf54bdb44e5e2e0757cf28054bb33",
+      "matches": true
+    },
+    {
+      "file": "assets/firebase-BN6t3e8w.js",
+      "status": 200,
+      "localHash": "c7fdc8cb4b010cd5cb1ab7e9453d481f8891162f87d303986d75df97087d2d92",
+      "liveHash": "c7fdc8cb4b010cd5cb1ab7e9453d481f8891162f87d303986d75df97087d2d92",
+      "matches": true
+    },
+    {
+      "file": "assets/FlagSheet-M9XpEJy8.js",
+      "status": 200,
+      "localHash": "edc4f1ae9c424c9101708fb5364ecbf9b16ecaaed7ef5c8465b2f31db469ee9b",
+      "liveHash": "edc4f1ae9c424c9101708fb5364ecbf9b16ecaaed7ef5c8465b2f31db469ee9b",
+      "matches": true
+    },
+    {
+      "file": "assets/format-DaYBH3an.js",
+      "status": 200,
+      "localHash": "42a6b6d6c5a7aed799a59e5c86da4679362afb247e81478fd96b3abee5548062",
+      "liveHash": "42a6b6d6c5a7aed799a59e5c86da4679362afb247e81478fd96b3abee5548062",
+      "matches": true
+    },
+    {
+      "file": "assets/geths-van-c-villa-VCJQJD5z.jpg",
+      "status": 200,
+      "localHash": "d6083336d54c2d84a1c6e4c67d81b56ae9a713bbbd804bca9e2847eefe56df6d",
+      "liveHash": "d6083336d54c2d84a1c6e4c67d81b56ae9a713bbbd804bca9e2847eefe56df6d",
+      "matches": true
+    },
+    {
+      "file": "assets/History-Bwc6gm3z.js",
+      "status": 200,
+      "localHash": "79da515a55755cc9dc5a8bd7b8f636f8c8e831841f190155e057b44edd289cfd",
+      "liveHash": "79da515a55755cc9dc5a8bd7b8f636f8c8e831841f190155e057b44edd289cfd",
+      "matches": true
+    },
+    {
+      "file": "assets/History-p5Rvd2i_.css",
+      "status": 200,
+      "localHash": "f7821d6a98c38544f5a36c5a4bac15e60af310ea4d5509cf8c06318e51ea5f5f",
+      "liveHash": "f7821d6a98c38544f5a36c5a4bac15e60af310ea4d5509cf8c06318e51ea5f5f",
+      "matches": true
+    },
+    {
+      "file": "assets/Home-C1veMpt-.js",
+      "status": 200,
+      "localHash": "d4d151c60a2eddb218317641d2de13f1be511eeefa99bef80bbee53cbc030d0e",
+      "liveHash": "d4d151c60a2eddb218317641d2de13f1be511eeefa99bef80bbee53cbc030d0e",
+      "matches": true
+    },
+    {
+      "file": "assets/Inbox-NuBCIiAD.js",
+      "status": 200,
+      "localHash": "006e9c237552bc393a6028397f1d20e4cefbdbad298bcac231d6768c14e8ea1c",
+      "liveHash": "006e9c237552bc393a6028397f1d20e4cefbdbad298bcac231d6768c14e8ea1c",
+      "matches": true
+    },
+    {
+      "file": "assets/index-C8vTYG8X.js",
+      "status": 200,
+      "localHash": "bfc157774344b2ffc292bc38f839a5d80096c8dcbf3f6cdd4d91e7043508b09b",
+      "liveHash": "bfc157774344b2ffc292bc38f839a5d80096c8dcbf3f6cdd4d91e7043508b09b",
+      "matches": true
+    },
+    {
+      "file": "assets/index-D7DdPD5C.css",
+      "status": 200,
+      "localHash": "42b6e6a82b443f513736c064eaa8e59a8b7dab934891280addd70f636ea5836f",
+      "liveHash": "42b6e6a82b443f513736c064eaa8e59a8b7dab934891280addd70f636ea5836f",
+      "matches": true
+    },
+    {
+      "file": "assets/index.esm-Ceoc1-uo.js",
+      "status": 200,
+      "localHash": "3599014f90994fcd1738dad7286c354c9f3639f64de5e54d76b3ae5db2c2fb96",
+      "liveHash": "3599014f90994fcd1738dad7286c354c9f3639f64de5e54d76b3ae5db2c2fb96",
+      "matches": true
+    },
+    {
+      "file": "assets/index.esm-D7DjWegA.js",
+      "status": 200,
+      "localHash": "0cc20f6e2f39b77eeb9e93864001084de54808878f4d79fb160b90389f5fc1c7",
+      "liveHash": "0cc20f6e2f39b77eeb9e93864001084de54808878f4d79fb160b90389f5fc1c7",
+      "matches": true
+    },
+    {
+      "file": "assets/index.esm-DbcDmF67.js",
+      "status": 200,
+      "localHash": "11a57f5822c2faa96e1b84b7fcdbfe4b403f82fe3a710c271cc3f112fdb5967b",
+      "liveHash": "11a57f5822c2faa96e1b84b7fcdbfe4b403f82fe3a710c271cc3f112fdb5967b",
+      "matches": true
+    },
+    {
+      "file": "assets/index.esm-DcukWbrd.js",
+      "status": 200,
+      "localHash": "26b6374ce561920fca83bffd97a23460ca6d007e2d779f9353e344d62602ab3b",
+      "liveHash": "26b6374ce561920fca83bffd97a23460ca6d007e2d779f9353e344d62602ab3b",
+      "matches": true
+    },
+    {
+      "file": "assets/Join-B87apGzI.js",
+      "status": 200,
+      "localHash": "579f74144497a3f76608dab182f3250242c1845acb497121745a5035cc44b144",
+      "liveHash": "579f74144497a3f76608dab182f3250242c1845acb497121745a5035cc44b144",
+      "matches": true
+    },
+    {
+      "file": "assets/join-CPSLHuCR.js",
+      "status": 200,
+      "localHash": "cd84ec6a5fafeacbeec9c23650d13aa144d08d5c9a04a4ffd18641959ff72081",
+      "liveHash": "cd84ec6a5fafeacbeec9c23650d13aa144d08d5c9a04a4ffd18641959ff72081",
+      "matches": true
+    },
+    {
+      "file": "assets/jsQR-C-ji8cwD.js",
+      "status": 200,
+      "localHash": "8493b23fdeec725ed6288c3d3b5b350acac97d1a77bb084b263e6151e25f2b38",
+      "liveHash": "8493b23fdeec725ed6288c3d3b5b350acac97d1a77bb084b263e6151e25f2b38",
+      "matches": true
+    },
+    {
+      "file": "assets/LegacyAdviserLinks-CU83a0wX.js",
+      "status": 200,
+      "localHash": "b2dbe9628958783b18295284557a4387a088de0d5d9ed78d29a98afc35c23d29",
+      "liveHash": "b2dbe9628958783b18295284557a4387a088de0d5d9ed78d29a98afc35c23d29",
+      "matches": true
+    },
+    {
+      "file": "assets/loading-CRLLHZYw.gif",
+      "status": 200,
+      "localHash": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "liveHash": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "matches": true
+    },
+    {
+      "file": "assets/notifications-BvWhov1j.js",
+      "status": 200,
+      "localHash": "61af5bf5c20c5a29e705d233b2a8c498707440c94de474146c00963cb2693718",
+      "liveHash": "61af5bf5c20c5a29e705d233b2a8c498707440c94de474146c00963cb2693718",
+      "matches": true
+    },
+    {
+      "file": "assets/notificationState-B7HBXmcF.js",
+      "status": 200,
+      "localHash": "3b33dfa58a0d38e7d9ba426cdad0d535fa5002d9159770251f8966eccee1d9c2",
+      "liveHash": "3b33dfa58a0d38e7d9ba426cdad0d535fa5002d9159770251f8966eccee1d9c2",
+      "matches": true
+    },
+    {
+      "file": "assets/PageHeader-CnOBkY5A.js",
+      "status": 200,
+      "localHash": "bd01ca1d8e2c8babc1fe3eb91fc00723d9739571181087be20eb14625640c5f0",
+      "liveHash": "bd01ca1d8e2c8babc1fe3eb91fc00723d9739571181087be20eb14625640c5f0",
+      "matches": true
+    },
+    {
+      "file": "assets/preload-helper-BZ1Pz5am.js",
+      "status": 200,
+      "localHash": "8820987e6a8afb54d776f21e305917e1ecf83cef678b4db38c2e5a405d04a8bf",
+      "liveHash": "8820987e6a8afb54d776f21e305917e1ecf83cef678b4db38c2e5a405d04a8bf",
+      "matches": true
+    },
+    {
+      "file": "assets/react-Cvdyeg_0.js",
+      "status": 200,
+      "localHash": "adf02d35457fb7bb4d00a12cba117c972addb3d5e4849d3a2bc0871940270347",
+      "liveHash": "adf02d35457fb7bb4d00a12cba117c972addb3d5e4849d3a2bc0871940270347",
+      "matches": true
+    },
+    {
+      "file": "assets/relationships-CxZzswqm.js",
+      "status": 200,
+      "localHash": "39d0e176c49df4fb77815293c7098bc4ba6f706f28aef1433cc952a2f2d78faa",
+      "liveHash": "39d0e176c49df4fb77815293c7098bc4ba6f706f28aef1433cc952a2f2d78faa",
+      "matches": true
+    },
+    {
+      "file": "assets/RelationshipSheet-TuEcc76M.js",
+      "status": 200,
+      "localHash": "6e6ea828417818d96d21a4b330ef7be0c9f3387fca4e878ab5f60bd8a1f5f67b",
+      "liveHash": "6e6ea828417818d96d21a4b330ef7be0c9f3387fca4e878ab5f60bd8a1f5f67b",
+      "matches": true
+    },
+    {
+      "file": "assets/Report-B_lBoPzz.js",
+      "status": 200,
+      "localHash": "35d1eb32c88ab1c07aabfff58c596e81c5d382180b9271f826fe11a9f41ea106",
+      "liveHash": "35d1eb32c88ab1c07aabfff58c596e81c5d382180b9271f826fe11a9f41ea106",
+      "matches": true
+    },
+    {
+      "file": "assets/RequestAccess-vUWRJTNm.js",
+      "status": 200,
+      "localHash": "11135ca5262093b1200c5c19504f06d1853e6affdcf09254eb04d12b07fd5142",
+      "liveHash": "11135ca5262093b1200c5c19504f06d1853e6affdcf09254eb04d12b07fd5142",
+      "matches": true
+    },
+    {
+      "file": "assets/rolldown-runtime-hePW80VL.js",
+      "status": 200,
+      "localHash": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021",
+      "liveHash": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021",
+      "matches": true
+    },
+    {
+      "file": "assets/ScanSheet-C3vi45CW.js",
+      "status": 200,
+      "localHash": "b476481ff9f02e585bf7d32b08f20e6d12b4ca68c00dc48f6bacb7db4f5da77e",
+      "liveHash": "b476481ff9f02e585bf7d32b08f20e6d12b4ca68c00dc48f6bacb7db4f5da77e",
+      "matches": true
+    },
+    {
+      "file": "assets/scheduleSessions-DGGON9uC.js",
+      "status": 200,
+      "localHash": "96baa622e939695c3f039b20c2d912ccb5323b8aef2e6a334d9df22b53f625b3",
+      "liveHash": "96baa622e939695c3f039b20c2d912ccb5323b8aef2e6a334d9df22b53f625b3",
+      "matches": true
+    },
+    {
+      "file": "assets/School-CdbOd5z4.js",
+      "status": 200,
+      "localHash": "6a7a4a6ce71d58fc6b5a05a725907937e97f014e37f7842de3a1168c53013846",
+      "liveHash": "6a7a4a6ce71d58fc6b5a05a725907937e97f014e37f7842de3a1168c53013846",
+      "matches": true
+    },
+    {
+      "file": "assets/School-xvhg18dK.css",
+      "status": 200,
+      "localHash": "5916f1fc1b98f2c9cf3c4c17cc39d94f46207c9fa1779c9561a8bb8f5b20ee50",
+      "liveHash": "5916f1fc1b98f2c9cf3c4c17cc39d94f46207c9fa1779c9561a8bb8f5b20ee50",
+      "matches": true
+    },
+    {
+      "file": "assets/schoolAccess-CrDLO-TF.js",
+      "status": 200,
+      "localHash": "e3cc2071df93c8199705e279bd17b56f68a3a9479456aa58ed4910ae64e41393",
+      "liveHash": "e3cc2071df93c8199705e279bd17b56f68a3a9479456aa58ed4910ae64e41393",
+      "matches": true
+    },
+    {
+      "file": "assets/Settings-CSDUHXqD.css",
+      "status": 200,
+      "localHash": "8706b65c1c6b4caf0f2378c6c2eeff5e27ea939b80749ba49d19ab4adf7a7b7b",
+      "liveHash": "8706b65c1c6b4caf0f2378c6c2eeff5e27ea939b80749ba49d19ab4adf7a7b7b",
+      "matches": true
+    },
+    {
+      "file": "assets/Settings-Cwgn65Fg.js",
+      "status": 200,
+      "localHash": "89c346a0a9450d8b608533d3b8bfb0625e39f7ae082d508af474865da19d2eee",
+      "liveHash": "89c346a0a9450d8b608533d3b8bfb0625e39f7ae082d508af474865da19d2eee",
+      "matches": true
+    },
+    {
+      "file": "assets/strings-Cde0PXkd.js",
+      "status": 200,
+      "localHash": "03791479288d856155d3c9c697b577c02e364001b946130603c052c8282bf341",
+      "liveHash": "03791479288d856155d3c9c697b577c02e364001b946130603c052c8282bf341",
+      "matches": true
+    },
+    {
+      "file": "assets/thread-Du7Uzr6_.js",
+      "status": 200,
+      "localHash": "f5f1493799d7cc343974be04f42debe7672a673abea6b43621e4917903056586",
+      "liveHash": "f5f1493799d7cc343974be04f42debe7672a673abea6b43621e4917903056586",
+      "matches": true
+    },
+    {
+      "file": "assets/useLinks-DwVyCReg.js",
+      "status": 200,
+      "localHash": "420d681e41a6f08ac86e822535450534c2a7452f97ba4e92ea5358e524f48a1b",
+      "liveHash": "420d681e41a6f08ac86e822535450534c2a7452f97ba4e92ea5358e524f48a1b",
+      "matches": true
+    },
+    {
+      "file": "assets/Verify-VRmdARyA.js",
+      "status": 200,
+      "localHash": "0210910d7ce9e36f09a4f41e001c4553970fb4fe82f13dcc622dd2534772a64b",
+      "liveHash": "0210910d7ce9e36f09a4f41e001c4553970fb4fe82f13dcc622dd2534772a64b",
+      "matches": true
+    },
+    {
+      "file": "firebase-messaging-sw.js",
+      "status": 200,
+      "localHash": "c0fdda932afc1c2ecf3ecfe32f89684a1d30bb10284c4a72b6ae454f2c22a146",
+      "liveHash": "c0fdda932afc1c2ecf3ecfe32f89684a1d30bb10284c4a72b6ae454f2c22a146",
+      "matches": true
+    },
+    {
+      "file": "icons/icon-192.png",
+      "status": 200,
+      "localHash": "f98970c6bee0d07b6aa405d92098ac2d956d95dd1139c4835f64079e78a6ce05",
+      "liveHash": "f98970c6bee0d07b6aa405d92098ac2d956d95dd1139c4835f64079e78a6ce05",
+      "matches": true
+    },
+    {
+      "file": "icons/icon-512.png",
+      "status": 200,
+      "localHash": "2340f02edd46673c4cc9ea0799bbc30fc585d363c00ec9233b8da206b64684ac",
+      "liveHash": "2340f02edd46673c4cc9ea0799bbc30fc585d363c00ec9233b8da206b64684ac",
+      "matches": true
+    },
+    {
+      "file": "icons/icon-maskable-512.png",
+      "status": 200,
+      "localHash": "6897563ad58fab7c67427f28e5cd3edec346146d54df5eca4392a9d653b8ed17",
+      "liveHash": "6897563ad58fab7c67427f28e5cd3edec346146d54df5eca4392a9d653b8ed17",
+      "matches": true
+    },
+    {
+      "file": "index.html",
+      "status": 200,
+      "localHash": "9b2a5dd868b83303d03746fb8482764a075fc9886073675aad48fd64f1babc98",
+      "liveHash": "9b2a5dd868b83303d03746fb8482764a075fc9886073675aad48fd64f1babc98",
+      "matches": true
+    },
+    {
+      "file": "manifest.webmanifest",
+      "status": 200,
+      "localHash": "0308efaf7b6c5910010b2e52882fdb1a3a903736381486a0c58b9a2cb22c43c7",
+      "liveHash": "0308efaf7b6c5910010b2e52882fdb1a3a903736381486a0c58b9a2cb22c43c7",
+      "matches": true
+    }
+  ]
+}

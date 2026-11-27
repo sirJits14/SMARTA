@@ -1,0 +1,136 @@
+{
+  "baseline": "docs/releases/2026-10-18-relationship-correction/prepareSims.mjs",
+  "productionMainScript": "/assets/index-BrmqHMeI.js",
+  "changes": [
+    {
+      "path": "parent/src/lib/school.js",
+      "before": "0cae7be80758309ba17182a16afdb7b69cd3bc202f91b2a38cdd51bd0d898828",
+      "after": "5f23778c41cf6e214b58fa9764a52698f162035164b4f06b025a5038dcd34bb2"
+    },
+    {
+      "path": "parent/src/strings.js",
+      "before": "7f64b175c1ace8b440195a76fee5e715b8e8f368f3ec1f1f72361cf274c2d22c",
+      "after": "c483c03268dbaed7c6d297a104e192cd777f20fab23ed7ca71a1920cb0bb2aaa"
+    },
+    {
+      "path": "shared/theme/contrast.test.js",
+      "before": "a16d151f3cb22ec37a973a350d07b680e8a3538b35a47faad12b1378f7d3f377",
+      "after": "40e9862ec5bc18bd8c1655009fb8702bf5bcf7c940b541eb674647607d4e7dcf"
+    },
+    {
+      "path": "shared/theme/theme.css",
+      "before": "287c68c62cb2bdc0a519c44a8b93c0c6aa47f628d7a64d1a0645ae59512b4ad1",
+      "after": "404ec3247e1ae35f71b3854ccbd58c9bae1d9e24a6fa3b39785746d510cc2e87"
+    },
+    {
+      "path": "src/components/CountBadge.test.js",
+      "before": null,
+      "after": "db47463379df4ec9afc2aede9cb0abdfec3c8b6bc35ed84ffd1906229e83f86f"
+    },
+    {
+      "path": "src/components/Shell.jsx",
+      "before": "cee2f354ad78a77f76535f6f6b241a9978287adbb976f92dce6f5bc8baa91719",
+      "after": "7264bdfe8817f6cfc19a9a775b932a9f73da2bfc8d51f804cf01f6667e266ec4"
+    },
+    {
+      "path": "src/components/ui.jsx",
+      "before": "7dfda9cd1ecfa58c2e7f75e58cb4575366bcc2b954ad36de84de4643e5437a21",
+      "after": "1e6480ee74baea538ed8ddc820099cfbeb5af5cc4f33195bddc829469ea8eba6"
+    },
+    {
+      "path": "src/hooks/useSchoolPendingCount.js",
+      "before": null,
+      "after": "d03c69dd3db5929ac3563ff98031ad0b6af23aa3e99b407bea73199bbf1b21d0"
+    },
+    {
+      "path": "src/lib/schoolAssignments.js",
+      "before": "656d7d61e3b0536a6247defb70bffd60463511ae1932eae6ad09116168bc1c81",
+      "after": "7441cfb9ac5cfc783a2dafa4057a872a7a72d4f4a20838d8e1cd9704acd82c90"
+    },
+    {
+      "path": "src/lib/schoolAssignments.test.js",
+      "before": "3c8393e6d39cc96a5ac56a667a858a0a4cfcaac3664a43e178002a623e9e4e9f",
+      "after": "5843e96fb33fbd970e6684296001d1603c6a96d87aa632313d467c2f488a95d6"
+    },
+    {
+      "path": "src/pages/GuardiansPage.jsx",
+      "before": "0b948478049ba0b8b99d8b917a8eff13e23cb634dd597c3c9bf0f8a385520f11",
+      "after": "5b24b535453579bbe99ba99a933278551e6037420fd69d05e0cd291d2a80c25b"
+    },
+    {
+      "path": "src/pages/guardians/SchoolAccessTab.jsx",
+      "before": "576e012c5a92b03718c3c72e39078bc80cf64e81bbc1b548223ead58d3a1111d",
+      "after": null
+    },
+    {
+      "path": "src/pages/guardians/school/AssignRoleForm.jsx",
+      "before": null,
+      "after": "ae405035c33c7ff42fa359a7df44ff9a39af386258ee8e782fddd59c7c55035a"
+    },
+    {
+      "path": "src/pages/guardians/school/AssignmentsView.jsx",
+      "before": null,
+      "after": "fd51d1fd3980fd1a74bf119a7d036914bd4020fd0245598aca4935b283f3d20d"
+    },
+    {
+      "path": "src/pages/guardians/school/CoverageView.jsx",
+      "before": null,
+      "after": "4f34847931d9ecb00d89803acdd26543bb2f47816bdd57050c04ba4a5040e042"
+    },
+    {
+      "path": "src/pages/guardians/school/CoverageView.test.js",
+      "before": null,
+      "after": "44abac3676f23384b7a2acf538e8c45869b5e74adb122de3372aafeeb2e2f761"
+    },
+    {
+      "path": "src/pages/guardians/school/HistoryView.jsx",
+      "before": null,
+      "after": "0c3b66f47e96d6678c6dbb27e3d2867d1cb1a71d3f867d26fef9277e0520ab87"
+    },
+    {
+      "path": "src/pages/guardians/school/HistoryView.test.js",
+      "before": null,
+      "after": "d78f9f827880b8c0357042e799d31f8e5a3b1785ab8dcd0fd0776fd001f1fa37"
+    },
+    {
+      "path": "src/pages/guardians/school/OpenedTag.jsx",
+      "before": null,
+      "after": "7d1382e574fb63d235cd71cb95d39a005e74b75af29c52c95ebe4d94d94667aa"
+    },
+    {
+      "path": "src/pages/guardians/school/PendingView.jsx",
+      "before": null,
+      "after": "6d114f704968315644cf570dd3bd9f7ddcc4fa48d1ec390713693d602d436b82"
+    },
+    {
+      "path": "src/pages/guardians/school/PendingView.test.js",
+      "before": null,
+      "after": "cb02d00db7e6edddf674434046fea97ea3c96a236e90b3b42b3d4a6116a6301b"
+    },
+    {
+      "path": "src/pages/guardians/school/SchoolAccessTab.jsx",
+      "before": null,
+      "after": "b118c1979c154684166ebeb5719529dcd6c226aaf98684178816e05818c9b74c"
+    },
+    {
+      "path": "src/pages/guardians/school/SubTabs.jsx",
+      "before": null,
+      "after": "97ca8306df16ca27dc41618590b27ce2a0e155d2a96f8d6299a38ee0c6a3c491"
+    },
+    {
+      "path": "src/pages/guardians/school/downloadCsv.js",
+      "before": null,
+      "after": "80839c4014c14b7a17c90d93ff292447f0c855a849ec53cb0049a77e57464976"
+    },
+    {
+      "path": "src/pages/guardians/school/useSchoolAccess.js",
+      "before": null,
+      "after": "92546125b914999c016a0d9a95506429bc005979d923d532c1e97dcd16934846"
+    },
+    {
+      "path": "src/registrar.css",
+      "before": "26559c55fa12ab05fd423f131b4d3ab1be384f4bab578a5ab8ddad9b6abf6a15",
+      "after": "29987cde0f64decbec59173be0b27eac96ec5d45b08ff6b8d9f5ce41a6361e7b"
+    }
+  ]
+}

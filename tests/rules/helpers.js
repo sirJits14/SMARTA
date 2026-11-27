@@ -14,10 +14,19 @@ export const GUARDIAN_B = { uid: 'gB', token: { email: 'b@gmail.com', email_veri
 export const GUARDIAN_UNVERIFIED = { uid: 'gU', token: { email: 'u@gmail.com', email_verified: false, firebase: password } };
 export const ANON = { uid: 'anon1', token: { firebase: { sign_in_provider: 'anonymous' } } };
 
+// Staff roles (spec 2026-10-04). Profiles are seeded per test in roles.test.js.
+export const ADMIN_NEW = { uid: 'adm2', token: { email: 'admin2@bnhs.edu', email_verified: false, firebase: password } };
+export const JHS = { uid: 'jhs1', token: { email: 'jhs@bnhs.edu', email_verified: false, firebase: password } };
+export const SHS = { uid: 'shs1', token: { email: 'shs@bnhs.edu', email_verified: false, firebase: password } };
+export const GLC8 = { uid: 'glc8', token: { email: 'glc8@bnhs.edu', email_verified: false, firebase: password } };
+export const DISABLED_ADMIN = { uid: 'off1', token: { email: 'off@bnhs.edu', email_verified: false, firebase: password } };
+// users/legacy@bnhs.edu is seeded per test with the profile shape under test.
+export const LEGACY = { uid: 'leg1', token: { email: 'legacy@bnhs.edu', email_verified: false, firebase: password } };
+
 export async function setup() {
   const env = await initializeTestEnvironment({
     projectId: 'bnhs-sims-rules-test',
-    firestore: { rules: readFileSync('firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
+    firestore: { rules: readFileSync(process.env.SIMS_RULES_PATH || 'firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
   });
   await env.clearFirestore();
   return env;
@@ -32,6 +41,11 @@ export const denied = assertFails;
 // Baseline documents every rules test can rely on.
 export async function seedBaseline(env) {
   await seed(env, async (db) => {
+    // Exercise the deployed UID lookup path, including coordinator audience
+    // writes near Firestore's expression budget. Legacy fallback has its own tests.
+    for (const who of [STAFF, ADMIN_NEW, JHS, SHS, GLC8, DISABLED_ADMIN, LEGACY]) {
+      await db.doc(`staff_profiles/${who.uid}`).set({ email: who.token.email });
+    }
     await db.doc('users/registrar@bnhs.edu').set({ name: 'Registrar', role: 'registrar' });
     await db.doc('kiosks/kiosk1').set({ label: 'Main Gate', active: true });
     await db.doc('kiosks/kiosk9').set({ label: 'Old Gate', active: false });

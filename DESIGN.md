@@ -1,42 +1,186 @@
-# BNHS SIMS registrar design system
+---
+name: BNHS SIMS
+description: Registrar console for BNHS learner records, flat bordered surfaces with a teal accent in light and dark.
+colors:
+  light-page: "#F5F7FA"
+  light-sidebar: "#FFFFFF"
+  light-card: "#FFFFFF"
+  light-selected: "#E7F3F4"
+  light-border: "#E3E8EF"
+  light-control-border: "#848FA0"
+  light-ink: "#17212F"
+  light-muted: "#5F6E83"
+  light-primary: "#077683"
+  light-primary-hover: "#06636E"
+  dark-page: "#0B0F19"
+  dark-sidebar: "#151A26"
+  dark-card: "#101522"
+  dark-menu: "#1A2030"
+  dark-selected: "#232B3B"
+  dark-border: "#283040"
+  dark-control-border: "#626F85"
+  dark-ink: "#F5F7FA"
+  dark-muted: "#939CAC"
+  dark-primary: "#24A9B5"
+  dark-on-primary: "#061418"
+  present: "#15803D"
+  late: "#B45309"
+  absent: "#DC2626"
+  excused: "#64748B"
+  info: "#1D4ED8"
+typography:
+  page-title:
+    fontFamily: "-apple-system, BlinkMacSystemFont, SF Pro Text, SF Pro Display, SF Pro, Inter, Segoe UI, system-ui, sans-serif"
+    fontSize: "24px"
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: "-0.02em"
+  section-title:
+    fontSize: "16px"
+    fontWeight: 600
+    letterSpacing: "-0.01em"
+  metric:
+    fontSize: "26px"
+    fontWeight: 600
+    fontFeature: "tnum"
+  body:
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: 1.45
+  label:
+    fontSize: "13px"
+    fontWeight: 500
+  table-header:
+    fontSize: "12px"
+    fontWeight: 500
+rounded:
+  control: "8px"
+  menu: "10px"
+  card: "12px"
+  pill: "999px"
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "16px"
+  lg: "24px"
+  xl: "32px"
+components:
+  button-primary:
+    backgroundColor: "{colors.light-primary}"
+    textColor: "#FFFFFF"
+    rounded: "{rounded.control}"
+    height: "38px"
+    padding: "0 16px"
+  button-primary-hover:
+    backgroundColor: "{colors.light-primary-hover}"
+  button-secondary:
+    backgroundColor: "{colors.light-card}"
+    textColor: "{colors.light-ink}"
+    rounded: "{rounded.control}"
+    height: "38px"
+  input:
+    backgroundColor: "{colors.light-card}"
+    textColor: "{colors.light-ink}"
+    rounded: "{rounded.control}"
+    height: "38px"
+    padding: "0 12px"
+  nav-item-current:
+    backgroundColor: "{colors.light-selected}"
+    textColor: "{colors.light-ink}"
+    rounded: "{rounded.control}"
+    height: "36px"
+  card:
+    backgroundColor: "{colors.light-card}"
+    rounded: "{rounded.card}"
+---
 
-The authenticated registrar interface uses frosted navigation and summary panels over a static lavender, blush and blue background. Tables, forms and dialogs have calm, nearly opaque surfaces. The dashboard puts unassigned learners and sections without attendance records ahead of supporting totals and charts.
+# Design System: BNHS SIMS
 
-## Scope and source
-Nine destinations: Dashboard, Students, Sections, Schedules, Enrollment, Attendance, ID Cards, Guardians and Settings. Guardians retains all eight lazy panels. The school seal and Inter remain the brand anchors. Login, parent portal, kiosk, backend permissions, print sheet dimensions and SF2 calculations are outside this redesign.
+## Overview
 
-Approved specification: [registrar glassmorphism](docs/superpowers/specs/2026-09-25-sims-glassmorphism-redesign-design.md).
-Screen tokens: `src/registrar.css`. Legacy `src/styles.js` tokens provide login and print fallbacks.
+**The registrar's console.** A calm, dense, desktop-first administration surface for staff who spend the working day enrolling learners, taking attendance and producing DepEd-shaped reports. The dark theme follows a premium management dashboard: charcoal-navy page, a slightly lighter sidebar panel, cards separated by hairlines rather than shadows, and a single teal accent for actions, the current page and state. The light theme is its daylight twin: cool white surfaces on #F5F7FA with a deeper teal.
 
-## Materials and colors
-| Role | Fill | Blur | Radius |
-| --- | --- | --- | --- |
-| Navigation | White at 76% | 18px | 24px |
-| Summary | White at 82% | 12px | 24px |
-| Working | White at 97% | None | 16px |
-| Dialog | White | None | 20px |
-| Input/select | White | None | 12px |
+The interface should disappear into the task. Expression lives in precise details (type rhythm, borders, the teal accent used sparingly), never in glows, gradients, glass or decoration.
 
-Background: #f1eff5 with static #f0d9de, #dcebf1 and #e6dff4 radial gradients.
-Primary #5b4fe8; focus #4638c2; screen ink #25213b; muted #656078.
-Control border #8c869a. Decorative borders can remain lighter.
-Attendance colors retain Present #15803d, Late #b45309, Absent/error #dc2626, Excused #64748b, with text labels rather than color alone.
+Scope: the registrar shell and shared components: Dashboard, Students, Sections, Schedules, Enrollment, Attendance, ID Cards, Guardians, Announcements, Settings and Accounts, plus Login and Change password. The Parents App (`parent/`) uses the same tokens, font stack and flat material; its rules are under **Parents App** below. Print sheets (ID cards, slips, SF2) keep their own fixed light styles and Inter.
 
-Glass panels use a thin white edge and a restrained cool shadow. Blur is confined to navigation and summary panels; never apply it to individual table rows or form fields.
+Specification: [SIMS UI modernization](docs/superpowers/specs/2026-10-20-sims-ui-modernization-design.md).
+Tokens: `shared/theme/theme.css` (colors, `--font-sans`), `src/registrar.css` (components and shell), `src/styles.js` (JS mirrors used by inline styles).
 
-## Layout and type
-Desktop sidebar: 232px expanded / 72px collapsed, with saved preference and accessible icon labels. Outer spacing/gap: 24px; 16px below 1024px; 12px outer spacing below 768px. Below 768px, navigation becomes a modal drawer and working forms stack. Main content scrolls independently. Dense tables scroll inside named regions.
-Dashboard pairs become one column at 1100px; totals stack below 768px.
+## Colors
 
-Inter/system sans; body controls 14px, secondary data/captions 11–13px, dashboard heading 26px (23px mobile), prominent metrics 30–48px. Numeric data uses tabular figures. Shared actions and fields have 44px minimum hit areas. Keep visible labels, deliberate spacing and a strong focus outline.
+Restrained strategy: neutrals plus one accent. Every screen color is a `--t-*` token in `shared/theme/theme.css`, shared with the Parents App; components never hard-code colors (`shared/theme/literals.test.js` enforces this).
 
-## Interaction and information
-The sidebar preserves an active attendance session when selected again. Explicit dashboard attendance shortcuts validate the section, school year and date. Coverage means distinct eligible sections with a saved record; an empty marks map counts, kiosk records count, and no eligible sections displays text instead of a misleading percentage.
+- **Surfaces.** Page `--t-bg`, sidebar `--t-sidebar`, card `--t-surface`, dialog `--t-dialog`, dropdown `--t-menu`, field `--t-input-bg`. In dark mode the sidebar and dialogs sit one step lighter than cards; the page is darkest.
+- **Lines.** `--t-border` for hairlines and card edges, `--t-border-strong` for secondary-button outlines, `--t-control-border` (at least 3:1) for input outlines.
+- **Text.** `--t-ink` primary, `--t-subtle` labels, `--t-nav-ink` inactive navigation, `--t-muted` secondary and table headers, `--t-placeholder`.
+- **Accent.** `--t-primary` with `--t-primary-hover` / `--t-primary-active`; `--t-primary-deep` for accent text on tinted fills; `--t-focus` for focus rings. The supplied light accent #087F8C is kept as `--t-decor` (charts); the interactive light primary is one step deeper (#077683) so it passes 4.5:1 as text on the #F5F7FA page. The supplied light muted #66758A is likewise deepened to #5F6E83.
+- **Selection.** `--t-selected` (#E7F3F4 / #232B3B) marks the current page, selected tab and selected row. `--t-hover` / `--t-hover-strong` / `--t-row-hover` are quieter neutral steps.
+- **Semantic.** Attendance colors are functional and keep their text labels: Present, Late, Absent, Excused (`--t-present`, `--t-late`, `--t-absent`, `--t-excused`). Error uses `--t-danger*` and `--t-feedback-*`, success `--t-success-*`, warning `--t-warn-*`, information `--t-info*`, disabled `--t-disabled-*`.
+- **Dark-mode text on teal** is near-black (`--t-on-primary` #061418); white on #24A9B5 is only 2.8:1.
 
-Loading, errors and empty results are distinct. Retry preserves query context. Modal drafts stay mounted through resource errors; dependent controls disable until recovery. Save operations guard repeat activation and retain errors. Native dialogs handle Escape, focus containment and focus restoration. Guardians panels support Arrow/Home/End navigation.
+`<html data-theme="dark">` switches the palette. The preference (Auto / Light / Dark, default Auto, saved per device) is set from the sidebar account menu. The pre-paint script in `index.html` applies it before first render, so there is no wrong-theme flash. Dark rules live only under `@media screen`, so print is always light, and `.paper` keeps on-screen previews of printed documents white. `shared/theme/contrast.test.js` checks every text and control pair in both palettes.
 
-## Fallbacks and print
-Unsupported backdrop filters and reduced transparency use white surfaces. Reduced motion suppresses animation/transitions. Registrar atmosphere is screen scoped. Printable components and page layouts retain their existing styles; print controls wait for the currently mounted QR images to load. Production printer/export verification remains a rollout check, as documented in the verification record.
+## Typography
 
-## Verification and remaining polish
-[Verification record](docs/superpowers/reviews/2026-09-25-sims-glassmorphism-verification.md) distinguishes synthetic checks from live integration. Deferred polish: filtered learner empty copy, attendance mode selection semantics, and opaque sticky summary headers. This document describes implemented behavior without claiming those gaps are resolved.
+One family carries everything: `--font-sans` = `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", Inter, "Segoe UI", system-ui, sans-serif`. Mac, iPhone and iPad render SF Pro natively; a machine with SF Pro installed locally picks it up by name; Windows and Android fall back to Inter (loaded from Google Fonts). SF Pro files are never bundled or served, because Apple's license limits SF Pro to Apple platforms.
+
+Fixed px scale, ratio about 1.15: page title 24px/600 (22px on phones), dialog title 18px/600, section title 16px/600, body and controls 14px, labels 13px/500, table headers and supporting text 12–13px, metrics 26–36px/600 with tabular figures. Avoid 700+ weights in the shell; hierarchy comes from size and the ink/muted split. Printed cards and slips keep Inter (`T.print`) so their fixed layouts set identically on every device.
+
+## Layout
+
+- **Shell.** Desktop: an inset sidebar panel (240px expanded / 64px collapsed, 8px from the window edge, 12px radius) and an independently scrolling main column (16px top, 32px sides; 20px below 1024px). The collapse preference is saved per device; below 1024px it defaults to collapsed. Below 768px the sidebar becomes a modal drawer opened from a sticky 56px mobile bar (menu button, page title, SY chip).
+- **Page header.** A slim row holds the breadcrumb (`BNHS SIMS / Page`) and the school-year chip. Under it, each page's `.sims-heading` puts the title left and page actions right, closed by a hairline 16px below and 24px of space before content. Primary action rightmost.
+- **Content.** Max width 1440px, centered. 4px spacing scale; card padding 16–24px; gaps 16–24px. The Dashboard is a main column plus a 320px right rail (Calendar, Upcoming posts, Recent activity). Below 1280px the rail moves under the main column as two columns, and below 768px as one. Rows inside the main column respond to the column's own width (container queries): three-up becomes two-up at 900px and one-up at 560px. KPI tiles fill `repeat(auto-fit, minmax(180px, 1fr))`, two per row on phones. Dense tables scroll horizontally inside named regions rather than hiding columns.
+- **Enrollment** keeps its grade-filtered, searchable section directory beside the selected class list (stacked on phones), with the enrollment form in a drawer opened by "Enroll a learner".
+
+## Elevation & Depth
+
+Flat. Surfaces separate by tone and 1px borders, not shadows. Shadows exist only on things that float above the page: dropdown menus, the bulk-action bar, tooltips and dialogs, each with a vertical offset and soft blur at low opacity. No blur, glass or background glows anywhere in SIMS or the Parents App.
+
+## Shapes
+
+8px controls (buttons, inputs, nav items, tabs), 10px menus, 12px cards, dialogs and the sidebar panel, full pills only for badges, status pills and the SY chip. Borders are 1px.
+
+## Components
+
+- **Buttons** (`Btn` in `src/components/ui.jsx`, styles in `registrar.css`). Variants: `solid` (primary teal), `ghost` (secondary: surface fill, strong border), `danger` (red, for destructive actions; always behind a confirmation), `quiet` (text-only teal), `icon` (square, needs `aria-label`). 38px tall (44px on touch screens), 0 16px padding, 14px/500. Every variant has hover, active, focus-visible (2px focus ring, 2px offset), disabled (neutral fill, muted text) and `loading` (spinner, `aria-busy`, disabled) states. Avoid several solid buttons side by side; secondary row actions go behind a ⋯ menu.
+- **Fields** (`Inp`, `Sel`, `Field`). 38px, 8px radius, `--t-input-bg`, `--t-control-border`. Focus turns the border teal and adds a 3px translucent teal ring. `aria-invalid` turns the border red; the `Field` error text is linked by `aria-describedby`. Disabled and read-only states have their own fills. Labels sit above, 13px/500.
+- **Cards** (`Card`). One flat material: surface fill, 1px border, 12px radius. The `surface` prop remains only as a modifier class.
+- **Dialogs** (`Modal`, `Confirm`, `DialogFrame`). Native `<dialog>` with focus return, Escape and backdrop dismissal. Title row with an icon close button; actions right-aligned, secondary before primary. Short fade-and-rise entrance, removed under reduced motion.
+- **Sidebar.** Wordmark and collapse toggle on top; nav items 36px with 18px outline icons (muted, teal when current); the current page uses the selected fill and a hairline border. When collapsed, icon-only controls show a tooltip on hover or focus. The account row at the bottom (initials avatar, name, role) opens a menu with the Auto / Light / Dark radios and Sign out; arrow keys, Home/End and Escape work inside it.
+- **Tables.** No header fill; 12px/500 muted headers, 12px 16px cells, hairline row dividers, row hover `--t-row-hover`, numeric columns right-aligned with tabular figures (`is-num`). Ordinary cells use `--t-subtle` (`S.td`); the row's primary cell, usually the name, uses ink at 500 (`S.tdStrong`). The trailing actions cell (`S.tdActions`) shows at most one visible secondary button, usually Edit, and puts everything else in a ⋯ `RowMenu`.
+- **Row menus** (`RowMenu`). An icon button opens a fixed-position menu that never gets clipped by a table's scroll container and flips above near the window's bottom edge. Destructive items are red, and disabled items keep their reason as a tooltip (`hint`). Arrow keys, Home/End, Escape and Tab work; focus returns to the button before the chosen action runs. Items stay mounted (hidden) while the menu is closed.
+- **Badges** (`Badge`). Pill with a 6px dot, 12px/500, in tones success, warning, danger, info, accent and neutral, using the paired `--t-*-bg` / `--t-*-ink` tokens. Used for account and learner status, Pinned and Printed.
+- **Segmented filters** (`.sims-segmented`, `GradePills`). One-of-many filters such as grade or announcement status: a bordered track on the page tone, with the chosen segment raised onto the surface. Counts sit beside the label in muted tabular figures, and screen readers hear them as "Grade 7 (4)".
+- **Stat and tally cards.** A muted label with a 16px icon (dashboard) or an 8px status dot (attendance tallies), and the value below it in 24–26px/600 tabular figures. The value stays ink; color lives only in the dot.
+- **Widget cards and drawers** (`src/components/dashboard/`). A widget card is the flat `Card` with a header row: 16px/600 title, optional 13px muted subtitle, at most one compact `Sel` filter, and an icon-only expand button (`Expand {title}`, `aria-haspopup="dialog"`). Each card shows its own loading and error state (`ResourceState inline`). Expand opens a `WidgetDrawer`: a 560px right-side `Modal` (full width minus 24px on phones), with a 200ms fade-and-slide that is removed under reduced motion, a scrolling body of filters, chart and named-region tables under a pinned title row, and a sticky footer link to the owning page. Only one drawer is open at a time, and `?panel=<id>` mirrors it with `history.replaceState`. Charts use `--t-decor`, `--t-decor-mid` and `--t-decor-soft` on `--t-chart-track`, and every chart carries its numbers as text.
+- **Checkboxes and radios** use `accent-color: --t-primary` at 16px inside `.sims-check` labels. File inputs get a secondary-button `::file-selector-button`. Form sub-headings (`.sims-form-section`) are 13px/600 sentence case with a hairline above, never tracked uppercase.
+- **Tabs.** Use these for switching views within a page (Attendance, Guardians, ID Cards): 36px, 8px radius, and the selected tab uses the selected fill and hairline border. Filters use the segmented control instead.
+- **Empty and loading states.** Empty states are a centered title and one-line hint. While loading, `ResourceState` shows a three-bar skeleton (the pulse is off under reduced motion), and screen readers still hear "Loading …". It also handles errors and retry.
+- **Login / Change password.** A single 380px card on the page background: wordmark, title, one-line subtitle, alert, fields, a full-width primary button. Real `<form>` submission so Enter and password managers work.
+
+## Parents App
+
+A phone-first PWA built on the same system. Styles live in `parent/src/app.css`, and components in `parent/src/components/ui.jsx`.
+
+- **Kept from before:** the floating pill nav, the iOS-style settings groups, the Messages-style learner list, chat bubbles for history and inbox, and the collapsing page header.
+- **Material:** flat `.card` surfaces with a 1px border. The pill nav and the class select bar sit on `--t-sidebar` with one soft shadow, because they float. The collapsed page header is a solid page-tone bar with a hairline.
+- **Controls:** buttons (`p-btn`: solid, ghost, danger) are 48px tall with a 12px radius. Inputs (`p-input`) are 48px with 16px text, so iOS doesn't zoom on focus, and get the same teal focus ring as SIMS. Banners (`p-banner`) use the info, warning and danger token pairs.
+- **Restrained accent:** teal marks the screen's main action, the active nav icon and switches that are on. Settings icon tiles are neutral, a hover fill with an outline icon, rather than the old iOS rainbow. The current nav tab uses the selected fill.
+- **Header actions:** a page header's action is a 44px round icon button (`.page-header-icon-btn`), tinted teal and matched in size to the back button, with the label as its accessible name. On Gate scans, Sessions opens from a calendar icon at the bar's right end, so back, the scrolled-in name and Sessions share one row.
+- **Theme:** Auto / Light / Dark is set only in Settings › Appearance. There is no header shortcut, and the sign-in screen follows the device setting.
+- **Type:** headings are 600, never 800. Group headers are sentence case. The page title is 30px/600.
+- **Theme color:** the browser bar uses the page color (#F5F7FA light, #0B0F19 dark), and so do the manifest's `theme_color` and `background_color`.
+
+## Do's and Don'ts
+
+- Do use the `--t-*` tokens and the shared components; never hard-code a color in JSX or the themed stylesheets.
+- Do show every learner and adviser name in capitals through `capsName` / `fullName` / `personLabel` (`src/lib/roster.js`), on screen and on printed slips and ID cards. Stored names keep their entered case; name inputs use `.sims-caps`. Emails are never capitalised.
+- Do keep attendance status readable without color: every status carries its text label.
+- Do keep 44px touch targets on coarse pointers and a visible focus ring everywhere.
+- Do respect `prefers-reduced-motion`; motion is limited to 120–200ms state changes.
+- Don't add gradients, glows, glass/blur, or colored side borders on cards.
+- Don't fill the page with solid teal: the accent marks actions, the current page and state only.
+- Don't use bold (700+) for emphasis inside dense tables; use ink versus muted instead.
+- Don't restyle print sheets (ID cards, slips, SF2) from screen tokens; they stay light and fixed.

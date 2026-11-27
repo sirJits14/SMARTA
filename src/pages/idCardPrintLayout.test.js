@@ -3,6 +3,7 @@ import {
   ID_CARD_PRINT_LAYOUT,
   ID_CARD_PRINT_STYLES,
   chunkIdCardsIntoSheets,
+  sheetUsesAllRows,
 } from './idCardPrintLayout.js';
 
 describe('ID card print layout', () => {
@@ -35,12 +36,13 @@ describe('ID card print layout', () => {
     expect(ID_CARD_PRINT_STYLES).toContain('grid-template-columns: repeat(8, 1fr);');
     expect(ID_CARD_PRINT_STYLES).toContain('grid-auto-rows: 27mm;');
     expect(ID_CARD_PRINT_STYLES).toContain('width: 194mm;');
-    expect(ID_CARD_PRINT_STYLES).toContain('gap: 1mm;');
+    expect(ID_CARD_PRINT_STYLES).toContain('gap: 0;');
     expect(ID_CARD_PRINT_STYLES).toContain('width: 16mm !important;');
     expect(ID_CARD_PRINT_STYLES).toMatch(
       /\.id-card-qr\s*\{[^}]*box-sizing: border-box !important;/s,
     );
     expect(ID_CARD_PRINT_STYLES).toContain('-webkit-line-clamp: 2;');
+    // Printed cards show only the QR, name and LRN; the section line is screen-only.
     expect(ID_CARD_PRINT_STYLES).toContain('.id-card-section { display: none !important; }');
   });
 
@@ -56,7 +58,9 @@ describe('ID card print layout', () => {
     const rowHeightMatch = sheetRuleMatch[0].match(/grid-auto-rows:\s*([\d.]+)mm/);
     expect(rowHeightMatch).not.toBeNull();
     const rowHeightMm = Number(rowHeightMatch[1]);
-    const fullSheetHeightMm = rowHeightMm * ID_CARD_PRINT_LAYOUT.rows + 1 * (ID_CARD_PRINT_LAYOUT.rows - 1);
+    const gapMatch = sheetRuleMatch[0].match(/gap:\s*([\d.]+)(?:mm)?;/);
+    expect(gapMatch).not.toBeNull();
+    const fullSheetHeightMm = rowHeightMm * ID_CARD_PRINT_LAYOUT.rows + Number(gapMatch[1]) * (ID_CARD_PRINT_LAYOUT.rows - 1);
     expect(fullSheetHeightMm).toBeLessThan(281);
   });
 
@@ -66,5 +70,50 @@ describe('ID card print layout', () => {
     expect(ID_CARD_PRINT_STYLES).toMatch(
       /\.app-sidebar,\s*\.app-topbar,\s*\.id-cards-controls,\s*\.id-cards-heading,\s*\.section-detail-modal-overlay,\s*\.sections-page-chrome\s*\{\s*display:\s*none\s*!important;\s*\}/,
     );
+  });
+});
+
+describe('section-coded ID card sheets', () => {
+  const codedRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\s*\{[^}]*\}/s)?.[0];
+
+  const fullRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\.sheet-full\s*\{[^}]*\}/s)?.[0];
+  const legendRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-legend\s*\{\s*grid-column[^}]*\}/s)?.[0];
+
+  it('sizes the color key to its content and never clips it', () => {
+    expect(codedRule).toMatch(/grid-template-rows:\s*auto;/);
+    expect(legendRule).toBeDefined();
+    expect(legendRule).not.toMatch(/overflow:\s*hidden/);
+    expect(legendRule).not.toMatch(/align-content:\s*center/);
+  });
+
+  it('keeps 26.4mm card rows on a sheet that does not reach the last row, so the usual key leaves 270mm', () => {
+    const rowMm = Number(codedRule.match(/grid-auto-rows:\s*([\d.]+)mm/)[1]);
+    expect(6 + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
+  });
+
+  it('holds a full 10-row sheet at 270mm, under the 281mm printable height, and lets the rows share what the key leaves', () => {
+    expect(fullRule).toBeDefined();
+    const heightMm = Number(fullRule.match(/height:\s*([\d.]+)mm/)[1]);
+    expect(heightMm).toBe(270);
+    expect(heightMm).toBeLessThan(281);
+    expect(fullRule).toMatch(/grid-auto-rows:\s*minmax\(0, 1fr\);/);
+  });
+
+  it.each([[1, false], [72, false], [73, true], [80, true]])('a sheet of %i cards uses all rows: %s', (count, full) => {
+    expect(sheetUsesAllRows(count)).toBe(full);
+  });
+
+  it('gives every card its own full 0.5mm dashed frame in the faint section shade, printed exactly', () => {
+    expect(ID_CARD_PRINT_STYLES).toMatch(
+      /\.id-cards-sheet\.section-coded \.id-card\s*\{[^}]*border: 0\.5mm dashed var\(--section-border\) !important;[^}]*print-color-adjust: exact;/s,
+    );
+  });
+
+  it('keeps the key swatches solid in the stronger section shade', () => {
+    expect(ID_CARD_PRINT_STYLES).toMatch(/\.id-cards-legend-swatch \{[^}]*border: [\d.]+mm solid var\(--section-color\);/);
+  });
+
+  it('keeps the color key off screen', () => {
+    expect(ID_CARD_PRINT_STYLES).toMatch(/^\s*\.id-cards-legend \{ display: none; \}/m);
   });
 });

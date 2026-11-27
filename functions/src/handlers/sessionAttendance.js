@@ -1,0 +1,298 @@
+import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { CallableError } from '../errors.js';
+import { loadSchoolActor } from './schoolAccess.js';
+import { canReviewSection, canCorrectSession } from '../../shared/schoolAccess.js';
+import { sessionAttendance } from '../../shared/sessionAttendance.js';
+import { manilaDate } from '../../shared/dates.js';
+import { fullName } from '../lib/format.js';
+import { sendToGuardian } from './push.js';
+import { logWarn } from '../log.js';
+import { nextNotice, NOTIFY_DELAY_MS } from '../lib/attendanceNotice.js';
+
+const fail = (code, message) => { throw new CallableError(code, message); };
+// A document id used only as a startAfter value (never a path): any non-empty id without '/'.
+const cursorId = value => typeof value === 'string' && value.length > 0 && value.length <= 1500 && !value.includes('/');
+const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+function validateDate(date) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)
+      || !Number.isFinite(Date.parse(`${date}T00:00:00Z`))
+      || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) fail('invalid-argument', 'Choose a valid date.');
+}
+function validateSectionDate({ sectionId, date }) {
+  if (!identifier(sectionId)) fail('invalid-argument', 'Choose a valid section.');
+  validateDate(date);
+}
+const activeFamily = (link, uid, studentId, schoolYear) => link?.status === 'active'
+  && link.guardianUid === uid && link.studentId === studentId && link.schoolYear === schoolYear
+  && link.relationship !== 'Adviser' && link.slot !== 'adviser';
+const projection = (attendance, studentId) => ({
+  studentId, gate: Object.fromEntries(['timeIn', 'timeOut', 'pmTimeIn', 'pmTimeOut'].map(key => [key, attendance?.[key]?.[studentId] || null])),
+  ...sessionAttendance(attendance, studentId, { unrecordedStatus: 'no_scan' }),
+});
+const nowDate = deps => manilaDate((deps.now || (() => new Date()))());
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Only the bell times leave the server; clients pick AM or PM from them.
+const bellTimes = (schedule) => schedule ? Object.fromEntries(['timeIn', 'timeOut', 'pmTimeIn', 'pmTimeOut']
+  .map(key => [key, HHMM.test(schedule[key] || '') ? schedule[key] : null])) : null;
+async function sectionFor(deps, reader, sectionId, actor) {
+  const snap = await reader.get(deps.db.doc(`sections/${sectionId}`));
+  if (!snap.exists) fail('not-found', 'Section not found.');
+  const section = { ...snap.data(), id: snap.id };
+  if (!canReviewSection(actor, section)) fail('permission-denied', 'This section is outside your attendance access.');
+  return section;
+}
+async function correctionAllowed(deps, reader, actor, section, date) {
+  const ended = await reader.get(deps.db.doc(`school_years/${section.schoolYear}`));
+  return !ended.data()?.endedAt && canCorrectSession(actor, section, date, nowDate(deps));
+}
+function validAttendance(attendance, section, date) {
+  if (attendance && (attendance.sectionId !== section.id || attendance.schoolYear !== section.schoolYear || attendance.date !== date
+      || !Number.isInteger(attendance.gradeLevel) || attendance.gradeLevel < 7 || attendance.gradeLevel > 12)) {
+    fail('failed-precondition', 'Attendance record requires administrator repair.');
+  }
+}
+function historicalScope(actor, section, attendance) {
+  if (attendance && !canReviewSection(actor, { ...section, gradeLevel: attendance.gradeLevel })) {
+    fail('permission-denied', 'The saved attendance grade is outside your scope.');
+  }
+}
+
+// Both the family and the adviser screens read a day the same way, so they cannot drift.
+async function dayAttendance(tx, deps, section, studentId, date) {
+  const [attendanceSnap, scheduleSnap] = await Promise.all([
+    tx.get(deps.db.doc(`student_attendance/${section.id}_${date}`)),
+    identifier(section.scheduleId) ? tx.get(deps.db.doc(`schedules/${section.scheduleId}`)) : null,
+  ]);
+  const attendance = attendanceSnap.data();
+  validAttendance(attendance, section, date);
+  return { attendance, body: { ...projection(attendance, studentId), date, sectionId: section.id, schoolYear: section.schoolYear, schedule: bellTimes(scheduleSnap?.data()) } };
+}
+async function enrolledLearner(deps, tx, section, studentId) {
+  const [enrollment, student] = await Promise.all([
+    tx.get(deps.db.doc(`enrollments/${studentId}_${section.schoolYear}`)), tx.get(deps.db.doc(`students/${studentId}`)),
+  ]);
+  if (!student.exists || enrollment.data()?.status !== 'enrolled' || enrollment.data()?.sectionId !== section.id) fail('permission-denied', 'Learner is not enrolled in this section.');
+  return student;
+}
+
+export async function getSchoolRoster(deps, input) {
+  validateSectionDate(input);
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const section = await sectionFor(deps, tx, input.sectionId, actor);
+    const canCorrect = await correctionAllowed(deps, tx, actor, section, input.date);
+    const [enrollments, snap, scheduleSnap] = await Promise.all([
+      tx.get(deps.db.collection('enrollments').where('sectionId', '==', section.id).where('schoolYear', '==', section.schoolYear).where('status', '==', 'enrolled')),
+      tx.get(deps.db.doc(`student_attendance/${section.id}_${input.date}`)),
+      identifier(section.scheduleId) ? tx.get(deps.db.doc(`schedules/${section.scheduleId}`)) : null,
+    ]);
+    const attendance = snap.data(); validAttendance(attendance, section, input.date);
+    historicalScope(actor, section, attendance);
+    const students = await Promise.all(enrollments.docs.map(doc => tx.get(deps.db.doc(`students/${doc.data().studentId}`))));
+    const rows = students.filter(s => s.exists).map(s => {
+      const photoUpdatedAt = s.data().photo?.updatedAt?.toMillis?.();
+      return { ...projection(attendance, s.id), displayName: fullName(s.data()), ...(photoUpdatedAt ? { photoUpdatedAt } : {}) };
+    });
+    rows.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    const canEditPhotos = actor.isAdmin === true || actor.assignments.some(a => a.role === 'adviser' && a.sectionId === section.id);
+    return { section, date: input.date, rows, canCorrect, canEditPhotos, schedule: bellTimes(scheduleSnap?.data()) };
+  });
+}
+
+export async function setSessionAbsence(deps, input) {
+  validateSectionDate(input);
+  const { sectionId, studentId, date, session, absent, expectedRevision, operationId } = input;
+  const reason = typeof input.reason === 'string' ? input.reason.trim() : '';
+  if (!identifier(studentId) || !identifier(operationId) || !['am', 'pm'].includes(session)
+      || typeof absent !== 'boolean' || !Number.isSafeInteger(expectedRevision) || expectedRevision < 0
+      || !reason || reason.length > 500) fail('invalid-argument', 'Choose a session and provide a reason (up to 500 characters).');
+  const fingerprint = JSON.stringify({ sectionId, studentId, date, session, absent, reason, expectedRevision });
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    if (actor.ended) fail('failed-precondition', 'This school year has ended.');
+    const section = await sectionFor(deps, tx, sectionId, actor);
+    if (!await correctionAllowed(deps, tx, actor, section, date)) fail('permission-denied', 'Attendance cannot be corrected for this section and date.');
+    const id = `${actor.uid}_${operationId}`;
+    const operationRef = deps.db.doc(`attendance_corrections/${id}`);
+    const attendanceRef = deps.db.doc(`student_attendance/${sectionId}_${date}`);
+    const noticeRef = deps.db.doc(`attendance_notifications/${studentId}_${date}_${session}`);
+    const [operation, snap, enrollment, student, notice] = await Promise.all([
+      tx.get(operationRef), tx.get(attendanceRef), tx.get(deps.db.doc(`enrollments/${studentId}_${section.schoolYear}`)), tx.get(deps.db.doc(`students/${studentId}`)),
+      tx.get(noticeRef),
+    ]);
+    if (!student.exists || enrollment.data()?.status !== 'enrolled' || enrollment.data()?.sectionId !== sectionId) fail('permission-denied', 'Learner is not enrolled in this section.');
+    const attendance = snap.data(); validAttendance(attendance, section, date);
+    historicalScope(actor, section, attendance);
+    if (operation.exists) {
+      if (operation.data().fingerprint !== fingerprint) fail('already-exists', 'This operation ID was already used.');
+      return operation.data().result;
+    }
+    const current = attendance?.sessionOverrides?.[studentId] || {};
+    if ((current.revision || 0) !== expectedRevision) fail('aborted', 'Attendance changed. Refresh and review before submitting again.');
+    const changedAt = Timestamp.fromDate((deps.now || (() => new Date()))());
+    const value = { absent, reason, actorUid: actor.uid, actorName: actor.displayName || actor.email || actor.uid, changedAt };
+    const override = { ...current, [session]: value, revision: expectedRevision + 1 };
+    const effective = { ...attendance, sessionOverrides: { ...attendance?.sessionOverrides, [studentId]: override } };
+    const result = { ok: true, revision: override.revision, operationId };
+    tx.set(attendanceRef, { sectionId, date, schoolYear: section.schoolYear, gradeLevel: attendance?.gradeLevel ?? section.gradeLevel,
+      sessionOverrides: { [studentId]: override }, updatedAt: date }, { merge: true });
+    tx.set(deps.db.doc(`learners/${studentId}/attendance/${date}`), { ...projection(effective, studentId), date, schoolYear: section.schoolYear, sectionId });
+    const audit = { studentId, sectionId, schoolYear: section.schoolYear, date, session, ...value,
+      revision: override.revision, previous: current[session] || null, createdAt: FieldValue.serverTimestamp() };
+    tx.create(deps.db.doc(`attendance_correction_audit/${id}`), audit);
+    tx.create(deps.db.doc(`audit_log/attendance_${id}`), {
+      action: 'attendance.sessionCorrected', actorType: 'staff', actorUid: actor.email,
+      targetType: 'student_attendance', targetId: `${sectionId}_${date}`, at: FieldValue.serverTimestamp(),
+      details: { studentId, sectionId, date, session, previous: current[session] || null, absent, reason, revision: override.revision },
+    });
+    const learnerName = fullName(student.data());
+    tx.set(noticeRef, { studentId, sectionId, schoolYear: section.schoolYear, date, session, absent, revision: override.revision, learnerName,
+      correctionId: id, ...nextNotice(notice.data(), { previousAbsent: current[session]?.absent === true, absent }),
+      notifyAfter: Timestamp.fromMillis(changedAt.toMillis() + NOTIFY_DELAY_MS), updatedAt: FieldValue.serverTimestamp() });
+    // Families hear about it from the outbox after the undo window, not from this record.
+    tx.create(operationRef, { ...audit, fingerprint, result, learnerName, status: 'done', deferred: true });
+    return result;
+  }, { maxAttempts: 10 });
+}
+
+export async function getFamilyAttendance(deps, { studentId, date }) {
+  if (!deps.uid) fail('unauthenticated', 'Sign in to continue.');
+  if (!identifier(studentId)) fail('invalid-argument', 'Choose a learner.');
+  validateDate(date);
+  return deps.db.runTransaction(async tx => {
+    const settings = await tx.get(deps.db.doc('settings/app'));
+    const schoolYear = settings.data()?.currentSchoolYear;
+    const [links, enrollment] = await Promise.all([
+      tx.get(deps.db.collection('guardian_links').where('guardianUid', '==', deps.uid).where('studentId', '==', studentId).where('status', '==', 'active')),
+      tx.get(deps.db.doc(`enrollments/${studentId}_${schoolYear}`)),
+    ]);
+    if (!links.docs.some(l => activeFamily(l.data(), deps.uid, studentId, schoolYear)) || enrollment.data()?.status !== 'enrolled') fail('permission-denied', 'An approved family link is required.');
+    const sectionId = enrollment.data().sectionId;
+    const sectionSnap = await tx.get(deps.db.doc(`sections/${sectionId}`));
+    const section = { ...sectionSnap.data(), id: sectionId };
+    if (!sectionSnap.exists || section.schoolYear !== schoolYear) fail('permission-denied', 'Learner section is unavailable.');
+    const { body } = await dayAttendance(tx, deps, section, studentId, date);
+    // Families get the bell times so the Parent app can label AM/PM or the shift.
+    return body;
+  });
+}
+
+export async function getSchoolLearnerAttendance(deps, input) {
+  validateSectionDate(input);
+  if (!identifier(input.studentId)) fail('invalid-argument', 'Choose a learner.');
+  return deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const section = await sectionFor(deps, tx, input.sectionId, actor);
+    await enrolledLearner(deps, tx, section, input.studentId);
+    const { attendance, body } = await dayAttendance(tx, deps, section, input.studentId, input.date);
+    historicalScope(actor, section, attendance);
+    const canCorrect = await correctionAllowed(deps, tx, actor, section, input.date);
+    return { ...body, revision: attendance?.sessionOverrides?.[input.studentId]?.revision || 0, canCorrect };
+  });
+}
+
+const HISTORY_PAGE = 30;
+// Callable payloads are JSON: Firestore timestamps become epoch milliseconds.
+const plain = value => value?.toMillis ? value.toMillis()
+  : Array.isArray(value) ? value.map(plain)
+    : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, plain(v)])) : value;
+
+export async function getSchoolLearnerHistory(deps, { sectionId, studentId, cursor }) {
+  if (!identifier(sectionId) || !identifier(studentId)) fail('invalid-argument', 'Choose a learner.');
+  // Composite cursor { ms, id }: scans can share one effectiveAt, so the document id breaks ties.
+  if (cursor != null && !(typeof cursor === 'object' && !Array.isArray(cursor) && Number.isSafeInteger(cursor.ms) && cursorId(cursor.id))) fail('invalid-argument', 'Choose a valid page.');
+  const { section, student } = await deps.db.runTransaction(async tx => {
+    const actor = await loadSchoolActor(deps, tx);
+    const section = await sectionFor(deps, tx, sectionId, actor);
+    return { section, student: await enrolledLearner(deps, tx, section, studentId) };
+  });
+  const learnerRef = deps.db.doc(`learners/${studentId}`);
+  let events = deps.db.collection(`learners/${studentId}/events`).orderBy('effectiveAt', 'desc').orderBy(FieldPath.documentId(), 'desc');
+  if (cursor != null) events = events.startAfter(Timestamp.fromMillis(cursor.ms), cursor.id);
+  const [learnerSnap, eventsSnap] = await Promise.all([learnerRef.get(), events.limit(HISTORY_PAGE).get()]);
+  const summary = learnerSnap.data() || {};
+  const rows = eventsSnap.docs.map(d => {
+    const e = d.data();
+    return { id: d.id, kind: e.kind, scannedDate: e.scannedDate, scannedTime: e.scannedTime, status: e.status || 'recorded',
+      voidReason: e.voidReason || '', deviceLabel: e.deviceLabel || '', delayedSync: e.delayedSync === true, source: e.source || 'kiosk',
+      effectiveAtMs: e.effectiveAt?.toMillis?.() ?? 0 };
+  });
+  return {
+    learner: { displayName: summary.displayName || fullName(student.data()), sectionLabel: summary.sectionLabel || section.name || '',
+      today: plain(summary.today) || null, recent: plain(summary.recent) || [] },
+    events: rows,
+    nextCursor: rows.length === HISTORY_PAGE ? { ms: rows[rows.length - 1].effectiveAtMs, id: rows[rows.length - 1].id } : null,
+  };
+}
+
+// Per-recipient claims are at most once: the inbox item is created in the
+// same transaction that decides to push, so a retry never pushes twice.
+async function notifyFamilies(deps, data, inboxId) {
+  const links = await deps.db.collection('guardian_links').where('studentId', '==', data.studentId).where('status', '==', 'active').get();
+  const recipients = new Map(links.docs.filter(l => activeFamily(l.data(), l.data().guardianUid, data.studentId, data.schoolYear)).map(l => [l.data().guardianUid, l]));
+  for (const [uid, link] of recipients) {
+    const inboxRef = deps.db.doc(`guardians/${uid}/inbox/${inboxId}`);
+    const claim = await deps.db.runTransaction(async tx => {
+      const [existing, liveLink, settings, portal, guardian, enrollment, devices] = await Promise.all([
+        tx.get(inboxRef), tx.get(link.ref), tx.get(deps.db.doc('settings/app')), tx.get(deps.db.doc('settings/parent_portal')),
+        tx.get(deps.db.doc(`guardians/${uid}`)), tx.get(deps.db.doc(`enrollments/${data.studentId}_${data.schoolYear}`)),
+        tx.get(deps.db.collection(`guardians/${uid}/devices`).where('enabled', '==', true)),
+      ]);
+      if (existing.exists || settings.data()?.currentSchoolYear !== data.schoolYear || enrollment.data()?.status !== 'enrolled'
+          || !activeFamily(liveLink.data(), uid, data.studentId, data.schoolYear)) return null;
+      const pushStatus = portal.data()?.notificationsPaused === true ? 'skipped_paused'
+        : guardian.data()?.notificationsEnabled === false ? 'skipped_disabled'
+          : !devices.size ? 'skipped_no_device' : 'sending';
+      tx.create(inboxRef, { type: 'attendance_correction', studentId: data.studentId, learnerName: data.learnerName,
+        date: data.date, scannedDate: data.date, session: data.session, absent: data.absent, revision: data.revision,
+        title: 'Attendance updated', body: 'School staff updated a session attendance record. Open the learner history to review.',
+        createdAt: FieldValue.serverTimestamp(), pushStatus });
+      return pushStatus === 'sending' ? devices.docs : null;
+    });
+    if (claim) {
+      const result = await sendToGuardian(deps, { inboxId, studentId: data.studentId, devDocs: claim, correction: true });
+      await inboxRef.update({ pushStatus: result.status, pushSentAt: FieldValue.serverTimestamp() });
+    }
+  }
+}
+
+// Corrections made before the outbox existed still notify from this trigger.
+// New corrections are created already done and are sent by the sweep below.
+export async function handleAttendanceCorrection(deps, { id }) {
+  const ref = deps.db.doc(`attendance_corrections/${id}`);
+  const data = (await ref.get()).data();
+  if (!data || data.status === 'done') return { outcome: 'duplicate' };
+  await notifyFamilies(deps, data, `correction_${id}`);
+  await ref.update({ status: 'done', completedAt: FieldValue.serverTimestamp() });
+  return { outcome: 'processed' };
+}
+
+// Runs every minute. 'sending' is retried because inbox claims are idempotent.
+export async function sendDueAttendanceUpdates(deps) {
+  const now = (deps.now || (() => new Date()))().getTime();
+  const due = await deps.db.collection('attendance_notifications').where('status', 'in', ['pending', 'sending']).limit(200).get();
+  let processed = 0;
+  for (const doc of due.docs) {
+    try {
+      const claimed = await deps.db.runTransaction(async tx => {
+        const live = (await tx.get(doc.ref)).data();
+        if (!live || !['pending', 'sending'].includes(live.status)) return null;
+        const ready = typeof live.notifyAfter?.toMillis === 'function' ? live.notifyAfter.toMillis() <= now : true;
+        if (!ready) return null;
+        tx.update(doc.ref, { status: 'sending', claimedAt: FieldValue.serverTimestamp() });
+        return live;
+      });
+      if (!claimed) continue;
+      await notifyFamilies(deps, claimed, `correction_${claimed.correctionId}`);
+      await deps.db.runTransaction(async tx => {
+        const live = (await tx.get(doc.ref)).data();
+        // A newer correction may have re-queued this session while we were sending.
+        if (live?.status === 'sending' && live.correctionId === claimed.correctionId) tx.update(doc.ref, { status: 'done', completedAt: FieldValue.serverTimestamp() });
+      });
+      processed++;
+    } catch (error) {
+      logWarn('attendance_update_failed', { id: doc.id, message: error?.message });
+    }
+  }
+  return { processed };
+}

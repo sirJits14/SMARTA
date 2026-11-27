@@ -3,6 +3,7 @@ import { sectionMatches } from '../lib/search.js';
 import { T } from '../styles.js';
 import { Field, Inp } from './ui.jsx';
 import GradePills from './GradePills.jsx';
+import { capsName } from '../lib/roster.js';
 
 export default function SectionPicker({ sections, value, onChange, disabled = false, label = 'Section' }) {
   const selectedSection = useMemo(() => sections.find((section) => section.id === value) || null, [sections, value]);
@@ -71,7 +72,7 @@ export default function SectionPicker({ sections, value, onChange, disabled = fa
         <div style={{ display: 'grid', gap: 6 }}>
           {matchingSections.map((section) => {
             const selected = section.id === value;
-            const details = [section.strand, section.adviserName ? `Adviser: ${section.adviserName}` : ''].filter(Boolean).join(' · ');
+            const details = [section.strand, section.adviserName ? `Adviser: ${capsName(section.adviserName)}` : ''].filter(Boolean).join(' · ');
             return (
               <button
                 key={section.id}
@@ -84,7 +85,7 @@ export default function SectionPicker({ sections, value, onChange, disabled = fa
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 12px',
                   padding: '10px 12px', borderRadius: 10, textAlign: 'left', fontFamily: T.body,
                   border: `1.5px solid ${selected ? T.primary : T.border}`,
-                  background: selected ? 'rgba(91,79,232,0.08)' : T.surface,
+                  background: selected ? 'rgba(0,122,114,0.08)' : T.surface,
                   color: T.ink, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1,
                   overflowWrap: 'anywhere',
                 }}

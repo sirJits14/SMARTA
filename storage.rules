@@ -1,0 +1,7 @@
+rules_version = '2';
+// Learner photos are read and written only by Cloud Functions (spec 2026-11-27).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

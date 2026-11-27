@@ -1,0 +1,126 @@
+{
+  "historicalPreparation": "670c87e",
+  "productionMainScript": "/assets/index-gu2n-5mj.js",
+  "changes": [
+    {
+      "path": "parent/src/lib/school.js",
+      "before": null,
+      "after": "d55e011447e4c7728f972ea764524f97c6bbba669718fe61b214e5bc4d350010"
+    },
+    {
+      "path": "shared/announcementAudience.js",
+      "before": null,
+      "after": "de859d14666702f3eabebaedc92931e06110c9e196ba3a386112f702e21c779b"
+    },
+    {
+      "path": "shared/announcementAudience.test.js",
+      "before": null,
+      "after": "5212217c8ff042f256222698dd7a6fbf3d34c0cda8084fa7efa9cad43dac659c"
+    },
+    {
+      "path": "shared/schoolAccess.js",
+      "before": null,
+      "after": "20858563abd99c9aece118fa6ae291ab62f429cf53ad1ccf7d1812dbd0ecd0dd"
+    },
+    {
+      "path": "shared/schoolAccess.test.js",
+      "before": null,
+      "after": "6df70a099b96af5254a9041d9e7867de5e96bb797bcd72780b82e80294c25abe"
+    },
+    {
+      "path": "shared/sessionAttendance.js",
+      "before": null,
+      "after": "e9980bc23e0c2dc50ff0de331352b608a26dee7bedc56a1eb8cfb2bd46f0778e"
+    },
+    {
+      "path": "shared/sessionAttendance.test.js",
+      "before": null,
+      "after": "ed631f2303d76fe93b46725511466aaa8455e6afb99cfc540dfd9d03ad1f61e9"
+    },
+    {
+      "path": "src/data/announcements.js",
+      "before": "760a3fe071b3e892d3b286f690f291ef1edf7b7c7aa2ef08a259621eab95b324",
+      "after": "384aa972385d13f683bc7ef1898b2b1c40f03108f0a9bbeb42eee9a3ba03b9e1"
+    },
+    {
+      "path": "src/data/announcements.test.js",
+      "before": "85b26ceeb53c84ff902dda332cbe311685bc07521d5a57371720c097edc28c5e",
+      "after": "242df4e900825b8578de4c638886fcf3c8d9c42f476adb2c479790495183e8e4"
+    },
+    {
+      "path": "src/lib/announcements.js",
+      "before": "8ef80e24dc06176470e83e730140a04698fb79dd351fbaf80d0f7cff543349ac",
+      "after": "2250738c341b8b3822fb57f3133a70c799c1e9b435053e241598a82c38a62035"
+    },
+    {
+      "path": "src/lib/announcements.test.js",
+      "before": "3467b225c9f88508e6450c0223b7794e72fcbc150a6d228f4e5e950e79dac6a1",
+      "after": "5c8e96df9df7587b8241ba04b9c5b3f036ac46eaf5936100e50c05c550ab1889"
+    },
+    {
+      "path": "src/lib/attendance.js",
+      "before": "47f489a4fe11932e8b996f3b9afc805d1c8f837880570da02d4d489dcf175a53",
+      "after": "d59af07fc5e0641c1972c6068d4aa82d174c1bd9b66a2d3b04ef43d921fcf33e"
+    },
+    {
+      "path": "src/lib/attendance.test.js",
+      "before": "a51b7d47f4b17db030f071fa18077967148675e7e16c6cfa7cb65ba1c16fffc2",
+      "after": "7ac371b4f4c58ff8a3ff116d159a30a8ebbd12db3e69b9af6d4984b7ce7c4cae"
+    },
+    {
+      "path": "src/lib/sessionAttendanceReports.test.js",
+      "before": null,
+      "after": "a440eecbe25c8f3697e18f07d7f0422be846cfcc8b0bbfc6e0343fc94845da7e"
+    },
+    {
+      "path": "src/lib/sf2.js",
+      "before": "042ce64f335bdfde6d51d3d07d06ff10deff733481b56f586aff1889ca6a32e0",
+      "after": "c436a250584c5917e118510fb1cb9e52019341e9dc01bb9a9a61b9ee321ab2a4"
+    },
+    {
+      "path": "src/lib/sf2.test.js",
+      "before": "a834270e307fa168676176d86f5c463dbf0c55cc660f83f32ad4c35efc4b137c",
+      "after": "d7131a49b2e2c118e66228bf4f6cc1bd45efb7912f5ef30230b42b8f47b4d474"
+    },
+    {
+      "path": "src/lib/sf2Template.js",
+      "before": "15cddd45354a36fcc9f25a4f1ec9ec2034db2a37ccdc2e7525cea0d4280017b7",
+      "after": "f5bcffd57fe968b7a50e6d5b86d03ebf58a8aad2ef7f88b3d24133fc279a865b"
+    },
+    {
+      "path": "src/pages/announcements/AnnouncementForm.jsx",
+      "before": "66e5d9347f72a74adb672b07f371d9dac287309b9935d0b612a6c57e0fa6d40f",
+      "after": "b812b55f7c8800dabc3b64758bb7c210964920327330f69a2171bbcbce52269b"
+    },
+    {
+      "path": "src/pages/announcements/AnnouncementForm.test.js",
+      "before": null,
+      "after": "ee825f5c2d638ebcce3346baa60da742b79c475047726beadc121f7d94e7f9d4"
+    },
+    {
+      "path": "src/pages/AnnouncementsPage.jsx",
+      "before": "95013f223d02ba0ebebbb59a60e42f0b83cf848f31c54daa16ee183fbb761654",
+      "after": "556dd5174f676a2c4d619c5f77f28a11fb3370f0b9de1547fb091324f97e6d67"
+    },
+    {
+      "path": "src/pages/AttendanceSummaryPage.jsx",
+      "before": "c68dfe5c19231ea53c489aa8fe3c269f521f87273bdd0656946cee7be4e150e4",
+      "after": "c94738d0fd68fe3d1590195ae1db34c798f0bbb69698d7cfab6a6a4ccbd46869"
+    },
+    {
+      "path": "src/pages/AttendanceTakePage.jsx",
+      "before": "e221f40a97beb2a2a4e4cfaba3ce28a73072824487a53d68cbf7a5c5aaeb09cf",
+      "after": "fc11a13de04245f99eb3c82748e59efd70cb46b55e4a4e5f63e6dfc45be39be7"
+    },
+    {
+      "path": "src/pages/guardians/SchoolAccessTab.jsx",
+      "before": null,
+      "after": "85b82f6b928602544aca4724d3848cb171a842801c2e13b8fa4215d61de964f0"
+    },
+    {
+      "path": "src/pages/GuardiansPage.jsx",
+      "before": "54b411113e69f1efc134ac81ef15c0b5f5c66acfaf35cff9587255d61789a444",
+      "after": "0b948478049ba0b8b99d8b917a8eff13e23cb634dd597c3c9bf0f8a385520f11"
+    }
+  ]
+}

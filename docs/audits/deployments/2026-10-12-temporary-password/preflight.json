@@ -1,0 +1,774 @@
+{
+  "checkedAt": "2026-10-12T00:27:19.743Z",
+  "project": "bnhs-sims",
+  "previousRuleset": "projects/bnhs-sims/rulesets/0786c7ed-d51b-4088-8a73-59e46482b180",
+  "previousRulesSha256": "119681140d03d4be016598f19690cc6bfc2ebc4008415f61a2ccc319d12618c7",
+  "hostingRelease": {
+    "name": "sites/bnhs-sims/channels/live/releases/1791542075394000",
+    "releaseTime": "2026-10-09T10:34:35.394Z",
+    "version": {
+      "name": "sites/bnhs-sims/versions/29aea4faf87e810d",
+      "status": "FINALIZED"
+    }
+  },
+  "functions": [
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onScanEventCreated",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.418763196Z",
+      "revision": "onscaneventcreated-00018-baz",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onScanEventCreated/function-source.zip",
+          "generation": "1791554394686669"
+        }
+      },
+      "deploymentHash": "4eadc9f64ed4f4b7f856cf9d23c0b429ac208e04",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_SIGNATURE_TYPE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/issueActivationCodesFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.244706444Z",
+      "revision": "issueactivationcodesfn-00014-nej",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "issueActivationCodesFn/function-source.zip",
+          "generation": "1791543191890429"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/revokeLinkFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.266437718Z",
+      "revision": "revokelinkfn-00014-moq",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "revokeLinkFn/function-source.zip",
+          "generation": "1791543192136369"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/correctEventFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.319395949Z",
+      "revision": "correcteventfn-00014-xiw",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "correctEventFn/function-source.zip",
+          "generation": "1791543191787157"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/deleteStaffUserFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.331017784Z",
+      "revision": "deletestaffuserfn-00006-xof",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deleteStaffUserFn/function-source.zip",
+          "generation": "1791543191837050"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/changeOwnPasswordFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.406233058Z",
+      "revision": "changeownpasswordfn-00006-wof",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "changeOwnPasswordFn/function-source.zip",
+          "generation": "1791543191860392"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/pruneDevicesJob",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.431304161Z",
+      "revision": "prunedevicesjob-00014-lih",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "pruneDevicesJob/function-source.zip",
+          "generation": "1791543191436765"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/provisionKioskFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.496941794Z",
+      "revision": "provisionkioskfn-00012-zot",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "provisionKioskFn/function-source.zip",
+          "generation": "1791543191872183"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resetStaffPasswordFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.542750841Z",
+      "revision": "resetstaffpasswordfn-00006-doz",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resetStaffPasswordFn/function-source.zip",
+          "generation": "1791543192083149"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/publishAnnouncementsJob",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.610452435Z",
+      "revision": "publishannouncementsjob-00005-fos",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "publishAnnouncementsJob/function-source.zip",
+          "generation": "1791543192344351"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/announcementAudienceCountFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.672362032Z",
+      "revision": "announcementaudiencecountfn-00005-biy",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "announcementAudienceCountFn/function-source.zip",
+          "generation": "1791543192311298"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/createStaffUserFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.740196364Z",
+      "revision": "createstaffuserfn-00006-vaq",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "createStaffUserFn/function-source.zip",
+          "generation": "1791543191856767"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/deactivateKioskFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.778688243Z",
+      "revision": "deactivatekioskfn-00014-pof",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deactivateKioskFn/function-source.zip",
+          "generation": "1791543192720452"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/deleteGuardianAccountFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.823924149Z",
+      "revision": "deleteguardianaccountfn-00014-kig",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deleteGuardianAccountFn/function-source.zip",
+          "generation": "1791543191594176"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/expireLinksJob",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.858959126Z",
+      "revision": "expirelinksjob-00014-quk",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "expireLinksJob/function-source.zip",
+          "generation": "1791543191712595"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/addManualEventFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:16.902478125Z",
+      "revision": "addmanualeventfn-00014-xuf",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "addManualEventFn/function-source.zip",
+          "generation": "1791543191739598"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onAnnouncementWritten",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:18.096720010Z",
+      "revision": "onannouncementwritten-00005-fin",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onAnnouncementWritten/function-source.zip",
+          "generation": "1791543149851568"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_SIGNATURE_TYPE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resolveReportFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.003766488Z",
+      "revision": "resolvereportfn-00014-vap",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveReportFn/function-source.zip",
+          "generation": "1791543192307916"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/updateStaffUserFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.051360355Z",
+      "revision": "updatestaffuserfn-00006-yec",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "updateStaffUserFn/function-source.zip",
+          "generation": "1791543192287601"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resetKioskPasswordFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.079890589Z",
+      "revision": "resetkioskpasswordfn-00012-suj",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resetKioskPasswordFn/function-source.zip",
+          "generation": "1791543192091529"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/submitReportFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.122215388Z",
+      "revision": "submitreportfn-00014-vup",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "submitReportFn/function-source.zip",
+          "generation": "1791543192111657"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/revokeCodeFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.221166589Z",
+      "revision": "revokecodefn-00014-heg",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "revokeCodeFn/function-source.zip",
+          "generation": "1791543191666860"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onGuardianLinkWritten",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:19.675800159Z",
+      "revision": "onguardianlinkwritten-00005-zef",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onGuardianLinkWritten/function-source.zip",
+          "generation": "1791543191886000"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_SIGNATURE_TYPE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/resolveAccessRequestFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.311705391Z",
+      "revision": "resolveaccessrequestfn-00014-vuy",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveAccessRequestFn/function-source.zip",
+          "generation": "1791543192064495"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/setStaffUserDisabledFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.328042365Z",
+      "revision": "setstaffuserdisabledfn-00006-vos",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "setStaffUserDisabledFn/function-source.zip",
+          "generation": "1791543191702224"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/activateCodeFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.384293300Z",
+      "revision": "activatecodefn-00014-wom",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "activateCodeFn/function-source.zip",
+          "generation": "1791543191870504"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/setActivationRestrictedFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.479082703Z",
+      "revision": "setactivationrestrictedfn-00014-wey",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "setActivationRestrictedFn/function-source.zip",
+          "generation": "1791543192131245"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/reconcileEventsJob",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.493831250Z",
+      "revision": "reconcileeventsjob-00015-zeh",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "reconcileEventsJob/function-source.zip",
+          "generation": "1791554446708513"
+        }
+      },
+      "deploymentHash": "4eadc9f64ed4f4b7f856cf9d23c0b429ac208e04",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/acceptConsentFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.555402322Z",
+      "revision": "acceptconsentfn-00014-wad",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "acceptConsentFn/function-source.zip",
+          "generation": "1791543149340936"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/endSchoolYearFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.583288102Z",
+      "revision": "endschoolyearfn-00008-los",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "endSchoolYearFn/function-source.zip",
+          "generation": "1791543191695984"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/registerKioskFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.649429549Z",
+      "revision": "registerkioskfn-00014-toy",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "registerKioskFn/function-source.zip",
+          "generation": "1791543192717795"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/onParentPortalSettingsChanged",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:21.180509113Z",
+      "revision": "onparentportalsettingschanged-00014-jof",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onParentPortalSettingsChanged/function-source.zip",
+          "generation": "1791543191852797"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_SIGNATURE_TYPE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID"
+      ]
+    },
+    {
+      "name": "projects/bnhs-sims/locations/asia-southeast1/functions/requestAccessFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-10T14:16:17.759092263Z",
+      "revision": "requestaccessfn-00014-kog",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "requestAccessFn/function-source.zip",
+          "generation": "1791543191896895"
+        }
+      },
+      "deploymentHash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "environmentKeys": [
+        "PORTAL_URL",
+        "FIREBASE_CONFIG",
+        "GCLOUD_PROJECT",
+        "EVENTARC_CLOUD_EVENT_SOURCE",
+        "FUNCTION_TARGET",
+        "LOG_EXECUTION_ID",
+        "FUNCTION_SIGNATURE_TYPE"
+      ]
+    }
+  ]
+}

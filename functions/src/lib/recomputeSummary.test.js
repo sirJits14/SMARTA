@@ -5,7 +5,7 @@ const ev = (id, kind, date, time, ms, status = 'recorded') => ({ id, kind, scann
 describe('recomputeSummary', () => {
   it('no events today', () => {
     const r = recomputeSummary({ events: [ev('a', 'in', '2026-09-20', '07:00', 1)], todayDate: '2026-09-21' });
-    expect(r.today).toEqual({ date: '2026-09-21', firstIn: null, lastOut: null, status: 'no_scan', events: [] });
+    expect(r.today).toEqual({ date: '2026-09-21', firstIn: null, lastOut: null, status: 'no_scan', events: [], notes: [] });
     expect(r.recent).toHaveLength(1);
   });
   it('first in and last out win; status follows the latest event', () => {
@@ -59,5 +59,23 @@ describe('recomputeSummary', () => {
   it('returns an empty events list when there is no scan today', () => {
     const r = recomputeSummary({ events: [ev('a', 'in', '2026-09-20', '07:00', 1)], todayDate: '2026-09-21' });
     expect(r.today.events).toEqual([]);
+  });
+  const split = { timeIn: '08:00', timeOut: '12:00', pmTimeIn: '13:00', pmTimeOut: '16:00' };
+  it('has no notes without a split-day schedule', () => {
+    const r = recomputeSummary({ events: [ev('in1', 'in', '2026-09-21', '13:20', 1)], todayDate: '2026-09-21' });
+    expect(r.today.notes).toEqual([]);
+  });
+  it('notes Absent AM and Late PM from today\'s tap-ins on a split-day schedule', () => {
+    const r = recomputeSummary({ events: [ev('in1', 'in', '2026-09-21', '13:20', 1)], todayDate: '2026-09-21', schedule: split });
+    expect(r.today.notes).toEqual(['absentAm', 'latePm']);
+  });
+  it('ignores voided taps, tap-outs and other days when working out notes', () => {
+    const r = recomputeSummary({ events: [
+      ev('old', 'in', '2026-09-20', '07:50', 1),
+      ev('void', 'in', '2026-09-21', '07:55', 2, 'voided'),
+      ev('out', 'out', '2026-09-21', '12:05', 3),
+      ev('pm', 'in', '2026-09-21', '12:55', 4),
+    ], todayDate: '2026-09-21', schedule: split });
+    expect(r.today.notes).toEqual(['absentAm']);
   });
 });

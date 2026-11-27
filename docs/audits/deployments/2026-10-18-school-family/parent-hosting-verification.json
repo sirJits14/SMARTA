@@ -1,0 +1,211 @@
+{
+  "origin": "https://bnhs-parent.web.app",
+  "checkedAt": "2026-10-18T05:22:50.103Z",
+  "files": [
+    {
+      "path": "assets/Activate-Dyjw1tBS.js",
+      "sha256": "4632132eb5098bef2a0d2e392cb6fb2e41f949135fd4c44740c98f7724af708b",
+      "matches": true
+    },
+    {
+      "path": "assets/AnnouncementDetail-BwTvMYaf.js",
+      "sha256": "7acd99ed95da0fd9f687560965d39f7aa93c59b9db9bf435ba41f69b7ce3ec74",
+      "matches": true
+    },
+    {
+      "path": "assets/Announcements-CGABuFsZ.js",
+      "sha256": "3df0b1a09b583e7f2fe890dab2d4ac22542adab8e00a8695de2de348e8d25a63",
+      "matches": true
+    },
+    {
+      "path": "assets/Consent-DQeOdF5z.js",
+      "sha256": "07d83ad641b064b8800c83e21c02075cd52e6f22eb2fb6adc44a0131c7fdd01c",
+      "matches": true
+    },
+    {
+      "path": "assets/el-chamberlain-q-abellana-CjyvdR_u.jpg",
+      "sha256": "6fe7dc4afa78314aba43a981f4b2703d5541a94123ed3fc35087da15b5d9bb95",
+      "matches": true
+    },
+    {
+      "path": "assets/emmanuel-candano-CRBeiAHY.jpg",
+      "sha256": "73e54e243286c1c0714cb33841e11eebd8abf54bdb44e5e2e0757cf28054bb33",
+      "matches": true
+    },
+    {
+      "path": "assets/format-CtotiviR.js",
+      "sha256": "60967a15edd00db7120367369c8b4b05b71bddd0d1c29f899964b4f2a67838ab",
+      "matches": true
+    },
+    {
+      "path": "assets/geths-van-c-villa-VCJQJD5z.jpg",
+      "sha256": "d6083336d54c2d84a1c6e4c67d81b56ae9a713bbbd804bca9e2847eefe56df6d",
+      "matches": true
+    },
+    {
+      "path": "assets/History-B0Y3Wg9D.js",
+      "sha256": "a54469800fe2a6ba8a751aba8c0c16b41d1a8eb27a97ca1393af71058b8a3d82",
+      "matches": true
+    },
+    {
+      "path": "assets/History-p5Rvd2i_.css",
+      "sha256": "f7821d6a98c38544f5a36c5a4bac15e60af310ea4d5509cf8c06318e51ea5f5f",
+      "matches": true
+    },
+    {
+      "path": "assets/Home-Ctu2RaAv.js",
+      "sha256": "6d0ffb04e4c8c20b66544bbd143a93cdf03b9c9c8cf082412b97f068c73ad912",
+      "matches": true
+    },
+    {
+      "path": "assets/Inbox-Czqt-qjb.js",
+      "sha256": "dbe8a159ea7cf6d5589aff372402c82db52229ea1cbfdd7606f5498472ac6f7b",
+      "matches": true
+    },
+    {
+      "path": "assets/index-CgALBMNM.js",
+      "sha256": "7a18326d947970112ace72b8e7a9f4fec4d556c39a8f8a4baff2fd098b7c3fe9",
+      "matches": true
+    },
+    {
+      "path": "assets/index-DvO4CY45.css",
+      "sha256": "9024a0c69b4f6e985398428e28b6ce6227403be719c2f48a9b4d3a37d05bdffa",
+      "matches": true
+    },
+    {
+      "path": "assets/index.esm-Ceoc1-uo.js",
+      "sha256": "3599014f90994fcd1738dad7286c354c9f3639f64de5e54d76b3ae5db2c2fb96",
+      "matches": true
+    },
+    {
+      "path": "assets/index.esm-D7DjWegA.js",
+      "sha256": "0cc20f6e2f39b77eeb9e93864001084de54808878f4d79fb160b90389f5fc1c7",
+      "matches": true
+    },
+    {
+      "path": "assets/index.esm-DbcDmF67.js",
+      "sha256": "11a57f5822c2faa96e1b84b7fcdbfe4b403f82fe3a710c271cc3f112fdb5967b",
+      "matches": true
+    },
+    {
+      "path": "assets/index.esm-DcukWbrd.js",
+      "sha256": "26b6374ce561920fca83bffd97a23460ca6d007e2d779f9353e344d62602ab3b",
+      "matches": true
+    },
+    {
+      "path": "assets/jsQR-BZfqIBYG.js",
+      "sha256": "b018a387d6225f60553429286df8c7aed6c4c3d24a53782f2d866ca35ad2939e",
+      "matches": true
+    },
+    {
+      "path": "assets/loading-CRLLHZYw.gif",
+      "sha256": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "matches": true
+    },
+    {
+      "path": "assets/notifications-BgwgaBjT.js",
+      "sha256": "6c8cda60e70dc24ceaff01a571134f3c3e5d01dc748e59db4bc32fb60775dfde",
+      "matches": true
+    },
+    {
+      "path": "assets/notificationState-IoRipviT.js",
+      "sha256": "45820c448bbd70cba6af598d3722fc82be1b462383275cd684c11a481cf23708",
+      "matches": true
+    },
+    {
+      "path": "assets/PageHeader-KJgypypd.js",
+      "sha256": "05017a38e37aa2fc7d4b132530b53f22d2292d2d7420306c98c0204a79c3049a",
+      "matches": true
+    },
+    {
+      "path": "assets/preload-helper-RYKF38SB.js",
+      "sha256": "83e1b7b16e09dcc5d7fb4df5151acebdf46b49263d23c150ad8f6e363f952dd0",
+      "matches": true
+    },
+    {
+      "path": "assets/relationships-DkSwh0Mf.js",
+      "sha256": "aa59a2268ef17af9a894b512fd49f864a5d7eb9d5cb858b483a597fd7a51c31f",
+      "matches": true
+    },
+    {
+      "path": "assets/Report-CZZnQiuT.js",
+      "sha256": "f45d9995dba43c7d29d1c98442c293de489b536c4c5f2952eedb5e806d8a1ef2",
+      "matches": true
+    },
+    {
+      "path": "assets/RequestAccess-XQjNLTrM.js",
+      "sha256": "5900aec4a6c63608a4af0fccbe0e612574a516e4f2649d151ae7c367c37ab40e",
+      "matches": true
+    },
+    {
+      "path": "assets/rolldown-runtime-CbXtAM7H.js",
+      "sha256": "bbf7c5086ae414dc3f33777e3eebf16ea8631325b8bb4690d25091c03567f31a",
+      "matches": true
+    },
+    {
+      "path": "assets/ScanSheet-DjmLG6Lh.js",
+      "sha256": "e0ea411ffe72a7debb6a03d3aa2071ed218b88e1037388218462a55c7d27574e",
+      "matches": true
+    },
+    {
+      "path": "assets/school-BryADTiJ.js",
+      "sha256": "ee8681a9eecfb1c7e3c5ba1232be7f8fc7c846753a85f3e270ccdb2c1b69f159",
+      "matches": true
+    },
+    {
+      "path": "assets/School-DpFLxHd0.js",
+      "sha256": "d7eaf543fd25a571f21d49da65d0647f0920b84b640790f713dbd0d1d535d4c5",
+      "matches": true
+    },
+    {
+      "path": "assets/Settings-CSDUHXqD.css",
+      "sha256": "8706b65c1c6b4caf0f2378c6c2eeff5e27ea939b80749ba49d19ab4adf7a7b7b",
+      "matches": true
+    },
+    {
+      "path": "assets/Settings-FP0d0Sce.js",
+      "sha256": "2f47e50fb141dced69acf5fc82ceaf2780f39d194f2fd06a0556aaaadc31c2b2",
+      "matches": true
+    },
+    {
+      "path": "assets/thread-DcUYUe7p.js",
+      "sha256": "69d9b149df94db1433db2fcf7e9841edf3a7af959d1cc624a1b4d90cf8979b2c",
+      "matches": true
+    },
+    {
+      "path": "assets/Verify-o74MQyEc.js",
+      "sha256": "2eb19ab5432d26e91a6cab0df06a93a73ae089edeb8c223b6451e7e8a1453ceb",
+      "matches": true
+    },
+    {
+      "path": "firebase-messaging-sw.js",
+      "sha256": "c0fdda932afc1c2ecf3ecfe32f89684a1d30bb10284c4a72b6ae454f2c22a146",
+      "matches": true
+    },
+    {
+      "path": "icons/icon-192.png",
+      "sha256": "f98970c6bee0d07b6aa405d92098ac2d956d95dd1139c4835f64079e78a6ce05",
+      "matches": true
+    },
+    {
+      "path": "icons/icon-512.png",
+      "sha256": "2340f02edd46673c4cc9ea0799bbc30fc585d363c00ec9233b8da206b64684ac",
+      "matches": true
+    },
+    {
+      "path": "icons/icon-maskable-512.png",
+      "sha256": "6897563ad58fab7c67427f28e5cd3edec346146d54df5eca4392a9d653b8ed17",
+      "matches": true
+    },
+    {
+      "path": "index.html",
+      "sha256": "d59aec5c6b7ac70d2eb8d474f5657a51a83c45675893e2e08ac1bc97ad52d943",
+      "matches": true
+    },
+    {
+      "path": "manifest.webmanifest",
+      "sha256": "6df9884593f93c524c8c1d3a1ea2e19711e8309144399177367d8f0c079a7c1e",
+      "matches": true
+    }
+  ]
+}

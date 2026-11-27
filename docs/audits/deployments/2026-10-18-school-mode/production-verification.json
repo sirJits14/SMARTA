@@ -1,0 +1,38 @@
+{
+  "project": "bnhs-sims",
+  "sourceCommit": "7b20548",
+  "change": "PR sirJits14/SMARTA#44 School mode redesign (plus PR #43 admin-only approvals, first deployed here)",
+  "deployedAt": "2026-10-18",
+  "preChecks": {
+    "pendingSchoolRoleRequests": 0,
+    "schoolAccounts": 0,
+    "releaseRules": "85 passed, 4 held skipped",
+    "releaseFunctionsEmulator": "292 passed, 10 held skipped, 1 failed: sectionEditing 'two coordinators move sections concurrently' (emulator transaction contention; sections.js unchanged by this release and not in the deploy list)"
+  },
+  "functions": {
+    "prepared": "docs/releases/2026-10-18-school-family/prepareBackend.mjs (feature source at 7b20548, preserved live scanAttendance.js)",
+    "deployedByName": 24,
+    "new": ["sendAttendanceUpdatesJob"],
+    "totalBefore": 49,
+    "totalAfter": 50,
+    "allActive": true,
+    "removed": [],
+    "changedOutsideList": [],
+    "onScanEventCreatedScanSha256Prefix": "49ee1a2ecfdf3708",
+    "sendAttendanceUpdatesJobFirstRun": "2026-10-18T08:43:00Z POST 200",
+    "evidence": ["functions-before.json", "functions-after.json", "backend-source-manifest.json"]
+  },
+  "hosting": {
+    "parent": { "origin": "https://bnhs-parent.web.app", "builtFrom": "7b20548", "mainScript": "/assets/index-BtsAV4rI.js", "files": 41, "allMatch": true, "initialLoadGzipKB": 259.7, "report": "parent-hosting-verification.json" },
+    "sims": { "origin": "https://bnhs-sims.web.app", "builtFrom": "release tree docs/releases/2026-10-18-school-mode (baseline matched live 56/56 before overlay)", "mainScript": "/assets/index-CN44oHj4.js", "files": 59, "allMatch": true, "report": "sims-hosting-verification.json", "diffVsPreviousLive": "sims-release-vs-live.json" }
+  },
+  "notes": [
+    "SIMS coordinators (jhs_coord, shs_coord, glc) now have grade-scoped session correction rights.",
+    "Teachers can no longer request school roles; administrators assign them in SIMS.",
+    "Family attendance updates are delivered by sendAttendanceUpdatesJob about two minutes after a correction."
+  ],
+  "pending": [
+    "Assign school roles in SIMS (Guardians -> School access), using the per-teacher list of old adviser slips.",
+    "Designated test-account checks from docs/school-family-access-rollout.md item 9."
+  ]
+}

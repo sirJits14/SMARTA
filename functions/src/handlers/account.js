@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { audit } from '../audit.js';
 import { logEvent } from '../log.js';
+import { deleteSchoolAccess } from './schoolAccess.js';
 
 async function deleteCollection(db, path, batchSize = 200) {
   for (;;) {
@@ -16,6 +17,7 @@ async function deleteCollection(db, path, batchSize = 200) {
 // orphaned, unrecoverable Auth account pointing at dangling Firestore state.
 export async function deleteGuardianAccount(ctx) {
   const { db, auth, uid, email } = ctx;
+  await deleteSchoolAccess(db, uid);
   const links = await db.collection('guardian_links').where('guardianUid', '==', uid).get();
   for (const l of links.docs) await l.ref.set({ status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: 'guardian', revokedReason: 'account deleted' }, { merge: true });
   await deleteCollection(db, `guardians/${uid}/devices`);

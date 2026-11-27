@@ -1,0 +1,257 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- identities (spec §8) ----------
+    function signedIn() { return request.auth != null; }
+    function notAnonymous() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    // Staff = has an enabled users/{email} profile. Written only by the
+    // account callables (functions/src/handlers/users.js). A profile with a
+    // uid belongs to that Auth account only, so re-registering the email
+    // elsewhere (e.g. the parent portal) can't claim it; legacy profiles
+    // without one match by email until backfillUserRoles.mjs binds them.
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data; }
+    // get(): an email-less token (the anonymous v1 kiosk) must short-circuit
+    // here; a missing-key error would make every caller below evaluate all
+    // their branches and hit the 1000-expression limit.
+    function isStaff() {
+      return signedIn() && request.auth.token.get('email', null) != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower()))
+        && profile().get('disabled', false) != true
+        && profile().get('uid', request.auth.uid) == request.auth.uid;
+    }
+    // Mirrors shared/staffRoles.js -- keep the two in step. Profiles made
+    // before roles existed (no role, or 'registrar') are administrators.
+    function role() { return profile().get('role', 'admin'); }
+    function isAdmin() { return isStaff() && (role() == null || role() in ['admin', 'registrar', '']); }
+    function coversGrade(g) {
+      return isAdmin()
+        || (isStaff() && role() == 'jhs_coord' && g in [7, 8, 9, 10])
+        || (isStaff() && role() == 'shs_coord' && g in [11, 12])
+        || (isStaff() && role() == 'glc' && g == profile().gradeLevel);
+    }
+    function coversSection(sectionId) {
+      return coversGrade(get(/databases/$(database)/documents/sections/$(sectionId)).data.gradeLevel);
+    }
+    // On update both the old and new section must be in scope, so a
+    // coordinator can't move a record into or out of their grades.
+    function coordinatorMayWriteAttendance() {
+      return isStaff() && request.resource != null
+        && coversSection(request.resource.data.sectionId)
+        && (resource == null || coversSection(resource.data.sectionId));
+    }
+    // Kiosk = a per-device account allow-listed (and active) in kiosks/{uid}.
+    function kioskDoc() { return get(/databases/$(database)/documents/kiosks/$(request.auth.uid)); }
+    function isKiosk() {
+      return signedIn() && exists(/databases/$(database)/documents/kiosks/$(request.auth.uid))
+        && kioskDoc().data.active == true;
+    }
+    // Guardian = a real (non-anonymous) account with a verified email.
+    function isGuardian() { return notAnonymous() && request.auth.token.email_verified == true; }
+    function own(uid) { return signedIn() && request.auth.uid == uid; }
+    function hasLink(studentId) {
+      return isGuardian()
+        && get(/databases/$(database)/documents/guardian_links/$(request.auth.uid + '_' + studentId)).data.status == 'active';
+    }
+    function bounded(n) { return request.query.limit <= n; }
+    function affectedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // ---------- roster (staff + registered kiosk only) ----------
+    // No anonymous/any-signed-in fallback: a stale kiosk v1 tab (anonymous
+    // sign-in) must fail loudly at the gate rather than keep writing
+    // student_attendance that never reaches the parent portal.
+    // Staff roles (2026-10-04): coordinators' read scoping of these
+    // collections is UI-only for now. Closing it server-side also needs
+    // gradeLevel denormalized onto learner docs and the pages switched to
+    // where('gradeLevel','in',...) queries -- see the staff-roles spec.
+    match /students/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /enrollments/{id} { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /sections/{id}    { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
+    match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+    match /settings/parent_portal { allow read: if notAnonymous(); allow write: if isAdmin(); }
+    match /users/{id}       { allow read: if isAdmin() || (signedIn() && request.auth.token.email != null && id == request.auth.token.email.lower()); allow write: if false; }
+
+    // Confirmed kiosk attendance is derived by the backend from scan events.
+    // Staff retain manual editing permissions.
+    match /student_attendance/{id} {
+      allow read: if isStaff() || isKiosk();
+      allow write: if isAdmin() || coordinatorMayWriteAttendance();
+    }
+
+    // ---------- kiosks ----------
+    match /kiosks/{uid} {
+      allow read: if isAdmin() || (own(uid) && resource.data.active == true);
+      allow create, delete: if false;                       // registerKiosk / deactivateKiosk callables
+      allow update: if own(uid) && affectedOnly(['lastSeenAt']);
+    }
+
+    // ---------- raw scan log (append-only) ----------
+    function validScanEnrollment(d) {
+      let e = get(/databases/$(database)/documents/enrollments/$(d.studentId + '_' + d.schoolYear)).data;
+      let s = get(/databases/$(database)/documents/sections/$(d.sectionId)).data;
+      return exists(/databases/$(database)/documents/students/$(d.studentId))
+        && e.status == 'enrolled' && e.studentId == d.studentId
+        && e.schoolYear == d.schoolYear && e.sectionId == d.sectionId
+        && s.schoolYear == d.schoolYear;
+    }
+    match /scan_events/{id} {
+      allow list: if isAdmin();
+      // Own-event reads support acknowledgement and reload-safe deduplication.
+      allow get: if isAdmin() || (isKiosk() && id.matches(request.auth.uid + '_.*')
+        && (resource == null || resource.data.deviceId == request.auth.uid));
+      // Prefix-checks the whole id rather than splitting on '_' and
+      // comparing only the first segment -- Firebase Auth UIDs can
+      // themselves contain '_', which would otherwise truncate the
+      // comparison and deny every create from that device.
+      allow create: if isKiosk()
+        && id.matches(request.auth.uid + '_.*')
+        && request.resource.data.keys().hasOnly(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
+             'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source'])
+        && request.resource.data.keys().hasAll(['studentId', 'sectionId', 'schoolYear', 'kind', 'deviceId',
+             'scannedAt', 'scannedDate', 'scannedTime', 'receivedAt', 'source'])
+        && request.resource.data.deviceId == request.auth.uid
+        && request.resource.data.source == 'kiosk'
+        && request.resource.data.kind in ['in', 'out']
+        && request.resource.data.studentId is string
+        && request.resource.data.studentId.matches('[A-Za-z0-9_-]{1,128}')
+        && request.resource.data.sectionId is string
+        && request.resource.data.sectionId.matches('[A-Za-z0-9_-]{1,128}')
+        && request.resource.data.schoolYear is string
+        && request.resource.data.schoolYear.matches('[0-9]{4}-[0-9]{4}')
+        && request.resource.data.scannedAt is timestamp
+        && request.resource.data.scannedDate is string
+        && request.resource.data.scannedTime is string
+        && request.resource.data.scannedDate.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && request.resource.data.scannedTime.matches('([01][0-9]|2[0-3]):[0-5][0-9]')
+        && request.resource.data.receivedAt == request.time
+        && validScanEnrollment(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    // ---------- parent-facing projections (Functions write; guardians read via link) ----------
+    match /learners/{studentId} {
+      allow get: if hasLink(studentId) || isAdmin();
+      allow list: if isAdmin();
+      allow write: if false;
+      match /events/{eventId} {
+        allow get: if hasLink(studentId) || isAdmin();
+        allow list: if (hasLink(studentId) && bounded(50)) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    // ---------- guardians ----------
+    match /guardians/{uid} {
+      allow read: if own(uid) || isAdmin();
+      allow create, delete: if false;
+      allow update: if own(uid) && affectedOnly(['notificationsEnabled', 'displayName', 'lastOpenedAt', 'announcementsSeenAt', 'announcementPushEnabled']);
+
+      match /devices/{tokenHash} {
+        allow read: if own(uid);
+        allow create, update: if own(uid)
+          && request.resource.data.keys().hasOnly(['token', 'platform', 'createdAt', 'refreshedAt', 'enabled', 'failureCount'])
+          && request.resource.data.token is string && request.resource.data.token.size() < 4096
+          && request.resource.data.enabled is bool;
+        allow delete: if own(uid);
+      }
+      match /inbox/{id} {
+        allow get: if own(uid);
+        allow list: if own(uid) && bounded(50);
+        allow update: if own(uid) && affectedOnly(['readAt']);
+        allow create, delete: if false;
+      }
+    }
+
+    match /guardian_links/{id} {
+      allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(60));
+      allow write: if false;
+    }
+
+    // ---------- announcements (spec 2026-10-05) ----------
+    // Staff write directly; Functions own pushedAt/pushResult and the
+    // scheduled→published→expired moves. Guardians read only published posts
+    // whose audienceKeys overlap guardians/{uid}.audienceKeys (server-written).
+    // Mirrors coversPostKeys() in shared/announcements.js -- keep in step.
+    function postKeysInScope(keys) {
+      return isAdmin()
+        || (isStaff() && role() == 'jhs_coord' && keys.hasOnly(['g7', 'g8', 'g9', 'g10']))
+        || (isStaff() && role() == 'shs_coord' && keys.hasOnly(['g11', 'g12']))
+        || (isStaff() && role() == 'glc' && keys.hasOnly(['g' + string(profile().gradeLevel)]));
+    }
+    function validPost(d) {
+      return d.keys().hasOnly(['title', 'body', 'audience', 'audienceKeys', 'status', 'publishAt', 'publishedAt', 'expiresAt',
+                               'pinned', 'push', 'pushedAt', 'pushResult', 'createdBy', 'updatedBy', 'createdAt', 'updatedAt', 'editedAt'])
+        && d.title is string && d.title.size() >= 1 && d.title.size() <= 120
+        && d.body is string && d.body.size() >= 1 && d.body.size() <= 5000
+        && d.audience is map
+        && d.audienceKeys is list && d.audienceKeys.size() > 0
+        && d.audienceKeys.hasOnly(['all', 'g7', 'g8', 'g9', 'g10', 'g11', 'g12'])
+        && (!d.audienceKeys.hasAny(['all']) || d.audienceKeys.size() == 1)
+        && d.publishAt is timestamp
+        && (d.get('expiresAt', null) == null || d.expiresAt is timestamp)
+        && d.pinned is bool && d.push is bool
+        && d.updatedBy.uid == request.auth.uid && d.updatedAt == request.time;
+    }
+    function postChanged() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function guardianSeesPost() {
+      return isGuardian() && resource.data.status == 'published'
+        && resource.data.audienceKeys.hasAny(get(/databases/$(database)/documents/guardians/$(request.auth.uid)).data.get('audienceKeys', []));
+    }
+    match /announcements/{id} {
+      allow get: if isStaff() || guardianSeesPost();
+      allow list: if isStaff() || (guardianSeesPost() && bounded(50));
+      allow create: if isStaff() && validPost(request.resource.data)
+        && postKeysInScope(request.resource.data.audienceKeys)
+        && request.resource.data.createdBy.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && !request.resource.data.keys().hasAny(['pushedAt', 'pushResult', 'editedAt'])
+        && ((request.resource.data.status == 'published'
+              && request.resource.data.publishAt == request.time
+              && request.resource.data.publishedAt == request.time)
+          || (request.resource.data.status == 'scheduled'
+              && request.resource.data.publishAt > request.time
+              && !request.resource.data.keys().hasAny(['publishedAt'])));
+      allow update: if isStaff() && validPost(request.resource.data)
+        && !postChanged().hasAny(['pushedAt', 'pushResult', 'createdBy', 'createdAt', 'publishedAt'])
+        && postKeysInScope(resource.data.audienceKeys) && postKeysInScope(request.resource.data.audienceKeys)
+        && (
+          // Scheduled: anything staff own, still in the future, never "edited".
+          (resource.data.status == 'scheduled' && request.resource.data.status == 'scheduled'
+            && request.resource.data.publishAt > request.time
+            && !request.resource.data.keys().hasAny(['editedAt']))
+          // Live: wording, pin and expiry only; editedAt only ever set to now.
+          || (resource.data.status == 'published' && request.resource.data.status == 'published'
+            && postChanged().hasOnly(['title', 'body', 'pinned', 'expiresAt', 'editedAt', 'updatedAt', 'updatedBy'])
+            && (!postChanged().hasAny(['editedAt']) || request.resource.data.editedAt == request.time)
+            && (!postChanged().hasAny(['title', 'body']) || request.resource.data.editedAt == request.time))
+          // Unpublish: the status flip and the touch, nothing else.
+          || (resource.data.status == 'published' && request.resource.data.status == 'unpublished'
+            && postChanged().hasOnly(['status', 'updatedAt', 'updatedBy']))
+        );
+      allow delete: if isStaff() && resource.data.status == 'scheduled' && postKeysInScope(resource.data.audienceKeys);
+    }
+
+    // ---------- staff-only records written by Functions ----------
+    match /activation_codes/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /audit_log/{id}        { allow read: if isAdmin(); allow write: if false; }
+    match /rate_limits/{id}      { allow read, write: if false; }
+
+    match /access_requests/{id} {
+      allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow write: if false;                                // requestAccess / resolveAccessRequest callables
+    }
+    match /reports/{id} {
+      allow get: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid);
+      allow list: if isAdmin() || (isGuardian() && resource.data.guardianUid == request.auth.uid && bounded(50));
+      allow write: if false;                                // submitReport / resolveReport callables
+    }
+  }
+}

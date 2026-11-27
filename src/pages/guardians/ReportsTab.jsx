@@ -1,10 +1,10 @@
 import { useAsyncAction } from '../../hooks/useAsyncAction.js';
 import { ActionFeedback } from '../../components/ui.jsx';
 import { ResourceState } from '../../components/ui.jsx';
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
-import { useCollectionResource, useQueryResource } from '../../hooks/useCollection.js';
+import { useCollectionResource, useQueryResource, useSchoolYearEnrollments } from '../../hooks/useCollection.js';
 import { call } from '../../data/guardians.js';
 import { fullName } from '../../lib/roster.js';
 import { learnerMatches } from '../../lib/search.js';
@@ -23,7 +23,7 @@ export default function ReportsTab({ schoolYear }) {
   const open = openResource.data;
   const studentsResource = useCollectionResource('students');
   const students = studentsResource.data;
-  const enrollmentsResource = useCollectionResource('enrollments');
+  const enrollmentsResource = useSchoolYearEnrollments(schoolYear);
   const enrollments = enrollmentsResource.data;
   const byId = useMemo(() => new Map(students.map((s) => [s.id, s])), [students]);
   const enrollmentByStudent = useMemo(() => currentEnrollmentByStudent(enrollments, schoolYear), [enrollments, schoolYear]);
@@ -37,13 +37,14 @@ export default function ReportsTab({ schoolYear }) {
     ...GRADES.map((grade) => ({ value: grade, label: `Grade ${grade}` })),
     { value: UNASSIGNED, label: 'Unassigned' },
   ], []);
+  const searchQuery = useDeferredValue(filterQuery);
   const filtered = useMemo(() => open.filter((report) => {
     const learner = byId.get(report.studentId);
     const enrollment = learner ? enrollmentByStudent.get(learner.id) : null;
     const gradeHit = gradeFilter === '' ||
       (gradeFilter === UNASSIGNED ? !learner || !enrollment : Number(enrollment?.gradeLevel) === Number(gradeFilter));
-    return gradeHit && learnerMatches(filterQuery, learner);
-  }), [byId, enrollmentByStudent, filterQuery, gradeFilter, open]);
+    return gradeHit && learnerMatches(searchQuery, learner);
+  }), [byId, enrollmentByStudent, searchQuery, gradeFilter, open]);
 
   const resolve = async (r) => {
     const { note, action } = d(r.id);

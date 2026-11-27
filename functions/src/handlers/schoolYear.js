@@ -3,6 +3,8 @@ import { CallableError } from '../errors.js';
 import { audit } from '../audit.js';
 import { logEvent } from '../log.js';
 import { str } from '../lib/validators.js';
+import { schoolYearRef } from '../lib/schoolYears.js';
+import { contactCleared } from '../lib/learnerRequestCleanup.js';
 
 // A links page can write one inbox doc per link as well, so 200 keeps every
 // batch at or under 400 writes (Firestore's batch limit is 500).
@@ -35,8 +37,16 @@ export async function endSchoolYear(ctx, data) {
   const confirmText = str(data.confirmText, { name: 'confirmText', max: 20 });
   if (confirmText !== schoolYear) throw new CallableError('invalid-argument', 'Type the school year exactly to confirm.');
 
+  // Marked first, so no new slip for this year can be issued or redeemed
+  // while the year's existing slips and links are being closed below.
+  await schoolYearRef(db, schoolYear).set({ endedAt: FieldValue.serverTimestamp(), endedBy: email }, { merge: true });
+
   const codesRevoked = await drain(db,
     db.collection('activation_codes').where('schoolYear', '==', schoolYear).where('status', 'in', ['issued', 'exhausted']),
+    (docs, b) => docs.forEach((d) => b.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'school-year-ended' })));
+
+  const advisorySlipsRevoked = await drain(db,
+    db.collection('advisory_slips').where('schoolYear', '==', schoolYear).where('status', '==', 'issued'),
     (docs, b) => docs.forEach((d) => b.update(d.ref, { status: 'revoked', revokedAt: FieldValue.serverTimestamp(), revokedBy: email, revokedReason: 'school-year-ended' })));
 
   const notified = new Set();
@@ -57,8 +67,18 @@ export async function endSchoolYear(ctx, data) {
       b.update(d.ref, { status: 'expired', expiredAt: FieldValue.serverTimestamp(), expiredReason: 'school-year-ended' });
     }));
 
-  const result = { codesRevoked, linksExpired, accountsNotified: notified.size };
-  await audit(db, { action: 'schoolyear.ended', actorType: 'staff', actorUid: email, targetType: 'school_year', targetId: schoolYear, details: result });
-  logEvent('school_year_ended', { schoolYear, ...result });
+  // Nobody can decide a learner request once the year has ended, so a request still waiting would keep
+  // an add's address and phone numbers for good. Closing it removes them (spec 2026-10-22).
+  const learnerRequestsClosed = await drain(db,
+    db.collection('learner_change_requests').where('schoolYear', '==', schoolYear).where('status', '==', 'pending'),
+    (docs, b) => docs.forEach((d) => b.update(d.ref, {
+      status: 'withdrawn', withdrawnAt: FieldValue.serverTimestamp(), decisionReason: 'School year ended', ...contactCleared(d.data()),
+    })));
+
+  // The returned object is what the SIMS card shows; the closed requests are counted in the audit row and log only.
+  const result = { codesRevoked, advisorySlipsRevoked, linksExpired, accountsNotified: notified.size };
+  await audit(db, { action: 'schoolyear.ended', actorType: 'staff', actorUid: email, targetType: 'school_year', targetId: schoolYear,
+    details: { ...result, learnerRequestsClosed } });
+  logEvent('school_year_ended', { schoolYear, ...result, learnerRequestsClosed });
   return result;
 }

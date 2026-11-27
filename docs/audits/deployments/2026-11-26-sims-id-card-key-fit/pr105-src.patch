@@ -1,0 +1,167 @@
+diff --git a/src/components/IdCardsPrintable.jsx b/src/components/IdCardsPrintable.jsx
+index 3c559d7..caa2d42 100644
+--- a/src/components/IdCardsPrintable.jsx
++++ b/src/components/IdCardsPrintable.jsx
+@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
+ import { fullName } from '../lib/roster.js';
+ import { sectionShortLabel, sectionColorMap, sectionBorderColor, sectionLegendLabel, groupBySection } from '../lib/idCardQueue.js';
+ import { T } from '../styles.js';
+-import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets } from '../pages/idCardPrintLayout.js';
++import { ID_CARD_PRINT_STYLES, chunkIdCardsIntoSheets, sheetUsesAllRows } from '../pages/idCardPrintLayout.js';
+ 
+ function IdCard({ student, section, color }) {
+   const [qrSrc, setQrSrc] = useState(null);
+@@ -49,20 +49,24 @@ function SheetLegend({ sheet, colors }) {
+   );
+ }
+ 
++const sheetClassName = (sectionCoded, sheet) => {
++  if (!sectionCoded) return 'id-cards-sheet';
++  return sheetUsesAllRows(sheet.length) ? 'id-cards-sheet section-coded sheet-full' : 'id-cards-sheet section-coded';
++};
++
+ // entries: [{ student, section }] in print order. A batch may mix sections;
+ // sectionCoded frames each card in its section's color and adds a color key.
+ export default function IdCardsPrintSheets({ entries, printOnly = false, sectionCoded = false }) {
+   const sheets = useMemo(() => chunkIdCardsIntoSheets(entries), [entries]);
+   const colors = useMemo(() => (sectionCoded ? sectionColorMap(entries) : null), [entries, sectionCoded]);
+   const gridClassName = printOnly ? 'id-cards-grid id-cards-print-only paper' : 'id-cards-grid paper';
+-  const sheetClassName = sectionCoded ? 'id-cards-sheet section-coded' : 'id-cards-sheet';
+ 
+   return (
+     <>
+       <style>{ID_CARD_PRINT_STYLES}</style>
+       <div className={gridClassName} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+         {sheets.map((sheet, i) => (
+-          <div className={sheetClassName} key={i}>
++          <div className={sheetClassName(sectionCoded, sheet)} key={i}>
+             {colors && <SheetLegend sheet={sheet} colors={colors} />}
+             {sheet.map(({ student, section }) => (
+               <IdCard key={student.id} student={student} section={section} color={colors?.get(section.id)} />
+diff --git a/src/components/IdCardsPrintable.test.js b/src/components/IdCardsPrintable.test.js
+index f48c272..a13efd9 100644
+--- a/src/components/IdCardsPrintable.test.js
++++ b/src/components/IdCardsPrintable.test.js
+@@ -26,6 +26,14 @@ describe('IdCardsPrintSheets section coding', () => {
+     expect(html).toContain('G11 Acacia STEM (1)');
+   });
+ 
++  it('marks only a sheet that reaches the last row as full', () => {
++    const many = Array.from({ length: 73 }, (_, i) => entry(`m${i}`, i % 2 ? mabini : acacia));
++    expect(render({ entries: many, printOnly: true, sectionCoded: true })).toContain('class="id-cards-sheet section-coded sheet-full"');
++    const short = render({ entries: many.slice(0, 72), printOnly: true, sectionCoded: true });
++    expect(short).toContain('class="id-cards-sheet section-coded"');
++    expect(short).not.toContain('sheet-full');
++  });
++
+   it('leaves single-section prints uncoded by default', () => {
+     const html = render({ entries, printOnly: true });
+     expect(html).toContain('class="id-cards-sheet"');
+diff --git a/src/pages/idCardPrintLayout.js b/src/pages/idCardPrintLayout.js
+index 5133ff8..6c350cc 100644
+--- a/src/pages/idCardPrintLayout.js
++++ b/src/pages/idCardPrintLayout.js
+@@ -9,10 +9,13 @@ const rows = 10;
+ // height so a roster that doesn't fill a whole sheet only reserves the rows
+ // it actually uses, instead of always claiming the full page height.
+ const ROW_HEIGHT_MM = 27;
+-// Section-coded sheets (a mixed Saved batch) give up a strip at the top for
+-// the color key. Card rows shrink so the key plus 10 rows still total 270mm,
+-// keeping the same 11mm buffer as a plain sheet.
+-const LEGEND_HEIGHT_MM = 6;
++// Section-coded sheets (a mixed Saved batch) start with a color key that is
++// as tall as its sections need, so no entry is ever clipped. A sheet that
++// uses all 10 rows is held at 270mm (the same 11mm buffer as a plain sheet)
++// and its card rows share whatever the key leaves; 6mm for the key is the
++// usual budget, which keeps rows at 26.4mm. A shorter sheet keeps 26.4mm rows
++// and simply grows, since the page has room below it.
++const CODED_SHEET_HEIGHT_MM = 270;
+ const CODED_ROW_HEIGHT_MM = 26.4;
+ const CARD_FRAME_MM = 0.8;
+ const KEY_SWATCH_BORDER_MM = 0.8;
+@@ -23,6 +26,9 @@ export const ID_CARD_PRINT_LAYOUT = Object.freeze({
+   cardsPerSheet: columns * rows,
+ });
+ 
++// True when a sheet's cards reach the last row, so it must stay within one page.
++export const sheetUsesAllRows = (count) => count > (rows - 1) * columns;
++
+ export function chunkIdCardsIntoSheets(items) {
+   const sheets = [];
+   for (let index = 0; index < items.length; index += ID_CARD_PRINT_LAYOUT.cardsPerSheet) {
+@@ -100,9 +106,13 @@ export const ID_CARD_PRINT_STYLES = `
+        is a double line and cutting between them leaves each card a complete
+        frame. The key above the grid keeps the stronger, solid shade. */
+     .id-cards-sheet.section-coded {
+-      grid-template-rows: ${LEGEND_HEIGHT_MM}mm;
++      grid-template-rows: auto;
+       grid-auto-rows: ${CODED_ROW_HEIGHT_MM}mm;
+     }
++    .id-cards-sheet.section-coded.sheet-full {
++      height: ${CODED_SHEET_HEIGHT_MM}mm;
++      grid-auto-rows: minmax(0, 1fr);
++    }
+     .id-cards-sheet.section-coded .id-card {
+       border: ${CARD_FRAME_MM}mm dashed var(--section-border) !important;
+       padding: 0.6mm !important;
+@@ -113,9 +123,9 @@ export const ID_CARD_PRINT_STYLES = `
+       grid-column: 1 / -1;
+       display: flex !important;
+       flex-wrap: wrap;
+-      align-content: center;
+-      gap: 0.6mm 3mm;
+-      overflow: hidden;
++      align-content: flex-start;
++      gap: 0.5mm 3mm;
++      padding: 0.5mm 0 1mm;
+       font-size: 5.5pt;
+       line-height: 1.15;
+       -webkit-print-color-adjust: exact;
+diff --git a/src/pages/idCardPrintLayout.test.js b/src/pages/idCardPrintLayout.test.js
+index 50e6698..9b954bd 100644
+--- a/src/pages/idCardPrintLayout.test.js
++++ b/src/pages/idCardPrintLayout.test.js
+@@ -3,6 +3,7 @@ import {
+   ID_CARD_PRINT_LAYOUT,
+   ID_CARD_PRINT_STYLES,
+   chunkIdCardsIntoSheets,
++  sheetUsesAllRows,
+ } from './idCardPrintLayout.js';
+ 
+ describe('ID card print layout', () => {
+@@ -75,11 +76,31 @@ describe('ID card print layout', () => {
+ describe('section-coded ID card sheets', () => {
+   const codedRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\s*\{[^}]*\}/s)?.[0];
+ 
+-  it('fits the color key plus a full 10-row sheet within the same 270mm as a plain sheet', () => {
+-    expect(codedRule).toBeDefined();
+-    const legendMm = Number(codedRule.match(/grid-template-rows:\s*([\d.]+)mm/)[1]);
++  const fullRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-sheet\.section-coded\.sheet-full\s*\{[^}]*\}/s)?.[0];
++  const legendRule = ID_CARD_PRINT_STYLES.match(/\.id-cards-legend\s*\{\s*grid-column[^}]*\}/s)?.[0];
++
++  it('sizes the color key to its content and never clips it', () => {
++    expect(codedRule).toMatch(/grid-template-rows:\s*auto;/);
++    expect(legendRule).toBeDefined();
++    expect(legendRule).not.toMatch(/overflow:\s*hidden/);
++    expect(legendRule).not.toMatch(/align-content:\s*center/);
++  });
++
++  it('keeps 26.4mm card rows on a sheet that does not reach the last row, so the usual key leaves 270mm', () => {
+     const rowMm = Number(codedRule.match(/grid-auto-rows:\s*([\d.]+)mm/)[1]);
+-    expect(legendMm + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
++    expect(6 + rowMm * ID_CARD_PRINT_LAYOUT.rows).toBeCloseTo(270, 5);
++  });
++
++  it('holds a full 10-row sheet at 270mm, under the 281mm printable height, and lets the rows share what the key leaves', () => {
++    expect(fullRule).toBeDefined();
++    const heightMm = Number(fullRule.match(/height:\s*([\d.]+)mm/)[1]);
++    expect(heightMm).toBe(270);
++    expect(heightMm).toBeLessThan(281);
++    expect(fullRule).toMatch(/grid-auto-rows:\s*minmax\(0, 1fr\);/);
++  });
++
++  it.each([[1, false], [72, false], [73, true], [80, true]])('a sheet of %i cards uses all rows: %s', (count, full) => {
++    expect(sheetUsesAllRows(count)).toBe(full);
+   });
+ 
+   it('gives every card its own full 0.8mm dashed frame in the faint section shade, printed exactly', () => {

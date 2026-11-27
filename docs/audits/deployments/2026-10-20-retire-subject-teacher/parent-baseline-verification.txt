@@ -1,0 +1,1 @@
+https://bnhs-parent.web.app: 50/50 live files match docs/audits/deployments/2026-10-20-parent-theme-settings/parent-hosting-verification.json

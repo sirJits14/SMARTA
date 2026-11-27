@@ -12,7 +12,8 @@
     "test:functions": "firebase emulators:exec --only firestore,auth \"npm --prefix functions run test:emulator\"",
     "test:all": "npm test && npm --prefix functions test && npm --prefix parent test && npm run test:rules && npm run test:functions",
     "emulators": "firebase emulators:start --import=./.emulator-data --export-on-exit",
-    "deploy": "npm run build && firebase deploy --only hosting:sims"
+    "deploy": "npm run build && firebase deploy --only hosting:sims",
+    "deploy:parent": "firebase deploy --project bnhs-sims --non-interactive --only hosting:parent"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

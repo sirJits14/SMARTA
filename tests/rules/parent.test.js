@@ -16,10 +16,10 @@ describe('learners', () => {
     await denied(as(env, ANON).doc('learners/S1').get());
     await ok(as(env, STAFF).doc('learners/S1').get());
   });
-  it('an adviser-slot link reads the learner like a guardian link', async () => {
+  it('an adviser-slot link must migrate to an approved school assignment', async () => {
     const ADVISER = { uid: 'tAdv', token: { email: 't@deped.gov.ph', email_verified: true, firebase: { sign_in_provider: 'google.com' } } };
     await seed(env, (db) => db.doc('guardian_links/tAdv_S1').set({ guardianUid: 'tAdv', studentId: 'S1', status: 'active', schoolYear: '2026-2027', relationship: 'Adviser', slot: 'adviser' }));
-    await ok(as(env, ADVISER).doc('learners/S1').get());
+    await denied(as(env, ADVISER).doc('learners/S1').get());
   });
   it('guardian cannot list learners or write', async () => {
     await denied(as(env, GUARDIAN_A).collection('learners').get());
@@ -71,6 +71,8 @@ describe('links, requests, reports, staff-only records', () => {
     await ok(as(env, GUARDIAN_A).collection('guardian_links').where('guardianUid', '==', 'gA').where('status', '==', 'active').limit(60).get());
     await denied(as(env, GUARDIAN_A).collection('guardian_links').where('guardianUid', '==', 'gA').where('status', '==', 'active').limit(61).get());
     await denied(as(env, GUARDIAN_A).doc('guardian_links/gA_S2').set({ guardianUid: 'gA', studentId: 'S2', status: 'active' }));
+    // Relationship changes go through changeLinkRelationshipFn only (spec 2026-10-17).
+    await denied(as(env, GUARDIAN_A).doc('guardian_links/gA_S1').update({ relationship: 'Adviser', slot: 'adviser' }));
     await ok(as(env, STAFF).collection('guardian_links').get());
   });
   it('requests and reports are readable by owner and staff, never client-written', async () => {
@@ -93,5 +95,12 @@ describe('links, requests, reports, staff-only records', () => {
     await denied(as(env, STAFF).doc('audit_log/b').set({ action: 'y' }));
     await denied(as(env, STAFF).doc('rate_limits/gA').get());
     await denied(as(env, GUARDIAN_A).doc('rate_limits/gA').get());
+  });
+  it('school_years staff-read only, written only by Functions', async () => {
+    await seed(env, (db) => db.doc('school_years/2026-2027').set({ endedBy: 'registrar@bnhs.edu' }));
+    await ok(as(env, STAFF).doc('school_years/2026-2027').get());
+    await denied(as(env, GUARDIAN_A).doc('school_years/2026-2027').get());
+    await denied(as(env, STAFF).doc('school_years/2026-2027').set({ endedBy: null }));
+    await denied(as(env, STAFF).doc('school_years/2026-2027').delete());
   });
 });

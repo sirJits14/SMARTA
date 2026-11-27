@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { fullName, depedSort, alphabeticalSort } from './roster.js';
+import { fullName, depedSort, alphabeticalSort, capsName, personLabel } from './roster.js';
 
 describe('fullName', () => {
   it('formats "Last, First M."', () => {
-    expect(fullName({ lastName:'Cruz', firstName:'Ana', middleName:'Bautista' })).toBe('Cruz, Ana B.');
+    expect(fullName({ lastName:'Cruz', firstName:'Ana', middleName:'Bautista' })).toBe('CRUZ, ANA B.');
   });
   it('handles missing middle name and ext', () => {
-    expect(fullName({ lastName:'Lim', firstName:'Carlos', middleName:'', extName:'Jr' })).toBe('Lim, Carlos Jr');
+    expect(fullName({ lastName:'Lim', firstName:'Carlos', middleName:'', extName:'Jr' })).toBe('LIM, CARLOS JR');
   });
 });
 
@@ -43,5 +43,18 @@ describe('alphabeticalSort', () => {
     const copy = [...input];
     alphabeticalSort(input);
     expect(input).toEqual(copy);
+  });
+});
+
+describe('capsName and personLabel', () => {
+  it('upper-cases a name, including letters like ñ, and leaves empty values empty', () => {
+    expect(capsName('Dela Peña, Juan')).toBe('DELA PEÑA, JUAN');
+    expect(capsName(undefined)).toBe('');
+    expect(capsName('')).toBe('');
+  });
+  it('shows a person by capitalised name, or by their email exactly as written when there is no name', () => {
+    expect(personLabel({ displayName: 'Ana Cruz', email: 'ana@deped.gov.ph' })).toBe('ANA CRUZ');
+    expect(personLabel({ email: 'Ana@DepEd.gov.ph' })).toBe('Ana@DepEd.gov.ph');
+    expect(personLabel(null)).toBe('');
   });
 });

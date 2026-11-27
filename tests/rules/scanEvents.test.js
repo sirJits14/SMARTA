@@ -22,6 +22,14 @@ describe('scan_events', () => {
   it('active kiosk creates a well-formed event', async () => {
     await ok(as(env, KIOSK).doc(`scan_events/${ID}`).set(valid()));
   });
+  it('rejects an unknown learner, mismatched section, withdrawn enrollment and client server-result fields', async () => {
+    const db = as(env, KIOSK);
+    await denied(db.doc(`scan_events/${ID}`).set(valid({ studentId: 'unknown' })));
+    await denied(db.doc(`scan_events/${ID}`).set(valid({ sectionId: 'OTHER' })));
+    await denied(db.doc(`scan_events/${ID}`).set(valid({ attendanceResult: { status: 'applied', mark: 'P' } })));
+    await seed(env, d => d.doc('enrollments/S1_2026-2027').update({ status: 'withdrawn' }));
+    await denied(db.doc(`scan_events/${ID}`).set(valid()));
+  });
   it('a kiosk whose UID itself contains an underscore can still create', async () => {
     await seed(env, (db) => db.doc('kiosks/ki_osk1').set({ label: 'Gate 2', active: true }));
     const id = 'ki_osk1_S1_in_202609210712';
@@ -41,13 +49,16 @@ describe('scan_events', () => {
     await denied(as(env, STAFF).doc('scan_events/staff1_S1_202609210712').set(valid({ deviceId: 'staff1' })));
     await denied(as(env, GUARDIAN_A).doc('scan_events/gA_S1_202609210712').set(valid({ deviceId: 'gA' })));
   });
-  it('is immutable for everyone, readable by staff only', async () => {
+  it('is immutable for clients; a kiosk can get only its own event for acknowledgement and deduplication', async () => {
     await seed(env, (db) => db.doc(`scan_events/${ID}`).set(valid({ receivedAt: new Date() })));
     await denied(as(env, KIOSK).doc(`scan_events/${ID}`).update({ kind: 'out' }));
     await denied(as(env, STAFF).doc(`scan_events/${ID}`).update({ kind: 'out' }));
     await denied(as(env, STAFF).doc(`scan_events/${ID}`).delete());
     await ok(as(env, STAFF).doc(`scan_events/${ID}`).get());
-    await denied(as(env, KIOSK).doc(`scan_events/${ID}`).get());
+    await ok(as(env, KIOSK).doc(`scan_events/${ID}`).get());
+    await denied(as(env, KIOSK).collection('scan_events').get());
+    await seed(env, d => d.doc('kiosks/ki_osk1').set({ label: 'Gate 2', active: true }));
+    await denied(as(env, KIOSK_UNDERSCORE).doc(`scan_events/${ID}`).get());
     await denied(as(env, GUARDIAN_A).doc(`scan_events/${ID}`).get());
   });
 });

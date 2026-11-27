@@ -1,9 +1,10 @@
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { localDate } from '../lib/dates.js';
 import { sectionKey } from '../lib/studentImport.js';
 import { enrollmentId } from './enrollments.js';
 import { DOCS_DEFAULT } from './students.js';
+import { studentScopeFields } from './coordinatorScope.js';
 
 const BATCH_CHUNK_SIZE = 500; // Firestore's hard limit per writeBatch
 
@@ -14,47 +15,57 @@ export async function commitImportPlan({ plan, sections, schoolYear }) {
       .map((s) => [sectionKey(s.gradeLevel, s.name), s])
   );
   const newSectionIdByKey = new Map();
-  const writes = [];
+  // A group is indivisible: enrollment and student scope must commit together.
+  const writeGroups = [];
 
   plan.newSections.forEach((sec) => {
     const ref = doc(collection(db, 'sections'));
     newSectionIdByKey.set(sec.key, ref.id);
-    writes.push({
+    writeGroups.push([{
       ref,
       data: { name: sec.name, gradeLevel: sec.gradeLevel, track: null, strand: null, schoolYear, adviserName: '', scheduleId: null },
-    });
+    }]);
   });
 
   const writableRows = plan.results.filter((r) => r.kind !== 'error');
-  writableRows.forEach((row) => {
+  writeGroups.push(...await Promise.all(writableRows.map(async (row) => {
     const studentRef = row.existingStudentId
       ? doc(db, 'students', row.existingStudentId)
       : doc(collection(db, 'students'));
     const studentData = row.kind === 'new'
       ? { ...row.student, status: 'active', documents: { ...DOCS_DEFAULT }, createdAt: localDate() }
       : { ...row.student };
-    writes.push({ ref: studentRef, data: studentData, merge: true });
+    const studentStatus = row.kind === 'new' ? 'active' : (await getDoc(studentRef)).data()?.status;
 
     const existingSection = existingSectionByKey.get(row.sectionKey);
     const sectionId = existingSection ? existingSection.id : newSectionIdByKey.get(row.sectionKey);
     const enrollmentRef = doc(db, 'enrollments', enrollmentId(studentRef.id, schoolYear));
-    writes.push({
+    const enrollment = {
+      studentId: studentRef.id, schoolYear, gradeLevel: row.gradeLevel, sectionId,
+      track: existingSection?.track || null, strand: existingSection?.strand || null,
+      type: row.enrollType, dateEnrolled: localDate(), status: 'enrolled',
+    };
+    Object.assign(studentData, studentScopeFields(enrollment, schoolYear, studentStatus));
+    return [{ ref: studentRef, data: studentData, merge: true }, {
       ref: enrollmentRef,
-      data: {
-        studentId: studentRef.id, schoolYear, gradeLevel: row.gradeLevel, sectionId,
-        track: existingSection?.track || null, strand: existingSection?.strand || null,
-        type: row.enrollType, dateEnrolled: localDate(), status: 'enrolled',
-      },
-    });
-  });
+      data: enrollment,
+    }];
+  })));
 
-  for (let i = 0; i < writes.length; i += BATCH_CHUNK_SIZE) {
+  let pendingWrites = [];
+  async function commitChunk() {
     const batch = writeBatch(db);
-    writes.slice(i, i + BATCH_CHUNK_SIZE).forEach(({ ref, data, merge }) =>
+    pendingWrites.forEach(({ ref, data, merge }) =>
       batch.set(ref, data, merge ? { merge: true } : {})
     );
     await batch.commit();
+    pendingWrites = [];
   }
+  for (const group of writeGroups) {
+    if (pendingWrites.length + group.length > BATCH_CHUNK_SIZE) await commitChunk();
+    pendingWrites.push(...group);
+  }
+  if (pendingWrites.length) await commitChunk();
 
   return { studentsWritten: writableRows.length, sectionsCreated: plan.newSections.length };
 }

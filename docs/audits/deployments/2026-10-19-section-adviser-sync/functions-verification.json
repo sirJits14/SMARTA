@@ -1,0 +1,15 @@
+{
+  "changed": [
+    "assignSchoolRoleFn",
+    "deleteGuardianAccountFn",
+    "replaceAdviserFn",
+    "resolveSchoolRoleFn",
+    "resolveSchoolRolesFn",
+    "revokeSchoolRoleFn",
+    "updateCoordinatorSectionFn"
+  ],
+  "selectedActive": true,
+  "checkedAt": "2026-10-19T13:43:22.2057322Z",
+  "inventoryUnchanged": true,
+  "unrelatedFunctionHashesUnchanged": true
+}

@@ -1,0 +1,39 @@
+{
+  "project": "bnhs-sims",
+  "sourceCommit": "42136098661f7a09f8c330eec2a4db73772ea53e",
+  "deployedAt": "2026-10-18T05:18:23Z/2026-10-18T05:19:51Z",
+  "verifiedAt": "2026-10-18",
+  "note": "The final rules + hosting command was reported as declined by the deploying tool's auto-review, but it had already completed; every target below was checked against production afterwards.",
+  "firestoreIndexes": { "total": 27, "ready": 27 },
+  "firestoreRules": {
+    "ruleset": "projects/bnhs-sims/rulesets/47a8d3f1-0613-4a1c-8c10-9b4ca1378dfe",
+    "releasedAt": "2026-10-18T05:19:50.810469Z",
+    "previousRuleset": "projects/bnhs-sims/rulesets/42e6cc7c-5508-48f8-bdb1-ea794530ec94",
+    "matches": "docs/releases/2026-10-18-school-family/firestore.school-family.rules"
+  },
+  "functions": {
+    "deployed": 23,
+    "allActive": true,
+    "totalBefore": 37,
+    "totalAfter": 49,
+    "removed": [],
+    "added": [
+      "assignSchoolRoleFn", "getFamilyAttendanceFn", "getPortalAnnouncementFn", "getPortalAnnouncementsFn",
+      "getSchoolContextFn", "getSchoolRosterFn", "onAttendanceCorrectionCreated", "requestSchoolRoleFn",
+      "resolveSchoolRoleFn", "revokeSchoolRoleFn", "savePortalAnnouncementFn", "setSessionAbsenceFn"
+    ],
+    "onScanEventCreated": {
+      "revision": "onscaneventcreated-00020-rih",
+      "liveScanAttendanceSha256": "49ee1a2ecfdf370852b38332a0636979c3ada9cba314dcefc2f69edd8ecf575f",
+      "matchesPreservedScan": true
+    }
+  },
+  "hosting": {
+    "sims": { "origin": "https://bnhs-sims.web.app", "mainScript": "/assets/index-C1ztdq4p.js", "files": 56, "allMatch": true, "report": "sims-hosting-verification.json" },
+    "parent": { "origin": "https://bnhs-parent.web.app", "mainScript": "/assets/index-CgALBMNM.js", "files": 41, "allMatch": true, "report": "parent-hosting-verification.json" }
+  },
+  "pending": [
+    "Designated test-account checks from docs/school-family-access-rollout.md step 7 (personal-email adviser approval, DepEd Curriculum Adviser approval, subject-teacher notice, AM correction and restoration, unrelated teacher denied roster).",
+    "Legacy adviser link review and explicit school-role assignment in SIMS (rollout step 6)."
+  ]
+}

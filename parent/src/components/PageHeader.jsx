@@ -1,0 +1,76 @@
+import { useEffect, useRef, useState } from 'react';
+import S from '../strings.js';
+import { initials } from '../lib/format.js';
+import Icon from './Icon.jsx';
+
+function Avatar({ name, compact = false }) {
+  return <span className={`page-header-avatar${compact ? ' page-header-avatar--small' : ''}`} aria-hidden="true">{initials(name)}</span>;
+}
+
+// Logo image, photo or initials avatar shown beside the title, if any is given.
+function Mark({ logo, avatarName, avatarSrc, compact = false }) {
+  if (logo) return <img className={`page-header-logo${compact ? ' page-header-logo--small' : ''}`} src={logo} alt="" />;
+  if (avatarSrc) return <img className={`page-header-avatar page-header-avatar--photo${compact ? ' page-header-avatar--small' : ''}`} src={avatarSrc} alt="" />;
+  if (avatarName !== undefined) return <Avatar name={avatarName} compact={compact} />;
+  return null;
+}
+
+// Large title that scrolls away with the page, plus a sticky bar that picks
+// the title up once it has scrolled under it (iOS "large title" pattern).
+// `logo` (an image src) or `avatarName` (initials, replaced by `avatarSrc` once
+// there is a photo) adds a mark beside the title; `onBack` adds a back button;
+// `action` sits at the bar's right end.
+export default function PageHeader({ title, subtitle, status, logo, avatarName, avatarSrc, onBack, action }) {
+  const barRef = useRef(null);
+  const titleRef = useRef(null);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const titleEl = titleRef.current;
+    const bar = barRef.current;
+    if (!titleEl || !bar) return;
+    // The title collapses when it passes beneath the sticky bar.
+    let observer;
+    const observe = () => {
+      observer?.disconnect();
+      observer = new IntersectionObserver(([entry]) => setCollapsed(!entry.isIntersecting), {
+        rootMargin: `-${bar.getBoundingClientRect().height}px 0px 0px 0px`,
+      });
+      observer.observe(titleEl);
+    };
+    const resize = new ResizeObserver(observe);
+    resize.observe(bar);
+    observe();
+    return () => { resize.disconnect(); observer?.disconnect(); };
+  }, [title]);
+
+  // A fragment, not a wrapper: a sticky element only sticks inside its parent,
+  // so the bar must be a direct child of <main> to stay pinned over the whole
+  // page rather than scrolling away with the expanded header.
+  return (
+    <>
+      <div ref={barRef} className={`page-header-bar${collapsed ? ' page-header-bar--collapsed' : ''}`}>
+        {onBack && (
+          <button type="button" className="page-header-back" aria-label={S.back} onClick={onBack}>
+            <Icon name="back" size={22} />
+          </button>
+        )}
+        {title && (
+          <div className="page-header-compact" aria-hidden="true">
+            <Mark logo={logo} avatarName={avatarName} avatarSrc={avatarSrc} compact />
+            <span className="page-header-compact-title">{title}</span>
+          </div>
+        )}
+        {action && <div className="page-header-action">{action}</div>}
+      </div>
+      {title && (
+        <div className="page-header-expanded">
+          <Mark logo={logo} avatarName={avatarName} avatarSrc={avatarSrc} />
+          <h1 ref={titleRef} className="page-header-title">{title}</h1>
+          {subtitle && <div className="page-header-subtitle">{subtitle}</div>}
+          {status && <div className="page-header-status">{status}</div>}
+        </div>
+      )}
+    </>
+  );
+}

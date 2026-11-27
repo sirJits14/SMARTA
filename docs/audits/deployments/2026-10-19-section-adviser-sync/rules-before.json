@@ -1,0 +1,7 @@
+{
+  "checkedAt": "2026-10-19T13:27:44.273Z",
+  "rulesetName": "projects/bnhs-sims/rulesets/47a8d3f1-0613-4a1c-8c10-9b4ca1378dfe",
+  "expectedSha256": "c7bfcf8a5bbe0b714bb18764109fc7e75fe2e2dd52030e8c76f96dc464930a39",
+  "deployedSha256": "c7bfcf8a5bbe0b714bb18764109fc7e75fe2e2dd52030e8c76f96dc464930a39",
+  "matches": true
+}

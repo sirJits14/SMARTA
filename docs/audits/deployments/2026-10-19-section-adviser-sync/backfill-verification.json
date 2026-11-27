@@ -1,0 +1,8 @@
+{
+  "projectId": "bnhs-sims",
+  "mode": "dry-run",
+  "emulator": false,
+  "schoolYear": "2026-2027",
+  "changed": [],
+  "warnings": []
+}

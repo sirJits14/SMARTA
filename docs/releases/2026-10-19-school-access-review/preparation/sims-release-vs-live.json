@@ -1,0 +1,241 @@
+{
+  "liveFiles": 59,
+  "releaseFiles": 59,
+  "unchanged": 21,
+  "renamedOnly": 0,
+  "contentChanged": [
+    {
+      "path": "assets/AccountsPage-CtF1iNtk.js",
+      "was": "assets/AccountsPage-h-yAaqG8.js",
+      "bytes": 7159,
+      "wasBytes": 7197
+    },
+    {
+      "path": "assets/AnnouncementsPage-BJe-Oz6m.js",
+      "was": "assets/AnnouncementsPage-CNN0NhOv.js",
+      "bytes": 15202,
+      "wasBytes": 15240
+    },
+    {
+      "path": "assets/AttendanceSummaryPage-CfdCd_Z7.js",
+      "was": "assets/AttendanceSummaryPage-D3ecAVcW.js",
+      "bytes": 9888,
+      "wasBytes": 9877
+    },
+    {
+      "path": "assets/AttendanceTakePage-DCibvjRI.js",
+      "was": "assets/AttendanceTakePage-j48xTNtp.js",
+      "bytes": 8653,
+      "wasBytes": 8691
+    },
+    {
+      "path": "assets/AuditTab-C1iyXJcI.js",
+      "was": "assets/AuditTab-CN3Dx0cL.js",
+      "bytes": 1234,
+      "wasBytes": 1266
+    },
+    {
+      "path": "assets/browser-CPcv2hKk.js",
+      "was": "assets/browser-CpOHZqR4.js",
+      "bytes": 24229,
+      "wasBytes": 24190
+    },
+    {
+      "path": "assets/CodesTab-CIpXB22E.js",
+      "was": "assets/CodesTab-CpNrqT3-.js",
+      "bytes": 5856,
+      "wasBytes": 5887
+    },
+    {
+      "path": "assets/DashboardPage-Bve_kalK.js",
+      "was": "assets/DashboardPage-BLFlVJ1w.js",
+      "bytes": 9532,
+      "wasBytes": 9570
+    },
+    {
+      "path": "assets/dates-BA2cdwe2.js",
+      "was": "assets/dates-BmMLuwUb.js",
+      "bytes": 557,
+      "wasBytes": 669
+    },
+    {
+      "path": "assets/DevicesTab-BwiMgmGl.js",
+      "was": "assets/DevicesTab-CNgIX7lc.js",
+      "bytes": 4624,
+      "wasBytes": 4662
+    },
+    {
+      "path": "assets/downloadWorkbook-BJ0LSd0U.js",
+      "was": "assets/downloadWorkbook-p5I7AvZ3.js",
+      "bytes": 930155,
+      "wasBytes": 930155
+    },
+    {
+      "path": "assets/enrollments-hchF6BSC.js",
+      "was": "assets/enrollments-CgQs3fRy.js",
+      "bytes": 451,
+      "wasBytes": 451
+    },
+    {
+      "path": "assets/EnrollPage-BVGT2-V9.js",
+      "was": "assets/EnrollPage-DzWDCQd8.js",
+      "bytes": 9190,
+      "wasBytes": 9222
+    },
+    {
+      "path": "assets/GradePills-Bw22EmJY.js",
+      "was": "assets/GradePills-J-MnYkKm.js",
+      "bytes": 792,
+      "wasBytes": 793
+    },
+    {
+      "path": "assets/guardians-7QARmhAx.js",
+      "was": "assets/guardians-DeONVgZj.js",
+      "bytes": 853,
+      "wasBytes": 852
+    },
+    {
+      "path": "assets/GuardiansPage-BA1ch--M.js",
+      "was": "assets/GuardiansPage-CPS5FPOr.js",
+      "bytes": 3825,
+      "wasBytes": 3719
+    },
+    {
+      "path": "assets/IdCardPrintConfirm-GvCWPoBX.js",
+      "was": "assets/IdCardPrintConfirm-pGKMGYm3.js",
+      "bytes": 7154,
+      "wasBytes": 7142
+    },
+    {
+      "path": "assets/IDCardsPage-B-UqOd8v.js",
+      "was": "assets/IDCardsPage-W6MGnj5M.js",
+      "bytes": 8372,
+      "wasBytes": 8415
+    },
+    {
+      "path": "assets/index-9CtqkeDm.css",
+      "was": "assets/index-CTzMYLFv.css",
+      "bytes": 22605,
+      "wasBytes": 20816
+    },
+    {
+      "path": "assets/index-ComX5WGQ.js",
+      "was": "assets/index-BrmqHMeI.js",
+      "bytes": 896400,
+      "wasBytes": 886321
+    },
+    {
+      "path": "assets/LinksTab-DOSWui4H.js",
+      "was": "assets/LinksTab-CPM0CxLY.js",
+      "bytes": 9511,
+      "wasBytes": 9544
+    },
+    {
+      "path": "assets/PortalSettingsTab-CliD4VFZ.js",
+      "was": "assets/PortalSettingsTab-URbBZ7WZ.js",
+      "bytes": 4100,
+      "wasBytes": 4138
+    },
+    {
+      "path": "assets/ReportsTab-Cf_oODG0.js",
+      "was": "assets/ReportsTab-afq2B3H7.js",
+      "bytes": 3596,
+      "wasBytes": 3643
+    },
+    {
+      "path": "assets/RequestsTab-B0Eu83j_.js",
+      "was": "assets/RequestsTab-D_QSCPUe.js",
+      "bytes": 4491,
+      "wasBytes": 4439
+    },
+    {
+      "path": "assets/ScanLogTab-3VqrSQQQ.js",
+      "was": "assets/ScanLogTab-C8zsHfvt.js",
+      "bytes": 3471,
+      "wasBytes": 3509
+    },
+    {
+      "path": "assets/SchedulesPage-DRduaZ-C.js",
+      "was": "assets/SchedulesPage-BeX-YG4-.js",
+      "bytes": 6475,
+      "wasBytes": 6506
+    },
+    {
+      "path": "assets/school-ByepEMeD.js",
+      "was": "assets/school-Bg4qOX95.js",
+      "bytes": 13627,
+      "wasBytes": 435
+    },
+    {
+      "path": "assets/SchoolAccessTab-CVA7ti4J.js",
+      "was": "assets/SchoolAccessTab-CiOIwWYE.js",
+      "bytes": 24637,
+      "wasBytes": 7145
+    },
+    {
+      "path": "assets/SectionPicker-pu-QqRtX.js",
+      "was": "assets/SectionPicker-C_RY3yDg.js",
+      "bytes": 2693,
+      "wasBytes": 2731
+    },
+    {
+      "path": "assets/SectionsPage-DCPU80Kf.js",
+      "was": "assets/SectionsPage-5Ix-c8lP.js",
+      "bytes": 12124,
+      "wasBytes": 12159
+    },
+    {
+      "path": "assets/SessionReviewPage-BhPKrK3i.js",
+      "was": "assets/SessionReviewPage-B0e_FanZ.js",
+      "bytes": 7068,
+      "wasBytes": 7105
+    },
+    {
+      "path": "assets/SettingsPage-BXfw9C6D.js",
+      "was": "assets/SettingsPage-B5uIeIlS.js",
+      "bytes": 2775,
+      "wasBytes": 2813
+    },
+    {
+      "path": "assets/slipIssue-uTlqLfSo.js",
+      "was": "assets/slipIssue-BQGkZtZ3.js",
+      "bytes": 5290,
+      "wasBytes": 5284
+    },
+    {
+      "path": "assets/StudentForm-DiotLABz.js",
+      "was": "assets/StudentForm-CNUiVBYe.js",
+      "bytes": 7873,
+      "wasBytes": 7910
+    },
+    {
+      "path": "assets/StudentsPage-D6nQozZA.js",
+      "was": "assets/StudentsPage-2Z9pEml5.js",
+      "bytes": 14869,
+      "wasBytes": 14866
+    },
+    {
+      "path": "assets/useAsyncAction-BroJXKO9.js",
+      "was": "assets/useAsyncAction-DcxCIh84.js",
+      "bytes": 653,
+      "wasBytes": 658
+    },
+    {
+      "path": "index.html",
+      "was": "index.html",
+      "bytes": 2164,
+      "wasBytes": 2159
+    }
+  ],
+  "added": [
+    {
+      "path": "assets/rolldown-runtime-aKtaBQYM.js",
+      "bytes": 1084
+    }
+  ],
+  "removed": [
+    "assets/jsx-runtime-BQwkvCFX.js"
+  ],
+  "mainScript": "assets/index-ComX5WGQ.js",
+  "liveMainScript": "assets/index-BrmqHMeI.js"
+}

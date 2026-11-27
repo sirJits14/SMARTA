@@ -1,0 +1,196 @@
+{
+  "liveFiles": 56,
+  "releaseFiles": 59,
+  "unchanged": 27,
+  "changed": [
+    {
+      "path": "assets/AccountsPage-DC0fsunN.js",
+      "was": "assets/AccountsPage-D4nMOdCq.js",
+      "bytes": 7197,
+      "wasBytes": 7197
+    },
+    {
+      "path": "assets/AnnouncementsPage-8PsfNBfo.js",
+      "was": "assets/AnnouncementsPage-HwUaN6PM.js",
+      "bytes": 15240,
+      "wasBytes": 15608
+    },
+    {
+      "path": "assets/AttendanceSummaryPage-C5nNctNg.js",
+      "was": "assets/AttendanceSummaryPage-LfkH_IZl.js",
+      "bytes": 9877,
+      "wasBytes": 9877
+    },
+    {
+      "path": "assets/AttendanceTakePage-BjsGlmkJ.js",
+      "was": "assets/AttendanceTakePage-DxJ7uFLQ.js",
+      "bytes": 8691,
+      "wasBytes": 8691
+    },
+    {
+      "path": "assets/AuditTab-CNjn3yqr.js",
+      "was": "assets/AuditTab-CrxMcPmz.js",
+      "bytes": 1266,
+      "wasBytes": 1266
+    },
+    {
+      "path": "assets/CodesTab-DeifpQcK.js",
+      "was": "assets/CodesTab-DNWBP1Dx.js",
+      "bytes": 5887,
+      "wasBytes": 5887
+    },
+    {
+      "path": "assets/DashboardPage-B2haE-OL.js",
+      "was": "assets/DashboardPage-DkfJ5BHE.js",
+      "bytes": 9570,
+      "wasBytes": 9570
+    },
+    {
+      "path": "assets/DevicesTab-DZPFunAt.js",
+      "was": "assets/DevicesTab-BWRfGccF.js",
+      "bytes": 4662,
+      "wasBytes": 4662
+    },
+    {
+      "path": "assets/enrollments-BrqK3gxO.js",
+      "was": "assets/enrollments-C1w24zIe.js",
+      "bytes": 451,
+      "wasBytes": 451
+    },
+    {
+      "path": "assets/EnrollPage-Dol7fPVb.js",
+      "was": "assets/EnrollPage-_gdv-94q.js",
+      "bytes": 9222,
+      "wasBytes": 9222
+    },
+    {
+      "path": "assets/guardians-dRcawiF9.js",
+      "was": "assets/guardians-DRYPfNrn.js",
+      "bytes": 797,
+      "wasBytes": 797
+    },
+    {
+      "path": "assets/GuardiansPage-bz2MBIu6.js",
+      "was": "assets/GuardiansPage-BjmSIw4e.js",
+      "bytes": 3719,
+      "wasBytes": 3688
+    },
+    {
+      "path": "assets/IdCardPrintConfirm-CJhERF6J.js",
+      "was": "assets/IdCardPrintConfirm-BRWZzM49.js",
+      "bytes": 7142,
+      "wasBytes": 7142
+    },
+    {
+      "path": "assets/IDCardsPage-CZV5lH5k.js",
+      "was": "assets/IDCardsPage-B6RTpmRP.js",
+      "bytes": 8415,
+      "wasBytes": 8415
+    },
+    {
+      "path": "assets/index-CN44oHj4.js",
+      "was": "assets/index-C1ztdq4p.js",
+      "bytes": 886321,
+      "wasBytes": 886030
+    },
+    {
+      "path": "assets/LinksTab-I0-Oa1sC.js",
+      "was": "assets/LinksTab-DYZ9khtr.js",
+      "bytes": 8004,
+      "wasBytes": 8004
+    },
+    {
+      "path": "assets/PortalSettingsTab-YIFdP_ck.js",
+      "was": "assets/PortalSettingsTab-CVSyTaXB.js",
+      "bytes": 4138,
+      "wasBytes": 4138
+    },
+    {
+      "path": "assets/ReportsTab-BShYAiol.js",
+      "was": "assets/ReportsTab-Cn7ROZoB.js",
+      "bytes": 3643,
+      "wasBytes": 3643
+    },
+    {
+      "path": "assets/RequestsTab-DgugLUbH.js",
+      "was": "assets/RequestsTab-Bf4S59eN.js",
+      "bytes": 4439,
+      "wasBytes": 4439
+    },
+    {
+      "path": "assets/ScanLogTab-Cw2Ra8vJ.js",
+      "was": "assets/ScanLogTab-v_KBy1e8.js",
+      "bytes": 3509,
+      "wasBytes": 3509
+    },
+    {
+      "path": "assets/SchedulesPage-DOw4349y.js",
+      "was": "assets/SchedulesPage-Dy7mDwdP.js",
+      "bytes": 6506,
+      "wasBytes": 6506
+    },
+    {
+      "path": "assets/SchoolAccessTab-Dedx5ndS.js",
+      "was": "assets/SchoolAccessTab-CuyezakW.js",
+      "bytes": 7145,
+      "wasBytes": 7352
+    },
+    {
+      "path": "assets/SectionPicker-Bp00hVOb.js",
+      "was": "assets/SectionPicker-DEn66mSs.js",
+      "bytes": 2731,
+      "wasBytes": 2731
+    },
+    {
+      "path": "assets/SectionsPage-Du5JFLAs.js",
+      "was": "assets/SectionsPage-Dgsu4UXc.js",
+      "bytes": 12159,
+      "wasBytes": 12159
+    },
+    {
+      "path": "assets/SettingsPage-h68SkPqe.js",
+      "was": "assets/SettingsPage-B2jRQ7zV.js",
+      "bytes": 2813,
+      "wasBytes": 2813
+    },
+    {
+      "path": "assets/slipIssue--QOqjhQD.js",
+      "was": "assets/slipIssue-DEbm5JGR.js",
+      "bytes": 5284,
+      "wasBytes": 5284
+    },
+    {
+      "path": "assets/StudentForm-DB6wPB-7.js",
+      "was": "assets/StudentForm-D1pACHFB.js",
+      "bytes": 7910,
+      "wasBytes": 7910
+    },
+    {
+      "path": "assets/StudentsPage-94-sj82g.js",
+      "was": "assets/StudentsPage-C0fRVjFx.js",
+      "bytes": 14866,
+      "wasBytes": 14866
+    },
+    {
+      "path": "index.html",
+      "was": "index.html",
+      "bytes": 2159,
+      "wasBytes": 2159
+    }
+  ],
+  "added": [
+    {
+      "path": "assets/dates-BmMLuwUb.js",
+      "bytes": 669
+    },
+    {
+      "path": "assets/school-Bg4qOX95.js",
+      "bytes": 435
+    },
+    {
+      "path": "assets/SessionReviewPage-BfwIKAlI.js",
+      "bytes": 7105
+    }
+  ],
+  "removed": []
+}

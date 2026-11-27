@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { NAV_TABS, activeTab } from './nav.js';
+import { NAV_TABS, navTabs, portalView, activeTab, showsAppTitle } from './nav.js';
 import { matchRoute } from './router.js';
 
 describe('NAV_TABS', () => {
-  it('lists Home, Inbox, Settings in order with their paths', () => {
+  it('lists Home, Notices, Inbox, Settings in order with their paths', () => {
     expect(NAV_TABS).toEqual([
       { key: 'home', path: '/' },
+      { key: 'notices', path: '/announcements' },
       { key: 'inbox', path: '/inbox' },
       { key: 'settings', path: '/settings' },
     ]);
@@ -13,16 +14,38 @@ describe('NAV_TABS', () => {
 });
 
 describe('activeTab', () => {
+  it('uses School navigation with Class for advisers and no family inbox', () => {
+    expect(navTabs('school')).toEqual([
+      { key: 'class', path: '/school' },
+      { key: 'notices', path: '/announcements?view=school' },
+      { key: 'settings', path: '/settings?view=school' },
+    ]);
+    expect(navTabs('school', false)).toEqual([
+      { key: 'notices', path: '/announcements?view=school' },
+      { key: 'settings', path: '/settings?view=school' },
+    ]);
+    expect(activeTab('school')).toBe('class');
+    expect(showsAppTitle('school')).toBe(false);
+  });
   it('lights Home for the home screen and a learner page', () => {
     expect(activeTab('home')).toBe('home');
     expect(activeTab('learner')).toBe('home');
   });
-  it('lights Inbox for the inbox and a report opened from it', () => {
+  it('lights Notices for the list and a single announcement', () => {
+    expect(activeTab('announcements')).toBe('notices');
+    expect(activeTab('announcement')).toBe('notices');
+  });
+  it('lights Inbox for the inbox', () => {
     expect(activeTab('inbox')).toBe('inbox');
-    expect(activeTab('report')).toBe('inbox');
+  });
+  it("keeps Home lit on a report, which is opened from a learner's history", () => {
+    expect(activeTab('report')).toBe('home');
   });
   it('lights Settings for settings', () => {
     expect(activeTab('settings')).toBe('settings');
+  });
+  it('keeps Settings lit on a settings sub-page', () => {
+    expect(activeTab(matchRoute('/settings/about').name)).toBe('settings');
   });
   it('lights nothing on onboarding and unknown screens', () => {
     for (const name of ['verify', 'consent', 'activate', 'requestAccess', 'notFound', undefined]) {
@@ -36,5 +59,22 @@ describe('route drift guard', () => {
     for (const tab of NAV_TABS) {
       expect(activeTab(matchRoute(tab.path).name)).toBe(tab.key);
     }
+  });
+});
+
+describe('adviser learner history', () => {
+  it('treats the adviser learner history as part of the Class tab', () => {
+    expect(portalView({ name: 'schoolLearner', query: {} })).toBe('school');
+    expect(activeTab('schoolLearner')).toBe('class');
+    expect(showsAppTitle('schoolLearner')).toBe(false);
+  });
+});
+
+describe('showsAppTitle', () => {
+  it('hides the app title on screens with their own page header', () => {
+    for (const name of ['home', 'learner', 'inbox', 'settings', 'announcements', 'announcement']) expect(showsAppTitle(name)).toBe(false);
+  });
+  it('keeps it on reports and onboarding', () => {
+    for (const name of ['report', 'verify', 'consent', 'activate', 'requestAccess', 'notFound', undefined]) expect(showsAppTitle(name)).toBe(true);
   });
 });

@@ -1,0 +1,45 @@
+{
+  "project": "bnhs-sims",
+  "sourceCommit": "415f70d",
+  "change": "PR sirJits14/SMARTA#52: Parent Learner History shows gate-scan bubbles by default; a Sessions pill opens session attendance in a bottom sheet whose rows are labeled from the section's SIMS schedule bell times; getFamilyAttendanceFn returns schedule (bell times only)",
+  "deployedAt": "2026-10-18",
+  "preChecks": {
+    "parentTests": "139/139",
+    "functionsUnit": "168/168",
+    "functionsEmulator": "300 passed",
+    "liveSourceDiff": "Downloaded live getFamilyAttendanceFn source (getfamilyattendancefn-00002-hiz): sessionAttendance.js differed from the prepared tree only by the schedule read; shared/ identical"
+  },
+  "functions": {
+    "prepared": "docs/releases/2026-10-18-school-family/prepareBackend.mjs from 415f70d (adaptSessionAttendance applied: a missing stored gradeLevel falls back to the server-read section grade; preserved live scanAttendance.js). Never deploy getFamilyAttendanceFn from root functions/: its validAttendance requires attendance.gradeLevel, which live scans do not write.",
+    "config": "firebase.school-family-release.json",
+    "deployedByName": ["getFamilyAttendanceFn"],
+    "revision": { "before": "getfamilyattendancefn-00002-hiz", "after": "getfamilyattendancefn-00003-gun" },
+    "portalUrl": "https://bnhs-parent.web.app (read from the live function before deploy)",
+    "totalBefore": 51,
+    "totalAfter": 51,
+    "allActive": true,
+    "removed": [],
+    "changedOutsideList": [],
+    "liveSourceMatchesPrepared": true,
+    "liveCallsAfterDeploy": "2 family calls at 13:54 UTC on 00003-gun returned 200; no errors logged"
+  },
+  "hosting": {
+    "parent": {
+      "origin": "https://bnhs-parent.web.app",
+      "builtFrom": "415f70d",
+      "toolchain": "main checkout parent/node_modules (junction) and parent/.env",
+      "releasedAt": "2026-10-18T13:55:18Z",
+      "mainScript": "/assets/index-s1ljDS3K.js",
+      "files": 45,
+      "allMatch": true,
+      "initialLoadGzipKB": 260.2,
+      "sessionsPillInBundle": true
+    }
+  },
+  "notes": [
+    "Parent initial load is 260.2 KB, over the 260 KB budget (npm run size fails); pre-merge master measured 260.0 KB with the same toolchain. The user accepted the overage for this release. The PR's 257.0 KB was measured with a worktree's root-hoisted dependencies.",
+    "This release replaced Parent hosting versions deployed at 13:02, 13:11, 13:49 and 13:51 UTC from a Codex worktree (uncommitted sign-in logging and school-context cache on top of 992d865; the 13:02 and 13:11 builds also lacked VITE_RECAPTCHA_SITE_KEY). Those changes are not live; that work must be rebased onto 415f70d before its next Parent deploy, or it will remove the Sessions pill.",
+    "App Check is enforced for Firebase Auth (identitytoolkit) and unenforced for Firestore. The release restores App Check initialization (site key matches the Parent app's reCAPTCHA Enterprise config). An automated browser got an App Check 403 (low score); real-user reCAPTCHA scores were almost all >= 0.5.",
+    "The Sessions pill was confirmed in the deployed History chunk and schedule in the deployed function source; a signed-in visual check was not possible from the automated browser."
+  ]
+}

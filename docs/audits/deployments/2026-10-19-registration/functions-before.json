@@ -1,0 +1,2397 @@
+{
+  "status": "success",
+  "result": [
+    {
+      "platform": "gcfv2",
+      "id": "acceptConsentFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "acceptConsentFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "acceptConsentFn/function-source.zip",
+          "generation": "1791855788897820"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/acceptConsentFn",
+        "FUNCTION_TARGET": "acceptConsentFn",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/acceptConsentFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "83e875b8433f3b0ace8422d359bc8697a85cc127",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "acceptconsentfn",
+      "codebase": "default",
+      "hash": "83e875b8433f3b0ace8422d359bc8697a85cc127",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "activateCodeFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "activateCodeFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "activateCodeFn/function-source.zip",
+          "generation": "1792316928568356"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/activateCodeFn",
+        "FUNCTION_TARGET": "activateCodeFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/activateCodeFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "7276f99c1ac1a3c25734027052019c5deb91787e"
+      },
+      "runServiceId": "activatecodefn",
+      "codebase": "default",
+      "hash": "7276f99c1ac1a3c25734027052019c5deb91787e",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "addManualEventFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "addManualEventFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "addManualEventFn/function-source.zip",
+          "generation": "1791765195408628"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/addManualEventFn",
+        "FUNCTION_TARGET": "addManualEventFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/addManualEventFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "addmanualeventfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "announcementAudienceCountFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "announcementAudienceCountFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "announcementAudienceCountFn/function-source.zip",
+          "generation": "1792312916914201"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/announcementAudienceCountFn",
+        "FUNCTION_TARGET": "announcementAudienceCountFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/announcementAudienceCountFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "announcementaudiencecountfn",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "assignSchoolRoleFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "assignSchoolRoleFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "assignSchoolRoleFn/function-source.zip",
+          "generation": "1792417210652794"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/assignSchoolRoleFn",
+        "FUNCTION_TARGET": "assignSchoolRoleFn",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/assignSchoolRoleFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "assignschoolrolefn",
+      "codebase": "default",
+      "hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "changeLinkRelationshipFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "changeLinkRelationshipFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "changeLinkRelationshipFn/function-source.zip",
+          "generation": "1792316928792447"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/changeLinkRelationshipFn",
+        "FUNCTION_TARGET": "changeLinkRelationshipFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/changeLinkRelationshipFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "7276f99c1ac1a3c25734027052019c5deb91787e",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "changelinkrelationshipfn",
+      "codebase": "default",
+      "hash": "7276f99c1ac1a3c25734027052019c5deb91787e",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "changeOwnPasswordFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "changeOwnPasswordFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "changeOwnPasswordFn/function-source.zip",
+          "generation": "1791765195459150"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/changeOwnPasswordFn",
+        "FUNCTION_TARGET": "changeOwnPasswordFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/changeOwnPasswordFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "changeownpasswordfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "correctEventFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "correctEventFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "correctEventFn/function-source.zip",
+          "generation": "1791765195393002"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/correctEventFn",
+        "FUNCTION_TARGET": "correctEventFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/correctEventFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "correcteventfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "correctLinkRelationshipFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "correctLinkRelationshipFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "correctLinkRelationshipFn/function-source.zip",
+          "generation": "1792316877434814"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/correctLinkRelationshipFn",
+        "FUNCTION_TARGET": "correctLinkRelationshipFn",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/correctLinkRelationshipFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "7276f99c1ac1a3c25734027052019c5deb91787e",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "correctlinkrelationshipfn",
+      "codebase": "default",
+      "hash": "7276f99c1ac1a3c25734027052019c5deb91787e",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "createStaffUserFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "createStaffUserFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "createStaffUserFn/function-source.zip",
+          "generation": "1791765195535028"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/createStaffUserFn",
+        "FUNCTION_TARGET": "createStaffUserFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/createStaffUserFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "createstaffuserfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "deactivateKioskFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "deactivateKioskFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deactivateKioskFn/function-source.zip",
+          "generation": "1791765195441915"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/deactivateKioskFn",
+        "FUNCTION_TARGET": "deactivateKioskFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/deactivateKioskFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "deactivatekioskfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "deleteGuardianAccountFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "deleteGuardianAccountFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deleteGuardianAccountFn/function-source.zip",
+          "generation": "1792417261155764"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/deleteGuardianAccountFn",
+        "FUNCTION_TARGET": "deleteGuardianAccountFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/deleteGuardianAccountFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c"
+      },
+      "runServiceId": "deleteguardianaccountfn",
+      "codebase": "default",
+      "hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "deleteStaffUserFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "deleteStaffUserFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "deleteStaffUserFn/function-source.zip",
+          "generation": "1791765195411733"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/deleteStaffUserFn",
+        "FUNCTION_TARGET": "deleteStaffUserFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/deleteStaffUserFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "deletestaffuserfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "endSchoolYearFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "endSchoolYearFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "endSchoolYearFn/function-source.zip",
+          "generation": "1791869859843792"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/endSchoolYearFn",
+        "FUNCTION_TARGET": "endSchoolYearFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/endSchoolYearFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "f177afa5286bfa8fa612b0de5493eb3673c098fc"
+      },
+      "runServiceId": "endschoolyearfn",
+      "codebase": "default",
+      "hash": "f177afa5286bfa8fa612b0de5493eb3673c098fc",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "expireLinksJob",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "scheduleTrigger": {},
+      "entryPoint": "expireLinksJob",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "expireLinksJob/function-source.zip",
+          "generation": "1792312916829859"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/expireLinksJob",
+        "FUNCTION_TARGET": "expireLinksJob",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 540,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/expireLinksJob",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-scheduled": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "expirelinksjob",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "getCoordinatorSectionOptionsFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "getCoordinatorSectionOptionsFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "getCoordinatorSectionOptionsFn/function-source.zip",
+          "generation": "1792042699737699"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/getCoordinatorSectionOptionsFn",
+        "FUNCTION_TARGET": "getCoordinatorSectionOptionsFn",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/getCoordinatorSectionOptionsFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "bf75b31e1a3315de9e9e26bafdeb8330d2f19fef",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "getcoordinatorsectionoptionsfn",
+      "codebase": "default",
+      "hash": "bf75b31e1a3315de9e9e26bafdeb8330d2f19fef",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "getFamilyAttendanceFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "getFamilyAttendanceFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "getFamilyAttendanceFn/function-source.zip",
+          "generation": "1792330414950476"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/getFamilyAttendanceFn",
+        "FUNCTION_TARGET": "getFamilyAttendanceFn",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/getFamilyAttendanceFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "f7ca6251cc060543f0149e9236048f94cd5908bd",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "getfamilyattendancefn",
+      "codebase": "default",
+      "hash": "f7ca6251cc060543f0149e9236048f94cd5908bd",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "getPortalAnnouncementFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "getPortalAnnouncementFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "getPortalAnnouncementFn/function-source.zip",
+          "generation": "1792312916887295"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/getPortalAnnouncementFn",
+        "FUNCTION_TARGET": "getPortalAnnouncementFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/getPortalAnnouncementFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "getportalannouncementfn",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "getPortalAnnouncementsFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "getPortalAnnouncementsFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "getPortalAnnouncementsFn/function-source.zip",
+          "generation": "1792312917111193"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/getPortalAnnouncementsFn",
+        "FUNCTION_TARGET": "getPortalAnnouncementsFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/getPortalAnnouncementsFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "getportalannouncementsfn",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "getSchoolContextFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "getSchoolContextFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "getSchoolContextFn/function-source.zip",
+          "generation": "1792377939266423"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/getSchoolContextFn",
+        "FUNCTION_TARGET": "getSchoolContextFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/getSchoolContextFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a"
+      },
+      "runServiceId": "getschoolcontextfn",
+      "codebase": "default",
+      "hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "getSchoolPendingCountFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "getSchoolPendingCountFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "getSchoolPendingCountFn/function-source.zip",
+          "generation": "1792377887625553"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/getSchoolPendingCountFn",
+        "FUNCTION_TARGET": "getSchoolPendingCountFn",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/getSchoolPendingCountFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a"
+      },
+      "runServiceId": "getschoolpendingcountfn",
+      "codebase": "default",
+      "hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "getSchoolRosterFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "getSchoolRosterFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "getSchoolRosterFn/function-source.zip",
+          "generation": "1792312916843217"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/getSchoolRosterFn",
+        "FUNCTION_TARGET": "getSchoolRosterFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/getSchoolRosterFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "getschoolrosterfn",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "issueActivationCodesFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "issueActivationCodesFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "issueActivationCodesFn/function-source.zip",
+          "generation": "1792112346266236"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/issueActivationCodesFn",
+        "FUNCTION_TARGET": "issueActivationCodesFn",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/issueActivationCodesFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "31c941262ace70525915b27b86db7ff391e31f80"
+      },
+      "runServiceId": "issueactivationcodesfn",
+      "codebase": "default",
+      "hash": "31c941262ace70525915b27b86db7ff391e31f80",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "markSchoolOpenedFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "markSchoolOpenedFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "markSchoolOpenedFn/function-source.zip",
+          "generation": "1792377937948101"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/markSchoolOpenedFn",
+        "FUNCTION_TARGET": "markSchoolOpenedFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/markSchoolOpenedFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "markschoolopenedfn",
+      "codebase": "default",
+      "hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "onAnnouncementWritten",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "eventTrigger": {
+        "eventType": "google.cloud.firestore.document.v1.written.withAuthContext",
+        "retry": true,
+        "eventFilters": {
+          "database": "(default)",
+          "namespace": "(default)"
+        },
+        "eventFilterPathPatterns": {
+          "document": "announcements/{id}"
+        },
+        "region": "asia-east1"
+      },
+      "entryPoint": "onAnnouncementWritten",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onAnnouncementWritten/function-source.zip",
+          "generation": "1792312867234156"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/onAnnouncementWritten",
+        "FUNCTION_SIGNATURE_TYPE": "cloudevent",
+        "FUNCTION_TARGET": "onAnnouncementWritten",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 300,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/onAnnouncementWritten",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 512,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "onannouncementwritten",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "onAttendanceCorrectionCreated",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "eventTrigger": {
+        "eventType": "google.cloud.firestore.document.v1.created",
+        "retry": true,
+        "eventFilters": {
+          "database": "(default)",
+          "namespace": "(default)"
+        },
+        "eventFilterPathPatterns": {
+          "document": "attendance_corrections/{id}"
+        },
+        "region": "asia-east1"
+      },
+      "entryPoint": "onAttendanceCorrectionCreated",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onAttendanceCorrectionCreated/function-source.zip",
+          "generation": "1792312917213250"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/onAttendanceCorrectionCreated",
+        "FUNCTION_SIGNATURE_TYPE": "cloudevent",
+        "FUNCTION_TARGET": "onAttendanceCorrectionCreated",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/onAttendanceCorrectionCreated",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "onattendancecorrectioncreated",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "onGuardianLinkWritten",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "eventTrigger": {
+        "eventType": "google.cloud.firestore.document.v1.written",
+        "retry": true,
+        "eventFilters": {
+          "database": "(default)",
+          "namespace": "(default)"
+        },
+        "eventFilterPathPatterns": {
+          "document": "guardian_links/{linkId}"
+        },
+        "region": "asia-east1"
+      },
+      "entryPoint": "onGuardianLinkWritten",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onGuardianLinkWritten/function-source.zip",
+          "generation": "1792312917284463"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/onGuardianLinkWritten",
+        "FUNCTION_SIGNATURE_TYPE": "cloudevent",
+        "FUNCTION_TARGET": "onGuardianLinkWritten",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/onGuardianLinkWritten",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "onguardianlinkwritten",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "onParentPortalSettingsChanged",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "eventTrigger": {
+        "eventType": "google.cloud.firestore.document.v1.written",
+        "retry": false,
+        "eventFilters": {
+          "database": "(default)",
+          "namespace": "(default)",
+          "document": "settings/parent_portal"
+        },
+        "region": "asia-east1"
+      },
+      "entryPoint": "onParentPortalSettingsChanged",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onParentPortalSettingsChanged/function-source.zip",
+          "generation": "1791543191852797"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/onParentPortalSettingsChanged",
+        "FUNCTION_SIGNATURE_TYPE": "cloudevent",
+        "FUNCTION_TARGET": "onParentPortalSettingsChanged",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/onParentPortalSettingsChanged",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "firebase-functions-hash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba"
+      },
+      "runServiceId": "onparentportalsettingschanged",
+      "codebase": "default",
+      "hash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "onScanEventCreated",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "eventTrigger": {
+        "eventType": "google.cloud.firestore.document.v1.created",
+        "retry": true,
+        "eventFilters": {
+          "namespace": "(default)",
+          "database": "(default)"
+        },
+        "eventFilterPathPatterns": {
+          "document": "scan_events/{eventId}"
+        },
+        "region": "asia-east1"
+      },
+      "entryPoint": "onScanEventCreated",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "onScanEventCreated/function-source.zip",
+          "generation": "1792312917362053"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/onScanEventCreated",
+        "FUNCTION_SIGNATURE_TYPE": "cloudevent",
+        "FUNCTION_TARGET": "onScanEventCreated",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/onScanEventCreated",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "onscaneventcreated",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "provisionKioskFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "provisionKioskFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "provisionKioskFn/function-source.zip",
+          "generation": "1791765195426165"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/provisionKioskFn",
+        "FUNCTION_TARGET": "provisionKioskFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/provisionKioskFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "provisionkioskfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "pruneDevicesJob",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "scheduleTrigger": {},
+      "entryPoint": "pruneDevicesJob",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "pruneDevicesJob/function-source.zip",
+          "generation": "1791543191436765"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/pruneDevicesJob",
+        "FUNCTION_TARGET": "pruneDevicesJob",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/pruneDevicesJob",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-scheduled": "true",
+        "firebase-functions-hash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba"
+      },
+      "runServiceId": "prunedevicesjob",
+      "codebase": "default",
+      "hash": "4adbaaae8362d6966ff83d0e72d8be3c9c19c1ba",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "publishAnnouncementsJob",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "scheduleTrigger": {},
+      "entryPoint": "publishAnnouncementsJob",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "publishAnnouncementsJob/function-source.zip",
+          "generation": "1792312916820043"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/publishAnnouncementsJob",
+        "FUNCTION_TARGET": "publishAnnouncementsJob",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/publishAnnouncementsJob",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-scheduled": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "publishannouncementsjob",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "reconcileEventsJob",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "scheduleTrigger": {},
+      "entryPoint": "reconcileEventsJob",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "reconcileEventsJob/function-source.zip",
+          "generation": "1792312916728226"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/reconcileEventsJob",
+        "FUNCTION_TARGET": "reconcileEventsJob",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/reconcileEventsJob",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-scheduled": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "reconcileeventsjob",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "registerKioskFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "registerKioskFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "registerKioskFn/function-source.zip",
+          "generation": "1791765195535245"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/registerKioskFn",
+        "FUNCTION_TARGET": "registerKioskFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/registerKioskFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "registerkioskfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "reissueActivationCodeFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "reissueActivationCodeFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "reissueActivationCodeFn/function-source.zip",
+          "generation": "1791869859718084"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/reissueActivationCodeFn",
+        "FUNCTION_TARGET": "reissueActivationCodeFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/reissueActivationCodeFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "f177afa5286bfa8fa612b0de5493eb3673c098fc",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "reissueactivationcodefn",
+      "codebase": "default",
+      "hash": "f177afa5286bfa8fa612b0de5493eb3673c098fc",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "replaceAdviserFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "replaceAdviserFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "replaceAdviserFn/function-source.zip",
+          "generation": "1792417261346148"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/replaceAdviserFn",
+        "FUNCTION_TARGET": "replaceAdviserFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/replaceAdviserFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "replaceadviserfn",
+      "codebase": "default",
+      "hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "requestAccessFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "requestAccessFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "requestAccessFn/function-source.zip",
+          "generation": "1791765195438575"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/requestAccessFn",
+        "FUNCTION_TARGET": "requestAccessFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/requestAccessFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "requestaccessfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "requestSchoolRoleFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "requestSchoolRoleFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "requestSchoolRoleFn/function-source.zip",
+          "generation": "1792377939099938"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/requestSchoolRoleFn",
+        "FUNCTION_TARGET": "requestSchoolRoleFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/requestSchoolRoleFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a"
+      },
+      "runServiceId": "requestschoolrolefn",
+      "codebase": "default",
+      "hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "resetKioskPasswordFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "resetKioskPasswordFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resetKioskPasswordFn/function-source.zip",
+          "generation": "1791765195455085"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/resetKioskPasswordFn",
+        "FUNCTION_TARGET": "resetKioskPasswordFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/resetKioskPasswordFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "resetkioskpasswordfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "resetStaffPasswordFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "resetStaffPasswordFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resetStaffPasswordFn/function-source.zip",
+          "generation": "1791765195394151"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/resetStaffPasswordFn",
+        "FUNCTION_TARGET": "resetStaffPasswordFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/resetStaffPasswordFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "resetstaffpasswordfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "resolveAccessRequestFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "resolveAccessRequestFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveAccessRequestFn/function-source.zip",
+          "generation": "1792316928787039"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/resolveAccessRequestFn",
+        "FUNCTION_TARGET": "resolveAccessRequestFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/resolveAccessRequestFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "7276f99c1ac1a3c25734027052019c5deb91787e"
+      },
+      "runServiceId": "resolveaccessrequestfn",
+      "codebase": "default",
+      "hash": "7276f99c1ac1a3c25734027052019c5deb91787e",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "resolveReportFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "resolveReportFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveReportFn/function-source.zip",
+          "generation": "1791765195421845"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/resolveReportFn",
+        "FUNCTION_TARGET": "resolveReportFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/resolveReportFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "resolvereportfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "resolveSchoolRoleFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "resolveSchoolRoleFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveSchoolRoleFn/function-source.zip",
+          "generation": "1792417261444788"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/resolveSchoolRoleFn",
+        "FUNCTION_TARGET": "resolveSchoolRoleFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/resolveSchoolRoleFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "resolveschoolrolefn",
+      "codebase": "default",
+      "hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "resolveSchoolRolesFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "resolveSchoolRolesFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "resolveSchoolRolesFn/function-source.zip",
+          "generation": "1792417261280723"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/resolveSchoolRolesFn",
+        "FUNCTION_TARGET": "resolveSchoolRolesFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/resolveSchoolRolesFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "resolveschoolrolesfn",
+      "codebase": "default",
+      "hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "revokeCodeFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "revokeCodeFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "revokeCodeFn/function-source.zip",
+          "generation": "1791765195524614"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/revokeCodeFn",
+        "FUNCTION_TARGET": "revokeCodeFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/revokeCodeFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "revokecodefn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "revokeLinkFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "revokeLinkFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "revokeLinkFn/function-source.zip",
+          "generation": "1791765195425254"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/revokeLinkFn",
+        "FUNCTION_TARGET": "revokeLinkFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/revokeLinkFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "revokelinkfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "revokeSchoolRoleFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "revokeSchoolRoleFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "revokeSchoolRoleFn/function-source.zip",
+          "generation": "1792417261322057"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/revokeSchoolRoleFn",
+        "FUNCTION_TARGET": "revokeSchoolRoleFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/revokeSchoolRoleFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "revokeschoolrolefn",
+      "codebase": "default",
+      "hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "savePortalAnnouncementFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "savePortalAnnouncementFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "savePortalAnnouncementFn/function-source.zip",
+          "generation": "1792312916754209"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/savePortalAnnouncementFn",
+        "FUNCTION_TARGET": "savePortalAnnouncementFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/savePortalAnnouncementFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "saveportalannouncementfn",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "sendAttendanceUpdatesJob",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "scheduleTrigger": {},
+      "entryPoint": "sendAttendanceUpdatesJob",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "sendAttendanceUpdatesJob/function-source.zip",
+          "generation": "1792312865681818"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/sendAttendanceUpdatesJob",
+        "FUNCTION_TARGET": "sendAttendanceUpdatesJob",
+        "LOG_EXECUTION_ID": "true"
+      },
+      "timeoutSeconds": 300,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/sendAttendanceUpdatesJob",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-scheduled": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "sendattendanceupdatesjob",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "setActivationRestrictedFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "setActivationRestrictedFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "setActivationRestrictedFn/function-source.zip",
+          "generation": "1791765195444013"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/setActivationRestrictedFn",
+        "FUNCTION_TARGET": "setActivationRestrictedFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/setActivationRestrictedFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "setactivationrestrictedfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "setSessionAbsenceFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "setSessionAbsenceFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "setSessionAbsenceFn/function-source.zip",
+          "generation": "1792312916854782"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/setSessionAbsenceFn",
+        "FUNCTION_TARGET": "setSessionAbsenceFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/setSessionAbsenceFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "setsessionabsencefn",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "setStaffUserDisabledFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "setStaffUserDisabledFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "setStaffUserDisabledFn/function-source.zip",
+          "generation": "1791765195488408"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/setStaffUserDisabledFn",
+        "FUNCTION_TARGET": "setStaffUserDisabledFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/setStaffUserDisabledFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "setstaffuserdisabledfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "submitReportFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "submitReportFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "submitReportFn/function-source.zip",
+          "generation": "1792312916821524"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/submitReportFn",
+        "FUNCTION_TARGET": "submitReportFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/submitReportFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87"
+      },
+      "runServiceId": "submitreportfn",
+      "codebase": "default",
+      "hash": "a3bbda718846cf0d49735ae1ee6b57680571ba87",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "updateCoordinatorSectionFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "updateCoordinatorSectionFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "updateCoordinatorSectionFn/function-source.zip",
+          "generation": "1792417261215151"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/updateCoordinatorSectionFn",
+        "FUNCTION_TARGET": "updateCoordinatorSectionFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/updateCoordinatorSectionFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "firebase-functions-hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true"
+      },
+      "runServiceId": "updatecoordinatorsectionfn",
+      "codebase": "default",
+      "hash": "19e5eb229672d065cf2e569ce9c835d73b7ba18c",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "updateStaffUserFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "updateStaffUserFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "updateStaffUserFn/function-source.zip",
+          "generation": "1791765195441963"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/updateStaffUserFn",
+        "FUNCTION_TARGET": "updateStaffUserFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/updateStaffUserFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-tool": "cli-firebase",
+        "deployment-callable": "true",
+        "firebase-functions-hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1"
+      },
+      "runServiceId": "updatestaffuserfn",
+      "codebase": "default",
+      "hash": "28ccc07bd619bc5769f107c451af29ea9c8621e1",
+      "state": "ACTIVE"
+    },
+    {
+      "platform": "gcfv2",
+      "id": "withdrawSchoolRequestFn",
+      "project": "bnhs-sims",
+      "region": "asia-southeast1",
+      "callableTrigger": {},
+      "entryPoint": "withdrawSchoolRequestFn",
+      "runtime": "nodejs22",
+      "source": {
+        "storageSource": {
+          "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+          "object": "withdrawSchoolRequestFn/function-source.zip",
+          "generation": "1792377938091710"
+        }
+      },
+      "ingressSettings": "ALLOW_ALL",
+      "environmentVariables": {
+        "PORTAL_URL": "https://bnhs-parent.web.app",
+        "FIREBASE_CONFIG": "{\"projectId\":\"bnhs-sims\",\"storageBucket\":\"bnhs-sims.firebasestorage.app\"}",
+        "GCLOUD_PROJECT": "bnhs-sims",
+        "EVENTARC_CLOUD_EVENT_SOURCE": "projects/bnhs-sims/locations/asia-southeast1/services/withdrawSchoolRequestFn",
+        "FUNCTION_TARGET": "withdrawSchoolRequestFn",
+        "LOG_EXECUTION_ID": "true",
+        "FUNCTION_SIGNATURE_TYPE": "http"
+      },
+      "timeoutSeconds": 60,
+      "uri": "https://asia-southeast1-bnhs-sims.cloudfunctions.net/withdrawSchoolRequestFn",
+      "serviceAccount": "596581708720-compute@developer.gserviceaccount.com",
+      "availableMemoryMb": 256,
+      "cpu": 1,
+      "maxInstances": 10,
+      "concurrency": 80,
+      "labels": {
+        "deployment-callable": "true",
+        "firebase-functions-hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a",
+        "deployment-tool": "cli-firebase"
+      },
+      "runServiceId": "withdrawschoolrequestfn",
+      "codebase": "default",
+      "hash": "f8c32039a5e271ca8c48a77de1b7eeac96472e5a",
+      "state": "ACTIVE"
+    }
+  ]
+}

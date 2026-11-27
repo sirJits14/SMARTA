@@ -1,7 +1,9 @@
+import { sessionNotes } from '../../shared/scheduleSessions.js';
+
 // Rebuilds learners/{id}.today and .recent from the learner's recent events.
 // Ordering is by effectiveAtMs (scan time, or server time for skewed
 // clocks), never by arrival, so delayed and out-of-order events land right.
-export function recomputeSummary({ events, todayDate, recentLimit = 10 }) {
+export function recomputeSummary({ events, todayDate, schedule, recentLimit = 10 }) {
   const live = events.filter((e) => e.status === 'recorded').sort((a, b) => b.effectiveAtMs - a.effectiveAtMs);
   const today = live.filter((e) => e.scannedDate === todayDate);
   const ins = today.filter((e) => e.kind === 'in');
@@ -19,6 +21,8 @@ export function recomputeSummary({ events, todayDate, recentLimit = 10 }) {
       // the natural chronological reading order a parent expects -- the
       // earliest tap of the day first, most recent last.
       events: [...today].reverse().map((e) => ({ kind: e.kind, time: e.scannedTime, eventId: e.id })),
+      // Split-day schedules only: 'absentAm' / 'latePm', never a missing tap.
+      notes: sessionNotes({ inTimes: ins.map((e) => e.scannedTime), schedule }),
     },
     recent: live.slice(0, recentLimit).map((e) => ({ id: e.id, kind: e.kind, scannedDate: e.scannedDate, scannedTime: e.scannedTime })),
   };

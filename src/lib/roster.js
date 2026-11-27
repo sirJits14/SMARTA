@@ -1,10 +1,17 @@
+// The SIMS shows and prints every learner and adviser name in capitals. Stored names keep the case they were
+// entered in; capitals are applied on the way out, so search, sorting and the Parents App are unaffected.
+export const capsName = (name) => String(name ?? '').toUpperCase();
+
+// A person's display name in capitals, or their email address as written when they have no name.
+export const personLabel = (person) => (person?.displayName ? capsName(person.displayName) : person?.email || '');
+
 export function fullName(s) {
   const mi = s.middleName?.trim() ? ` ${s.middleName.trim()[0]}.` : '';
   const ext = s.extName?.trim() ? ` ${s.extName.trim()}` : '';
-  return `${s.lastName}, ${s.firstName}${mi}${ext}`;
+  return capsName(`${s.lastName}, ${s.firstName}${mi}${ext}`);
 }
 
-function byLastThenFirstName(a, b) {
+export function byLastThenFirstName(a, b) {
   return a.lastName.localeCompare(b.lastName, 'en', { sensitivity: 'base' }) ||
     a.firstName.localeCompare(b.firstName, 'en', { sensitivity: 'base' });
 }

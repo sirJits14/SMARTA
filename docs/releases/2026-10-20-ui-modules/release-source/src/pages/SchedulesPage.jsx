@@ -1,0 +1,130 @@
+import { useAsyncAction } from '../hooks/useAsyncAction.js';
+import { ActionFeedback } from '../components/ui.jsx';
+import { EditorResources, ResourceState } from '../components/ui.jsx';
+import { useMemo, useState } from 'react';
+import { useCollectionResource } from '../hooks/useCollection.js';
+import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedules.js';
+import { T, S } from '../styles.js';
+import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState, RowMenu } from '../components/ui.jsx';
+import { isAdmin } from '../lib/access.js';
+import { validateSchedule } from '../lib/schedules.js';
+import { hasPmSession } from '../../shared/scheduleSessions.js';
+
+const check = { marginBottom: 12 };
+
+function ScheduleForm({ editing, onClose }) {
+  const action = useAsyncAction();
+  const [f, setF] = useState(editing ? { ...editing, pm: hasPmSession(editing) } : { name: '', timeIn: '', timeOut: '', pm: false, pmTimeIn: '', pmTimeOut: '' });
+  const [err, setErr] = useState('');
+  const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const save = async () => {
+    const problem = validateSchedule(f);
+    if (problem) { setErr(problem); return; }
+    await action.run('save', async () => {
+      editing ? await updateSchedule(editing.id, f) : await createSchedule(f);
+      onClose();
+    });
+  };
+  return (
+    <Modal labelledBy="schedule-form-title" onClose={onClose} dismissible={!action.busy}>
+      <ActionFeedback action={action}/>
+      <h2 id="schedule-form-title" style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit schedule' : 'New schedule'}</h2>
+      {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 12 }}>{err}</div>}
+      <Field label="Schedule name"><Inp value={f.name || ''} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Morning Shift" /></Field>
+      <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
+        <Field label={f.pm ? 'AM arrival' : 'Time in'}><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
+        <Field label={f.pm ? 'AM departure' : 'Time out'}><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
+      </div>
+      <label className="sims-check" style={check}><input type="checkbox" checked={f.pm} onChange={(e) => set('pm', e.target.checked)} /> Add afternoon session (PM)</label>
+      {f.pm && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
+          <Field label="PM arrival"><Inp type="time" value={f.pmTimeIn || ''} onChange={(e) => set('pmTimeIn', e.target.value)} /></Field>
+          <Field label="PM departure"><Inp type="time" value={f.pmTimeOut || ''} onChange={(e) => set('pmTimeOut', e.target.value)} /></Field>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <Btn variant="ghost" disabled={action.busy} onClick={onClose}>Cancel</Btn>
+        <Btn disabled={action.busy} onClick={save}>{editing ? 'Save changes' : 'Add schedule'}</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+const sectionLabel = (s) => `${s.name} (Grade ${s.gradeLevel}, SY ${s.schoolYear})`;
+
+export default function SchedulesPage({ me }) {
+  const admin = isAdmin(me);
+  const schedulesResource = useCollectionResource('schedules');
+  const schedules = schedulesResource.data;
+  const sectionsResource = useCollectionResource('sections');
+  const sections = sectionsResource.data;
+  const [form, setForm] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [blocked, setBlocked] = useState(null);
+
+  const rows = useMemo(() => [...schedules].sort((a, b) => a.name.localeCompare(b.name)), [schedules]);
+
+  const requestDelete = (schedule) => {
+    const inUse = sections.filter((s) => s.scheduleId === schedule.id);
+    if (inUse.length > 0) { setBlocked({ schedule, inUse }); return; }
+    setConfirm(schedule);
+  };
+
+  const resources = [schedulesResource,sectionsResource];
+
+  return (
+    <EditorResources resources={resources}><div>
+      <ResourceState resources={resources}>
+      <div className="sims-heading" style={S.plate}>
+        <h1 style={S.h1}>Schedules</h1>
+        {admin && <Btn onClick={() => setForm({})}>Add schedule</Btn>}
+      </div>
+      {rows.length === 0 ? (
+        <Card style={{ padding: 20 }}>
+          <EmptyState title="No schedules yet" hint={admin ? 'Add your first shift schedule with the button above.' : 'No shift schedules have been set up yet.'} />
+        </Card>
+      ) : (
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead><tr style={S.thead}>
+              {['Name', 'Time In', 'Time Out', 'PM In', 'PM Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+            </tr></thead>
+            <tbody>{rows.map((s) => (
+              <tr key={s.id}>
+                <td style={S.tdStrong}>{s.name}</td>
+                <td style={{ ...S.td, ...T.num }}>{s.timeIn}</td>
+                <td style={{ ...S.td, ...T.num }}>{s.timeOut}</td>
+                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeIn : '—'}</td>
+                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeOut : '—'}</td>
+                <td style={S.tdActions}>
+                  {admin && <span className="sims-row-actions">
+                    <Btn variant="ghost" onClick={() => setForm(s)}>Edit</Btn>
+                    <RowMenu label={`More actions for ${s.name}`} items={[{ label: 'Delete', danger: true, onSelect: () => requestDelete(s) }]} />
+                  </span>}
+                </td>
+              </tr>))}
+            </tbody>
+          </table></div>
+        </Card>
+      )}
+      </ResourceState>
+      {form && <ScheduleForm editing={form.id ? form : null} onClose={() => setForm(null)} />}
+      {confirm && <Confirm message={`Delete ${confirm.name}? This cannot be undone.`} onYes={async () => { await deleteSchedule(confirm.id); setConfirm(null); }} onNo={() => setConfirm(null)} />}
+      {blocked && (
+        <Modal onClose={() => setBlocked(null)}>
+          <h2 style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>Can't delete "{blocked.schedule.name}"</h2>
+          <p style={{ fontFamily: T.body, color: T.ink, fontSize: 13 }}>
+            This schedule is still assigned to {blocked.inUse.length} section{blocked.inUse.length === 1 ? '' : 's'}:
+          </p>
+          <ul style={{ fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.ink, paddingLeft: 20, margin: '0 0 16px' }}>
+            {blocked.inUse.map((s) => <li key={s.id}>{sectionLabel(s)}</li>)}
+          </ul>
+          <p style={{ fontFamily: T.body, color: T.inkMuted, fontSize: 12 }}>Reassign or clear the schedule on these sections first.</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Btn onClick={() => setBlocked(null)}>Got it</Btn>
+          </div>
+        </Modal>
+      )}
+    </div></EditorResources>
+  );
+}

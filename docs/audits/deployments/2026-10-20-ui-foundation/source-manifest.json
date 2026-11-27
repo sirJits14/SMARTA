@@ -1,0 +1,28 @@
+{
+  "baseline": "docs/releases/2026-10-20-bulk-slips/prepare.mjs",
+  "overlays": {
+    "index.html": "087d3fa0612706f5d47bf696ce940a02d313f19981efc7ad2e0ea562fc81a7b8",
+    "public/manifest.webmanifest": "e408b75f44f6aa55b1f395f892900a6679dce9f641b82f7bf76afaa752e4f06c",
+    "shared/theme/boot.test.js": "b021f449ac79556d09abe3f583647fd315cabba9ccd8281ea885de867b504652",
+    "shared/theme/contrast.test.js": "6ff5eef024ebc95c4ba5650b27d334c473cb68677ea599e563df3f557af0372c",
+    "shared/theme/theme.css": "cb336394a7db6518a7f780f676a067972a82ca6d9f755dbedd2e15c55d8ce807",
+    "src/components/AccountMenu.jsx": "c46fa35522c136d39efb33806b296aab4ecf51aaa0da0d78aa7085f6a41d1b27",
+    "src/components/ChangePassword.jsx": "01f063cc9b46aa664ecc2e4e16201344d7179c116a16a52d3b359fa8a92223d9",
+    "src/components/IdCardsPrintable.jsx": "9dd9528f35050aab831c9e3a7754e0b7c8c5b609142ec3c7c902d38a48a6c4c8",
+    "src/components/Login.jsx": "9d7b110cbcf9bdc77166fd60461ca0b8b698ffbd9f82cf3956d536924d3bac56",
+    "src/components/NavIcon.jsx": "f291a5d63c8c78a8027a2a9f76d8107b04cea06fa00001be509067540d140cc9",
+    "src/components/Shell.jsx": "3686605b1f5825537a31a655312bbb12dcda1be6a157b6548c34fd83bb71286b",
+    "src/components/ui.jsx": "e0170a14597cbaadbddb7b9668f4f82bd63b01c530a28262cd481a9a9fb88f23",
+    "src/enrollment.css": "aa1573d27bf65aa816b1c8d274904db7a0bbe96607212a4c362ae83ed74d15ec",
+    "src/pages/AccountsPage.jsx": "261038e93e84acf435b23596aae495fc25236ca0d0bef4eab7e377bf28495adc",
+    "src/pages/guardians/EndSchoolYearCard.jsx": "073ad33637d0ae337d05c9ba80ae2ecdc2a0e7aaf702ca35228d68fd23836cab",
+    "src/pages/guardians/school/AssignmentsView.jsx": "f3007e064da08bc86f62cccbf9f05caa7dd9bd4ac07ba24739bafbf25a2fcbc0",
+    "src/pages/guardians/school/PendingView.jsx": "1d98053991a4a1b798c05fa5246055ef310242cd8b7ec580ce264601163ea0bf",
+    "src/registrar.css": "a6279a7cbe9fe0cc47da45012a0486a60bc8a916559d8d2229e60837fde14452",
+    "src/styles.js": "a18e75af9d2bfb3bef965e02537fb5b61a610a8d6b7ff8540d011eddda9a29cd"
+  },
+  "removed": [
+    "src/components/ThemeControl.jsx",
+    "src/components/ThemeMenuButton.jsx"
+  ]
+}

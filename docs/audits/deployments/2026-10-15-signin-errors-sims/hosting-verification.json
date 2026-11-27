@@ -1,0 +1,391 @@
+{
+  "checkedAt": "2026-10-15T12:07:07.960Z",
+  "site": "https://bnhs-sims.web.app",
+  "files": [
+    {
+      "path": "assets/AccountsPage-CWGotroL.js",
+      "status": 200,
+      "local": "669f2b7fe1c0ab3ef4d984d6d49b80f4a5b6a9e94ba37fcf044f34dc7d6d2e11",
+      "live": "669f2b7fe1c0ab3ef4d984d6d49b80f4a5b6a9e94ba37fcf044f34dc7d6d2e11",
+      "match": true
+    },
+    {
+      "path": "assets/AnnouncementsPage-9UcK6Fky.js",
+      "status": 200,
+      "local": "944d5c65fbaf188d1715de792649507ae611f208a5a9f530d05be2f1949ebb31",
+      "live": "944d5c65fbaf188d1715de792649507ae611f208a5a9f530d05be2f1949ebb31",
+      "match": true
+    },
+    {
+      "path": "assets/AttendanceSummaryPage-BWO8bU7H.js",
+      "status": 200,
+      "local": "6271adff2d220ed80c8fc6e767da6f497581eeb8df0df191ad455e21626d3ddb",
+      "live": "6271adff2d220ed80c8fc6e767da6f497581eeb8df0df191ad455e21626d3ddb",
+      "match": true
+    },
+    {
+      "path": "assets/AttendanceTakePage-CuH-6gPM.js",
+      "status": 200,
+      "local": "d73f1d3cac949b168caa2ade2a7a7dc0968e7b55edd274411bed7cdf8c9cbd61",
+      "live": "d73f1d3cac949b168caa2ade2a7a7dc0968e7b55edd274411bed7cdf8c9cbd61",
+      "match": true
+    },
+    {
+      "path": "assets/AuditTab-CRymcgW2.js",
+      "status": 200,
+      "local": "276794257b157566dc77f8e6e3a5f83c633a918d6b009c4f722001cab9db7182",
+      "live": "276794257b157566dc77f8e6e3a5f83c633a918d6b009c4f722001cab9db7182",
+      "match": true
+    },
+    {
+      "path": "assets/CodesTab-DnvXiFzy.js",
+      "status": 200,
+      "local": "af00601a70b15d479a71aae1d30272c4e979beff32b1a5262a736208d38b75c2",
+      "live": "af00601a70b15d479a71aae1d30272c4e979beff32b1a5262a736208d38b75c2",
+      "match": true
+    },
+    {
+      "path": "assets/DashboardPage-D8VXevQh.js",
+      "status": 200,
+      "local": "761dfb2fe6a9eefb8e56aba8cd6a0f7d1ab1aaeb075787fe38da954da3e7489d",
+      "live": "761dfb2fe6a9eefb8e56aba8cd6a0f7d1ab1aaeb075787fe38da954da3e7489d",
+      "match": true
+    },
+    {
+      "path": "assets/DevicesTab-DPPVIlJt.js",
+      "status": 200,
+      "local": "c81318ff9e6b4622061273a60643ec723fe9a8fa12f755bda0848c023fcaa836",
+      "live": "c81318ff9e6b4622061273a60643ec723fe9a8fa12f755bda0848c023fcaa836",
+      "match": true
+    },
+    {
+      "path": "assets/EnrollPage-BgkGFQco.js",
+      "status": 200,
+      "local": "75a0f4bb741da39eb345df1af794eff69282d5803f3a8929d7f282b0eda93d64",
+      "live": "75a0f4bb741da39eb345df1af794eff69282d5803f3a8929d7f282b0eda93d64",
+      "match": true
+    },
+    {
+      "path": "assets/EnrollPage-LPkYNRCj.css",
+      "status": 200,
+      "local": "8b4b580ee5413d140f7826d86658e14b354590774986fdcfa9291180dc2c0620",
+      "live": "8b4b580ee5413d140f7826d86658e14b354590774986fdcfa9291180dc2c0620",
+      "match": true
+    },
+    {
+      "path": "assets/GradePills-J-MnYkKm.js",
+      "status": 200,
+      "local": "7664b2ac818550153560764d79e3e46943c1293801a59f587384e4ecb1a8c829",
+      "live": "7664b2ac818550153560764d79e3e46943c1293801a59f587384e4ecb1a8c829",
+      "match": true
+    },
+    {
+      "path": "assets/GuardiansPage-364A5M7a.js",
+      "status": 200,
+      "local": "5fefd8d6ac5f4014504abcc644decba1d4b5401d810b683d82ce6350db7b6cb5",
+      "live": "5fefd8d6ac5f4014504abcc644decba1d4b5401d810b683d82ce6350db7b6cb5",
+      "match": true
+    },
+    {
+      "path": "assets/IDCardsPage-C5FjFhhC.js",
+      "status": 200,
+      "local": "8ea421234da972183dc8db7d1530c7f4257938eb07b32cf8de655eca8c9726d9",
+      "live": "8ea421234da972183dc8db7d1530c7f4257938eb07b32cf8de655eca8c9726d9",
+      "match": true
+    },
+    {
+      "path": "assets/IdCardPrintConfirm-BfHuM30l.js",
+      "status": 200,
+      "local": "856d0b3420a91a821c357e7403a98c2f275e534bb578a6d3b1419e74fc3bbc3a",
+      "live": "856d0b3420a91a821c357e7403a98c2f275e534bb578a6d3b1419e74fc3bbc3a",
+      "match": true
+    },
+    {
+      "path": "assets/LinksTab-CI68ZTea.js",
+      "status": 200,
+      "local": "28be98b32018ab8b8eb1eb9db3fff6bece7340f5c53815e5a7ac477ca6f277ff",
+      "live": "28be98b32018ab8b8eb1eb9db3fff6bece7340f5c53815e5a7ac477ca6f277ff",
+      "match": true
+    },
+    {
+      "path": "assets/PortalSettingsTab-gUA9ICL5.js",
+      "status": 200,
+      "local": "c415bafebc2da2a638b6756e51da894ee3d21712a1e7c3958ebf227dd7d94928",
+      "live": "c415bafebc2da2a638b6756e51da894ee3d21712a1e7c3958ebf227dd7d94928",
+      "match": true
+    },
+    {
+      "path": "assets/ReportsTab-BFvY_9fP.js",
+      "status": 200,
+      "local": "181fbaf20963ae50aaf0d3bad91b17df88116ad23cb48ee0d323967dfafa5f63",
+      "live": "181fbaf20963ae50aaf0d3bad91b17df88116ad23cb48ee0d323967dfafa5f63",
+      "match": true
+    },
+    {
+      "path": "assets/RequestsTab-DuAXDfyY.js",
+      "status": 200,
+      "local": "fa0b9dd30806160ed25f32f6ee80ecd88bbcf15ac01e7f13677e8772eb67ef56",
+      "live": "fa0b9dd30806160ed25f32f6ee80ecd88bbcf15ac01e7f13677e8772eb67ef56",
+      "match": true
+    },
+    {
+      "path": "assets/ScanLogTab-DVr_uQaL.js",
+      "status": 200,
+      "local": "7d24a16f15d52a4da330d791d4d5e4390eba6ed136f8d7bb9cc1b9b7518f5570",
+      "live": "7d24a16f15d52a4da330d791d4d5e4390eba6ed136f8d7bb9cc1b9b7518f5570",
+      "match": true
+    },
+    {
+      "path": "assets/SchedulesPage-gZeaY3du.js",
+      "status": 200,
+      "local": "436cb441203ca78e4c7edff8a83e1d74d2e47f8fb9af1df2fa44098bb2de08dc",
+      "live": "436cb441203ca78e4c7edff8a83e1d74d2e47f8fb9af1df2fa44098bb2de08dc",
+      "match": true
+    },
+    {
+      "path": "assets/SectionPicker-CBjMWzTI.js",
+      "status": 200,
+      "local": "467d35d3f98119a55a42464c86214db7121cd4d167e4255e7e95c3707d3392d8",
+      "live": "467d35d3f98119a55a42464c86214db7121cd4d167e4255e7e95c3707d3392d8",
+      "match": true
+    },
+    {
+      "path": "assets/SectionsPage-B1-ihLOc.js",
+      "status": 200,
+      "local": "6060346d1c6dc5d1eac3e2b3a411303469ad26b4050199c68e4e14737ff6ea1d",
+      "live": "6060346d1c6dc5d1eac3e2b3a411303469ad26b4050199c68e4e14737ff6ea1d",
+      "match": true
+    },
+    {
+      "path": "assets/SettingsPage-BUrXxxVm.js",
+      "status": 200,
+      "local": "60282fd59a7ff62fba87a8850ccf5ed790bcdb0326790432c510e6652413737f",
+      "live": "60282fd59a7ff62fba87a8850ccf5ed790bcdb0326790432c510e6652413737f",
+      "match": true
+    },
+    {
+      "path": "assets/StudentForm-D5qSuvbR.js",
+      "status": 200,
+      "local": "ccdaa9a89287aeeaa242e5e2c9ccbe4210e99649f96eadba940e1f53d3a723f4",
+      "live": "ccdaa9a89287aeeaa242e5e2c9ccbe4210e99649f96eadba940e1f53d3a723f4",
+      "match": true
+    },
+    {
+      "path": "assets/StudentsPage-C5z2LYbP.js",
+      "status": 200,
+      "local": "fd9d46d2eac992d079375bee5c5318dc07375d43d6f13bfd02d080e0603ccf56",
+      "live": "fd9d46d2eac992d079375bee5c5318dc07375d43d6f13bfd02d080e0603ccf56",
+      "match": true
+    },
+    {
+      "path": "assets/attendance-Dh96NURS.js",
+      "status": 200,
+      "local": "bec86faa68317c357c384cfa6537e751c8b37fb207bd9a437436a318b656fcc3",
+      "live": "bec86faa68317c357c384cfa6537e751c8b37fb207bd9a437436a318b656fcc3",
+      "match": true
+    },
+    {
+      "path": "assets/browser-CpOHZqR4.js",
+      "status": 200,
+      "local": "b8e48cfba29f9e4122005c7490be908371e2d23a01d98d3377ef44d8b44b0ed7",
+      "live": "b8e48cfba29f9e4122005c7490be908371e2d23a01d98d3377ef44d8b44b0ed7",
+      "match": true
+    },
+    {
+      "path": "assets/dates-BA2cdwe2.js",
+      "status": 200,
+      "local": "8ac7f7815b4f928f661c4ed033b5f59f647913c8e7fdcb0ddd5a1bf5750b54df",
+      "live": "8ac7f7815b4f928f661c4ed033b5f59f647913c8e7fdcb0ddd5a1bf5750b54df",
+      "match": true
+    },
+    {
+      "path": "assets/downloadWorkbook-p5I7AvZ3.js",
+      "status": 200,
+      "local": "22269db087c54feaa1d93151e8b577399fd75093c420b380d6d22ae39f0cf1bd",
+      "live": "22269db087c54feaa1d93151e8b577399fd75093c420b380d6d22ae39f0cf1bd",
+      "match": true
+    },
+    {
+      "path": "assets/enrollmentChange-OWFtda_x.js",
+      "status": 200,
+      "local": "91d1764dea0df92436c351fa64c2bf0c9b37f314cdd18184d789c6c2bb543be3",
+      "live": "91d1764dea0df92436c351fa64c2bf0c9b37f314cdd18184d789c6c2bb543be3",
+      "match": true
+    },
+    {
+      "path": "assets/enrollments-DGmV7Og7.js",
+      "status": 200,
+      "local": "15407c34aab8908497f827c3645a03d6fe40764ea5a7c6c490dae0e4b3b48808",
+      "live": "15407c34aab8908497f827c3645a03d6fe40764ea5a7c6c490dae0e4b3b48808",
+      "match": true
+    },
+    {
+      "path": "assets/guardians-BQ6EZv_k.js",
+      "status": 200,
+      "local": "b3ce30803cd09e88659e5c572825dbdd289d3f49a144a6683459cec0327e7b64",
+      "live": "b3ce30803cd09e88659e5c572825dbdd289d3f49a144a6683459cec0327e7b64",
+      "match": true
+    },
+    {
+      "path": "assets/index-CTzMYLFv.css",
+      "status": 200,
+      "local": "39ac263065969d410acbd04119523e77ba16223056b4c0c5ab7541b5ffde6767",
+      "live": "39ac263065969d410acbd04119523e77ba16223056b4c0c5ab7541b5ffde6767",
+      "match": true
+    },
+    {
+      "path": "assets/index-nHfTFpJL.js",
+      "status": 200,
+      "local": "e3fd126c48aad0e970f587b95a06d9e9c9ff9ba8a54716ca8416cc87736d086b",
+      "live": "e3fd126c48aad0e970f587b95a06d9e9c9ff9ba8a54716ca8416cc87736d086b",
+      "match": true
+    },
+    {
+      "path": "assets/jsx-runtime-BQwkvCFX.js",
+      "status": 200,
+      "local": "bd55b9b331045ca03bbf0b535f378a198824dc76c86d57730d5a5454f1102535",
+      "live": "bd55b9b331045ca03bbf0b535f378a198824dc76c86d57730d5a5454f1102535",
+      "match": true
+    },
+    {
+      "path": "assets/loading-CRLLHZYw.gif",
+      "status": 200,
+      "local": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "live": "f49cf3f4c1ee66843ff9a95281848399c644e9712602c2883eb133b2e1368310",
+      "match": true
+    },
+    {
+      "path": "assets/roster-Cj9pryRC.js",
+      "status": 200,
+      "local": "1a1b7a305e430e7a7667f3a8c678ca455df1374abc88ce4996a9c915a49bc6ba",
+      "live": "1a1b7a305e430e7a7667f3a8c678ca455df1374abc88ce4996a9c915a49bc6ba",
+      "match": true
+    },
+    {
+      "path": "assets/scheduleSessions-D6cHsNJm.js",
+      "status": 200,
+      "local": "bcb23e44f44accd487db1c70812e52de7e53140d769ff4b5ef690782eed6b292",
+      "live": "bcb23e44f44accd487db1c70812e52de7e53140d769ff4b5ef690782eed6b292",
+      "match": true
+    },
+    {
+      "path": "assets/search-BFFQz6fc.js",
+      "status": 200,
+      "local": "154cdad295794accd313d7248b4c5c51ef3d106961568355ffa2c8a6c87b13d1",
+      "live": "154cdad295794accd313d7248b4c5c51ef3d106961568355ffa2c8a6c87b13d1",
+      "match": true
+    },
+    {
+      "path": "assets/sf2-template-BDOGBomb.xlsx",
+      "status": 200,
+      "local": "2fe5668f6fd86ce7cb7a1cc2f76ac2e6e35bc20d3b80d779ce459000c0c9d4ba",
+      "live": "2fe5668f6fd86ce7cb7a1cc2f76ac2e6e35bc20d3b80d779ce459000c0c9d4ba",
+      "match": true
+    },
+    {
+      "path": "assets/sims-favicon-cSZ_7KH-.png",
+      "status": 200,
+      "local": "7a36b7f1843f0e852289d83e019cdc3dc49732702131f65df7c24f3865c6cc68",
+      "live": "7a36b7f1843f0e852289d83e019cdc3dc49732702131f65df7c24f3865c6cc68",
+      "match": true
+    },
+    {
+      "path": "assets/slipIssue-C3yLxCEs.js",
+      "status": 200,
+      "local": "24799a90ad2441a8a07c1d4c5ad3e76cabe0b3e1b6e84ba056a6e7cacd9dad0a",
+      "live": "24799a90ad2441a8a07c1d4c5ad3e76cabe0b3e1b6e84ba056a6e7cacd9dad0a",
+      "match": true
+    },
+    {
+      "path": "assets/smarta-mark-CjebIss0.png",
+      "status": 200,
+      "local": "506c234045fc059129e1077c50807e158795d417b460cb8090a67ed172e228c5",
+      "live": "506c234045fc059129e1077c50807e158795d417b460cb8090a67ed172e228c5",
+      "match": true
+    },
+    {
+      "path": "assets/smarta-wordmark-BNciHWgA.png",
+      "status": 200,
+      "local": "ce9ba147ae6cc0ddc09028f72df5e1ae01cd810cff25133eb0b3c00a06471d8f",
+      "live": "ce9ba147ae6cc0ddc09028f72df5e1ae01cd810cff25133eb0b3c00a06471d8f",
+      "match": true
+    },
+    {
+      "path": "assets/smarta-wordmark-dark-QXjUkZJv.png",
+      "status": 200,
+      "local": "f913ba8aec858849e9939fa710d688104390b02b7e818a3fdffeab1c4a6c0764",
+      "live": "f913ba8aec858849e9939fa710d688104390b02b7e818a3fdffeab1c4a6c0764",
+      "match": true
+    },
+    {
+      "path": "assets/smarta-wordmark-sidebar-CRgRiWJ2.png",
+      "status": 200,
+      "local": "9666f11f7ccadd7763a2951fffc46913eb8d940c1f883da2e957163077b9adb1",
+      "live": "9666f11f7ccadd7763a2951fffc46913eb8d940c1f883da2e957163077b9adb1",
+      "match": true
+    },
+    {
+      "path": "assets/smarta-wordmark-sidebar-dark-CUOzCjZz.png",
+      "status": 200,
+      "local": "7409f535c27959d997c19b61a31f0e0f705da0e96bfac7765492d23ace99879d",
+      "live": "7409f535c27959d997c19b61a31f0e0f705da0e96bfac7765492d23ace99879d",
+      "match": true
+    },
+    {
+      "path": "assets/useAsyncAction-DcxCIh84.js",
+      "status": 200,
+      "local": "2c976c6d3804a1b307f1eecd647b2987c7ab2549e0051986592d86502dd3deaf",
+      "live": "2c976c6d3804a1b307f1eecd647b2987c7ab2549e0051986592d86502dd3deaf",
+      "match": true
+    },
+    {
+      "path": "icons/apple-touch-icon.png",
+      "status": 200,
+      "local": "8d728917cea43e3b8fe64244ba2500b754434d45188153c85632a1aeb599d216",
+      "live": "8d728917cea43e3b8fe64244ba2500b754434d45188153c85632a1aeb599d216",
+      "match": true
+    },
+    {
+      "path": "icons/icon-192.png",
+      "status": 200,
+      "local": "b4b63b43a1db1cba796148902e5b965c8b48e80b056925ab79b84893293e33c8",
+      "live": "b4b63b43a1db1cba796148902e5b965c8b48e80b056925ab79b84893293e33c8",
+      "match": true
+    },
+    {
+      "path": "icons/icon-512.png",
+      "status": 200,
+      "local": "9174f4f7b85634b268d2dfebda14901aa82826078ef9878370533708b8d9f1e3",
+      "live": "9174f4f7b85634b268d2dfebda14901aa82826078ef9878370533708b8d9f1e3",
+      "match": true
+    },
+    {
+      "path": "icons/icon-maskable-512.png",
+      "status": 200,
+      "local": "654bf10f07ea14a25bf762451f2ced38bb480df536496dc900d3e062bb26d3c7",
+      "live": "654bf10f07ea14a25bf762451f2ced38bb480df536496dc900d3e062bb26d3c7",
+      "match": true
+    },
+    {
+      "path": "index.html",
+      "status": 200,
+      "local": "bb60a8a3627201dd7c33d5ef54df898e10b3612826cd658481630cb5578b8cdb",
+      "live": "bb60a8a3627201dd7c33d5ef54df898e10b3612826cd658481630cb5578b8cdb",
+      "match": true
+    },
+    {
+      "path": "manifest.webmanifest",
+      "status": 200,
+      "local": "8d24c2da6fce91070f2bff4ad1ae0937533b75bb236727aa9a9db038fe533f35",
+      "live": "8d24c2da6fce91070f2bff4ad1ae0937533b75bb236727aa9a9db038fe533f35",
+      "match": true
+    },
+    {
+      "path": "sw.js",
+      "status": 200,
+      "local": "a40726e5fb84f1022c7fed955823bc4ecf3e3f102b9844731cce8ca649fd9b04",
+      "live": "a40726e5fb84f1022c7fed955823bc4ecf3e3f102b9844731cce8ca649fd9b04",
+      "match": true
+    }
+  ]
+}

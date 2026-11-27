@@ -1,0 +1,32 @@
+{
+  "project": "bnhs-sims",
+  "sourceCommit": "34c8e0e",
+  "change": "PR sirJits14/SMARTA#56: School access is saved per account on the device and shared, so Settings' \"Use the app as\" row no longer disappears on tab switches; Notices, a notice opened from the list and the Class roster paint the last answer while refreshing; the Notices list is fetched while idle after sign-in",
+  "deployedAt": "2026-10-18",
+  "preChecks": {
+    "parentTests": "148/148 on the merged tree",
+    "ci": "test check passed on PR #56's final head (96acabc)",
+    "sameTree": "origin/master 34c8e0e and the built commit 96acabc share tree 5c48402159aaf627750315e958d474ef1f60be66",
+    "liveBaseline": "45/45 live files matched the PR #54 release record before deploying"
+  },
+  "hosting": {
+    "parent": {
+      "origin": "https://bnhs-parent.web.app",
+      "builtFrom": "34c8e0e",
+      "toolchain": "main checkout parent/node_modules (junction) and parent/.env",
+      "replacedVersion": "b69858a6b282f158 (6deffe2, PR #54 release); confirmed still the latest release immediately before deploying",
+      "releasedAt": "2026-10-18T14:35:57Z",
+      "version": "ddf846e084aac19c",
+      "mainScript": "/assets/index-CuOcd2gt.js",
+      "files": 48,
+      "allMatch": true,
+      "initialLoadGzipKB": { "before": 217.3, "after": 219.1, "limit": 260 },
+      "appCheckSiteKeyInBundle": true,
+      "schoolContextStoreInBundle": true
+    }
+  },
+  "notes": [
+    "Three new files (firebase, react and preload-helper chunks): more screens now share the data hooks, so the bundler splits those out of the main chunk.",
+    "The signed-out page renders with no console errors. A signed-in check was not possible from the automated browser (App Check is enforced for Auth and the automated browser scores low); the Settings flicker fix was verified in the Settings browser preview against a 1.2 s fake server."
+  ]
+}

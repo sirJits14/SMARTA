@@ -7,6 +7,59 @@ npm exec vite -- --config tests/browser/registrar.config.mjs
 ```
 
 Open http://127.0.0.1:5187/tests/browser/registrar-recovery.html.
-The visible result must show five PASS lines. This uses the real React components and DOM with synthetic resource hooks and intercepted data/Firebase modules. It never calls production services. Covers learner/section/schedule draft retention on retrieval error, keyboard section access, and QR readiness on DOM detachment/remount.
+The visible result must show twelve PASS lines. This uses the real React components and DOM with synthetic resource hooks and intercepted data/Firebase modules. It never calls production services. Covers learner/section/schedule draft retention on retrieval error, keyboard section access, the bordered section button, and QR readiness on DOM detachment/remount, the ID card saved batch (merged sheets in print order, unenrolled learners set aside, fill meter, search and add, confirm-after-print, clear), coordinators never being asked to mark cards, and the SMARTA sidebar brand (wordmark expanded, S mark collapsed).
 
 These browser checks are separate from `npm test`. The fixture does not validate authentication, real queries or production writes.
+
+## Shell and component preview
+
+Run `npm exec vite -- --config tests/browser/shell.config.mjs` and open
+http://127.0.0.1:5191/tests/browser/shell-preview.html (add `?login` for the sign-in
+screen). It renders the real Shell, account menu, page header, buttons, fields, table,
+empty state and dialogs with synthetic content, for checking light, dark, collapsed and
+mobile layouts by eye. It makes no assertions and calls no services.
+
+## Grade Level Coordinator section editor
+
+Run `npm exec vite -- --config tests/browser/section-editing.config.mjs` and open
+http://127.0.0.1:5190/tests/browser/section-editing.html?checks. Nine PASS lines cover
+role/grade/year controls, the restricted fields and save payload, save and schedule
+retrieval retries, draft retention during resource errors, next-year editing without
+future learner queries, administrator actions, year rollover, and keeping next-year
+setup separate from current-year learner editing. This uses the real
+page and callable request adapter with synthetic resources and a local transport;
+server authorization and shared-schedule audiences are covered by emulator tests.
+
+## Enrollment preview and regressions
+
+```powershell
+npm exec vite -- --config tests/browser/enrollment.config.mjs
+```
+
+Open http://127.0.0.1:5188/tests/browser/enrollment-preview.html for the responsive preview with synthetic learners and sections. Add `?checks` for six browser checks covering grade/search filtering, deduplicated current-year rosters, drawer prefill and focus restoration, destination changes, failed saves and retries, move/withdraw confirmation, and draft retention during resource errors. The fixture intercepts enrollment writes locally and never calls production services.
+
+## Parents App Settings preview
+
+Run from `parent/`:
+
+```powershell
+npm exec vite -- --config tests/browser/settings.config.mjs
+```
+
+Open http://127.0.0.1:5189/tests/browser/settings-preview.html. It renders the real Settings screen and sub-pages with synthetic data: the hooks, account writes, device checks and Firebase are swapped out by `parent/tests/browser/settings.config.mjs`, so it never calls production services. Use "Preview controls" to switch scenarios (no contact details, no learners, iPhone, installed, blocked, notifications off), fire a fake install prompt, and read the write log.
+
+## School access and session review preview
+
+```powershell
+npm exec vite -- --config tests/browser/school-review.config.mjs
+```
+
+Open http://127.0.0.1:5191/tests/browser/school-review.html for the Session review page (administrator), or add `?view=access` for the Guardians School access tab. Add `&me=glc` for a Grade 8 Grade Level Coordinator and `&theme=dark` for dark mode. The real pages run against an in-memory backend (`school-review-fixture.js`) with a short delay: ten learners per section with late and missing gate entries, one AM session already flagged, and assignments, revokes and corrections that persist until the page reloads. It never calls production services.
+
+## Grade image export
+
+```powershell
+npm exec vite -- --config tests/browser/grade-export.config.mjs
+```
+
+Open http://127.0.0.1:5192/tests/browser/grade-export.html?checks (add `&theme=dark` for dark mode). Six PASS lines cover the Export image button (every role that opens Sections, current school year only), the downloaded PNG (file name, 2160 px width, light background, not blank), the whole grade being exported while the search box filters the table, the Grade 11 export, a failed export that logs its cause, shows an alert, recovers and drops the alert when the grade or school year changes, and dark mode still producing a light image. Each exported image is shown below the checks so the Grade 8 (junior high) and Grade 11 (Strand column, missing-sex note) layouts can be checked by eye. The real page runs against synthetic collections; it never calls production services.

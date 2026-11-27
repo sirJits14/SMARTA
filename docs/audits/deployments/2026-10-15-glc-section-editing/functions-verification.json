@@ -1,0 +1,121 @@
+{
+  "verifiedAt": "2026-10-15T05:39:42.793Z",
+  "project": "bnhs-sims",
+  "unchangedFunctions": 34,
+  "functions": [
+    {
+      "name": "getCoordinatorSectionOptionsFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-15T05:39:05.489236257Z",
+      "runtime": "nodejs22",
+      "uri": "https://getcoordinatorsectionoptionsfn-k7rk2gigtq-as.a.run.app",
+      "revision": "getcoordinatorsectionoptionsfn-00001-wub",
+      "source": {
+        "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+        "object": "getCoordinatorSectionOptionsFn/function-source.zip",
+        "generation": "1792042699737699"
+      },
+      "sourceArchiveSha256": "afcf4d63ae89e4ae90b3716ac946655739539985ba831304921fece8a8c5c647",
+      "sourceChecks": [
+        {
+          "path": "index.js",
+          "sha256": "9fd9364eb72262bb0c42e55c66fcad1b24f2c233b822710a3f6ac06b7d7fb730",
+          "matched": true
+        },
+        {
+          "path": "src/handlers/sections.js",
+          "sha256": "e47eb81df28cbc6592d4e0f811f9e22dad4abab282f666dd7ca396a0d8ab1be5",
+          "matched": true
+        },
+        {
+          "path": "src/callable.js",
+          "sha256": "71b4b73d50817229df3a391b03c46213409172b5103dcac56a6f0fccb4010b7d",
+          "matched": true
+        },
+        {
+          "path": "src/lib/schoolYears.js",
+          "sha256": "85b92b23d14578ccfc22f8066be95d03d534cf92729fefc878c8fa9ad218ded2",
+          "matched": true
+        },
+        {
+          "path": "shared/sectionEditing.js",
+          "sha256": "4726f34f63f78c8e02d5ad47795e229cfb90d9710e6ee5fdc590f8473df228cf",
+          "matched": true
+        },
+        {
+          "path": "shared/staffRoles.js",
+          "sha256": "579f35b0cd9c1d415da7e0b8f05e23a2d465a008a23ac1c16205a56ab430eac0",
+          "matched": true
+        },
+        {
+          "path": "src/errors.js",
+          "sha256": "1ff2b00da8c36dc99f3304396299b0c25bf5d526740d626c6b2c431aa8d474b8",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "name": "updateCoordinatorSectionFn",
+      "state": "ACTIVE",
+      "updateTime": "2026-10-15T05:39:08.674079256Z",
+      "runtime": "nodejs22",
+      "uri": "https://updatecoordinatorsectionfn-k7rk2gigtq-as.a.run.app",
+      "revision": "updatecoordinatorsectionfn-00001-ric",
+      "source": {
+        "bucket": "gcf-v2-sources-596581708720-asia-southeast1",
+        "object": "updateCoordinatorSectionFn/function-source.zip",
+        "generation": "1792042739572563"
+      },
+      "sourceArchiveSha256": "afcf4d63ae89e4ae90b3716ac946655739539985ba831304921fece8a8c5c647",
+      "sourceChecks": [
+        {
+          "path": "index.js",
+          "sha256": "9fd9364eb72262bb0c42e55c66fcad1b24f2c233b822710a3f6ac06b7d7fb730",
+          "matched": true
+        },
+        {
+          "path": "src/handlers/sections.js",
+          "sha256": "e47eb81df28cbc6592d4e0f811f9e22dad4abab282f666dd7ca396a0d8ab1be5",
+          "matched": true
+        },
+        {
+          "path": "src/callable.js",
+          "sha256": "71b4b73d50817229df3a391b03c46213409172b5103dcac56a6f0fccb4010b7d",
+          "matched": true
+        },
+        {
+          "path": "src/lib/schoolYears.js",
+          "sha256": "85b92b23d14578ccfc22f8066be95d03d534cf92729fefc878c8fa9ad218ded2",
+          "matched": true
+        },
+        {
+          "path": "shared/sectionEditing.js",
+          "sha256": "4726f34f63f78c8e02d5ad47795e229cfb90d9710e6ee5fdc590f8473df228cf",
+          "matched": true
+        },
+        {
+          "path": "shared/staffRoles.js",
+          "sha256": "579f35b0cd9c1d415da7e0b8f05e23a2d465a008a23ac1c16205a56ab430eac0",
+          "matched": true
+        },
+        {
+          "path": "src/errors.js",
+          "sha256": "1ff2b00da8c36dc99f3304396299b0c25bf5d526740d626c6b2c431aa8d474b8",
+          "matched": true
+        }
+      ]
+    }
+  ],
+  "unauthenticatedChecks": [
+    {
+      "name": "getCoordinatorSectionOptionsFn",
+      "http": 401,
+      "error": "UNAUTHENTICATED"
+    },
+    {
+      "name": "updateCoordinatorSectionFn",
+      "http": 401,
+      "error": "UNAUTHENTICATED"
+    }
+  ]
+}

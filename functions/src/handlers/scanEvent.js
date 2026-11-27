@@ -5,8 +5,9 @@ import { shouldPush, guardianPushGate } from '../lib/shouldPush.js';
 import { cached } from '../cache.js';
 import { logEvent, logWarn } from '../log.js';
 import { sendToGuardian } from './push.js';
-import { manilaDate } from '../../shared/dates.js';
+import { manilaDate, manilaTime } from '../../shared/dates.js';
 import { fullName, learnerIdentity } from '../lib/format.js';
+import { applyScanAttendance, rejectScanAttendance } from './scanAttendance.js';
 
 const CACHE_MS = 30_000;
 const RECENT_QUERY = 40;
@@ -38,19 +39,38 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
   const t0 = Date.now();
   const { studentId, schoolYear, kind, deviceId, source } = data;
   const isStaff = source === 'staff';
-  // TEMP(kiosk-v1-compat): synthesized by src/handlers/legacyAttendanceSync.js
-  // from kiosk v1's student_attendance timeIn/timeOut writes -- there's no
-  // registered kiosks/{uid} doc for these, so it needs its own identity
-  // branch, same as isStaff. Delete alongside that bridge once kiosk v2 is
-  // live everywhere (docs/parent-portal-rollout-checklist.md K1/K2).
-  const isAttendanceSync = source === 'attendance-sync';
+  const validId = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+  const scannedAtMs = data.scannedAt?.toMillis?.();
+  const receivedAtMs = data.receivedAt?.toMillis?.();
+  if (![studentId, deviceId, data.sectionId].every(validId)
+      || typeof schoolYear !== 'string' || !/^\d{4}-\d{4}$/.test(schoolYear)
+      || !['in', 'out', ...(isStaff ? ['void'] : [])].includes(kind)
+      || !Number.isFinite(scannedAtMs) || !Number.isFinite(receivedAtMs)) {
+    logWarn('scan_rejected', { eventId, reason: 'invalid' });
+    if (!isStaff) await rejectScanAttendance(db, eventId, 'invalid');
+    return { outcome: 'rejected:invalid' };
+  }
+
+  const cls = classifyEvent({ scannedAtMs, receivedAtMs });
+  if (!isStaff) {
+    // Client strings never select attendance documents. Skewed kiosk clocks
+    // use server receipt time; authorized staff retain their chosen calendar.
+    const effectiveDate = new Date(cls.effectiveAtMs);
+    data = { ...data, scannedDate: manilaDate(effectiveDate), scannedTime: manilaTime(effectiveDate) };
+    // Persist applied/rejected receipts before cached checks for parent
+    // projection. Enrollment/device changes after ingestion remain visible.
+    const applied = await applyScanAttendance(db, { eventId, data, date: data.scannedDate, scanTime: data.scannedTime });
+    if (applied.outcome.startsWith('rejected:')) {
+      logWarn('scan_rejected', { eventId, deviceId, reason: applied.outcome });
+      return applied;
+    }
+  }
 
   // 1. device
   const kiosk = isStaff ? { label: 'School office', active: true }
-    : isAttendanceSync ? { label: 'School gate', active: true }
     : await cached(`kiosk:${deviceId}`, CACHE_MS, async () => (await db.doc(`kiosks/${deviceId}`).get()).data() || null);
   if (!kiosk || kiosk.active !== true) { logWarn('scan_rejected', { eventId, deviceId, reason: 'device' }); return { outcome: 'rejected:device' }; }
-  if (!isStaff && !isAttendanceSync) checkDeviceRate(deviceId, data);
+  if (!isStaff) checkDeviceRate(deviceId, data);
 
   // 2. enrollment
   const enrollment = (await db.doc(`enrollments/${studentId}_${schoolYear}`).get()).data();
@@ -58,14 +78,14 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
     logWarn('scan_rejected', { eventId, deviceId, reason: 'enrollment' }); return { outcome: 'rejected:enrollment' };
   }
 
-  // 3. classify
-  const cls = classifyEvent({ scannedAtMs: data.scannedAt.toMillis(), receivedAtMs: data.receivedAt.toMillis() });
   const todayDate = manilaDate(now());
 
   // 4. project + summary (transaction)
   const learnerRef = db.doc(`learners/${studentId}`);
   const eventRef = learnerRef.collection('events').doc(eventId);
   const [studentSnap, sectionSnap] = await Promise.all([db.doc(`students/${studentId}`).get(), db.doc(`sections/${enrollment.sectionId}`).get()]);
+  const scheduleId = sectionSnap.data()?.scheduleId;
+  const schedule = scheduleId ? (await db.doc(`schedules/${scheduleId}`).get()).data() : undefined;
   const student = studentSnap.data();
   const learnerName = fullName(student);
 
@@ -91,7 +111,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
       if (idx >= 0) existing[idx] = row; else existing.push(row);
     }
 
-    const summary = recomputeSummary({ events: existing, todayDate });
+    const summary = recomputeSummary({ events: existing, todayDate, schedule });
     tx.set(learnerRef, {
       ...learnerIdentity(student, sectionSnap.data(), schoolYear),
       today: summary.today, recent: summary.recent, updatedAt: FieldValue.serverTimestamp(),
@@ -108,6 +128,7 @@ export async function handleScanEvent({ db, messaging, portalUrl, now = () => ne
   const links = await db.collection('guardian_links').where('studentId', '==', studentId).where('status', '==', 'active').get();
   let pushesSent = 0, pushesFailed = 0, pruned = 0;
   for (const link of links.docs) {
+    if (link.data().schoolYear !== schoolYear || link.data().relationship === 'Adviser' || link.data().slot === 'adviser') continue;
     const uid = link.data().guardianUid;
     const inboxRef = db.doc(`guardians/${uid}/inbox/${eventId}`);
     const inboxSnap = await inboxRef.get();

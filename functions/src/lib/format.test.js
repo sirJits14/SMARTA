@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sectionLabel, displayName, fullName } from './format.js';
+import { sectionLabel, displayName, fullName, formalName, learnerIdentity, manilaDateTime } from './format.js';
 
 describe('format', () => {
   describe('sectionLabel', () => {
@@ -35,5 +35,40 @@ describe('fullName', () => {
   it('adds a period to a one-letter middle initial and skips blanks', () => {
     expect(fullName({ firstName: ' Ana ', middleName: 'B', lastName: 'Cruz', extName: ' ' })).toBe('Ana B. Cruz');
     expect(fullName({ firstName: 'Ben', lastName: 'Dy' })).toBe('Ben Dy');
+  });
+});
+
+describe('formalName', () => {
+  it('puts the last name first with a middle initial and extension', () => {
+    expect(formalName({ firstName: 'Juan', middleName: 'Santos', lastName: 'Dela Cruz', extName: 'Jr.' })).toBe('Dela Cruz, Juan S. Jr.');
+    expect(formalName({ firstName: ' Ben ', lastName: ' Dy ' })).toBe('Dy, Ben');
+  });
+});
+
+describe('learnerIdentity', () => {
+  it('carries the sort fields Home orders learners by', () => {
+    const id = learnerIdentity({ firstName: 'Juan', lastName: ' Dela Cruz ', sex: 'M' }, { gradeLevel: 8, name: 'Rizal' }, '2026-2027');
+    expect(id).toEqual({ displayName: 'Juan Dela Cruz', formalName: 'Dela Cruz, Juan', lastName: 'Dela Cruz', firstName: 'Juan', sex: 'M', sectionLabel: 'Grade 8 – Rizal', schoolYear: '2026-2027' });
+  });
+  it('stores an empty sex rather than an unexpected value', () => {
+    expect(learnerIdentity({ firstName: 'A', lastName: 'B', sex: 'x' }, null, 'SY').sex).toBe('');
+  });
+  it('carries the photo time only when the learner has a photo', () => {
+    const updatedAt = { seconds: 1, nanoseconds: 0 };
+    const photo = { path: 'student_photos/S1.jpg', updatedAt, updatedBy: 'staff@x' };
+    const id = learnerIdentity({ firstName: 'A', lastName: 'B', photo }, null, 'SY');
+    expect(id.photoUpdatedAt).toBe(updatedAt);
+    // The path and the staff member's email stay off the parent projection.
+    expect(id).not.toHaveProperty('photo');
+    for (const student of [{}, { photo: null }, { photo: {} }]) {
+      expect(learnerIdentity({ firstName: 'A', lastName: 'B', ...student }, null, 'SY')).not.toHaveProperty('photoUpdatedAt');
+    }
+  });
+});
+
+describe('manilaDateTime', () => {
+  it('shows an instant as Philippine date and time with plain spaces', () => {
+    expect(manilaDateTime(Date.parse('2026-10-16T06:20:34Z'))).toBe('Oct 16, 2:20 PM');
+    expect(manilaDateTime(Date.parse('2026-09-21T23:00:00Z'))).toBe('Sep 22, 7:00 AM');
   });
 });

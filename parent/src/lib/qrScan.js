@@ -8,20 +8,29 @@ const MAX_FRAME = 640;
 export const normalizeCode = (input) =>
   String(input || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
 
-export function extractCode(text) {
+// Learner slips link to /activate?c=CODE and advisory slips to /activate?a=CODE.
+// A bare code takes the kind of slip the screen asked for.
+export function readSlip(text, fallbackKind = 'learner') {
   const raw = String(text ?? '').trim();
   if (!raw) return null;
   let candidate = raw;
+  let kind = fallbackKind;
   if (/^https?:\/\//i.test(raw)) {
     let url;
     try { url = new URL(raw); } catch { return null; }
     if (!/\/activate\/?$/.test(url.pathname)) return null;
-    candidate = url.searchParams.get('c') || '';
+    kind = url.searchParams.has('a') ? 'advisory' : 'learner';
+    candidate = url.searchParams.get(kind === 'advisory' ? 'a' : 'c') || '';
   } else if (raw.length > MAX_BARE) {
     return null;
   }
   const code = normalizeCode(candidate);
-  return CODE_RE.test(code) ? code : null;
+  return CODE_RE.test(code) ? { kind, code } : null;
+}
+
+export function extractCode(text) {
+  const slip = readSlip(text, 'learner');
+  return slip?.kind === 'learner' ? slip.code : null;
 }
 
 // The phone's own QR reader where it exists (Android Chrome); otherwise jsQR,

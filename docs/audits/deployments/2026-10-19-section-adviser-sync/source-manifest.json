@@ -1,0 +1,17 @@
+{
+  "baseline": "docs/releases/2026-10-19-school-access-review/prepareSims.mjs",
+  "overlays": {
+    "src/data/sections.js": "18645d81a98c66852ccc1cff7bb8562532b28ef715425a66a436477211bc8711",
+    "src/pages/SectionsPage.jsx": "348c77bf8c30e74985a83a894de8cf63b9dcccde621dc0c8a590e3e9ea737512"
+  },
+  "rulesSha256": "db32239426b4ab60cf57e36d8b72515052ce3cb0715d424fa27368d1973ae6c7",
+  "functions": [
+    "resolveSchoolRoleFn",
+    "resolveSchoolRolesFn",
+    "replaceAdviserFn",
+    "assignSchoolRoleFn",
+    "revokeSchoolRoleFn",
+    "deleteGuardianAccountFn",
+    "updateCoordinatorSectionFn"
+  ]
+}

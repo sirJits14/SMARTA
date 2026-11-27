@@ -1,55 +1,92 @@
-import { useMemo } from 'react';
-import { useCollectionResource } from '../hooks/useCollection.js';
-import { useLocalToday } from '../hooks/useLocalToday.js';
-import { fullName } from '../lib/roster.js';
-import { activeStudentCount, enrolledCount, countByGrade, attendanceCoverage, recentEnrollments, unassignedCount } from '../lib/dashboardStats.js';
-import { UNASSIGNED } from '../lib/constants.js';
-import { Btn, Card, EmptyState, ResourceState } from '../components/ui.jsx';
-import GradeBarChart from '../components/GradeBarChart.jsx';
-import AttentionPanel from '../components/dashboard/AttentionPanel.jsx';
-import CoveragePanel from '../components/dashboard/CoveragePanel.jsx';
+import { useEffect, useMemo, useState } from 'react';
+import { Btn, ResourceState } from '../components/ui.jsx';
 import NavIcon from '../components/NavIcon.jsx';
-export default function DashboardPage({ schoolYear, setPage }) {
-  const studentsResource = useCollectionResource('students');
-  const sectionsResource = useCollectionResource('sections');
-  const enrollmentsResource = useCollectionResource('enrollments');
-  const attendanceResource = useCollectionResource('student_attendance');
-  const students = studentsResource.data, sections = sectionsResource.data, enrollments = enrollmentsResource.data, attendance = attendanceResource.data;
-  const resources = [studentsResource,sectionsResource,enrollmentsResource,attendanceResource];
-  const today = useLocalToday();
-  const coverage = useMemo(() => attendanceCoverage({ students,sections,enrollments,attendance,schoolYear,date:today }),[students,sections,enrollments,attendance,schoolYear,today]);
-  const recent = useMemo(() => recentEnrollments(enrollments,schoolYear,5),[enrollments,schoolYear]);
-  const studentsById = useMemo(() => Object.fromEntries(students.map(s => [s.id,s])),[students]);
-  const sectionsById = useMemo(() => Object.fromEntries(sections.map(s => [s.id,s])),[sections]);
-  const stats = [
-    ['Active learners',activeStudentCount(students),'students'],
-    ['Enrolled this school year',enrolledCount(enrollments,schoolYear),'enroll'],
-    ['Sections this school year',sections.filter(s=>s.schoolYear===schoolYear).length,'sections'],
-  ];
-  const dateLabel = new Date(today+'T12:00:00').toLocaleDateString('en-PH',{ weekday:'long',month:'long',day:'numeric',year:'numeric' });
+import WidgetDrawer from '../components/dashboard/WidgetDrawer.jsx';
+import { useDashboardData } from '../components/dashboard/useDashboardData.js';
+import { useDashboardPanel } from '../hooks/useDashboardPanel.js';
+import KpiStrip from '../components/dashboard/widgets/KpiStrip.jsx';
+import { EnrollmentCard, EnrollmentDetail } from '../components/dashboard/widgets/EnrollmentWidget.jsx';
+import { CoverageCard, CoverageDetail } from '../components/dashboard/widgets/CoverageWidget.jsx';
+import { AttendanceCard, AttendanceDetail } from '../components/dashboard/widgets/AttendanceWidget.jsx';
+import { SexCard, SexDetail } from '../components/dashboard/widgets/SexWidget.jsx';
+import { AttentionCard, AttentionDetail } from '../components/dashboard/widgets/AttentionWidget.jsx';
+import { NoticeCard, NoticeDetail } from '../components/dashboard/widgets/NoticeWidget.jsx';
+import { CalendarCard, CalendarDetail, UpcomingCard } from '../components/dashboard/widgets/CalendarWidget.jsx';
+import { ActivityCard, ActivityDetail } from '../components/dashboard/widgets/ActivityWidget.jsx';
+import { attendanceTally, attentionQueues } from '../lib/dashboardStats.js';
+import { isWeekend } from '../lib/dates.js';
+import { canOpen } from '../lib/access.js';
+import { UNASSIGNED } from '../lib/constants.js';
+import '../dashboard.css';
+
+export default function DashboardPage({ me, schoolYear, setPage }) {
+  const data = useDashboardData({ me, schoolYear });
+  const { panel, open, close } = useDashboardPanel();
+  const { today, admin } = data;
+  const [month, setMonth] = useState(() => data.today.slice(0, 7));
+  const [selectedDay, setSelectedDay] = useState(null);
+  const link = (label, page, params) => (canOpen(me, page) ? { label, page, params } : null);
+  const takeAttendance = (section) => setPage('attendance', { attendanceEntry: { sectionId: section.id, date: today } });
+  const todayTally = useMemo(() => attendanceTally({ roster: data.rosterMap, attendance: data.attendance, schoolYear, dates: [today] }),
+    [data.rosterMap, data.attendance, schoolYear, today]);
+  const queues = attentionQueues({
+    admin, canRequests: data.canRequests,
+    unassigned: data.unassignedTotal,
+    pendingSections: isWeekend(today) ? 0 : data.coverage.pendingSections.length,
+    requests: data.requests, idCards: data.idCardIds.length,
+  });
+  const onQueue = (id) => {
+    if (id === 'unassigned') setPage('students', { gradeFilter: UNASSIGNED, status: 'active' });
+    else if (id === 'attendance') open('coverage');
+    else if (id === 'requests') setPage('learnerRequests');
+    else if (id === 'idcards') setPage('idcards');
+  };
+  const card = (id) => ({ data, expanded: panel === id, onExpand: () => open(id) });
+  const roster = data.resources.roster;
+  const drawers = {
+    enrollment: { title: 'Enrollment by grade', link: link('Open Enrollment', 'enroll'), resources: roster, body: <EnrollmentDetail data={data} /> },
+    coverage: { title: 'Attendance coverage', link: link('Open Attendance', 'attendance'), resources: roster, body: <CoverageDetail data={data} onTakeAttendance={takeAttendance} /> },
+    attendance: { title: 'Weekly attendance', link: link('Open Attendance', 'attendance'), resources: roster, body: <AttendanceDetail data={data} /> },
+    sex: { title: 'Learners by sex', link: link('Open Students', 'students'), resources: roster, body: <SexDetail data={data} /> },
+    attention: { title: 'Needs attention', link: null, resources: [...roster, ...data.resources.idCards],
+      body: <AttentionDetail data={data} queues={queues} onQueue={(id) => { close(); onQueue(id); }} onTakeAttendance={takeAttendance} /> },
+    notices: { title: 'Notice board', link: link('Open Announcements', 'announcements'), resources: data.resources.posts, body: <NoticeDetail data={data} /> },
+    calendar: { title: 'Calendar', link: link('Open Announcements', 'announcements'), resources: data.resources.posts, body: <CalendarDetail data={data} month={month} onMonth={setMonth} /> },
+    activity: { title: 'Recent activity', link: null, resources: [...roster, ...data.resources.posts], body: <ActivityDetail data={data} /> },
+  };
+  // A panel id with no drawer (not built yet, or drifted) counts as closed; clean it out of the URL.
+  const drawer = panel && Object.prototype.hasOwnProperty.call(drawers, panel) ? drawers[panel] : null;
+  const missingDrawer = Boolean(panel) && !drawer;
+  useEffect(() => { if (missingDrawer) close(); }, [missingDrawer, close]);
+  const dateLabel = new Date(`${today}T12:00:00`).toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
   return <div className="sims-dashboard">
-    <div className="sims-heading"><div><h1>Your school day, at a glance.</h1><p className="sims-dashboard-date">{dateLabel}</p></div><Btn onClick={()=>setPage('enroll')}>Enroll a learner <NavIcon name="enroll" size={17}/></Btn></div>
-    <ResourceState resources={resources} label="dashboard">
-      <AttentionPanel unassigned={unassignedCount(students,enrollments,schoolYear)} pendingSections={coverage.pendingSections}
-        totalSections={coverage.totalSections} date={today}
-        onUnassigned={()=>setPage('students',{gradeFilter:UNASSIGNED,status:'active'})}
-        onSection={section=>setPage('attendance',{attendanceEntry:{sectionId:section.id,date:today}})}/>
-      <div className="sims-dashboard-totals">{stats.map(([label,value,icon])=><Card surface="summary" className="sims-stat" key={label}>
-        <div><div className="sims-stat-label">{label}</div><strong>{value.toLocaleString()}</strong></div><NavIcon name={icon} size={28}/>
-      </Card>)}</div>
-      <div className="sims-dashboard-charts">
-        <Card surface="summary" className="sims-chart-card"><h2>Enrollment by grade</h2><p>Current school-year enrollment, across all sections</p>
-          {enrolledCount(enrollments,schoolYear) ? <GradeBarChart counts={countByGrade(enrollments,schoolYear)}/> : <EmptyState title="No enrollments yet" hint="Enroll a learner to begin your school-year overview."/>}
-        </Card>
-        <CoveragePanel {...coverage}/>
+    <div className="sims-heading">
+      <div><h1>Your school day, at a glance.</h1><p className="sims-dashboard-date">{dateLabel}</p></div>
+      {admin && <Btn onClick={() => setPage('enroll')}>Enroll a learner <NavIcon name="enroll" size={17} /></Btn>}
+    </div>
+    <div className="sims-dash-layout has-rail">
+      <div className="sims-dash-main">
+        <ResourceState resources={roster} label="dashboard summary" inline>
+          <KpiStrip data={data} todayRate={todayTally.days[0]?.rate ?? null} onNavigate={setPage} onOpenPanel={open} />
+        </ResourceState>
+        <div className="sims-dash-row is-two">
+          <EnrollmentCard {...card('enrollment')} />
+          <AttendanceCard {...card('attendance')} />
+        </div>
+        <div className="sims-dash-row is-three">
+          <SexCard {...card('sex')} />
+          <CoverageCard {...card('coverage')} onTakeAttendance={takeAttendance} />
+          <AttentionCard {...card('attention')} queues={queues} onQueue={onQueue} />
+        </div>
+        <NoticeCard {...card('notices')} />
       </div>
-      <Card surface="summary" className="sims-recent"><div className="sims-section-label"><h2>Recent enrollments</h2><span>This school year</span></div>
-        {recent.length ? <div className="sims-table-scroll" role="region" aria-label="Recent enrollments" tabIndex={0}>
-          <table><thead><tr><th>Learner</th><th>Section</th><th>Enrolled</th></tr></thead><tbody>
-            {recent.map(e=><tr key={e.studentId+'_'+e.schoolYear}><td><strong>{studentsById[e.studentId] ? fullName(studentsById[e.studentId]) : 'Unavailable learner'}</strong></td><td>{sectionsById[e.sectionId]?.name || 'Unavailable section'}</td><td>{e.dateEnrolled || '—'}</td></tr>)}
-          </tbody></table>
-        </div> : <EmptyState title="No recent enrollments" hint="New enrollments for this school year will appear here."/>}
-      </Card>
-    </ResourceState>
+      <aside className="sims-dash-rail" aria-label="Calendar and activity">
+        <CalendarCard {...card('calendar')} month={month} onMonth={setMonth} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+        <UpcomingCard data={data} expanded={panel === 'calendar'} onExpand={() => open('calendar')} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+        <ActivityCard {...card('activity')} />
+      </aside>
+    </div>
+    {drawer && <WidgetDrawer key={panel} title={drawer.title} pageLink={drawer.link} resources={drawer.resources} onNavigate={setPage} onClose={close}>{drawer.body}</WidgetDrawer>}
   </div>;
 }

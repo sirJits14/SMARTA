@@ -1,13 +1,17 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { onIdTokenChanged } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase.js';
+import { endSession, isEndingSession, reloadAfterOutsideSignOut, takeStoredSignOutNotice } from './session.js';
+import { shouldReloadAfterSignOut } from './lib/session.js';
 import { shouldStartNavigation } from './lib/navigationState.js';
 import { currentSchoolYear } from './lib/constants.js';
+import { canOpen, canLoadStaffData, profileRefusal, ownProfile, DISABLED_MESSAGE } from './lib/access.js';
 import { useDoc } from './hooks/useCollection.js';
 import { T } from './styles.js';
 import Login from './components/Login.jsx';
 import Shell from './components/Shell.jsx';
+import ChangePassword from './components/ChangePassword.jsx';
 import loadingGif from './assets/loading.gif';
 // Route-split: each page (and everything only it imports, like exceljs for
 // Students/Attendance-summary or qrcode for ID Cards/Guardians->Codes) loads
@@ -15,14 +19,22 @@ import loadingGif from './assets/loading.gif';
 // the single initial bundle.
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const StudentsPage = lazy(() => import('./pages/StudentsPage.jsx'));
+const LearnerRequestsPage = lazy(() => import('./pages/LearnerRequestsPage.jsx'));
 const SectionsPage = lazy(() => import('./pages/SectionsPage.jsx'));
 const SchedulesPage = lazy(() => import('./pages/SchedulesPage.jsx'));
 const EnrollPage = lazy(() => import('./pages/EnrollPage.jsx'));
 const AttendanceTakePage = lazy(() => import('./pages/AttendanceTakePage.jsx'));
 const AttendanceSummaryPage = lazy(() => import('./pages/AttendanceSummaryPage.jsx'));
+const SessionReviewPage = lazy(() => import('./pages/SessionReviewPage.jsx'));
 const IDCardsPage = lazy(() => import('./pages/IDCardsPage.jsx'));
 const GuardiansPage = lazy(() => import('./pages/GuardiansPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+const AccountsPage = lazy(() => import('./pages/AccountsPage.jsx'));
+const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage.jsx'));
+
+// Read once per page load: a forced sign-out leaves its notice here before reloading.
+const startupNotice = takeStoredSignOutNotice();
+const SESSION_ENDED = 'Your session has ended. Please sign in again.';
 
 const PageFallback = () => (
   <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}>
@@ -38,75 +50,127 @@ const BootLoader = () => (
   </div>
 );
 
-function AttendanceArea({ schoolYear, entry }) {
+function AttendanceArea({ me, schoolYear, entry }) {
   const [tab, setTab] = useState('take');
   return (
     <div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-        {[['take', 'Take Attendance'], ['summary', 'Monthly Summary']].map(([key, label]) => {
-          const active = tab === key;
-          return (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                fontFamily: T.body, fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
-                cursor: 'pointer', padding: '9px 18px', borderRadius: T.pill, border: 'none',
-                background: active ? T.primary : 'transparent',
-                color: active ? '#fff' : T.inkMuted,
-                transition: 'background 0.15s ease-out, color 0.15s ease-out',
-              }}
-            >{label}</button>
-          );
-        })}
+      <div className="sims-tabs" role="group" aria-label="Attendance views">
+        {[['take', 'Take attendance'], ['summary', 'Monthly summary'], ['review', 'Session review']].map(([key, label]) => (
+          <button key={key} type="button" className="sims-tab" aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>
+        ))}
       </div>
       <Suspense fallback={<PageFallback />}>
-        {tab === 'take'
-          ? <AttendanceTakePage schoolYear={schoolYear} entry={entry} />
-          : <AttendanceSummaryPage schoolYear={schoolYear} />}
+        <div key={tab} className="sims-page-transition">
+          {tab === 'take' ? <AttendanceTakePage me={me} schoolYear={schoolYear} entry={entry} />
+            : tab === 'summary' ? <AttendanceSummaryPage me={me} schoolYear={schoolYear} />
+              : <SessionReviewPage me={me} schoolYear={schoolYear} />}
+        </div>
       </Suspense>
     </div>
   );
 }
 
 export default function App() {
-  const [me, setMe] = useState(null);
-  const [ready, setReady] = useState(false);
+  // authUser: undefined while Firebase Auth resolves, then a user or null.
+  // me: undefined while that user's profile loads, then the profile or null.
+  const [authUser, setAuthUser] = useState(undefined);
+  const [authTime, setAuthTime] = useState(undefined);
+  const [me, setMe] = useState(undefined);
+  const [passwordChangePending, setPasswordChangePending] = useState(false);
+  const [notice, setNotice] = useState(startupNotice);
   const [page, setPageRaw] = useState('dashboard');
   const [pageParams, setPageParams] = useState(null);
   const [navigationSequence, setNavigationSequence] = useState(0);
   const setPage = (next, params = null) => { if (!shouldStartNavigation(page, next, params)) return; setPageRaw(next); setPageParams(params); setNavigationSequence(n => n + 1); };
-  const settings = useDoc('settings/app');
+  const settings = useDoc(canLoadStaffData(me, passwordChangePending, authTime) ? 'settings/app' : null);
   const schoolYear = settings?.currentSchoolYear || currentSchoolYear();
 
-  useEffect(() => onAuthStateChanged(auth, async (u) => {
-    if (u) { const s = await getDoc(doc(db, 'users', u.email.toLowerCase())); if (s.exists()) setMe({ email:u.email.toLowerCase(), ...s.data() }); }
-    else setMe(null);
-    setReady(true);
-  }), []);
+  useEffect(() => {
+    let generation = 0;
+    let hadUser = false;
+    const unsubscribe = onIdTokenChanged(auth, async user => {
+      const current = ++generation;
+      if (user) hadUser = true;
+      else if (shouldReloadAfterSignOut({ hadUser, user, ending: isEndingSession() })) { reloadAfterOutsideSignOut(); return; }
+      setAuthUser(user);
+      if (!user) { setAuthTime(undefined); return; }
+      try {
+        const token = await user.getIdTokenResult();
+        if (current === generation) setAuthTime(token.claims.auth_time);
+      } catch {
+        if (current === generation) { setNotice(SESSION_ENDED); endSession(SESSION_ENDED); }
+      }
+    });
+    return () => { generation++; unsubscribe(); };
+  }, []);
 
-  if (!ready) return <BootLoader />;
+  // A reset or a password change in another tab invalidates this token even
+  // after the live profile clears mustChangePassword. Never open cached data.
+  useEffect(() => {
+    if (!authUser || !me || authTime === undefined || passwordChangePending) return;
+    const cutoff = me.sessionValidAfter ?? 0;
+    if (!Number.isSafeInteger(cutoff) || cutoff < 0 || !Number.isSafeInteger(authTime) || authTime < cutoff) {
+      setNotice(SESSION_ENDED);
+      endSession(SESSION_ENDED);
+    }
+  }, [authUser, me, authTime, passwordChangePending]);
+
+  // Live profile: role/grade changes apply at once, and a disabled or deleted
+  // profile signs the user out with an explanation on the login screen.
+  useEffect(() => {
+    if (authUser === undefined) return;
+    if (!authUser) { setMe(null); return; }
+    const email = authUser.email?.toLowerCase();
+    const refuse = (message) => { setNotice(message); setMe(null); endSession(message); };
+    if (!email) { refuse('This account has no staff profile yet. Ask an administrator to add one.'); return; }
+    setMe(undefined);
+    let loaded = false;
+    return onSnapshot(doc(db, 'users', email), (snap) => {
+      const data = ownProfile(snap.exists() ? snap.data() : null, authUser.uid);
+      const profile = data ? { email, ...data } : null;
+      // A profile that vanishes after loading was deleted mid-session: same notice as disabled.
+      const refusal = loaded && !profile ? DISABLED_MESSAGE : profileRefusal(profile);
+      if (refusal) { refuse(refusal); return; }
+      loaded = true;
+      setMe(profile);
+    // After a normal sign-out the listener can error before cleanup; only refuse while signed in.
+    }, () => { if (auth.currentUser) refuse('Could not load your staff profile. Please sign in again.'); });
+  }, [authUser]);
+
+  if (authUser === undefined || (authUser && (me === undefined || authTime === undefined))) return <BootLoader />;
 
   const reducedMotionGuard = (
     <style>{'@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }'}</style>
   );
+  const logout = () => { setNotice(''); setPasswordChangePending(false); endSession(); };
 
-  if (!me) return <>{reducedMotionGuard}<Login onSignedIn={setMe} /></>;
+  if (!me) return <>{reducedMotionGuard}<Login notice={notice} onAttempt={() => setNotice('')} /></>;
+  if (me.mustChangePassword || passwordChangePending) return <>{reducedMotionGuard}<ChangePassword me={me} onLogout={logout} onChanging={setPasswordChangePending} onReauthenticated={async () => {
+    const token = await auth.currentUser.getIdTokenResult();
+    setAuthTime(token.claims.auth_time);
+  }} /></>;
+  if (!canLoadStaffData(me, false, authTime)) return <BootLoader />;
+
+  // A page this role can't open (stale state, or a role change) falls back to the dashboard.
+  const shown = canOpen(me, page) ? page : 'dashboard';
 
   return (
     <>
       {reducedMotionGuard}
-      <Shell me={me} page={page} setPage={setPage} schoolYear={schoolYear} onLogout={()=>{ signOut(auth); setMe(null); }}>
+      <Shell me={me} page={shown} setPage={setPage} schoolYear={schoolYear} onLogout={logout}>
         <Suspense fallback={<PageFallback />}>
-          {page==='dashboard' && <DashboardPage schoolYear={schoolYear} setPage={setPage} />}
-          {page==='students' && <StudentsPage schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
-          {page==='sections' && <SectionsPage schoolYear={schoolYear} />}
-          {page==='schedules' && <SchedulesPage />}
-          {page==='enroll' && <EnrollPage schoolYear={schoolYear} />}
-          {page==='attendance' && <AttendanceArea key={navigationSequence} schoolYear={schoolYear} entry={pageParams?.attendanceEntry} />}
-          {page==='idcards' && <IDCardsPage schoolYear={schoolYear} />}
-          {page==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
-          {page==='settings' && <SettingsPage />}
+          {shown==='dashboard' && <DashboardPage me={me} schoolYear={schoolYear} setPage={setPage} />}
+          {shown==='students' && <StudentsPage me={me} schoolYear={schoolYear} initialGradeFilter={pageParams?.gradeFilter} initialStatus={pageParams?.status} />}
+          {shown==='learnerRequests' && <LearnerRequestsPage schoolYear={schoolYear} />}
+          {shown==='sections' && <SectionsPage me={me} schoolYear={schoolYear} schoolName={settings?.schoolName} />}
+          {shown==='schedules' && <SchedulesPage me={me} schoolYear={schoolYear} />}
+          {shown==='enroll' && <EnrollPage me={me} schoolYear={schoolYear} />}
+          {shown==='attendance' && <AttendanceArea me={me} key={navigationSequence} schoolYear={schoolYear} entry={pageParams?.attendanceEntry} />}
+          {shown==='idcards' && <IDCardsPage me={me} schoolYear={schoolYear} />}
+          {shown==='guardians' && <GuardiansPage schoolYear={schoolYear} me={me} />}
+          {shown==='announcements' && <AnnouncementsPage me={me} />}
+          {shown==='settings' && <SettingsPage />}
+          {shown==='accounts' && <AccountsPage me={me} />}
         </Suspense>
       </Shell>
     </>

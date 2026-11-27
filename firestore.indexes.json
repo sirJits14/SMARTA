@@ -1,5 +1,17 @@
 {
   "indexes": [
+    { "collectionGroup": "school_role_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "uid", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "school_role_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" } ] },
+    { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "guardianUid", "order": "ASCENDING" }, { "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "student_attendance", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" } ] },
+    { "collectionGroup": "student_attendance", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" } ] },
+    { "collectionGroup": "students", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "scopeSchoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" } ] },
     { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "studentId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
@@ -33,7 +45,27 @@
     { "collectionGroup": "guardian_links", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
     { "collectionGroup": "enrollments", "queryScope": "COLLECTION", "fields": [
-      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] }
+      { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "audienceKeys", "arrayConfig": "CONTAINS" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "publishedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "publishAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "expiresAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "pushResult.status", "order": "ASCENDING" }, { "fieldPath": "pushResult.claimedAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "requestedByUid", "order": "ASCENDING" }, { "fieldPath": "sectionId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "learner_change_requests", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "schoolYear", "order": "ASCENDING" }, { "fieldPath": "gradeLevel", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" } ] },
+    { "collectionGroup": "audit_log", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "targetType", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" } ] }
   ],
   "fieldOverrides": [
     { "collectionGroup": "devices", "fieldPath": "refreshedAt", "indexes": [
@@ -46,6 +78,9 @@
       { "order": "ASCENDING", "queryScope": "COLLECTION" }, { "order": "DESCENDING", "queryScope": "COLLECTION" },
       { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] },
     { "collectionGroup": "events", "fieldPath": "scannedDate", "indexes": [
+      { "order": "ASCENDING", "queryScope": "COLLECTION" }, { "order": "DESCENDING", "queryScope": "COLLECTION" },
+      { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] },
+    { "collectionGroup": "devices", "fieldPath": "enabled", "indexes": [
       { "order": "ASCENDING", "queryScope": "COLLECTION" }, { "order": "DESCENDING", "queryScope": "COLLECTION" },
       { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" } ] }
   ]

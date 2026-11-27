@@ -1,14 +1,27 @@
 import { describe, it, expect } from 'vitest';
 import { matchRoute } from './router.js';
 describe('matchRoute', () => {
+  it('matches the announcement routes', () => {
+    expect(matchRoute('/announcements', '')).toEqual({ name: 'announcements', params: {}, query: {} });
+    expect(matchRoute('/announcements/a1', '')).toEqual({ name: 'announcement', params: { id: 'a1' }, query: {} });
+  });
   it('matches static and param routes with query', () => {
     expect(matchRoute('/', '')).toEqual({ name: 'home', params: {}, query: {} });
     expect(matchRoute('/activate', '?c=K7M4P2XQ')).toEqual({ name: 'activate', params: {}, query: { c: 'K7M4P2XQ' } });
+    expect(matchRoute('/join', '?a=ABCD2345')).toEqual({ name: 'join', params: {}, query: { a: 'ABCD2345' } });
     expect(matchRoute('/learner/S1', '')).toEqual({ name: 'learner', params: { id: 'S1' }, query: {} });
+    expect(matchRoute('/school/learner/SEC1/S1', '')).toEqual({ name: 'schoolLearner', params: { sectionId: 'SEC1', studentId: 'S1' }, query: {} });
+    expect(matchRoute('/school', '').name).toBe('school');
     expect(matchRoute('/inbox', '?item=k1_S1_202609210712')).toEqual({ name: 'inbox', params: {}, query: { item: 'k1_S1_202609210712' } });
     expect(matchRoute('/report/k1_S1_202609210712', '?student=S1').params).toEqual({ eventId: 'k1_S1_202609210712' });
     expect(matchRoute('/request-access', '').name).toBe('requestAccess');
     expect(matchRoute('/settings/', '').name).toBe('settings');
     expect(matchRoute('/nope', '').name).toBe('notFound');
+  });
+  it('matches the settings list and a settings section', () => {
+    expect(matchRoute('/settings', '').params).toStrictEqual({});
+    expect(matchRoute('/settings/notifications', '')).toEqual({ name: 'settings', params: { section: 'notifications' }, query: {} });
+    expect(matchRoute('/settings/help/', '').params).toStrictEqual({ section: 'help' });
+    expect(matchRoute('/settings/a/b', '').name).toBe('notFound');
   });
 });

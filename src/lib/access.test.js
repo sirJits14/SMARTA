@@ -1,0 +1,159 @@
+import { describe, it, expect } from 'vitest';
+import { isAdmin, allowedPages, canOpen, gradeOptions, singleGrade, profileRefusal, ownProfile, scopeRoster, canIssueAdvisorySlip } from './access.js';
+import * as access from './access.js';
+
+const admin = { role: 'registrar' }, jhs = { role: 'jhs_coord' }, glc8 = { role: 'glc', gradeLevel: 8 };
+
+describe('section editing permissions', () => {
+  const section = { gradeLevel: 8, schoolYear: '2026-2027' };
+  it('lets a grade coordinator edit their current and next-year sections', () => {
+    expect(access.canEditSection?.(glc8, section, '2026-2027')).toBe(true);
+    expect(access.canEditSection?.(glc8, { ...section, schoolYear: '2027-2028' }, '2026-2027')).toBe(true);
+  });
+  it('locks other grades, historical years, and years beyond next year', () => {
+    for (const changes of [{ gradeLevel: 9 }, { schoolYear: '2025-2026' }, { schoolYear: '2028-2029' }]) {
+      expect(access.canEditSection?.(glc8, { ...section, ...changes }, '2026-2027')).toBe(false);
+    }
+  });
+  it('advances the two-year window with the configured current school year', () => {
+    expect(access.canEditSection?.(glc8, section, '2027-2028')).toBe(false);
+    expect(access.canEditSection?.(glc8, { ...section, schoolYear: '2028-2029' }, '2027-2028')).toBe(true);
+    expect(access.sectionEditSchoolYears?.('2026-2027')).toEqual(['2026-2027', '2027-2028']);
+  });
+  it('does not grant the privilege to academic coordinators or restricted accounts', () => {
+    for (const me of [null, jhs, { role: 'shs_coord' }, { ...glc8, disabled: true }, { ...glc8, mustChangePassword: true }, { ...glc8, gradeLevel: 13 }]) {
+      expect(access.canEditSection?.(me, section, '2026-2027')).toBe(false);
+    }
+  });
+  it('fails closed for malformed current years and preserves administrator access', () => {
+    for (const year of [null, '', '2026-2028', '2026-27', '2026-2027\n']) {
+      expect(access.canEditSection?.(glc8, section, year)).toBe(false);
+      expect(access.sectionEditSchoolYears?.(year)).toEqual([]);
+    }
+    expect(access.canEditSection?.(admin, { gradeLevel: 9, schoolYear: '2020-2021' }, '2026-2027')).toBe(true);
+  });
+});
+
+describe('staff data startup', () => {
+  it('does not start data listeners while the profile is loading or restricted', () => {
+    expect(access.canLoadStaffData(undefined, false)).toBe(false);
+    expect(access.canLoadStaffData(null, false)).toBe(false);
+    expect(access.canLoadStaffData({ role: 'admin', mustChangePassword: true }, false)).toBe(false);
+  });
+  it('keeps the password-change screen active until reauthentication finishes', () => {
+    expect(access.canLoadStaffData({ role: 'admin', mustChangePassword: false }, true)).toBe(false);
+    expect(access.canLoadStaffData({ role: 'admin', mustChangePassword: false }, false)).toBe(true);
+  });
+  it('does not open staff pages when another tab clears the flag but this token is stale', () => {
+    const profile = { role: 'admin', mustChangePassword: false, sessionValidAfter: 1005 };
+    expect(access.canLoadStaffData(profile, false, 1000)).toBe(false);
+    expect(access.canLoadStaffData(profile, false, 1005)).toBe(true);
+  });
+});
+
+describe('pages', () => {
+  it('admins open everything including Accounts', () => {
+    expect(isAdmin(admin)).toBe(true);
+    expect(allowedPages(admin)).toEqual(expect.arrayContaining(['dashboard', 'enroll', 'guardians', 'announcements', 'settings', 'accounts', 'learnerRequests']));
+  });
+  it('coordinators open the shared pages, including Announcements and Learner requests', () => {
+    expect(allowedPages(glc8)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements']);
+    expect(canOpen(glc8, 'learnerRequests')).toBe(true);
+    expect(canOpen(glc8, 'attendance')).toBe(true);
+    expect(canOpen(glc8, 'enroll')).toBe(false);
+    expect(canOpen({ role: 'teacher' }, 'dashboard')).toBe(false);
+  });
+  it('no coordinator role is an administrator or reaches admin-only pages', () => {
+    for (const me of [jhs, { role: 'shs_coord' }, glc8]) {
+      expect(isAdmin(me)).toBe(false);
+      for (const page of ['enroll', 'guardians', 'settings', 'accounts']) expect(canOpen(me, page)).toBe(false);
+    }
+  });
+  it('lets academic coordinators, but not grade level coordinators, open ID Cards for temporary passes', () => {
+    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'idcards', 'announcements']);
+    expect(canOpen({ role: 'shs_coord' }, 'idcards')).toBe(true);
+    expect(canOpen(glc8, 'idcards')).toBe(false);
+    expect(canOpen({ role: 'teacher' }, 'idcards')).toBe(false);
+  });
+  it('a profile with no role is still an administrator (pre-roles accounts)', () => {
+    expect(isAdmin({})).toBe(true);
+    expect(isAdmin({ role: '' })).toBe(true);
+  });
+});
+
+describe('grade controls', () => {
+  it('lists scoped grades and detects a single grade', () => {
+    expect(gradeOptions(admin)).toEqual([7, 8, 9, 10, 11, 12]);
+    expect(gradeOptions(jhs)).toEqual([7, 8, 9, 10]);
+    expect(singleGrade(glc8)).toBe(8);
+    expect(singleGrade(jhs)).toBeNull();
+    expect(singleGrade(admin)).toBeNull();
+  });
+});
+
+describe('profileRefusal', () => {
+  it('explains why a signed-in user cannot enter', () => {
+    expect(profileRefusal(null)).toBe('This account has no staff profile yet. Ask an administrator to add one.');
+    expect(profileRefusal({ role: 'admin', disabled: true })).toBe('This account has been disabled. Contact an administrator.');
+    expect(profileRefusal({ role: 'teacher' })).toMatch(/no valid role/);
+    expect(profileRefusal(glc8)).toBeNull();
+  });
+});
+
+describe('ownProfile', () => {
+  it('ignores a profile bound to a different sign-in', () => {
+    expect(ownProfile({ role: 'admin', uid: 'u1' }, 'u1')).toEqual({ role: 'admin', uid: 'u1' });
+    expect(ownProfile({ role: 'admin' }, 'u1')).toEqual({ role: 'admin' });
+    expect(ownProfile({ role: 'admin', uid: 'u0' }, 'u1')).toBeNull();
+    expect(ownProfile(null, 'u1')).toBeNull();
+  });
+});
+
+describe('scopeRoster', () => {
+  const SY = '2026-2027';
+  const data = {
+    sections: [{ id: 'A', gradeLevel: 8 }, { id: 'B', gradeLevel: 11 }],
+    enrollments: [
+      { studentId: 's1', sectionId: 'A', gradeLevel: 8, schoolYear: SY, status: 'enrolled' },
+      { studentId: 's2', sectionId: 'B', gradeLevel: 11, schoolYear: SY, status: 'enrolled' },
+      { studentId: 's3', sectionId: 'A', gradeLevel: 8, schoolYear: '2025-2026', status: 'enrolled' },
+    ],
+    students: [{ id: 's1' }, { id: 's2' }, { id: 's3' }, { id: 's4' }],
+    attendance: [{ id: 'A_d', sectionId: 'A' }, { id: 'B_d', sectionId: 'B' }],
+  };
+  it('is the identity for admins', () => {
+    expect(scopeRoster(data, null, SY)).toEqual(data);
+  });
+  it('keeps only in-grade sections, enrollments, current learners, and attendance', () => {
+    const r = scopeRoster(data, [8], SY);
+    expect(r.sections.map((s) => s.id)).toEqual(['A']);
+    expect(r.enrollments.map((e) => e.studentId)).toEqual(['s1', 's3']);
+    expect(r.students.map((s) => s.id)).toEqual(['s1']); // s3 not enrolled this year; s4 unassigned
+    expect(r.attendance.map((d) => d.id)).toEqual(['A_d']);
+  });
+  it('defaults missing collections to empty', () => {
+    expect(scopeRoster({ sections: data.sections }, [11], SY)).toEqual({ sections: [data.sections[1]], enrollments: [], students: [], attendance: [] });
+  });
+});
+
+describe('canIssueAdvisorySlip', () => {
+  it('lets administrators issue for any grade and coordinators for their own', () => {
+    expect(canIssueAdvisorySlip({ role: 'admin' }, { gradeLevel: 12 })).toBe(true);
+    expect(canIssueAdvisorySlip({ role: 'glc', gradeLevel: 8 }, { gradeLevel: 8 })).toBe(true);
+    expect(canIssueAdvisorySlip({ role: 'glc', gradeLevel: 8 }, { gradeLevel: 7 })).toBe(false);
+    expect(canIssueAdvisorySlip({ role: 'jhs_coord' }, { gradeLevel: 10 })).toBe(true);
+    expect(canIssueAdvisorySlip({ role: 'shs_coord' }, { gradeLevel: 10 })).toBe(false);
+    expect(canIssueAdvisorySlip({ role: 'bogus' }, { gradeLevel: 7 })).toBe(false);
+  });
+});
+
+describe('learner photos', () => {
+  it('lets administrators and academic coordinators manage them, not grade coordinators', () => {
+    for (const me of [{ role: 'admin' }, { role: 'registrar' }, { role: 'jhs_coord' }, { role: 'shs_coord' }]) {
+      expect(access.canManagePhotos(me)).toBe(true);
+    }
+    for (const me of [{ role: 'glc', gradeLevel: 8 }, { role: 'subject_teacher' }, null]) {
+      expect(access.canManagePhotos(me)).toBe(false);
+    }
+  });
+});

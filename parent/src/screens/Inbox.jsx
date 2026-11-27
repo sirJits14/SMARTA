@@ -2,14 +2,17 @@ import { useEffect, useRef } from 'react';
 import { collection, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import S from '../strings.js';
-import { T } from '../styles.js';
+import { nameCase } from '../lib/format.js';
 import { Spinner, EmptyState } from '../components/ui.jsx';
 import { Bubble, DayDivider } from '../components/Bubble.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import { useQuery } from '../hooks/useDoc.js';
 import { toFeed } from '../lib/thread.js';
 import { formatScanTime, localDate } from '../../../shared/dates.js';
+import { inboxDestination } from '../lib/school.js';
 
 const KIND = { in: S.eventIn, out: S.eventOut, void: S.eventVoided };
+const itemTone = (item) => (item.type !== 'attendance' ? 'school' : item.kind === 'in' ? 'in' : 'out');
 
 export default function Inbox({ user, navigate, route }) {
   const { rows, error } = useQuery(() => query(collection(db, `guardians/${user.uid}/inbox`), orderBy('createdAt', 'desc'), limit(30)), [user.uid]);
@@ -36,7 +39,8 @@ export default function Inbox({ user, navigate, route }) {
   };
   const open = (item) => {
     markRead(item);
-    if (item.type === 'attendance') navigate(`/learner/${item.studentId}?event=${item.eventId}`);
+    const destination = inboxDestination(item);
+    if (destination) navigate(destination);
   };
 
   // Push deep link: /inbox?item=<inboxId>
@@ -46,33 +50,38 @@ export default function Inbox({ user, navigate, route }) {
   // Land on the newest message, at the bottom, like a text thread.
   useEffect(() => { if (rows?.length) endRef.current?.scrollIntoView({ block: 'end' }); }, [rows === undefined]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (rows === undefined) return <Spinner label={S.loading} />;
-  if (error) return <EmptyState title={S.inboxTitle} hint={S.inboxError} />;
-  if (rows.length === 0) return <EmptyState title={S.inboxTitle} hint={S.inboxEmpty} />;
+  const header = <PageHeader title={S.inboxTitle} />;
+  if (rows === undefined) return <>{header}<Spinner label={S.loading} /></>;
+  if (error) return <>{header}<EmptyState hint={S.inboxError} /></>;
+  if (rows.length === 0) return <>{header}<EmptyState hint={S.inboxEmpty} /></>;
 
   return (
     <>
-      <h1 style={{ fontSize: 20 }}>{S.inboxTitle}</h1>
+      {header}
       {toFeed(rows, localDate()).map((day) => (
         <div key={day.date}>
           <DayDivider label={day.label} />
           {day.runs.map((run, ri) => (
-            <div key={`${day.date}-${ri}`} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, margin: '0 0 4px 12px' }}>{run.learnerName || S.inboxFromSchool}</div>
-              {run.items.map((item, i) => (
-                <Bubble
-                  key={item.id}
-                  id={`msg-${item.id}`}
-                  first={i === 0}
-                  last={i === run.items.length - 1}
-                  unread={unreadAtOpen.current?.has(item.id)}
-                  title={item.type === 'attendance' ? (KIND[item.kind] || S.inboxNewEvent) : item.title}
-                  body={item.type === 'attendance' ? null : item.body}
-                  meta={item.type === 'attendance' ? item.deviceLabel : undefined}
-                  time={formatScanTime(item.time)}
-                  onClick={item.type === 'attendance' ? () => open(item) : undefined}
-                />
-              ))}
+            <div key={`${day.date}-${ri}`} className="bubble-run">
+              <div className="bubble-run-name">{nameCase(run.learnerName) || S.inboxFromSchool}</div>
+              <div className="bubble-group">
+                {run.items.map((item, i) => (
+                  <Bubble
+                    key={item.id}
+                    id={`msg-${item.id}`}
+                    first={i === 0}
+                    last={i === run.items.length - 1}
+                    tone={itemTone(item)}
+                    unread={unreadAtOpen.current?.has(item.id)}
+                    title={item.type === 'attendance' ? (KIND[item.kind] || S.inboxNewEvent) : item.title}
+                    body={item.type === 'attendance' ? null : item.body}
+                    meta={item.type === 'attendance' ? item.deviceLabel : undefined}
+                    time={formatScanTime(item.time)}
+                    onClick={inboxDestination(item) ? () => open(item) : undefined}
+                    actionLabel={S.homeViewHistory}
+                  />
+                ))}
+              </div>
             </div>
           ))}
         </div>

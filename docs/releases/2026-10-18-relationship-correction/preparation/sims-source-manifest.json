@@ -1,0 +1,26 @@
+{
+  "baseline": "docs/releases/2026-10-18-school-mode/prepareSims.mjs",
+  "productionMainScript": "/assets/index-CN44oHj4.js",
+  "changes": [
+    {
+      "path": "src/data/guardians.js",
+      "before": "2e0d2083817e6a93f01d541ed639b600179ad71dea7e07ab261df0b2da64d671",
+      "after": "d8c0d0add7fb079e40bae30a8f694e5ee044d6d78331371e3672593f62d8ae35"
+    },
+    {
+      "path": "src/pages/guardians/linkRelationship.js",
+      "before": "364c0e6f883ed6b71f6a78446d1fad21e31e3bbce95062c7aec9fc82514e6a75",
+      "after": "5fe04433c9abf4d05a41922907e82eefb2037d75e185052ef521694d4f642fd1"
+    },
+    {
+      "path": "src/pages/guardians/linkRelationship.test.js",
+      "before": "44f77b70299077f6b4051ff0e9a1d560ac53c22f3658a8ec65b6f290f1ea5f5a",
+      "after": "af23f5d65b1b88f9eb5c284641d2bf5474c640d2c371ed0c7096da18fb111ac5"
+    },
+    {
+      "path": "src/pages/guardians/LinksTab.jsx",
+      "before": "c91ffa69c2b4c75b66d41062316953ac1900a11a62f99bbd4a050500998bdd34",
+      "after": "5136c5a17016d5f35de4c57e6228ca44cd09bfbb7b097ef9ee47e8f42bb3f79f"
+    }
+  ]
+}

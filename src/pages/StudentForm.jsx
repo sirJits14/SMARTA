@@ -63,14 +63,14 @@ export default function StudentForm({ students, editing, sections, enrollments, 
       <h2 id="learner-form-title" style={{ fontFamily: T.display, color: T.ink, marginTop: 0, fontSize: 17, fontWeight: 600 }}>{editing ? 'Edit learner' : 'New learner'}</h2>
       <Field label="LRN" error={errors.lrn}><Inp style={T.num} value={f.lrn || ''} onChange={(e) => set('lrn', e.target.value)} maxLength={12} /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
-        <Field label="Last name" error={errors.lastName}><Inp value={f.lastName || ''} onChange={(e) => set('lastName', e.target.value)} /></Field>
-        <Field label="First name" error={errors.firstName}><Inp value={f.firstName || ''} onChange={(e) => set('firstName', e.target.value)} /></Field>
-        <Field label="Middle name"><Inp value={f.middleName || ''} onChange={(e) => set('middleName', e.target.value)} /></Field>
-        <Field label="Ext (Jr/III)"><Inp value={f.extName || ''} onChange={(e) => set('extName', e.target.value)} /></Field>
+        <Field label="Last name" error={errors.lastName}><Inp className="sims-caps" value={f.lastName || ''} onChange={(e) => set('lastName', e.target.value)} /></Field>
+        <Field label="First name" error={errors.firstName}><Inp className="sims-caps" value={f.firstName || ''} onChange={(e) => set('firstName', e.target.value)} /></Field>
+        <Field label="Middle name"><Inp className="sims-caps" value={f.middleName || ''} onChange={(e) => set('middleName', e.target.value)} /></Field>
+        <Field label="Ext (Jr/III)"><Inp className="sims-caps" value={f.extName || ''} onChange={(e) => set('extName', e.target.value)} /></Field>
         <Field label="Sex" error={errors.sex}><Sel value={f.sex || ''} onChange={(e) => set('sex', e.target.value)}><option value="">—</option><option value="M">Male</option><option value="F">Female</option></Sel></Field>
         <Field label="Birthdate" error={errors.birthdate}><Inp type="date" value={f.birthdate || ''} onChange={(e) => set('birthdate', e.target.value)} /></Field>
       </div>
-      <div style={{ fontFamily: T.body, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.75, margin: '10px 0 6px' }}>Grade &amp; section (SY {schoolYear})</div>
+      <div className="sims-form-section">Grade &amp; section (SY {schoolYear})</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
         <Field label="Grade">
           <Sel value={grade} onChange={(e) => changeGrade(e.target.value)}>
@@ -104,10 +104,10 @@ export default function StudentForm({ students, editing, sections, enrollments, 
       </div>
       <Field label="Contact number"><Inp style={T.num} value={f.contactNumber || ''} onChange={(e) => set('contactNumber', e.target.value)} /></Field>
       {editing && <Field label="Status"><Sel value={f.status || 'active'} onChange={(e) => set('status', e.target.value)}>{STUDENT_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</Sel></Field>}
-      <div style={{ fontFamily: T.body, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.75, margin: '10px 0 6px' }}>Documents on file</div>
+      <div className="sims-form-section">Documents on file</div>
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         {DOC_FIELDS.map(([k, label]) => (
-          <label key={k} style={{ fontFamily: T.body, fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+          <label key={k} className="sims-check">
             <input type="checkbox" checked={!!f.documents?.[k]} onChange={(e) => setDocFlag(k, e.target.checked)} />{label}
           </label>
         ))}

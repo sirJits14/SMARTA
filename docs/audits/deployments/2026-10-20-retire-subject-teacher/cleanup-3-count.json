@@ -1,0 +1,10 @@
+{
+  "projectId": "bnhs-sims",
+  "admin": "ict@admin.com",
+  "emulator": false,
+  "mode": "dry-run",
+  "dryRun": true,
+  "accounts": 0,
+  "rows": 0,
+  "requests": 0
+}

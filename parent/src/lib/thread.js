@@ -53,7 +53,7 @@ export function toFeed(items, todayDate, now = new Date()) {
   return days;
 }
 
-const effectiveMs = (e) => (e.effectiveAt?.toMillis ? e.effectiveAt.toMillis() : 0);
+const effectiveMs = (e) => (e.effectiveAtMs ?? (e.effectiveAt?.toMillis ? e.effectiveAt.toMillis() : 0));
 
 // One History day, stacked the way it happened: Entered before Left.
 export function stackDay(events) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { app, db } from '../firebase.js';
+import { isIOS, isStandalone } from './device.js';
 
 const LOCAL_KEY = 'bnhs-parent-device';   // sha256 of the registered token, per browser
 
@@ -15,8 +16,8 @@ async function sha256(s) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 const env = () => ({
-  isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
-  isStandalone: window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
+  isIOS: isIOS(),
+  isStandalone: isStandalone(),
   permission: typeof Notification === 'undefined' ? 'default' : Notification.permission,
 });
 const local = { get: () => { try { return localStorage.getItem(LOCAL_KEY); } catch { return null; } }, set: (v) => { try { v ? localStorage.setItem(LOCAL_KEY, v) : localStorage.removeItem(LOCAL_KEY); } catch {} } };
@@ -57,11 +58,14 @@ export async function refreshTokenIfRegistered(uid) {
   try { await enableOnThisDevice(uid); } catch {}
 }
 
+// Whether this browser supports push never changes during a visit, so Settings
+// reopens with the answer instead of flashing "not supported" first.
+let supportedHere;
 export function useDeviceStatus(uid) {
-  const [s, setS] = useState({ supported: false, registered: Boolean(local.get()), ...env() });
+  const [s, setS] = useState(() => ({ supported: supportedHere ?? false, registered: Boolean(local.get()), ...env() }));
   useEffect(() => {
     let alive = true;
-    messagingModule().then(({ isSupported }) => isSupported()).then((ok) => alive && setS((p) => ({ ...p, supported: ok })));
+    messagingModule().then(({ isSupported }) => isSupported()).then((ok) => { supportedHere = ok; if (alive) setS((p) => ({ ...p, supported: ok })); });
     if (uid) refreshTokenIfRegistered(uid).then(() => alive && setS((p) => ({ ...p, registered: Boolean(local.get()), ...env() })));
     return () => { alive = false; };
   }, [uid]);

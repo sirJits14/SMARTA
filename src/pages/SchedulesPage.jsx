@@ -2,20 +2,24 @@ import { useAsyncAction } from '../hooks/useAsyncAction.js';
 import { ActionFeedback } from '../components/ui.jsx';
 import { EditorResources, ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollectionResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource } from '../hooks/useCollection.js';
 import { createSchedule, updateSchedule, deleteSchedule } from '../data/schedules.js';
 import { T, S } from '../styles.js';
-import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState } from '../components/ui.jsx';
+import { Btn, Inp, Field, Modal, Card, Confirm, EmptyState, RowMenu } from '../components/ui.jsx';
+import { isAdmin } from '../lib/access.js';
+import { validateSchedule } from '../lib/schedules.js';
+import { hasPmSession } from '../../shared/scheduleSessions.js';
+
+const check = { marginBottom: 12 };
 
 function ScheduleForm({ editing, onClose }) {
   const action = useAsyncAction();
-  const [f, setF] = useState(editing || { name: '', timeIn: '', timeOut: '' });
+  const [f, setF] = useState(editing ? { ...editing, pm: hasPmSession(editing) } : { name: '', timeIn: '', timeOut: '', pm: false, pmTimeIn: '', pmTimeOut: '' });
   const [err, setErr] = useState('');
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const save = async () => {
-    if (!f.name?.trim()) { setErr('Schedule name is required.'); return; }
-    if (!f.timeIn || !f.timeOut) { setErr('Time in and time out are required.'); return; }
-    if (f.timeOut <= f.timeIn) { setErr('Time out must be later than time in.'); return; }
+    const problem = validateSchedule(f);
+    if (problem) { setErr(problem); return; }
     await action.run('save', async () => {
       editing ? await updateSchedule(editing.id, f) : await createSchedule(f);
       onClose();
@@ -28,9 +32,16 @@ function ScheduleForm({ editing, onClose }) {
       {err && <div style={{ fontFamily: T.body, background: 'rgba(139,58,47,0.12)', color: T.absent, borderRadius: T.radius, padding: '8px 10px', fontSize: 12, marginBottom: 12 }}>{err}</div>}
       <Field label="Schedule name"><Inp value={f.name || ''} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Morning Shift" /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
-        <Field label="Time in"><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
-        <Field label="Time out"><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
+        <Field label={f.pm ? 'AM arrival' : 'Time in'}><Inp type="time" value={f.timeIn || ''} onChange={(e) => set('timeIn', e.target.value)} /></Field>
+        <Field label={f.pm ? 'AM departure' : 'Time out'}><Inp type="time" value={f.timeOut || ''} onChange={(e) => set('timeOut', e.target.value)} /></Field>
       </div>
+      <label className="sims-check" style={check}><input type="checkbox" checked={f.pm} onChange={(e) => set('pm', e.target.checked)} /> Add afternoon session (PM)</label>
+      {f.pm && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'var(--sims-form-columns, 1fr 1fr)', gap: 10 }}>
+          <Field label="PM arrival"><Inp type="time" value={f.pmTimeIn || ''} onChange={(e) => set('pmTimeIn', e.target.value)} /></Field>
+          <Field label="PM departure"><Inp type="time" value={f.pmTimeOut || ''} onChange={(e) => set('pmTimeOut', e.target.value)} /></Field>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <Btn variant="ghost" disabled={action.busy} onClick={onClose}>Cancel</Btn>
         <Btn disabled={action.busy} onClick={save}>{editing ? 'Save changes' : 'Add schedule'}</Btn>
@@ -41,10 +52,11 @@ function ScheduleForm({ editing, onClose }) {
 
 const sectionLabel = (s) => `${s.name} (Grade ${s.gradeLevel}, SY ${s.schoolYear})`;
 
-export default function SchedulesPage() {
-  const schedulesResource = useCollectionResource('schedules');
+export default function SchedulesPage({ me, schoolYear }) {
+  const admin = isAdmin(me);
+  const schedulesResource = useStaffCollectionResource('schedules', { me, schoolYear });
   const schedules = schedulesResource.data;
-  const sectionsResource = useCollectionResource('sections');
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
   const sections = sectionsResource.data;
   const [form, setForm] = useState(null);
   const [confirm, setConfirm] = useState(null);
@@ -65,26 +77,30 @@ export default function SchedulesPage() {
       <ResourceState resources={resources}>
       <div className="sims-heading" style={S.plate}>
         <h1 style={S.h1}>Schedules</h1>
-        <Btn onClick={() => setForm({})}>Add schedule</Btn>
+        {admin && <Btn onClick={() => setForm({})}>Add schedule</Btn>}
       </div>
       {rows.length === 0 ? (
         <Card style={{ padding: 20 }}>
-          <EmptyState title="No schedules yet" hint="Add your first shift schedule with the button above." />
+          <EmptyState title="No schedules yet" hint={admin ? 'Add your first shift schedule with the button above.' : 'No shift schedules have been set up yet.'} />
         </Card>
       ) : (
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <div className="sims-table-scroll" role="region" aria-label="Records" tabIndex={0}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead><tr style={S.thead}>
-              {['Name', 'Time In', 'Time Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
+              {['Name', 'Time In', 'Time Out', 'PM In', 'PM Out', ''].map((h) => <th key={h} style={S.th}>{h}</th>)}
             </tr></thead>
             <tbody>{rows.map((s) => (
               <tr key={s.id}>
-                <td style={{ ...S.td, fontWeight: 600 }}>{s.name}</td>
+                <td style={S.tdStrong}>{s.name}</td>
                 <td style={{ ...S.td, ...T.num }}>{s.timeIn}</td>
                 <td style={{ ...S.td, ...T.num }}>{s.timeOut}</td>
-                <td style={{ ...S.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <Btn variant="ghost" onClick={() => setForm(s)} style={{ marginRight: 6 }}>Edit</Btn>
-                  <Btn variant="ghost" onClick={() => requestDelete(s)} style={{ color: T.absent, borderColor: T.absent }}>Delete</Btn>
+                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeIn : '—'}</td>
+                <td style={{ ...S.td, ...T.num }}>{hasPmSession(s) ? s.pmTimeOut : '—'}</td>
+                <td style={S.tdActions}>
+                  {admin && <span className="sims-row-actions">
+                    <Btn variant="ghost" onClick={() => setForm(s)}>Edit</Btn>
+                    <RowMenu label={`More actions for ${s.name}`} items={[{ label: 'Delete', danger: true, onSelect: () => requestDelete(s) }]} />
+                  </span>}
                 </td>
               </tr>))}
             </tbody>

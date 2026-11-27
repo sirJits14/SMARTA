@@ -28,10 +28,15 @@ you re-activate it.
 3. On the device: open `/setup`, sign in once. Done.
 
 ## Parent lost the slip / new guardian / custody change
-- Reissue: Guardians → Activation slips → section → Issue → print. (Old
-  slips for that section stop working.) For one learner only: Learner
-  access → find learner → **Revoke slip**, then issue the section again
-  after the other slips are handed out — or approve an access request instead.
+- One learner (lost or damaged slip): Learner access → find learner → reason
+  → **Reissue slip** → print the slip right away (the code is shown once).
+  Only that learner's old slip stops working. Guardians already linked keep
+  access and use up slots on the new slip, so the panel shows how many
+  guardian/adviser slots are free. If every slot is linked, revoke a link
+  first. Approving an access request still works too.
+- Whole section: Guardians → Activation slips → section → Issue slips → print.
+  Every unused old slip in the section stops working. Learners whose guardian
+  and adviser slots are all linked are skipped and keep their slip.
 - Custody restriction: Learner access → find learner → reason → **Restrict**.
   This revokes every guardian's and adviser's access and blocks slips until lifted.
 - Remove one guardian: Learner access → row → **Revoke**.
@@ -39,6 +44,15 @@ you re-activate it.
   Learner access tab shows each link's relationship and email. If an
   "Adviser" link is not the section's adviser, revoke that link and reissue
   the learner's slip.
+- A DepEd account can switch its own link between a parent relationship and
+  Adviser **once per school year** from the learner's screen in the app.
+  The Learner access tab then shows "changed from …" under the relationship,
+  and the audit log records `link.relationshipChanged`. The learner's open
+  slip moves one count from the side they left to the side they joined, so
+  the slot they left is free again (revoked links stay counted). If they need
+  a second change, **Revoke** their link, then **Reissue slip** for that
+  learner (reissuing recounts the slots from active links), and have them
+  redeem the new slip with the right relationship.
 
 ## Parent says a record is wrong
 Guardians → Reports. Check the Scan log tab for that date/device. Resolve
@@ -86,6 +100,11 @@ If parent traffic is the cause: pause notifications; if needed run
 Re-enable with a normal parent deploy.
 
 ## Rollbacks
+- **Staff roles warning:** do not roll `firestore.rules` or functions back
+  past the staff-roles release (Accounts page, 2026-10-04). Older rules and
+  functions treat ANY `users/{email}` profile -- coordinators and disabled
+  accounts included -- as full staff. If you must, first disable (or delete)
+  every non-Administrator staff account from the Accounts page.
 - Parent site: **there is no `firebase hosting:rollback` CLI command** — use
   Firebase console → Hosting → the `bnhs-parent` site → Release history →
   the "⋮" menu on a prior release → **Rollback**. This is the only reliable
@@ -115,3 +134,34 @@ Re-enable with a normal parent deploy.
 - Breach or suspected misuse: pause notifications, deactivate the affected
   kiosk or revoke the affected link, export the Audit log tab for the date
   range, and notify the school's privacy focal person.
+
+## Announcements
+
+Staff post from **SIMS → Announcements**. Admins can post to all parents or any grade;
+JHS/SHS coordinators to their grades; grade-level coordinators to their own grade.
+
+- **Publish now** shows the post at once. **Schedule** sends it within 5 minutes of the set
+  Philippine time (`publishAnnouncementsJob`, every 5 minutes).
+- **Push** is off by default. Use it only for urgent notices. It goes to guardians who keep
+  both "notifications for new gate scans" and "notifications for school announcements" on.
+  The **Pause notifications** switch in Portal Settings also stops announcement pushes
+  (the post shows "Push skipped: notifications paused").
+- **Push results** appear in the Push column. "Push may not have reached everyone" means the
+  send was interrupted or failed; pushes are never re-sent automatically. Post a short
+  follow-up with push on if it must reach everyone.
+- A published post's audience and push can't change. Unpublish it and post a new one.
+- Who sees what is `guardians/{uid}.audienceKeys`. `onGuardianLinkWritten` sets it on every
+  activation, approval, revocation and expiry; the nightly `expireLinksJob` corrects grade
+  changes within the school year (a learner moved to another section). It does not move
+  guardians up a grade at a new school year: those keys arrive when the link is
+  re-activated for the new year.
+- After the first deploy, from the repo root and with Application Default Credentials for
+  the project (`gcloud auth application-default login`), run `node scripts/syncShared.mjs`
+  first, then `node functions/scripts/backfillGuardianAudience.mjs <projectId>` (a dry run)
+  and `node functions/scripts/backfillGuardianAudience.mjs <projectId> --apply` once.
+- Wait until the new Firestore indexes show **Enabled** (Firebase console → Firestore →
+  Indexes, including the `devices.enabled` collection-group exemption) before posting with
+  push on; until then the push's device query, the parents' Notices list and the publish
+  job can fail.
+- Every publish, edit, unpublish, delete, go-out and expiry is in `audit_log`
+  (`targetType: 'announcement'`).

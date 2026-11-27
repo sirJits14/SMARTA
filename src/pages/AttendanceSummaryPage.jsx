@@ -1,32 +1,28 @@
 import { ResourceState } from '../components/ui.jsx';
 import { useMemo, useState } from 'react';
-import { useCollectionResource, useDocResource } from '../hooks/useCollection.js';
+import { useStaffCollectionResource, useDocResource } from '../hooks/useCollection.js';
 import { fullName, depedSort } from '../lib/roster.js';
 import { schoolDaysInMonth, monthLabel, localMonth } from '../lib/dates.js';
-import { markFor, summarizeMonth, formatScanTime } from '../lib/attendance.js';
+import { markFor, summarizeMonth, scanTitle as dayScanTitle } from '../lib/attendance.js';
 import { buildSF2Workbook } from '../lib/sf2.js';
+import { firstFridayOfJune } from '../../shared/sf2/calendar.js';
 import { downloadWorkbook } from '../lib/downloadWorkbook.js';
 import { T, S, MARK_COLOR } from '../styles.js';
 import { Inp, Field, Btn, Card, EmptyState } from '../components/ui.jsx';
 import SectionPicker from '../components/SectionPicker.jsx';
+import { grades, scopeRoster } from '../lib/access.js';
 
-// DepEd's "Enrolment as of 1st Friday of June" cutoff for a given school
-// year (e.g. "2026-2027" -> the 1st Friday of June 2026).
-function firstFridayOfJune(schoolYear) {
-  const year = Number(schoolYear.split('-')[0]);
-  const d = new Date(year, 5, 1); // June 1
-  for (let i = 0; i < 7 && d.getDay() !== 5; i++) d.setDate(d.getDate() + 1); // 5 = Friday, at most 6 steps
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-export default function AttendanceSummaryPage({ schoolYear }) {
-  const sectionsResource = useCollectionResource('sections');
-  const sections = sectionsResource.data;
-  const enrollmentsResource = useCollectionResource('enrollments');
+export default function AttendanceSummaryPage({ me, schoolYear }) {
+  const sectionsResource = useStaffCollectionResource('sections', { me, schoolYear });
+  // Coordinators pick only their grades' sections; an out-of-scope dashboard
+  // deep link resolves as an unavailable section.
+  const sections = useMemo(() => scopeRoster({ sections: sectionsResource.data }, grades(me), schoolYear).sections,
+    [sectionsResource.data, me, schoolYear]);
+  const enrollmentsResource = useStaffCollectionResource('enrollments', { me, schoolYear });
   const enrollments = enrollmentsResource.data;
-  const studentsResource = useCollectionResource('students');
+  const studentsResource = useStaffCollectionResource('students', { me, schoolYear });
   const students = studentsResource.data;
-  const attendanceResource = useCollectionResource('student_attendance');
+  const attendanceResource = useStaffCollectionResource('student_attendance', { me, schoolYear });
   const attendance = attendanceResource.data;
   const settingsResource = useDocResource('settings/app');
   const settings = settingsResource.data;
@@ -137,19 +133,15 @@ export default function AttendanceSummaryPage({ schoolYear }) {
                     <td style={{ ...S.td, fontWeight: 600, color: T.ink, position: 'sticky', left: 28, background: T.surface }}>{fullName(s)}</td>
                     {schoolDays.map((d) => {
                       const m = markFor(docsByDate, d, s.id);
-                      const timeIn = docsByDate[d]?.timeIn?.[s.id];
-                      const timeOut = docsByDate[d]?.timeOut?.[s.id];
-                      const scanTitle = timeIn || timeOut
-                        ? `Time in: ${formatScanTime(timeIn)}  ·  Time out: ${formatScanTime(timeOut)}`
-                        : undefined;
+                      const scanTitle = dayScanTitle(docsByDate[d], s.id);
                       return (
-                        <td key={d} title={scanTitle} style={{ ...S.td, ...T.num, textAlign: 'center', padding: '8px 6px', color: MARK_COLOR[m], fontWeight: 700, cursor: scanTitle ? 'help' : 'default' }}>
-                          {m === 'P' ? '' : m}
+                        <td key={d} title={scanTitle} style={{ ...S.td, ...T.num, textAlign: 'center', padding: '8px 6px', color: MARK_COLOR[m], fontWeight: 600, cursor: scanTitle ? 'help' : 'default' }}>
+                          {m === 'P' ? '' : m === 'H' ? '½A' : m}
                         </td>
                       );
                     })}
-                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 700, color: T.present }}>{t.present}</td>
-                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 700, color: T.absent }}>{t.absent}</td>
+                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 600, color: T.present }}>{t.present}</td>
+                    <td style={{ ...S.td, ...T.num, textAlign: 'center', fontWeight: 600, color: T.absent }}>{t.absent}</td>
                   </tr>
                 );
               })}

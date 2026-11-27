@@ -93,6 +93,16 @@ describe('stackDay', () => {
   });
 });
 
+describe('stackDay effectiveAtMs', () => {
+  it('orders a day by effectiveAtMs from callables as well as Firestore timestamps', () => {
+    const day = stackDay([
+      { id: 'b', scannedTime: '07:00', effectiveAtMs: 2 },
+      { id: 'a', scannedTime: '07:00', effectiveAtMs: 1 },
+    ]);
+    expect(day.map(e => e.id)).toEqual(['a', 'b']);
+  });
+});
+
 describe('historyThread', () => {
   it('reads like a text thread: days oldest -> newest, scans oldest -> newest within a day', () => {
     // Firestore hands History its page newest-first.
