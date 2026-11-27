@@ -18,15 +18,17 @@ describe('pass codes', () => {
 });
 
 describe('pass staff', () => {
-  it('covers administrators and JHS/SHS coordinators only', () => {
+  it('covers administrators, grade level coordinators for their grade, and logistic operators', () => {
     expect(passGrades({ role: 'admin' })).toBeNull();
     expect(passGrades({ role: 'registrar' })).toBeNull();
-    expect(passGrades({ role: 'jhs_coord' })).toEqual([7, 8, 9, 10]);
-    expect(passGrades({ role: 'shs_coord' })).toEqual([11, 12]);
-    expect(passGrades({ role: 'glc', gradeLevel: 8 })).toEqual([]);
+    expect(passGrades({ role: 'logistic' })).toBeNull();
+    expect(passGrades({ role: 'glc', gradeLevel: 8 })).toEqual([8]);
+    expect(passGrades({ role: 'jhs_coord' })).toEqual([]);
+    expect(passGrades({ role: 'shs_coord' })).toEqual([]);
     expect(passGrades(null)).toEqual([]);
-    expect(canManagePasses({ role: 'glc', gradeLevel: 8 })).toBe(false);
-    expect(canManagePasses({ role: 'shs_coord' })).toBe(true);
+    expect(canManagePasses({ role: 'jhs_coord' })).toBe(false);
+    expect(canManagePasses({ role: 'glc', gradeLevel: 11 })).toBe(true);
+    expect(canManagePasses({ role: 'logistic' })).toBe(true);
   });
 });
 
@@ -47,7 +49,7 @@ describe('eligibility', () => {
     expect(blocker({ student: { ...base().student, status: 'transferred' } })).toBe('inactive');
     expect(blocker({ student: { ...base().student, lrn: ' ' } })).toBe('no-lrn');
     expect(blocker({ student: { ...base().student, idCard: { printedAt: 1, lrn: '100000000001' } } })).toBe('official-printed');
-    expect(blocker({ student: { ...base().student, photo: undefined } })).toBe('no-photo');
+    expect(blocker({ student: { ...base().student, photo: undefined } })).toBeNull();
   });
   it('treats a card printed for an old LRN as not printed', () => {
     expect(isOfficialCardPrinted({ lrn: '2', idCard: { printedAt: 1, lrn: '1' } })).toBe(false);

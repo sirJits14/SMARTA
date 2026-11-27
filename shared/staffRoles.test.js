@@ -52,3 +52,13 @@ describe('roleLabel', () => {
     expect(ALL_GRADES).toEqual([7, 8, 9, 10, 11, 12]);
   });
 });
+
+describe('logistic operator', () => {
+  it('knows the Logistic Operator, who covers no grades for general staff access', () => {
+    expect(ROLE_VALUES).toContain('logistic');
+    expect(roleOf({ role: 'logistic' })).toBe('logistic');
+    expect(ROLE_LABELS.logistic).toBe('Logistic Operator');
+    expect(roleLabel({ role: 'logistic' })).toBe('Logistic Operator');
+    expect(scopedGrades({ role: 'logistic' })).toEqual([]);
+  });
+});

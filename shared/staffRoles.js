@@ -1,13 +1,16 @@
 // Staff roles for SIMS accounts (spec: docs/superpowers/specs/2026-10-04-staff-accounts-and-roles-design.md).
 // The only place that maps a role to the grades it may see -- firestore.rules
 // mirrors scopedGrades() in coversGrade(); keep the two in step.
+// `logistic` prints passes and uploads photos for every grade through passGrades()
+// in tempPass.js; it has no general grade scope.
 export const ALL_GRADES = [7, 8, 9, 10, 11, 12];
-export const ROLE_VALUES = ['admin', 'jhs_coord', 'shs_coord', 'glc'];
+export const ROLE_VALUES = ['admin', 'jhs_coord', 'shs_coord', 'glc', 'logistic'];
 export const ROLE_LABELS = {
   admin: 'Administrator',
   jhs_coord: 'JHS Academic Coordinator',
   shs_coord: 'SHS Academic Coordinator',
   glc: 'Grade Level Coordinator',
+  logistic: 'Logistic Operator',
 };
 const FIXED_GRADES = { jhs_coord: [7, 8, 9, 10], shs_coord: [11, 12] };
 // Profiles hand-written before roles existed: no role, or the README's 'registrar'.

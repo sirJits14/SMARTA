@@ -13,11 +13,12 @@ export const isTempPassCode = (text) => typeof text === 'string' && PATTERN.test
 export const makePassCode = (randomInt) =>
   PASS_PREFIX + Array.from({ length: PASS_LENGTH }, () => PASS_ALPHABET[randomInt(PASS_ALPHABET.length)]).join('');
 
-// null = every grade (administrator); [] = no pass or photo management.
+// null = every grade (administrator, logistic operator); [] = no pass or photo management.
+// Grade level coordinators get their own grade; academic coordinators get none (spec 2026-11-27 requests).
 export function passGrades(profile) {
   const role = roleOf(profile);
-  if (role === 'admin') return null;
-  return role === 'jhs_coord' || role === 'shs_coord' ? scopedGrades(profile) : [];
+  if (role === 'admin' || role === 'logistic') return null;
+  return role === 'glc' ? scopedGrades(profile) : [];
 }
 export function canManagePasses(profile) {
   const grades = passGrades(profile);
@@ -34,6 +35,5 @@ export function tempPassBlocker({ student, enrollment, section, schoolYear }) {
   if ((student.status ?? 'active') !== 'active') return 'inactive';
   if (!String(student.lrn ?? '').trim()) return 'no-lrn';
   if (isOfficialCardPrinted(student)) return 'official-printed';
-  if (!student.photo?.path) return 'no-photo';
   return null;
 }
