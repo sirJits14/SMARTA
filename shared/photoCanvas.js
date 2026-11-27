@@ -1,13 +1,46 @@
 // Browser side of the learner photo crop, shared by SIMS and the Parent App.
-// The geometry lives in studentPhoto.js; each app opens files its own way.
+// The geometry lives in studentPhoto.js.
 import { PHOTO_SIZE, cropRect, dragView, compressToLimit } from './studentPhoto.js';
 
+export const DECODE_TIMEOUT_MS = 15000;
 const PREVIEW_PX = 280;
 const KEY_STEP = 8;
 const ARROWS = { ArrowLeft: [-KEY_STEP, 0], ArrowRight: [KEY_STEP, 0], ArrowUp: [0, -KEY_STEP], ArrowDown: [0, KEY_STEP] };
 
 // A decoded file reports its own size as natural*; a captured frame is a canvas.
 export const imageSize = (image) => ({ width: image.naturalWidth || image.width, height: image.naturalHeight || image.height });
+
+// Resolves on whichever answers first, decode() or the load event. Some browsers
+// leave decode() waiting, or refuse a large picture that loads fine, so only the
+// error event or the time limit counts as a failure.
+const opened = (image, url) => new Promise((resolve, reject) => {
+  let timer;
+  const settle = (error) => {
+    clearTimeout(timer);
+    image.onload = null;
+    image.onerror = null;
+    if (error) reject(new Error(error)); else resolve();
+  };
+  timer = setTimeout(() => settle('The picture did not open in time.'), DECODE_TIMEOUT_MS);
+  image.onload = () => settle();
+  image.onerror = () => settle('The file holds no picture.');
+  image.src = url;
+  image.decode?.().then(() => settle(), () => {});
+});
+
+// Opens the whole file once; every later crop draws from the picture returned here.
+// `prepare` runs while the file's URL is still alive, so an app can swap in its own copy.
+export async function decodeImage(file, prepare = (image) => image) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    await opened(image, url);
+    if (!image.naturalWidth || !image.naturalHeight) throw new Error('The file holds no picture.');
+    return prepare(image);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 export function drawCrop(canvas, image, view) {
   const context = canvas.getContext('2d');

@@ -381,7 +381,7 @@ const S = {
   learnerStatusWithdrawn: 'Withdrawn',
   photosButton: 'Learner photos',
   photosTitle: 'Learner photos',
-  photosHint: 'Used on temporary and official school ID cards.',
+  photosHint: 'Used on temporary ID passes.',
   photosClose: 'Close',
   photoCount: '{n} of {total} have a photo',
   photoAdded: 'Photo added',

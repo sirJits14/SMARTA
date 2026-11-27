@@ -167,7 +167,10 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
           {notice && <p role="status" style={{ margin: '0 0 8px', fontSize: 13 }}>{notice}</p>}
           {confirmTimedOut && waiting && <p role="alert" className="sims-feedback">Could not confirm the passes. Prepare them again.</p>}
           {principalMissing && (
-            <p role="alert" className="sims-feedback">Add the principal's name and title in Settings before printing.</p>
+            <p role="alert" className="sims-feedback">
+              {admin ? "Add the principal's name and title in Settings before printing."
+                : "Ask an administrator to add the principal's name and title in Settings before printing."}
+            </p>
           )}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ minWidth: 'min(260px, 100%)' }}>

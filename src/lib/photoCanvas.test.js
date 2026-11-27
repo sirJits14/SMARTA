@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PHOTO_MAX_BYTES, initialView } from '../../shared/studentPhoto.js';
+import { DECODE_TIMEOUT_MS, decodeImage as sharedDecodeImage } from '../../shared/photoCanvas.js';
 import { imageSize, drawCrop, exportPhoto, decodeImage, captureFrame, panView, keyView } from './photoCanvas.js';
 
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 const wide = { naturalWidth: 800, naturalHeight: 400, width: 80, height: 40 };
 const start = initialView({ width: 800, height: 400 });
@@ -72,18 +73,27 @@ describe('exporting the photo', () => {
 });
 
 describe('opening a file', () => {
-  function stubBrowser({ decode, width = 40, height = 30 }) {
-    const urls = { revoked: [], revokedBeforeDecode: null };
+  // An image whose load, error and decode answers the test chooses.
+  function stubBrowser({ decode = () => new Promise(() => {}), event, width = 40, height = 30 } = {}) {
+    const urls = { revoked: [], revokedBeforeDecode: null, canvases: 0 };
     vi.stubGlobal('URL', {
       createObjectURL: () => 'blob:1',
       revokeObjectURL: (url) => urls.revoked.push(url),
     });
     vi.stubGlobal('Image', class {
       naturalWidth = width; naturalHeight = height;
-      async decode() { urls.revokedBeforeDecode = urls.revoked.length; await decode(); }
+      set src(value) { this.url = value; if (event) queueMicrotask(() => this[event]?.()); }
+      get src() { return this.url; }
+      decode() { urls.revokedBeforeDecode = urls.revoked.length; return decode(); }
     });
+    vi.stubGlobal('document', { createElement: () => { urls.canvases += 1; return fakeCanvas(); } });
     return urls;
   }
+  const refused = async () => { throw new Error('EncodingError'); };
+
+  it('is the one implementation both apps share', () => {
+    expect(decodeImage).toBe(sharedDecodeImage);
+  });
   it('decodes the picture once and revokes its object URL afterwards', async () => {
     const decode = vi.fn(async () => {});
     const urls = stubBrowser({ decode });
@@ -93,9 +103,31 @@ describe('opening a file', () => {
     expect(urls.revokedBeforeDecode).toBe(0);
     expect(urls.revoked).toEqual(['blob:1']);
   });
+  it('keeps a very large picture at its own size', async () => {
+    const urls = stubBrowser({ decode: async () => {}, width: 8000, height: 6000 });
+    const image = await decodeImage({});
+    expect(imageSize(image)).toEqual({ width: 8000, height: 6000 });
+    expect(image.src).toBe('blob:1');
+    expect(urls.canvases).toBe(0);
+  });
+  it('falls back to the load event when decode never settles', async () => {
+    const urls = stubBrowser({ event: 'onload' });
+    await expect(decodeImage({})).resolves.toMatchObject({ url: 'blob:1' });
+    expect(urls.revoked).toEqual(['blob:1']);
+  });
   it('rejects and still revokes when the file is not a picture', async () => {
-    const urls = stubBrowser({ decode: async () => { throw new Error('EncodingError'); } });
+    const urls = stubBrowser({ decode: refused, event: 'onerror' });
     await expect(decodeImage({})).rejects.toThrow();
+    expect(urls.revoked).toEqual(['blob:1']);
+  });
+  it('gives up and revokes when nothing ever answers', async () => {
+    vi.useFakeTimers();
+    const urls = stubBrowser();
+    const outcome = decodeImage({}).then(() => 'opened', () => 'failed');
+    await vi.advanceTimersByTimeAsync(DECODE_TIMEOUT_MS - 1);
+    expect(urls.revoked).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(outcome).resolves.toBe('failed');
     expect(urls.revoked).toEqual(['blob:1']);
   });
   it('rejects a picture with no size', async () => {

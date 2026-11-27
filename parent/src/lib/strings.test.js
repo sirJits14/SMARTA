@@ -75,7 +75,7 @@ describe('strings', () => {
   });
   it('has the learner photo strings', () => {
     expect(S).toMatchObject({
-      photosButton: 'Learner photos', photosTitle: 'Learner photos', photosHint: 'Used on temporary and official school ID cards.',
+      photosButton: 'Learner photos', photosTitle: 'Learner photos', photosHint: 'Used on temporary ID passes.',
       photoAdded: 'Photo added', photoMissing: 'No photo yet', photoAdd: 'Add photo', photoReplace: 'Replace photo', photoSave: 'Save photo',
       photoSaving: 'Saving…', photoChooseFile: 'Choose a file', photoUseCamera: 'Use camera', photoCapture: 'Capture',
       photoCameraUnavailable: 'The camera is not available. Choose a file instead.', photoBadFile: 'That file could not be opened as a picture.',

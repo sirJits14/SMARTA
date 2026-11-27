@@ -40,10 +40,19 @@ describe('temporary passes tab', () => {
     fixture.settings = { principalName: 'Paul O. Orong', principalTitle: ' ' };
     const html = render({ role: 'admin' });
     expect(html).toContain('Add the principal&#x27;s name and title in Settings before printing.');
+    expect(html).not.toContain('Ask an administrator');
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Prepare passes \(0\)<\/button>/);
   });
-  it('does not warn when the principal is set', () => {
-    expect(render({ role: 'admin' })).not.toContain('Add the principal');
+  it.each([['jhs_coord', 'g8'], ['shs_coord', 'g11']])('tells a %s to ask an administrator, who alone can open Settings', (role, sectionId) => {
+    fixture.settings = { principalName: ' ', principalTitle: 'Secondary Principal IV' };
+    const learners = enrollments.map(e => ({ ...e, sectionId, gradeLevel: sections.find(s => s.id === sectionId).gradeLevel }));
+    const html = render({ role }, { initialSectionId: sectionId, enrollments: learners });
+    expect(html).toContain('Ask an administrator to add the principal&#x27;s name and title in Settings before printing.');
+    expect(html).not.toContain('Add the principal');
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Prepare passes \(0\)<\/button>/);
+  });
+  it.each(['admin', 'jhs_coord', 'shs_coord'])('does not warn a %s when the principal is set', (role) => {
+    expect(render({ role })).not.toMatch(/add the principal/i);
   });
   it('lists the section’s learners with their pass status', () => {
     const html = render({ role: 'admin' });
