@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { passRowStatus, fitText, chunkSheets, passSectionLine, skipReasonText, mapWithLimit, loadImage, livePreviewCheck } from './tempPass.js';
+import { passRowStatus, fitText, chunkSheets, passSectionLine, skipReasonText, mapWithLimit, loadImage, livePreviewCheck, previewKey, ignoreWhenStale } from './tempPass.js';
 
 const schoolYear = '2026-2027';
 const section = { id: 'sec11', gradeLevel: 11, name: 'Rizal', strand: 'STEM', schoolYear };
@@ -143,8 +143,8 @@ describe('loadImage', () => {
 });
 
 describe('livePreviewCheck', () => {
-  const items = [{ studentId: 's1', code: 'C1' }, { studentId: 's2', code: 'C2' }];
-  const live = (entries) => new Map(entries.map(([id, p]) => [id, p]));
+  const items = [{ studentId: 's1', code: 'C1', lrn: 'L1' }, { studentId: 's2', code: 'C2', lrn: 'L2' }];
+  const live = (entries) => new Map(entries.map(([id, p]) => [id, { lrn: `L${id.slice(1)}`, ...p }]));
   it('waits until every prepared pass is seen active with its code', () => {
     const r = livePreviewCheck(items, live([['s1', { status: 'active', code: 'C1' }], ['s2', { status: 'revoked', code: 'OLD' }]]), new Set());
     expect(r).toEqual({ confirmed: new Set(['s1']), stale: false, allLive: false });
@@ -161,8 +161,39 @@ describe('livePreviewCheck', () => {
     expect(livePreviewCheck(items, replaced, new Set(['s1'])).stale).toBe(true);
     expect(livePreviewCheck(items, live([['s2', { status: 'active', code: 'C2' }]]), new Set(['s1'])).stale).toBe(true);
   });
+  it('needs the live pass to carry the printed LRN', () => {
+    const otherLrn = live([['s1', { status: 'active', code: 'C1', lrn: 'L9' }], ['s2', { status: 'active', code: 'C2' }]]);
+    expect(livePreviewCheck(items, otherLrn, new Set())).toEqual({ confirmed: new Set(['s2']), stale: false, allLive: false });
+    expect(livePreviewCheck(items, otherLrn, new Set(['s1', 's2'])).stale).toBe(true);
+  });
   it('waits rather than discarding while a lagging snapshot still shows the old pass', () => {
     const other = live([['s1', { status: 'active', code: 'C7' }], ['s2', { status: 'active', code: 'C2' }]]);
     expect(livePreviewCheck(items, other, new Set())).toMatchObject({ stale: false, allLive: false });
+  });
+});
+
+describe('previewKey', () => {
+  const base = { sectionId: 'g8', learners: [{ id: 's1', name: 'CRUZ, ANA', lrn: '1' }], principalName: 'P', principalTitle: 'T' };
+  it('changes when a selected learner’s printed name or LRN changes', () => {
+    expect(previewKey(base)).toBe(previewKey({ ...base }));
+    expect(previewKey({ ...base, learners: [{ id: 's1', name: 'CRUZ, ANNA', lrn: '1' }] })).not.toBe(previewKey(base));
+    expect(previewKey({ ...base, learners: [{ id: 's1', name: 'CRUZ, ANA', lrn: '2' }] })).not.toBe(previewKey(base));
+  });
+  it('changes with the section, the selection and the principal', () => {
+    expect(previewKey({ ...base, sectionId: 'g9' })).not.toBe(previewKey(base));
+    expect(previewKey({ ...base, learners: [] })).not.toBe(previewKey(base));
+    expect(previewKey({ ...base, principalTitle: 'U' })).not.toBe(previewKey(base));
+  });
+});
+
+describe('ignoreWhenStale', () => {
+  it('passes errors through while the run is current', async () => {
+    await expect(ignoreWhenStale(async () => { throw new Error('boom'); }, () => true)()).rejects.toThrow('boom');
+  });
+  it('swallows the error of a superseded run', async () => {
+    await expect(ignoreWhenStale(async () => { throw new Error('boom'); }, () => false)()).resolves.toBeUndefined();
+  });
+  it('returns the result otherwise', async () => {
+    await expect(ignoreWhenStale(async () => 3, () => false)()).resolves.toBe(3);
   });
 });

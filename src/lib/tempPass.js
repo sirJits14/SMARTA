@@ -91,18 +91,30 @@ export function loadImage(src, { ImageCtor = globalThis.Image, timeoutMs = 20000
   });
 }
 
-// items: [{ studentId, code }] from a prepared preview; livePasses: Map of the
-// live temp_passes rows. A pass counts once it has been seen active with its
-// code (the listener can lag the callable), and the preview is stale as soon
-// as a seen pass stops being active with that code.
+// items: [{ studentId, code, lrn }] from a prepared preview; livePasses: Map of
+// the live temp_passes rows. A pass counts once it has been seen active with its
+// code and the printed LRN (the listener can lag the callable), and the preview
+// is stale as soon as a seen pass stops matching.
 export function livePreviewCheck(items, livePasses, confirmed) {
   const next = new Set(confirmed);
   let stale = false;
-  for (const { studentId, code } of items) {
+  for (const { studentId, code, lrn } of items) {
     const live = livePasses.get(studentId);
-    const matches = live?.status === 'active' && live.code === code;
+    const matches = live?.status === 'active' && live.code === code && live.lrn === lrn;
     if (matches) next.add(studentId);
     else if (next.has(studentId)) stale = true;
   }
   return { confirmed: next, stale, allLive: !stale && items.every(({ studentId }) => next.has(studentId)) };
 }
+
+// Everything a prepared preview was built from: any change discards it.
+// learners: [{ id, name, lrn }] for the selected learners, as they would print.
+export const previewKey = ({ sectionId, learners, principalName, principalTitle }) =>
+  JSON.stringify([sectionId ?? '', learners.map(({ id, name, lrn }) => [id, name, lrn]), principalName, principalTitle]);
+
+// Wraps work so a run that has been superseded (isCurrent() false) ends quietly
+// instead of reporting its error against the newer selection.
+export const ignoreWhenStale = (work, isCurrent) => async () => {
+  try { return await work(); }
+  catch (error) { if (isCurrent()) throw error; return undefined; }
+};

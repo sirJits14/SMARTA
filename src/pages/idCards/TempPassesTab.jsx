@@ -9,13 +9,15 @@ import { getStudentPhoto, photoDataUrl } from '../../data/photos.js';
 import { passGrades } from '../../../shared/tempPass.js';
 import { isAdmin } from '../../lib/access.js';
 import { depedSort, fullName } from '../../lib/roster.js';
-import { passRowStatus, passSectionLine, skipReasonText, mapWithLimit, loadImage, livePreviewCheck } from '../../lib/tempPass.js';
+import { passRowStatus, passSectionLine, skipReasonText, mapWithLimit, loadImage, livePreviewCheck, previewKey, ignoreWhenStale } from '../../lib/tempPass.js';
 import { S, T } from '../../styles.js';
 
 const sectionLabel = (s) => `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}`;
 const ISSUE_CHUNK = 200;
 const PHOTO_CONCURRENCY = 4;
 const QR_OPTIONS = { errorCorrectionLevel: 'M', margin: 2, width: 420 };
+// How long Print may wait for the live passes to confirm the prepared ones.
+const CONFIRM_TIMEOUT_MS = 15000;
 
 // Issues (or re-reads) passes for the chosen learners and gathers everything a
 // card needs, with every picture decoded before the preview appears.
@@ -84,8 +86,10 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
   // Only learners who can still print count, so a status change narrows the selection.
   const selected = useMemo(() => printableIds.filter((id) => picked.has(id)), [printableIds, picked]);
   const allSelected = printableIds.length > 0 && selected.length === printableIds.length;
-  // The principal is part of the key: a Settings change must not leave old cards printable.
-  const selectionKey = `${section?.id ?? ''}|${selected.join(',')}|${principalName}|${principalTitle}`;
+  // Section, selection, each learner's printed name and LRN, and the principal:
+  // a change to any of them must not leave old cards printable.
+  const selectionKey = previewKey({ sectionId: section?.id, principalName, principalTitle,
+    learners: selected.map((id) => { const s = rowsById.get(id).student; return { id, name: fullName(s), lrn: s.lrn }; }) });
 
   const action = useAsyncAction();
   const [preview, setPreview] = useState(null);
@@ -102,7 +106,7 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
     setNotice('');
   }, [selectionKey]);
 
-  // A prepared pass that stops being active with its code must not stay printable.
+  // A prepared pass that stops being active with its code and LRN must not stay printable.
   const liveCheck = useMemo(() => (preview
     ? livePreviewCheck(preview.items, passesById, preview.confirmed)
     : null), [preview, passesById]);
@@ -110,11 +114,22 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
     if (!liveCheck) return;
     if (liveCheck.stale) {
       setPreview(null);
-      setNotice('A prepared pass is no longer active, so the preview was cleared. Prepare the passes again.');
+      setNotice('A prepared pass changed or is no longer active, so the preview was cleared. Prepare the passes again.');
       return;
     }
     if (liveCheck.confirmed.size !== preview.confirmed.size) setPreview((p) => (p ? { ...p, confirmed: liveCheck.confirmed } : p));
   }, [liveCheck, preview]);
+
+  // Print stays disabled either way; after a while, say so instead of waiting silently.
+  const [confirmTimedOut, setConfirmTimedOut] = useState(false);
+  const previewItems = preview?.items;
+  const waiting = !!previewItems?.length && !liveCheck?.allLive;
+  useEffect(() => {
+    setConfirmTimedOut(false);
+    if (!waiting) return;
+    const timer = setTimeout(() => setConfirmTimedOut(true), CONFIRM_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [previewItems, waiting]);
 
   const chooseSection = (id) => { setSectionId(id); setPicked(new Set()); };
   const toggle = (id) => setPicked((prev) => {
@@ -129,12 +144,12 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
     const startKey = selectionKey;
     setPreview(null);
     setNotice('');
-    action.run('prepare', async () => {
+    // A late answer (or error) for an earlier section or selection is ignored.
+    const current = () => ticket === run.current && startKey === keyRef.current;
+    action.run('prepare', ignoreWhenStale(async () => {
       const result = await preparePasses({ ids: selected, rowsById, section, principalName, principalTitle });
-      // A late answer for an earlier section or selection is ignored.
-      if (ticket !== run.current || startKey !== keyRef.current) return;
-      setPreview({ ...result, confirmed: new Set() });
-    });
+      if (current()) setPreview({ ...result, confirmed: new Set() });
+    }, current));
   };
 
   const nameOf = (studentId) => {
@@ -150,13 +165,14 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
         <Card style={{ padding: 20, marginBottom: 16 }}>
           <ActionFeedback action={action} />
           {notice && <p role="status" style={{ margin: '0 0 8px', fontSize: 13 }}>{notice}</p>}
+          {confirmTimedOut && waiting && <p role="alert" className="sims-feedback">Could not confirm the passes. Prepare them again.</p>}
           {principalMissing && (
             <p role="alert" className="sims-feedback">Add the principal's name and title in Settings before printing.</p>
           )}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ minWidth: 'min(260px, 100%)' }}>
               <Field label="Section">
-                <Sel value={sectionId} onChange={(e) => chooseSection(e.target.value)}>
+                <Sel value={sectionId} disabled={preparing} onChange={(e) => chooseSection(e.target.value)}>
                   <option value="">Choose a section…</option>
                   {sectionsSY.map((s) => <option key={s.id} value={s.id}>{sectionLabel(s)}</option>)}
                 </Sel>
