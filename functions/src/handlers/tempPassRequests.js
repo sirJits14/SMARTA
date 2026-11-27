@@ -240,12 +240,16 @@ export async function listTempPassRequests(deps, input) {
   const truncated = snap.size > PRINTER_LIST;
   const docs = snap.docs.slice(0, PRINTER_LIST).filter((d) => canPrintGrade(profile, d.data().gradeLevel));
   const ids = [...new Set(docs.map((d) => d.data().studentId).filter(identifier))];
-  const [students, enrollments] = await Promise.all([
+  const waiting = status === 'pending';
+  const [students, enrollments, passes] = await Promise.all([
     readAll(db, ids.map((id) => db.doc(`students/${id}`))),
-    status === 'pending' ? readAll(db, ids.map((id) => db.doc(`enrollments/${id}_${schoolYear}`))) : [],
+    waiting ? readAll(db, ids.map((id) => db.doc(`enrollments/${id}_${schoolYear}`))) : [],
+    // Only a waiting request can be prepared (see isPrepared).
+    waiting ? readAll(db, ids.map((id) => db.doc(`temp_passes/${id}`))) : [],
   ]);
   const studentOf = new Map(ids.map((id, i) => [id, students[i]]));
   const enrollmentOf = new Map(ids.map((id, i) => [id, enrollments[i]]));
+  const passOf = new Map(ids.map((id, i) => [id, passes[i]]));
   const requests = docs.map((d) => {
     const r = d.data();
     const student = studentOf.get(r.studentId);
@@ -254,9 +258,11 @@ export async function listTempPassRequests(deps, input) {
       sectionName: r.sectionName || '', gradeLevel: r.gradeLevel, reason: r.reason || '', note: r.note || '', requestedByName: r.requestedByName || '',
       createdAt: millis(r.createdAt), status: r.status, hasPhoto: !!student?.photo?.path,
       // A waiting request that can no longer be met: SIMS suggests declining it (no trigger closes requests).
-      blocker: status === 'pending'
+      blocker: waiting
         ? passRequestBlocker({ student, enrollment: enrollmentOf.get(r.studentId), sectionId: r.sectionId, schoolYear, pendingRequest: false })
         : null,
+      // Fulfilled and its code still live: a sheet exists, so it can only be marked printed (decline is refused).
+      prepared: waiting && isPrepared(r, passOf.get(r.studentId), student, schoolYear),
     };
   });
   return { requests, truncated };

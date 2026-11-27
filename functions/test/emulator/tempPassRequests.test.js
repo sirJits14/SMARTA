@@ -264,6 +264,22 @@ describe('a prepared request (fulfilled, sheet not yet marked printed)', () => {
     const id = await filed('S1');
     expect(await row(id)).toMatchObject({ prepared: false });
   });
+  it('shows as prepared in the printers list until its pass stops being live, and stays markable after preparing again', async () => {
+    const listed = async (id) => (await list()).requests.find((r) => r.id === id);
+    const id = await filed('S1');
+    expect(await listed(id)).toMatchObject({ prepared: false });
+    const { issued: [first] } = await fulfil([id]);
+    expect(await listed(id)).toMatchObject({ status: 'pending', prepared: true });
+    // A reload re-prepares it: the same code comes back and it can still be marked printed.
+    const { issued: [again] } = await fulfil([id]);
+    expect(again.code).toBe(first.code);
+    expect(await markPrinted([id])).toEqual({ printed: 1 });
+    expect((await list('logistic', 'printed')).requests.find((r) => r.id === id)).toMatchObject({ prepared: false });
+    const other = await filed('S3');
+    await fulfil([other]);
+    await revokeTempPass(printer('admin'), { studentId: 'S3' });
+    expect(await listed(other)).toMatchObject({ prepared: false });
+  });
 });
 
 describe('listTempPassRequests (5)', () => {
@@ -285,7 +301,7 @@ describe('listTempPassRequests (5)', () => {
     const rows = (await list()).requests;
     expect(rows.map((r) => r.id)).toEqual([first, eight, third]);
     expect(rows[0]).toEqual({ id: first, studentId: 'S1', displayName: 'Ana B. Cruz', lrn: '100000000001', sectionId: 'SEC1', sectionName: 'Rizal',
-      gradeLevel: 7, reason: 'new', note: '', requestedByName: 'Ava Adviser', createdAt: expect.any(Number), status: 'pending', hasPhoto: true, blocker: null });
+      gradeLevel: 7, reason: 'new', note: '', requestedByName: 'Ava Adviser', createdAt: expect.any(Number), status: 'pending', hasPhoto: true, blocker: null, prepared: false });
     expect(rows[2]).toMatchObject({ hasPhoto: false });
     expect((await list('admin')).requests.map((r) => r.id)).toEqual([first, eight, third]);
     expect((await list('glc7')).requests.map((r) => r.id)).toEqual([first, third]);
