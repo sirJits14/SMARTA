@@ -1,56 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import QRCode from 'qrcode';
+import { useMemo, useState } from 'react';
 import { useDocResource } from '../../hooks/useCollection.js';
-import { useAsyncAction } from '../../hooks/useAsyncAction.js';
-import { ActionFeedback, Badge, Btn, Card, Confirm, EmptyState, Field, Sel } from '../../components/ui.jsx';
-import { TempPassSheets, TEMP_PASS_LOGO_URL } from '../../components/TempPassPrintable.jsx';
-import { issueTempPasses, revokeTempPass } from '../../data/tempPasses.js';
-import { getStudentPhoto, photoDataUrl } from '../../data/photos.js';
+import { Badge, Btn, Card, Confirm, EmptyState, Field, Sel } from '../../components/ui.jsx';
+import { TempPassSheets } from '../../components/TempPassPrintable.jsx';
+import { revokeTempPass } from '../../data/tempPasses.js';
 import { passGrades } from '../../../shared/tempPass.js';
 import { isAdmin } from '../../lib/access.js';
 import { depedSort, fullName } from '../../lib/roster.js';
-import { passRowStatus, passSectionLine, skipReasonText, mapWithLimit, loadImage, livePreviewCheck, previewKey, ignoreWhenStale } from '../../lib/tempPass.js';
+import { passRowStatus, previewKey } from '../../lib/tempPass.js';
 import { S, T } from '../../styles.js';
+import { usePassPrinting } from './usePassPrinting.js';
+import { NotPreparedList, PrintButtons, PrintMessages } from './PassPrintParts.jsx';
 
 const sectionLabel = (s) => `Grade ${s.gradeLevel} - ${s.name}${s.strand ? ` · ${s.strand}` : ''}`;
-const ISSUE_CHUNK = 200;
-const PHOTO_CONCURRENCY = 4;
-const QR_OPTIONS = { errorCorrectionLevel: 'M', margin: 2, width: 420 };
-// How long Print may wait for the live passes to confirm the prepared ones.
-const CONFIRM_TIMEOUT_MS = 15000;
+const NO_REQUESTS = { requests: [] };
 
-// Issues (or re-reads) passes for the chosen learners and gathers everything a
-// card needs, with every picture decoded before the preview appears.
-async function preparePasses({ ids, rowsById, section, principalName, principalTitle }) {
-  const issued = []; const notPrepared = [];
-  for (let i = 0; i < ids.length; i += ISSUE_CHUNK) {
-    const result = await issueTempPasses(ids.slice(i, i + ISSUE_CHUNK));
-    issued.push(...(result?.issued ?? []));
-    for (const { studentId, reason } of result?.skipped ?? []) notPrepared.push({ studentId, reason });
-  }
-  await loadImage(TEMP_PASS_LOGO_URL);
-  const cards = await mapWithLimit(issued, PHOTO_CONCURRENCY, async ({ studentId, code }) => {
-    const student = rowsById.get(studentId)?.student;
-    if (!student) return { skip: 'not-found', studentId };
-    let photoSrc;
-    try {
-      photoSrc = photoDataUrl((await getStudentPhoto(studentId))?.photo);
-      if (!photoSrc) return { skip: 'photo-unavailable', studentId };
-      await loadImage(photoSrc);
-    } catch { return { skip: 'photo-unavailable', studentId }; }
-    let qrSrc;
-    try {
-      qrSrc = await QRCode.toDataURL(code, QR_OPTIONS);
-      await loadImage(qrSrc);
-    } catch { return { skip: 'qr-failed', studentId }; }
-    return { studentId, code, name: fullName(student), sectionLine: passSectionLine(section), lrn: student.lrn,
-      photoSrc, qrSrc, principalName, principalTitle };
-  });
-  for (const card of cards) if (card.skip) notPrepared.push({ studentId: card.studentId, reason: card.skip });
-  return { items: cards.filter((card) => !card.skip), notPrepared };
-}
-
-export default function TempPassesTab({ me, schoolYear, sections, enrollments, students, passes, initialSectionId = '' }) {
+// pending: the waiting requests ({ requests }) from listTempPassRequests. A learner with one is
+// prepared through it, and "Mark as printed" then closes it, exactly as in the Requests tab.
+export default function TempPassesTab({ me, schoolYear, sections, enrollments, students, passes, pending = NO_REQUESTS, onRequestsChanged, initialSectionId = '' }) {
   const admin = isAdmin(me);
   const grades = passGrades(me);
   const settingsResource = useDocResource('settings/app');
@@ -66,7 +32,7 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
   const [sectionId, setSectionId] = useState(initialSectionId);
   const section = sectionsSY.find((s) => s.id === sectionId) || null;
 
-  const passesById = useMemo(() => new Map(passes.map((p) => [p.id, p])), [passes]);
+  const livePasses = useMemo(() => new Map(passes.map((p) => [p.id, p])), [passes]);
   const rows = useMemo(() => {
     if (!section) return [];
     const enrolledById = new Map(enrollments
@@ -74,62 +40,32 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
       .map((e) => [e.studentId, e]));
     return depedSort(students.filter((s) => enrolledById.has(s.id))).map((student) => {
       const enrollment = enrolledById.get(student.id);
-      const pass = passesById.get(student.id);
+      const pass = livePasses.get(student.id);
       return { student, pass, status: passRowStatus({ student, enrollment, section, schoolYear, pass }) };
     });
-  }, [section, enrollments, students, passesById, schoolYear]);
+  }, [section, enrollments, students, livePasses, schoolYear]);
   const rowsById = useMemo(() => new Map(rows.map((r) => [r.student.id, r])), [rows]);
   const printableIds = useMemo(() => rows.filter((r) => r.status.printable).map((r) => r.student.id), [rows]);
-  const missingPhotos = rows.filter((r) => r.status.key === 'no-photo').length;
+  const withoutPhoto = rows.filter((r) => !r.student.photo?.path).length;
+  const requestOf = useMemo(() => new Map((pending?.requests ?? [])
+    .filter((r) => r.status === 'pending' && r.studentId).map((r) => [r.studentId, r])), [pending]);
 
   const [picked, setPicked] = useState(() => new Set());
   // Only learners who can still print count, so a status change narrows the selection.
   const selected = useMemo(() => printableIds.filter((id) => picked.has(id)), [printableIds, picked]);
   const allSelected = printableIds.length > 0 && selected.length === printableIds.length;
-  // Section, selection, each learner's printed name and LRN, and the principal:
+  // Section, selection, each learner's printed name, LRN, photo and request, and the principal:
   // a change to any of them must not leave old cards printable.
   const selectionKey = previewKey({ sectionId: section?.id, principalName, principalTitle,
-    learners: selected.map((id) => { const s = rowsById.get(id).student; return { id, name: fullName(s), lrn: s.lrn }; }) });
+    learners: selected.map((id) => {
+      const s = rowsById.get(id).student;
+      return { id, name: fullName(s), lrn: s.lrn, requestId: requestOf.get(id)?.id, photo: s.photo?.path };
+    }) });
 
-  const action = useAsyncAction();
-  const [preview, setPreview] = useState(null);
+  const printing = usePassPrinting({ principalName, principalTitle, passesById: livePasses, selectionKey,
+    onPrepared: onRequestsChanged, onMarked: onRequestsChanged });
+  const { preview, preparing } = printing;
   const [revoking, setRevoking] = useState(null);
-  const [notice, setNotice] = useState('');
-  const run = useRef(0);
-  const keyRef = useRef(selectionKey);
-  keyRef.current = selectionKey;
-
-  // A new section, selection or principal discards the preview and any preparation still running.
-  useEffect(() => {
-    run.current += 1;
-    setPreview(null);
-    setNotice('');
-  }, [selectionKey]);
-
-  // A prepared pass that stops being active with its code and LRN must not stay printable.
-  const liveCheck = useMemo(() => (preview
-    ? livePreviewCheck(preview.items, passesById, preview.confirmed)
-    : null), [preview, passesById]);
-  useEffect(() => {
-    if (!liveCheck) return;
-    if (liveCheck.stale) {
-      setPreview(null);
-      setNotice('A prepared pass changed or is no longer active, so the preview was cleared. Prepare the passes again.');
-      return;
-    }
-    if (liveCheck.confirmed.size !== preview.confirmed.size) setPreview((p) => (p ? { ...p, confirmed: liveCheck.confirmed } : p));
-  }, [liveCheck, preview]);
-
-  // Print stays disabled either way; after a while, say so instead of waiting silently.
-  const [confirmTimedOut, setConfirmTimedOut] = useState(false);
-  const previewItems = preview?.items;
-  const waiting = !!previewItems?.length && !liveCheck?.allLive;
-  useEffect(() => {
-    setConfirmTimedOut(false);
-    if (!waiting) return;
-    const timer = setTimeout(() => setConfirmTimedOut(true), CONFIRM_TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [previewItems, waiting]);
 
   const chooseSection = (id) => { setSectionId(id); setPicked(new Set()); };
   const toggle = (id) => setPicked((prev) => {
@@ -138,40 +74,20 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
     return next;
   });
   const toggleAll = () => setPicked(allSelected ? new Set() : new Set(printableIds));
+  const prepare = () => printing.prepare(selected.map((id) => ({
+    studentId: id, requestId: requestOf.get(id)?.id, student: rowsById.get(id).student, section,
+  })));
 
-  const prepare = () => {
-    const ticket = ++run.current;
-    const startKey = selectionKey;
-    setPreview(null);
-    setNotice('');
-    // A late answer (or error) for an earlier section or selection is ignored.
-    const current = () => ticket === run.current && startKey === keyRef.current;
-    action.run('prepare', ignoreWhenStale(async () => {
-      const result = await preparePasses({ ids: selected, rowsById, section, principalName, principalTitle });
-      if (current()) setPreview({ ...result, confirmed: new Set() });
-    }, current));
-  };
-
-  const nameOf = (studentId) => {
+  const nameOf = ({ studentId }) => {
     const student = rowsById.get(studentId)?.student ?? students.find((s) => s.id === studentId);
-    return student ? fullName(student) : studentId;
+    return student ? fullName(student) : 'A learner';
   };
-  const preparing = action.pending.includes('prepare');
-  const printReady = !!preview && preview.items.length > 0 && !!liveCheck?.allLive;
 
   return (
     <>
       <div className="id-cards-controls" style={{ fontFamily: T.body, color: T.ink }}>
         <Card style={{ padding: 20, marginBottom: 16 }}>
-          <ActionFeedback action={action} />
-          {notice && <p role="status" style={{ margin: '0 0 8px', fontSize: 13 }}>{notice}</p>}
-          {confirmTimedOut && waiting && <p role="alert" className="sims-feedback">Could not confirm the passes. Prepare them again.</p>}
-          {principalMissing && (
-            <p role="alert" className="sims-feedback">
-              {admin ? "Add the principal's name and title in Settings before printing."
-                : "Ask an administrator to add the principal's name and title in Settings before printing."}
-            </p>
-          )}
+          <PrintMessages printing={printing} admin={admin} principalMissing={principalMissing} />
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ minWidth: 'min(260px, 100%)' }}>
               <Field label="Section">
@@ -186,29 +102,16 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
                 <Btn variant="ghost" disabled={printableIds.length === 0 || preparing} onClick={toggleAll}>
                   {allSelected ? 'Clear selection' : 'Select all printable'}
                 </Btn>
-                <Btn loading={preparing} disabled={!canPrepare || selected.length === 0} onClick={prepare}>
-                  {`Prepare passes (${selected.length})`}
-                </Btn>
-                {preview && preview.items.length > 0 && (
-                  <Btn disabled={!printReady} onClick={() => window.print()}>{printReady ? 'Print' : 'Confirming passes…'}</Btn>
-                )}
+                <PrintButtons printing={printing} count={selected.length} canPrepare={canPrepare} onPrepare={prepare} />
               </div>
             )}
           </div>
-          {section && rows.length > 0 && (
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: T.inkMuted }}>{`${missingPhotos} missing a photo`}</p>
+          {section && withoutPhoto > 0 && (
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: T.inkMuted }}>{`${withoutPhoto} without a photo: their passes print a frame to attach one.`}</p>
           )}
         </Card>
 
-        {preview && preview.notPrepared.length > 0 && (
-          <Card style={{ padding: 16, marginBottom: 16 }}>
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, fontSize: 13 }}>
-              {preview.notPrepared.map(({ studentId, reason }) => (
-                <li key={studentId} style={{ padding: '4px 0' }}>{`Not prepared: ${nameOf(studentId)} — ${skipReasonText(reason)}`}</li>
-              ))}
-            </ul>
-          </Card>
-        )}
+        <NotPreparedList preview={preview} nameOf={nameOf} />
 
         {!section ? (
           <Card style={{ padding: 20, marginBottom: 16 }}>
@@ -237,7 +140,12 @@ export default function TempPassesTab({ me, schoolYear, sections, enrollments, s
                       </td>
                       <td style={S.tdStrong}>{name}</td>
                       <td style={{ ...S.td, ...T.num }}>{student.lrn || '—'}</td>
-                      <td style={S.td}><Badge tone={status.tone}>{status.label}</Badge></td>
+                      <td style={S.td}>
+                        <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                          <Badge tone={status.tone}>{status.label}</Badge>
+                          {requestOf.has(student.id) && <Badge tone="accent">Requested</Badge>}
+                        </span>
+                      </td>
                       {admin && <td style={S.tdActions}>
                         {status.key === 'active' && (
                           <Btn variant="ghost-danger" aria-label={`Revoke the pass for ${name}`} onClick={() => setRevoking(student)}>Revoke</Btn>

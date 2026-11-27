@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const fixture = vi.hoisted(() => ({ settings: null, subscribed: [] }));
 vi.mock('../../firebase.js', () => ({ db: {}, functions: {} }));
-vi.mock('../../data/tempPasses.js', () => ({ issueTempPasses: vi.fn(), revokeTempPass: vi.fn() }));
+vi.mock('../../data/tempPasses.js', () => ({
+  issueTempPasses: vi.fn(), revokeTempPass: vi.fn(), listTempPassRequests: vi.fn(() => new Promise(() => {})),
+  fulfilTempPassRequests: vi.fn(), markTempPassRequestsPrinted: vi.fn(), declineTempPassRequest: vi.fn(),
+}));
 vi.mock('../../data/photos.js', () => ({ getStudentPhoto: vi.fn(), photoDataUrl: vi.fn() }));
 vi.mock('../../data/idCards.js', () => ({ markIdCardsPrinted: vi.fn(), addToIdCardBatch: vi.fn(), removeFromIdCardBatch: vi.fn(), clearIdCardBatch: vi.fn(), markBatchPrinted: vi.fn() }));
 vi.mock('../../hooks/useCollection.js', () => ({
@@ -15,7 +18,7 @@ vi.mock('../../hooks/useCollection.js', () => ({
 }));
 
 import TempPassesTab from './TempPassesTab.jsx';
-import IDCardsPage from '../IDCardsPage.jsx';
+import IDCardsPage, { requestsTabLabel } from '../IDCardsPage.jsx';
 
 const h = React.createElement;
 const schoolYear = '2026-2027';
@@ -29,6 +32,7 @@ const students = [learner('s1', 'Abad'), learner('s2', 'Bautista', { photo: null
 const enrollments = students.map(s => ({ studentId: s.id, sectionId: 'g8', gradeLevel: 8, schoolYear, status: 'enrolled' }));
 const passes = [{ id: 's1', code: 'BNHS-TP-ABCDEFGHJK', status: 'active', lrn: students[0].lrn, schoolYear, gradeLevel: 8 }];
 const render = (me, over = {}) => renderToStaticMarkup(h(TempPassesTab, { me, schoolYear, sections, enrollments, students, passes, initialSectionId: 'g8', ...over }));
+const glc = (gradeLevel) => ({ role: 'glc', gradeLevel });
 
 beforeEach(() => {
   fixture.settings = { principalName: 'Paul O. Orong', principalTitle: 'Secondary Principal IV' };
@@ -43,37 +47,55 @@ describe('temporary passes tab', () => {
     expect(html).not.toContain('Ask an administrator');
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Prepare passes \(0\)<\/button>/);
   });
-  it.each([['jhs_coord', 'g8'], ['shs_coord', 'g11']])('tells a %s to ask an administrator, who alone can open Settings', (role, sectionId) => {
+  it.each([[glc(8), 'g8'], [glc(11), 'g11'], [{ role: 'logistic' }, 'g11']])('tells a %o to ask an administrator, who alone can open Settings', (me, sectionId) => {
     fixture.settings = { principalName: ' ', principalTitle: 'Secondary Principal IV' };
     const learners = enrollments.map(e => ({ ...e, sectionId, gradeLevel: sections.find(s => s.id === sectionId).gradeLevel }));
-    const html = render({ role }, { initialSectionId: sectionId, enrollments: learners });
+    const html = render(me, { initialSectionId: sectionId, enrollments: learners });
+    expect(html).toContain('ABAD, ANA');
     expect(html).toContain('Ask an administrator to add the principal&#x27;s name and title in Settings before printing.');
     expect(html).not.toContain('Add the principal');
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Prepare passes \(0\)<\/button>/);
   });
-  it.each(['admin', 'jhs_coord', 'shs_coord'])('does not warn a %s when the principal is set', (role) => {
-    expect(render({ role })).not.toMatch(/add the principal/i);
+  it.each([{ role: 'admin' }, glc(8), { role: 'logistic' }])('does not warn %o when the principal is set', (me) => {
+    expect(render(me)).not.toMatch(/add the principal/i);
   });
-  it('lists the section’s learners with their pass status', () => {
+  it('lists the section’s learners with their pass status, printing learners without a photo too', () => {
     const html = render({ role: 'admin' });
     expect(html).toContain('ABAD, ANA');
     expect(html).toContain('>Active<');
-    expect(html).toContain('>Missing photo<');
+    expect(html).toContain('>Ready · no photo<');
     expect(html).toContain('>Ready<');
-    expect(html).toContain('1 missing a photo');
+    expect(html).not.toContain('Missing photo');
+    expect(html).toContain('1 without a photo');
     expect(html).toContain('>Select all printable<');
-    expect(html).toMatch(/<input[^>]*aria-label="Select BAUTISTA, ANA"[^>]*disabled=""/);
+    expect(html).not.toMatch(/<input[^>]*aria-label="Select BAUTISTA, ANA"[^>]*disabled=""/);
+  });
+  it('marks learners with a waiting request', () => {
+    const pending = { requests: [{ id: 'r2', studentId: 's2', status: 'pending', blocker: null, prepared: false }], truncated: false, loading: false, error: null };
+    const html = render({ role: 'admin' }, { pending });
+    expect(html.match(/>Requested</g)).toHaveLength(1);
+    // In Bautista's own row.
+    expect(html).toMatch(/BAUTISTA, ANA<\/td>(?:(?!<\/tr>)[\s\S])*>Requested</);
+    expect(render({ role: 'admin' })).not.toContain('>Requested<');
   });
   it('offers Revoke for an active pass to administrators only', () => {
     expect(render({ role: 'admin' })).toContain('>Revoke<');
-    expect(render({ role: 'jhs_coord' })).not.toContain('>Revoke<');
+    expect(render(glc(8))).not.toContain('>Revoke<');
+    expect(render({ role: 'logistic' })).not.toContain('>Revoke<');
   });
-  it('offers only this year’s sections in the coordinator’s grades', () => {
-    const jhs = render({ role: 'jhs_coord' });
-    expect(jhs).toContain('Grade 8 - Rizal');
-    expect(jhs).not.toContain('Luna');
-    expect(jhs).not.toContain('Bonifacio');
+  it('offers only this year’s sections in the coordinator’s grade, and every grade to a logistic operator', () => {
+    const own = render(glc(8));
+    expect(own).toContain('Grade 8 - Rizal');
+    expect(own).not.toContain('Luna');
+    expect(own).not.toContain('Bonifacio');
     expect(render({ role: 'admin' })).toContain('Grade 11 - Luna · STEM');
+    expect(render({ role: 'logistic' })).toContain('Grade 11 - Luna · STEM');
+    expect(render({ role: 'logistic' })).not.toContain('Bonifacio');
+  });
+  it('offers nothing to an academic coordinator, who no longer prints passes', () => {
+    const html = render({ role: 'jhs_coord' });
+    expect(html).not.toContain('Grade 8 - Rizal');
+    expect(html).not.toContain('ABAD, ANA');
   });
   it('keeps every control out of the printed page', () => {
     const html = render({ role: 'admin' });
@@ -83,18 +105,27 @@ describe('temporary passes tab', () => {
 });
 
 describe('ID Cards page', () => {
-  it('gives administrators all three tabs', () => {
-    const html = renderToStaticMarkup(h(IDCardsPage, { me: { role: 'admin' }, schoolYear }));
-    expect(html).toContain('>By section<');
-    expect(html).toContain('>Saved batch<');
-    expect(html).toContain('>Temporary passes<');
+  const page = (me) => renderToStaticMarkup(h(IDCardsPage, { me, schoolYear }));
+  const tabs = (html) => [...html.matchAll(/role="tab"[^>]*>([^<]*)</g)].map((m) => m[1]);
+  it('gives administrators the official card tabs, Requests and Temporary passes', () => {
+    expect(tabs(page({ role: 'admin' }))).toEqual(['By section', 'Saved batch', 'Requests', 'Temporary passes']);
   });
-  it.each(['jhs_coord', 'shs_coord'])('gives a %s only temporary passes, from grade-scoped queries', (role) => {
-    const html = renderToStaticMarkup(h(IDCardsPage, { me: { role }, schoolYear }));
-    expect(html).toContain('>Temporary passes<');
-    expect(html).not.toContain('>By section<');
-    expect(html).not.toContain('>Saved batch<');
+  it.each([[glc(8)], [{ role: 'logistic' }]])('gives %o only Requests and Temporary passes, from staff-scoped queries', (me) => {
+    const html = page(me);
+    expect(tabs(html)).toEqual(['Requests', 'Temporary passes']);
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toMatch(/aria-selected="true"[^>]*>Requests</);
     expect(fixture.subscribed.filter(([kind]) => kind === 'all')).toEqual([]);
     expect(fixture.subscribed.map(([, path]) => path).sort()).toEqual(['enrollments', 'sections', 'students', 'temp_passes']);
+    expect(fixture.subscribed.every(([, , role]) => role === me.role)).toBe(true);
+  });
+  it('gives an academic coordinator no ID card tabs', () => {
+    const html = page({ role: 'jhs_coord' });
+    expect(tabs(html)).toEqual([]);
+    expect(fixture.subscribed).toEqual([]);
+  });
+  it('counts waiting requests on the Requests tab', () => {
+    expect(requestsTabLabel(0)).toBe('Requests');
+    expect(requestsTabLabel(3)).toBe('Requests · 3');
   });
 });

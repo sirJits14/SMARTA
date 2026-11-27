@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { passRowStatus, fitText, chunkSheets, passSectionLine, skipReasonText, mapWithLimit, loadImage, livePreviewCheck, previewKey, ignoreWhenStale } from './tempPass.js';
+import { PASSES_PER_SHEET, passRowStatus, fitText, chunkSheets, passSectionLine, skipReasonText, mapWithLimit, loadImage, livePreviewCheck, previewKey, ignoreWhenStale } from './tempPass.js';
 
 const schoolYear = '2026-2027';
 const section = { id: 'sec11', gradeLevel: 11, name: 'Rizal', strand: 'STEM', schoolYear };
@@ -26,10 +26,10 @@ describe('passRowStatus', () => {
     expect(status({ pass: pass({ lrn: '999' }) }).key).toBe('ready');
     expect(status({ pass: pass({ schoolYear: '2025-2026' }) }).key).toBe('ready');
   });
-  it('needs a photo before an active pass can be shown', () => {
+  it('prints a learner without a photo, saying the card has no photo', () => {
     const noPhoto = { ...student, photo: null };
-    expect(status({ student: noPhoto, pass: pass() })).toEqual({ key: 'no-photo', label: 'Missing photo', tone: 'warning', printable: false });
-    expect(status({ student: noPhoto })).toMatchObject({ key: 'no-photo', printable: false });
+    expect(status({ student: noPhoto })).toEqual({ key: 'ready', label: 'Ready · no photo', tone: 'info', printable: true });
+    expect(status({ student: noPhoto, pass: pass() })).toMatchObject({ key: 'active', printable: true });
   });
   it('shows a pass revoked this year', () => {
     expect(status({ pass: pass({ status: 'revoked' }) })).toEqual({ key: 'revoked', label: 'Revoked', tone: 'danger', printable: true });
@@ -61,10 +61,11 @@ describe('fitText', () => {
 });
 
 describe('chunkSheets', () => {
-  it('puts nine passes on each sheet', () => {
-    const sheets = chunkSheets(Array.from({ length: 20 }, (_, i) => i));
-    expect(sheets.map(s => s.length)).toEqual([9, 9, 2]);
-    expect(sheets[1][0]).toBe(9);
+  it('fits four passes on an A4 sheet', () => { expect(PASSES_PER_SHEET).toBe(4); });
+  it('puts four passes on each sheet', () => {
+    const sheets = chunkSheets(Array.from({ length: 10 }, (_, i) => i));
+    expect(sheets.map(s => s.length)).toEqual([4, 4, 2]);
+    expect(sheets[1][0]).toBe(4);
   });
   it('makes no sheet for nothing', () => {
     expect(chunkSheets([])).toEqual([]);
@@ -82,10 +83,11 @@ describe('passSectionLine', () => {
 
 describe('skipReasonText', () => {
   it('explains every server and client reason', () => {
-    for (const reason of ['not-found', 'not-enrolled', 'inactive', 'no-lrn', 'official-printed', 'no-photo', 'out-of-scope', 'photo-unavailable', 'qr-failed']) {
+    for (const reason of ['not-found', 'not-enrolled', 'inactive', 'no-lrn', 'official-printed', 'out-of-scope', 'photo-unavailable', 'qr-failed', 'not-pending']) {
       expect(skipReasonText(reason)).toMatch(/^[a-z]/i);
     }
     expect(skipReasonText('something-new')).toBe('could not be prepared');
+    expect(skipReasonText('not-pending')).toBe('the request was already handled');
   });
 });
 
@@ -178,6 +180,12 @@ describe('previewKey', () => {
     expect(previewKey(base)).toBe(previewKey({ ...base }));
     expect(previewKey({ ...base, learners: [{ id: 's1', name: 'CRUZ, ANNA', lrn: '1' }] })).not.toBe(previewKey(base));
     expect(previewKey({ ...base, learners: [{ id: 's1', name: 'CRUZ, ANA', lrn: '2' }] })).not.toBe(previewKey(base));
+  });
+  it('changes with the request, the photo and the printed section line', () => {
+    const one = (over) => previewKey({ ...base, learners: [{ id: 's1', name: 'CRUZ, ANA', lrn: '1', ...over }] });
+    expect(one({ requestId: 'r1' })).not.toBe(previewKey(base));
+    expect(one({ photo: 'student_photos/s1.jpg' })).not.toBe(previewKey(base));
+    expect(one({ sectionLine: 'GRADE 8 – RIZAL' })).not.toBe(previewKey(base));
   });
   it('changes with the section, the selection and the principal', () => {
     expect(previewKey({ ...base, sectionId: 'g9' })).not.toBe(previewKey(base));

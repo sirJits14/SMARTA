@@ -41,6 +41,18 @@ describe('temporary pass card', () => {
     expect(text).toContain('textLength="540"');
     expect(Number(text.match(/letter-spacing="([\d.]+)"/)[1])).toBeLessThan(5);
   });
+  it('draws the 1 × 1 inch photo at the photo area', () => {
+    const html = renderToStaticMarkup(h(TempPassCard, props));
+    expect(html).toContain('<image href="data:image/jpeg;base64,AAAA" x="209" y="190" width="177" height="177"');
+    expect(html).not.toContain('Attach 1×1 photo');
+  });
+  it('draws a dashed frame to attach a photo when the learner has none', () => {
+    const html = renderToStaticMarkup(h(TempPassCard, { ...props, photoSrc: null }));
+    expect(html).toContain('<rect x="209" y="190" width="177" height="177" fill="#FFFFFF" stroke="#555555" stroke-width="2" stroke-dasharray="8 6"');
+    expect(html).toContain('>Attach 1×1 photo<');
+    expect(html).not.toMatch(/<image[^>]*y="190"/);
+    expect(html).toContain('href="data:image/png;base64,BBBB"');
+  });
   it('does not pin a short name', () => {
     const html = renderToStaticMarkup(h(TempPassCard, props));
     expect(html).not.toMatch(/textLength="551"[^>]*>CRUZ/);
@@ -48,9 +60,9 @@ describe('temporary pass card', () => {
 });
 
 describe('temporary pass sheets', () => {
-  it('puts nine cards on each sheet and carries the print styles', () => {
+  it('puts four cards on each sheet and carries the print styles', () => {
     const html = renderToStaticMarkup(h(TempPassSheets, { passes: Array.from({ length: 11 }, (_, i) => pass(i)) }));
-    expect(html.match(/class="temp-pass-sheet"/g)).toHaveLength(2);
+    expect(html.match(/class="temp-pass-sheet"/g)).toHaveLength(3);
     expect(html.match(/class="temp-pass-card"/g)).toHaveLength(11);
     expect(html).toContain('@page { size: A4; margin: 8mm }');
   });
@@ -59,9 +71,11 @@ describe('temporary pass sheets', () => {
 describe('temporary pass print styles', () => {
   it('prints only the sheets at card size', () => {
     expect(TEMP_PASS_PRINT_STYLES).toContain('.app-sidebar, .app-topbar, .id-cards-controls, .id-cards-heading');
-    expect(TEMP_PASS_PRINT_STYLES).toContain('grid-template-columns: repeat(3, 54mm)');
-    expect(TEMP_PASS_PRINT_STYLES).toContain('grid-auto-rows: 85.6mm');
-    expect(TEMP_PASS_PRINT_STYLES).toMatch(/width: 54mm;\s*height: 85.6mm/);
+    expect(TEMP_PASS_PRINT_STYLES).toContain('grid-template-columns: repeat(2, 85mm)');
+    expect(TEMP_PASS_PRINT_STYLES).toContain('grid-auto-rows: 134.8mm');
+    expect(TEMP_PASS_PRINT_STYLES).toContain('gap: 4mm');
+    expect(TEMP_PASS_PRINT_STYLES).toMatch(/width: 85mm;\s*height: 134.8mm/);
+    expect(TEMP_PASS_PRINT_STYLES).not.toContain('54mm');
     expect(TEMP_PASS_PRINT_STYLES).toContain('print-color-adjust: exact');
     expect(TEMP_PASS_PRINT_STYLES).toContain('.temp-pass-sheet:not(:last-child) { break-after: page; }');
   });
