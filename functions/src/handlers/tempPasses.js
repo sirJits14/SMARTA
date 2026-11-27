@@ -55,6 +55,14 @@ export async function issueTempPasses(deps, input) {
   const grades = passGrades(profile);
   const issued = []; const skipped = [];
   for (const studentId of ids) {
+    // A learner with a waiting adviser request is printed through it (fulfilTempPassRequestsFn), so a Lost
+    // request always replaces the lost code. Another grade's request is left to the scope check below.
+    const waiting = await db.collection('temp_pass_requests').where('studentId', '==', studentId)
+      .where('status', '==', 'pending').where('schoolYear', '==', schoolYear).limit(1).get();
+    if (!waiting.empty && (grades === null || grades.includes(waiting.docs[0].data().gradeLevel))) {
+      skipped.push({ studentId, reason: 'requested' });
+      continue;
+    }
     const result = await db.runTransaction(tx => issueInTransaction(db, tx, { studentId, schoolYear, grades, email }));
     if (result.code) issued.push({ studentId, code: result.code }); else skipped.push({ studentId, reason: result.skip });
   }

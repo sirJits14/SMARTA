@@ -260,6 +260,14 @@ describe('a prepared request (fulfilled, sheet not yet marked printed)', () => {
     await revokeTempPass(printer('admin'), { studentId: 'S1' });
     await expect(decline(b)).resolves.toEqual({ ok: true });
   });
+  it('can be declined once it can no longer be met (learner moved to another section after it was prepared)', async () => {
+    const id = await prepared('new');
+    await db().doc(`enrollments/S1_${year}`).update({ sectionId: 'SEC2' });
+    expect((await list()).requests.find((r) => r.id === id)).toMatchObject({ prepared: true, blocker: 'not-in-class' });
+    await expect(decline(id, 'Moved to Mabini')).resolves.toEqual({ ok: true });
+    expect(await request(id)).toMatchObject({ status: 'declined', declineReason: 'Moved to Mabini' });
+    expect(await inbox('adv', id)).toMatchObject({ status: 'declined' });
+  });
   it('is not marked prepared before it is fulfilled', async () => {
     const id = await filed('S1');
     expect(await row(id)).toMatchObject({ prepared: false });
@@ -279,6 +287,29 @@ describe('a prepared request (fulfilled, sheet not yet marked printed)', () => {
     await fulfil([other]);
     await revokeTempPass(printer('admin'), { studentId: 'S3' });
     expect(await listed(other)).toMatchObject({ prepared: false });
+  });
+});
+
+describe('section printing of a learner with a waiting request', () => {
+  it('is refused, so a Lost request is never bypassed with the lost code', async () => {
+    const { issued: [first] } = await issueDirect(['S1']);
+    const id = await filed('S1', 'lost');
+    expect(await issueDirect(['S1', 'S3'])).toEqual({
+      issued: [{ studentId: 'S3', code: expect.any(String) }], skipped: [{ studentId: 'S1', reason: 'requested' }],
+    });
+    expect((await read('temp_passes/S1')).code).toBe(first.code);
+    // Through the request the old code is replaced.
+    const { issued: [viaRequest] } = await fulfil([id]);
+    expect(viaRequest.code).not.toBe(first.code);
+  });
+  it('reports another grade as out of scope, not as requested', async () => {
+    await filed('S1');
+    expect(await issueTempPasses(printer('glc8'), { studentIds: ['S1'] })).toEqual({ issued: [], skipped: [{ studentId: 'S1', reason: 'out-of-scope' }] });
+  });
+  it('is allowed again once the request is closed', async () => {
+    const id = await filed('S1');
+    await decline(id);
+    expect((await issueDirect(['S1'])).issued).toHaveLength(1);
   });
 });
 

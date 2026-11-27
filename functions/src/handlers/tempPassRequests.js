@@ -347,7 +347,15 @@ export async function declineTempPassRequest(deps, input) {
     // Another grade's request is reported exactly like a missing one.
     if (!request || !canPrintGrade(profile, request.gradeLevel)) fail('not-found', 'Request not found.');
     if (request.status !== 'pending') fail('failed-precondition', 'This request was already handled.');
-    if (await preparedIn(db, tx, request, schoolYear)) fail('failed-precondition', 'This pass is already prepared. Mark it printed instead.');
+    // A prepared request is marked printed, not declined, unless it can no longer be met (for example the
+    // learner moved to another class): then declining is the only way to close it.
+    if (await preparedIn(db, tx, request, schoolYear)) {
+      const [student, enrollment] = await Promise.all([
+        tx.get(db.doc(`students/${request.studentId}`)), tx.get(db.doc(`enrollments/${request.studentId}_${schoolYear}`)),
+      ]);
+      const blocker = passRequestBlocker({ student: student.data(), enrollment: enrollment.data(), sectionId: request.sectionId, schoolYear, pendingRequest: false });
+      if (!blocker) fail('failed-precondition', 'This pass is already prepared. Mark it printed instead.');
+    }
     // Reads end here.
     tx.update(ref, { status: 'declined', declineReason: reason, decidedBy: email, decidedAt: FieldValue.serverTimestamp() });
     notify(db, tx, request, ref.id, 'declined', declinedNotice({ name: request.displayName || '', reason }));
