@@ -148,7 +148,12 @@ describe('requestTempPasses (1)', () => {
     const refused = results.filter((r) => r.status === 'rejected').map((r) => r.reason.message);
     expect(refused.length).toBeGreaterThan(0);
     expect(new Set(refused)).toEqual(new Set([FULL]));
-    expect(await pending()).toHaveLength(40);
+    // The limit is the invariant. If the calls interleave, the refused one files 15 before it hits the limit (40
+    // in all). If one finishes before the other starts, the second is refused up front and files none (25 in
+    // all). Either way the adviser is never over 40.
+    const count = (await pending()).length;
+    expect(count).toBeLessThanOrEqual(40);
+    expect([25, 40]).toContain(count);
   }, 60000);
   it('files one request when the same learner is sent twice at once', async () => {
     const results = await Promise.all([ask([item('S1')]), ask([item('S1')])]);
