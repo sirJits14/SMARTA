@@ -1,0 +1,23 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-bnhs", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mcd .superpowers/releases/temp-pass-requests/functions/backend/functions && npx vitest run test/emulator --no-file-parallelism[22m
+
+ RUN  v4.1.11 C:/Users/jitsb/OneDrive - Department of Education/Desktop/APPS/bnhs-sims/.claude/worktrees/temp-student-id-pass-97a900/.superpowers/releases/temp-pass-requests/functions/backend/functions
+
+[36m[1mi [22m[39m To reset your email address to temporary@bnhs.edu, follow this link: http://127.0.0.1:9099/emulator/action?mode=recoverEmail&lang=en&oobCode=vh5akaxfJMxmSDdaV2sdNNjyWkSZfB4rtTc6OQGcgrrE4QRJRaDNbU&apiKey=fake-api-key
+
+ Test Files  28 passed (28)
+      Tests  681 passed | 10 skipped (691)
+   Start at  15:59:01
+   Duration  333.84s (transform 1.37s, setup 0ms, import 37.88s, tests 288.46s, environment 3ms)
+
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

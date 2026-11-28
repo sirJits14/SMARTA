@@ -1,0 +1,358 @@
+{
+ "site": "https://bnhs-sims.web.app",
+ "checkedAt": "2026-11-28T09:20:44.500Z",
+ "total": 70,
+ "matched": 70,
+ "results": [
+  {
+   "path": "assets/AccountsPage-D_NkFc6G.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/announcements-CAkWbznJ.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/AnnouncementsPage-CbB8mR9u.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/attendance-Voo87ab3.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/AttendanceSummaryPage-mq6udCXJ.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/AttendanceTakePage-CSFZhycf.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/AuditTab-CotHBbKJ.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/bnhs_logo-Zi4VGyiY.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/CodesTab-DXbhydy5.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/DashboardPage-CWzSj_53.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/DashboardPage-DgzRHRxQ.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/dates-BmMLuwUb.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/dates-owWDfcCO.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/DevicesTab-CWaI5U79.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/downloadBlob-vunXW3da.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/downloadWorkbook-C2ro8OcB.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/enrollmentChange-iAe66gQz.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/enrollments-I5XcYjam.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/EnrollPage-B5mkQuBB.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/EnrollPage-D_U-mfMh.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/GradePills-CcznVMzK.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/guardians-CyTERlY_.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/GuardiansPage-IzmCGjHZ.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/IdCardPrintConfirm-Bh56bLAi.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/IDCardsPage-DqiSjgQF.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index-D7mVtpF_.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/index-D_z-nRso.css",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/kioskPresence-BltsSMLn.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/LearnerRequestsPage-BKLLPI7y.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/LinksTab-CKLCq-n3.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/loading-CRLLHZYw.gif",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/photos-Ky7QOEpf.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/PortalSettingsTab-VqU9xhIc.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/ReportsTab-DS96HszB.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/RequestsTab-CtizZxy9.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/roster-BT2lZVgZ.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/ScanLogTab-Cn_J0VRp.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/scheduleSessions-D6cHsNJm.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SchedulesPage-D5cDzOwC.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/school-BUOQKnEc.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SchoolAccessTab-BM-6KXxI.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/schoolAssignments-DSHEfsQj.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/search-BFFQz6fc.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SectionPicker-XA6qVGZM.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SectionsPage-D5EFMAxD.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/sessionAttendance-D0WR5V0K.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SessionReviewPage-Dj-WmOTD.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SettingsPage-GEV8ad65.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/sf2-template-BDOGBomb.xlsx",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/sims-favicon-cSZ_7KH-.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/slipIssue-BVeeGECT.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SlipPrintControls-mtOXKRE7.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/smarta-mark-CjebIss0.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/smarta-wordmark-sidebar-CRgRiWJ2.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/smarta-wordmark-sidebar-dark-CUOzCjZz.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/StudentForm-BDV5zuaR.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/StudentsPage-CyA13e4-.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/SubTabs-CNspvc7F.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/ui-Coz8_du3.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/useAsyncAction-Cwu8ut21.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/useCollection-DuviD3ru.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/usePrintReadiness-BCsrZVpt.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "assets/useSchoolPendingCount-DZo23yYY.js",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/apple-touch-icon.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-192.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-512.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "icons/icon-maskable-512.png",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "index.html",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "manifest.webmanifest",
+   "status": 200,
+   "match": true
+  },
+  {
+   "path": "sw.js",
+   "status": 200,
+   "match": true
+  }
+ ]
+}

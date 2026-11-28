@@ -1,0 +1,58 @@
+Files LIVE(account functions)/index.js and PREPARED/index.js differ
+Files LIVE(account functions)/package.json and PREPARED/package.json differ
+Only in PREPARED/scripts: backfillCoordinatorScope.mjs
+Only in PREPARED/scripts: backfillSectionAdvisers.mjs
+Files LIVE(account functions)/scripts/backfillStaffProfileBindings.mjs and PREPARED/scripts/backfillStaffProfileBindings.mjs differ
+Only in PREPARED/scripts: retireSubjectTeachers.mjs
+Only in PREPARED/shared: announcementAudience.js
+Only in PREPARED/shared: learnerRequests.js
+Only in PREPARED/shared: photoCanvas.js
+Only in PREPARED/shared: photoSession.js
+Only in PREPARED/shared: scheduleSessions.js
+Only in PREPARED/shared: schoolAccess.js
+Only in PREPARED/shared: sectionEditing.js
+Only in PREPARED/shared: sessionAttendance.js
+Only in PREPARED/shared: sf2
+Files LIVE(account functions)/shared/staffRoles.js and PREPARED/shared/staffRoles.js differ
+Only in PREPARED/shared: studentPhoto.js
+Only in PREPARED/shared: tempPass.js
+Only in PREPARED/shared: tempPassRequests.js
+Files LIVE(account functions)/src/admin.js and PREPARED/src/admin.js differ
+Files LIVE(account functions)/src/audit.js and PREPARED/src/audit.js differ
+Files LIVE(account functions)/src/callable.js and PREPARED/src/callable.js differ
+Files LIVE(account functions)/src/handlers/account.js and PREPARED/src/handlers/account.js differ
+Only in PREPARED/src/handlers: advisorySlips.js
+Files LIVE(account functions)/src/handlers/announcements.js and PREPARED/src/handlers/announcements.js differ
+Files LIVE(account functions)/src/handlers/codes.js and PREPARED/src/handlers/codes.js differ
+Files LIVE(account functions)/src/handlers/guardianAudience.js and PREPARED/src/handlers/guardianAudience.js differ
+Files LIVE(account functions)/src/handlers/kiosks.js and PREPARED/src/handlers/kiosks.js differ
+Only in PREPARED/src/handlers: learnerRequests.js
+Files LIVE(account functions)/src/handlers/links.js and PREPARED/src/handlers/links.js differ
+Only in PREPARED/src/handlers: portalAccess.js
+Only in PREPARED/src/handlers: portalAnnouncements.js
+Files LIVE(account functions)/src/handlers/push.js and PREPARED/src/handlers/push.js differ
+Files LIVE(account functions)/src/handlers/reports.js and PREPARED/src/handlers/reports.js differ
+Only in PREPARED/src/handlers: retireSubjectTeachers.js
+Only in PREPARED/src/handlers: scanAttendance.js
+Files LIVE(account functions)/src/handlers/scanEvent.js and PREPARED/src/handlers/scanEvent.js differ
+Files LIVE(account functions)/src/handlers/scheduled.js and PREPARED/src/handlers/scheduled.js differ
+Only in PREPARED/src/handlers: schoolAccess.js
+Files LIVE(account functions)/src/handlers/schoolYear.js and PREPARED/src/handlers/schoolYear.js differ
+Only in PREPARED/src/handlers: sections.js
+Only in PREPARED/src/handlers: sessionAttendance.js
+Only in PREPARED/src/handlers: sf2Export.js
+Only in PREPARED/src/handlers: studentPhotos.js
+Only in PREPARED/src/handlers: tempPassRequests.js
+Only in PREPARED/src/handlers: tempPasses.js
+Only in PREPARED/src/lib: attendanceNotice.js
+Files LIVE(account functions)/src/lib/codeSlots.js and PREPARED/src/lib/codeSlots.js differ
+Only in PREPARED/src/lib: coordinatorScope.js
+Files LIVE(account functions)/src/lib/format.js and PREPARED/src/lib/format.js differ
+Only in PREPARED/src/lib: learnerRequestCleanup.js
+Only in PREPARED/src/lib: legacyAdvisers.js
+Files LIVE(account functions)/src/lib/pushPayload.js and PREPARED/src/lib/pushPayload.js differ
+Files LIVE(account functions)/src/lib/recomputeSummary.js and PREPARED/src/lib/recomputeSummary.js differ
+Only in PREPARED/src/lib: schoolYears.js
+Only in PREPARED/src/lib: sectionAdviserBackfill.js
+Only in PREPARED/src/lib: slipOrder.js
+Files LIVE(account functions)/src/lib/staffProfileBindings.js and PREPARED/src/lib/staffProfileBindings.js differ

@@ -1,0 +1,44 @@
+{
+  "copied": [
+    "shared/staffRoles.js",
+    "shared/staffRoles.test.js",
+    "shared/tempPass.js",
+    "shared/tempPass.test.js",
+    "src/App.jsx",
+    "src/components/Shell.test.js",
+    "src/components/TempPassPrintable.jsx",
+    "src/components/TempPassPrintable.test.js",
+    "src/data/settings.js",
+    "src/data/settings.test.js",
+    "src/data/tempPasses.js",
+    "src/data/tempPasses.test.js",
+    "src/lib/tempPass.js",
+    "src/lib/tempPass.test.js",
+    "src/pages/SettingsPage.jsx",
+    "src/pages/SettingsPage.test.js",
+    "src/pages/idCards/TempPassesTab.jsx",
+    "src/pages/tempPassPrintLayout.js"
+  ],
+  "added": [
+    "shared/tempPassRequests.js",
+    "shared/tempPassRequests.test.js",
+    "src/pages/AccountsPage.test.js",
+    "src/pages/idCards/PassPrintParts.jsx",
+    "src/pages/idCards/PassRequestsTab.jsx",
+    "src/pages/idCards/PassRequestsTab.test.js",
+    "src/pages/idCards/usePassPrinting.js",
+    "src/pages/idCards/usePassPrinting.test.js"
+  ],
+  "handPorted": [
+    "src/components/StudentPhotoDialog.test.js",
+    "src/lib/access.js",
+    "src/lib/access.test.js",
+    "src/pages/IDCardsPage.jsx",
+    "src/pages/StudentsPage.jsx",
+    "src/pages/idCards/TempPassesTab.test.js"
+  ],
+  "leftOut": [
+    "src/lib/staffQueries.js",
+    "src/lib/staffQueries.test.js"
+  ]
+}

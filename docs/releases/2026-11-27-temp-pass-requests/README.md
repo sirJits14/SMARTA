@@ -1,6 +1,7 @@
 # Release checklist — adviser temporary pass requests and Logistic Operator
 
-Status: **nothing here has been deployed.**
+Status: **prepared 2026-11-28 from master `191e348`; nothing here has been deployed.** The prepared files and
+steps are in `.superpowers/releases/temp-pass-requests/` (git-ignored; `publish.ps1 <step>`).
 Design: `docs/superpowers/specs/2026-11-27-temp-pass-requests-design.md`.
 
 Base everything on **production, not `master`**: see
@@ -40,7 +41,8 @@ contain `staffRoles.js`, `tempPass.js` and `tempPassRequests.js`.
       `declineTempPassRequestFn`.
 - [ ] Changed pass and photo functions (3): `issueTempPassFn`, `saveStudentPhotoFn`,
       `getStudentPhotoFn`.
-- [ ] Changed account functions (6), so the new role is accepted: `createStaffUserFn`,
+- [ ] **Run later, after step 4 (kit step `accounts`)**, because nothing needs them until a Logistic Operator is
+      created: changed account functions (6), so the new role is accepted: `createStaffUserFn`,
       `updateStaffUserFn`, `setStaffUserDisabledFn`, `resetStaffPasswordFn`, `deleteStaffUserFn`,
       `changeOwnPasswordFn`. **Without `changeOwnPasswordFn` a new Logistic Operator cannot replace
       the temporary password and cannot sign in.**
