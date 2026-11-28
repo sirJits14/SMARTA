@@ -1,0 +1,31 @@
+59a60,61
+>     // Prints passes and uploads photos for every grade; no other staff access.
+>     function isLogistic() { return isStaff() && role() == 'logistic'; }
+68c70
+<     // Mirrors passGrades() in shared/tempPass.js: GLCs do not handle passes.
+---
+>     // Mirrors passGrades() in shared/tempPass.js.
+70c72
+<       return isStaff() && role() in ['jhs_coord', 'shs_coord'] && coversGrade(resource.data.get('gradeLevel', null));
+---
+>       return isStaff() && role() == 'glc' && coversGrade(resource.data.get('gradeLevel', null));
+124c126
+<     match /schedules/{id}   { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
+---
+>     match /schedules/{id}   { allow read: if (isStaff() && role() != 'logistic') || isKiosk(); allow write: if isAdmin(); }
+128c130
+<       allow read: if isAdmin() || coordinatorMayReadPass() || (isKiosk() && resource.data.status == 'active');
+---
+>       allow read: if isAdmin() || isLogistic() || coordinatorMayReadPass() || (isKiosk() && resource.data.status == 'active');
+148c150
+<       allow read: if isStaff() || isKiosk();
+---
+>       allow read: if (isStaff() && role() != 'logistic') || isKiosk();
+297c299
+<       allow get, list: if isStaff();
+---
+>       allow get, list: if (isStaff() && role() != 'logistic');
+341a344,346
+>     // Adviser requests for temporary ID passes, and the locks that serialize filings. Callables only.
+>     match /temp_pass_requests/{id} { allow read, write: if false; }
+>     match /temp_pass_request_locks/{id} { allow read, write: if false; }

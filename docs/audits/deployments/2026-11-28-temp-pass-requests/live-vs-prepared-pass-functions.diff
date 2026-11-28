@@ -1,0 +1,239 @@
+diff -ru -x node_modules -x test -x '*.test.js' -x package-lock.json -x .env LIVE(issueTempPassFn etc.)/index.js PREPARED/index.js
+--- LIVE(issueTempPassFn etc.)/index.js	2026-11-28 15:59:20.556922500 +0800
++++ PREPARED/index.js	2026-11-27 23:53:19.082333100 +0800
+@@ -27,6 +27,10 @@
+ import { requestLearnerAdd, requestLearnerRemoval, withdrawLearnerRequest, getLearnerRequests, listLearnerRequests, resolveLearnerRequest, getLearnerRequestCount } from './src/handlers/learnerRequests.js';
+ import { saveStudentPhoto, getStudentPhoto, deletePhotoFile } from './src/handlers/studentPhotos.js';
+ import { issueTempPasses, revokeTempPass, reconcileTempPass } from './src/handlers/tempPasses.js';
++import {
++  requestTempPasses, withdrawTempPassRequest, getTempPassRequests, listTempPassRequests, fulfilTempPassRequests, markTempPassRequestsPrinted,
++  declineTempPassRequest,
++} from './src/handlers/tempPassRequests.js';
+ 
+ setGlobalOptions({ region: 'asia-southeast1', minInstances: 0, maxInstances: 10, memory: '256MiB' });
+ 
+@@ -141,9 +145,19 @@
+ const photoCall = (fn) => schoolCall((deps, input) => fn({ ...deps, bucket: bucket() }, input));
+ export const saveStudentPhotoFn = photoCall(saveStudentPhoto);
+ export const getStudentPhotoFn = photoCall(getStudentPhoto);
+-// Temporary ID passes (spec 2026-11-27): administrators and academic coordinators issue, administrators revoke.
++// Temporary ID passes (spec 2026-11-27): administrators, grade level coordinators and logistic operators issue;
++// administrators revoke.
+ export const issueTempPassFn = staffCall(issueTempPasses, { timeoutSeconds: 120 });
+ export const revokeTempPassFn = adminCall(revokeTempPass);
++// Adviser requests for temporary passes (spec 2026-11-27 requests): advisers file from the Parent App;
++// administrators, grade level coordinators and logistic operators prepare, print or decline in SIMS.
++export const requestTempPassesFn = schoolCall(requestTempPasses);
++export const withdrawTempPassRequestFn = schoolCall(withdrawTempPassRequest);
++export const getTempPassRequestsFn = schoolCall(getTempPassRequests);
++export const listTempPassRequestsFn = staffCall(listTempPassRequests, { timeoutSeconds: 120 });
++export const fulfilTempPassRequestsFn = staffCall(fulfilTempPassRequests, { timeoutSeconds: 120 });
++export const markTempPassRequestsPrintedFn = staffCall(markTempPassRequestsPrinted);
++export const declineTempPassRequestFn = staffCall(declineTempPassRequest);
+ // The pass is settled first, so a Storage failure only leaves the photo delete to retry.
+ export const onStudentWritten = onDocumentWritten({ document: 'students/{studentId}', retry: true }, async (event) => {
+   const { studentId } = event.params;
+diff -ru -x node_modules -x test -x '*.test.js' -x package-lock.json -x .env LIVE(issueTempPassFn etc.)/shared/staffRoles.js PREPARED/shared/staffRoles.js
+--- LIVE(issueTempPassFn etc.)/shared/staffRoles.js	2026-11-28 15:59:20.575940400 +0800
++++ PREPARED/shared/staffRoles.js	2026-11-27 23:37:53.940432200 +0800
+@@ -1,13 +1,16 @@
+ // Staff roles for SIMS accounts (spec: docs/superpowers/specs/2026-10-04-staff-accounts-and-roles-design.md).
+ // The only place that maps a role to the grades it may see -- firestore.rules
+ // mirrors scopedGrades() in coversGrade(); keep the two in step.
++// `logistic` prints passes and uploads photos for every grade through passGrades()
++// in tempPass.js; it has no general grade scope.
+ export const ALL_GRADES = [7, 8, 9, 10, 11, 12];
+-export const ROLE_VALUES = ['admin', 'jhs_coord', 'shs_coord', 'glc'];
++export const ROLE_VALUES = ['admin', 'jhs_coord', 'shs_coord', 'glc', 'logistic'];
+ export const ROLE_LABELS = {
+   admin: 'Administrator',
+   jhs_coord: 'JHS Academic Coordinator',
+   shs_coord: 'SHS Academic Coordinator',
+   glc: 'Grade Level Coordinator',
++  logistic: 'Logistic Operator',
+ };
+ const FIXED_GRADES = { jhs_coord: [7, 8, 9, 10], shs_coord: [11, 12] };
+ // Profiles hand-written before roles existed: no role, or the README's 'registrar'.
+diff -ru -x node_modules -x test -x '*.test.js' -x package-lock.json -x .env LIVE(issueTempPassFn etc.)/shared/tempPass.js PREPARED/shared/tempPass.js
+--- LIVE(issueTempPassFn etc.)/shared/tempPass.js	2026-11-28 15:59:20.577941500 +0800
++++ PREPARED/shared/tempPass.js	2026-11-27 23:37:53.941430400 +0800
+@@ -1,39 +1,39 @@
+-// Temporary ID Pass rules shared by SIMS and Functions (spec 2026-11-27).
+-// The kiosk repository keeps its own copy of the code pattern: keep in step.
+-import { roleOf, scopedGrades } from './staffRoles.js';
+-
+-export const PASS_PREFIX = 'BNHS-TP-';
+-export const PASS_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+-export const PASS_LENGTH = 10;
+-const PATTERN = new RegExp(`^${PASS_PREFIX}[${PASS_ALPHABET}]{${PASS_LENGTH}}$`);
+-
+-export const isTempPassCode = (text) => typeof text === 'string' && PATTERN.test(text);
+-
+-// randomInt(max) returns a uniform integer in [0, max).
+-export const makePassCode = (randomInt) =>
+-  PASS_PREFIX + Array.from({ length: PASS_LENGTH }, () => PASS_ALPHABET[randomInt(PASS_ALPHABET.length)]).join('');
+-
+-// null = every grade (administrator); [] = no pass or photo management.
+-export function passGrades(profile) {
+-  const role = roleOf(profile);
+-  if (role === 'admin') return null;
+-  return role === 'jhs_coord' || role === 'shs_coord' ? scopedGrades(profile) : [];
+-}
+-export function canManagePasses(profile) {
+-  const grades = passGrades(profile);
+-  return grades === null || grades.length > 0;
+-}
+-
+-// Same test as the official card queue: printed, and for the present LRN.
+-export const isOfficialCardPrinted = (student) => !!student?.idCard?.printedAt && student.idCard.lrn === student.lrn;
+-
+-export function tempPassBlocker({ student, enrollment, section, schoolYear }) {
+-  if (!student) return 'not-found';
+-  if (!enrollment || enrollment.status !== 'enrolled' || enrollment.schoolYear !== schoolYear
+-      || !section || section.schoolYear !== schoolYear) return 'not-enrolled';
+-  if ((student.status ?? 'active') !== 'active') return 'inactive';
+-  if (!String(student.lrn ?? '').trim()) return 'no-lrn';
+-  if (isOfficialCardPrinted(student)) return 'official-printed';
+-  if (!student.photo?.path) return 'no-photo';
+-  return null;
+-}
++// Temporary ID Pass rules shared by SIMS and Functions (spec 2026-11-27).
++// The kiosk repository keeps its own copy of the code pattern: keep in step.
++import { roleOf, scopedGrades } from './staffRoles.js';
++
++export const PASS_PREFIX = 'BNHS-TP-';
++export const PASS_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
++export const PASS_LENGTH = 10;
++const PATTERN = new RegExp(`^${PASS_PREFIX}[${PASS_ALPHABET}]{${PASS_LENGTH}}$`);
++
++export const isTempPassCode = (text) => typeof text === 'string' && PATTERN.test(text);
++
++// randomInt(max) returns a uniform integer in [0, max).
++export const makePassCode = (randomInt) =>
++  PASS_PREFIX + Array.from({ length: PASS_LENGTH }, () => PASS_ALPHABET[randomInt(PASS_ALPHABET.length)]).join('');
++
++// null = every grade (administrator, logistic operator); [] = no pass or photo management.
++// Grade level coordinators get their own grade; academic coordinators get none (spec 2026-11-27 requests).
++export function passGrades(profile) {
++  const role = roleOf(profile);
++  if (role === 'admin' || role === 'logistic') return null;
++  return role === 'glc' ? scopedGrades(profile) : [];
++}
++export function canManagePasses(profile) {
++  const grades = passGrades(profile);
++  return grades === null || grades.length > 0;
++}
++
++// Same test as the official card queue: printed, and for the present LRN.
++export const isOfficialCardPrinted = (student) => !!student?.idCard?.printedAt && student.idCard.lrn === student.lrn;
++
++export function tempPassBlocker({ student, enrollment, section, schoolYear }) {
++  if (!student) return 'not-found';
++  if (!enrollment || enrollment.status !== 'enrolled' || enrollment.schoolYear !== schoolYear
++      || !section || section.schoolYear !== schoolYear) return 'not-enrolled';
++  if ((student.status ?? 'active') !== 'active') return 'inactive';
++  if (!String(student.lrn ?? '').trim()) return 'no-lrn';
++  if (isOfficialCardPrinted(student)) return 'official-printed';
++  return null;
++}
+Only in PREPARED/shared: tempPassRequests.js
+diff -ru -x node_modules -x test -x '*.test.js' -x package-lock.json -x .env LIVE(issueTempPassFn etc.)/src/callable.js PREPARED/src/callable.js
+--- LIVE(issueTempPassFn etc.)/src/callable.js	2026-11-28 15:59:20.580938600 +0800
++++ PREPARED/src/callable.js	2026-11-27 23:53:19.081330100 +0800
+@@ -27,6 +27,8 @@
+   studentPhoto: { windowMs: 60 * 60 * 1000, max: 300 },
+   // Temporary passes: one call per print batch (up to 200 learners each).
+   tempPass: { windowMs: 60 * 60 * 1000, max: 300 },
++  // Adviser requests for temporary passes: one call per class batch (up to 40 learners).
++  tempPassRequest: { windowMs: 60 * 60 * 1000, max: 60 },
+ };
+ export const MAX_OPEN_REQUESTS = 3;
+ 
+Only in PREPARED/src/handlers: tempPassRequests.js
+diff -ru -x node_modules -x test -x '*.test.js' -x package-lock.json -x .env LIVE(issueTempPassFn etc.)/src/handlers/tempPasses.js PREPARED/src/handlers/tempPasses.js
+--- LIVE(issueTempPassFn etc.)/src/handlers/tempPasses.js	2026-11-28 15:59:20.603949800 +0800
++++ PREPARED/src/handlers/tempPasses.js	2026-11-28 07:39:06.602587100 +0800
+@@ -12,9 +12,41 @@
+ const audit = (actorUid, action, studentId, details) => ({ action, actorType: 'staff', actorUid,
+   targetType: 'temp_pass', targetId: studentId, details, at: FieldValue.serverTimestamp() });
+ 
++// Issues or keeps one learner's pass inside the caller's transaction. `grades` is passGrades(profile).
++// Performs all its reads before any write: the caller may write after it but must not read.
++// `newCode` replaces the code of a live pass, which stops the old sheet from working.
++export async function issueInTransaction(db, tx, { studentId, schoolYear, grades, email, newCode = false }) {
++  const passRef = db.doc(`temp_passes/${studentId}`);
++  const [student, enrollment, pass] = await Promise.all([
++    tx.get(db.doc(`students/${studentId}`)), tx.get(db.doc(`enrollments/${studentId}_${schoolYear}`)), tx.get(passRef),
++  ]);
++  const sectionId = enrollment.data()?.sectionId;
++  const section = identifier(sectionId) ? (await tx.get(db.doc(`sections/${sectionId}`))).data() : undefined;
++  const blocker = tempPassBlocker({ student: student.data(), enrollment: enrollment.data(), section, schoolYear });
++  // Scope is checked before the learner's own details are described.
++  if (grades !== null && section && !grades.includes(section.gradeLevel)) return { skip: 'out-of-scope' };
++  if (blocker) return { skip: blocker };
++  // An incomplete section record skips its learner instead of failing the whole batch.
++  if (!validGrade(section.gradeLevel)) return { skip: 'not-enrolled' };
++  // Reads end here.
++  const placement = { sectionId, gradeLevel: section.gradeLevel };
++  const current = pass.data();
++  const lrn = student.data().lrn;
++  const live = current?.status === 'active' && current.lrn === lrn && current.schoolYear === schoolYear;
++  if (live && !newCode) {
++    if (current.sectionId !== sectionId || current.gradeLevel !== section.gradeLevel) tx.update(passRef, placement);
++    return { code: current.code, replaced: false };
++  }
++  const code = makePassCode(randomInt);
++  tx.set(passRef, { code, status: 'active', lrn, ...placement, schoolYear, issuedBy: email, issuedAt: FieldValue.serverTimestamp() });
++  // Codes are gate credentials: neither the old one nor the new one goes in the audit.
++  tx.set(db.collection('audit_log').doc(), audit(email, live ? 'tempPass.replaced' : 'tempPass.issued', studentId, placement));
++  return { code, replaced: live };
++}
++
+ export async function issueTempPasses(deps, input) {
+   const { db, uid, email, profile, now } = deps;
+-  if (!canManagePasses(profile)) fail('permission-denied', 'Temporary passes are for administrators and academic coordinators.');
++  if (!canManagePasses(profile)) fail('permission-denied', 'Temporary passes are for administrators, grade level coordinators and logistic operators.');
+   const ids = Array.isArray(input.studentIds) ? [...new Set(input.studentIds)] : [];
+   if (!ids.length || ids.length > 200 || !ids.every(identifier)) fail('invalid-argument', 'Choose 1–200 learners.');
+   await enforceRateLimit(db, uid, 'tempPass', LIMITS.tempPass, now().getTime());
+@@ -23,31 +55,15 @@
+   const grades = passGrades(profile);
+   const issued = []; const skipped = [];
+   for (const studentId of ids) {
+-    const result = await db.runTransaction(async tx => {
+-      const passRef = db.doc(`temp_passes/${studentId}`);
+-      const [student, enrollment, pass] = await Promise.all([
+-        tx.get(db.doc(`students/${studentId}`)), tx.get(db.doc(`enrollments/${studentId}_${schoolYear}`)), tx.get(passRef),
+-      ]);
+-      const sectionId = enrollment.data()?.sectionId;
+-      const section = identifier(sectionId) ? (await tx.get(db.doc(`sections/${sectionId}`))).data() : undefined;
+-      const blocker = tempPassBlocker({ student: student.data(), enrollment: enrollment.data(), section, schoolYear });
+-      // Scope is checked before the learner's own details are described.
+-      if (grades !== null && section && !grades.includes(section.gradeLevel)) return { skip: 'out-of-scope' };
+-      if (blocker) return { skip: blocker };
+-      // An incomplete section record skips its learner instead of failing the whole batch.
+-      if (!validGrade(section.gradeLevel)) return { skip: 'not-enrolled' };
+-      const placement = { sectionId, gradeLevel: section.gradeLevel };
+-      const current = pass.data();
+-      const lrn = student.data().lrn;
+-      if (current?.status === 'active' && current.lrn === lrn && current.schoolYear === schoolYear) {
+-        if (current.sectionId !== sectionId || current.gradeLevel !== section.gradeLevel) tx.update(passRef, placement);
+-        return { code: current.code };
+-      }
+-      const code = makePassCode(randomInt);
+-      tx.set(passRef, { code, status: 'active', lrn, ...placement, schoolYear, issuedBy: email, issuedAt: FieldValue.serverTimestamp() });
+-      tx.set(db.collection('audit_log').doc(), audit(email, 'tempPass.issued', studentId, placement));
+-      return { code };
+-    });
++    // A learner with a waiting adviser request is printed through it (fulfilTempPassRequestsFn), so a Lost
++    // request always replaces the lost code. Another grade's request is left to the scope check below.
++    const waiting = await db.collection('temp_pass_requests').where('studentId', '==', studentId)
++      .where('status', '==', 'pending').where('schoolYear', '==', schoolYear).limit(1).get();
++    if (!waiting.empty && (grades === null || grades.includes(waiting.docs[0].data().gradeLevel))) {
++      skipped.push({ studentId, reason: 'requested' });
++      continue;
++    }
++    const result = await db.runTransaction(tx => issueInTransaction(db, tx, { studentId, schoolYear, grades, email }));
+     if (result.code) issued.push({ studentId, code: result.code }); else skipped.push({ studentId, reason: result.skip });
+   }
+   return { issued, skipped };

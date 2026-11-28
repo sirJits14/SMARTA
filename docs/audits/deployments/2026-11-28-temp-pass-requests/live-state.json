@@ -1,0 +1,540 @@
+{
+ "functions": {
+  "getStudentPhotoFn": {
+   "state": "ACTIVE",
+   "revision": "getstudentphotofn-00002-weh",
+   "updated": "2026-11-28T09:10:42.234311996Z"
+  },
+  "onScanEventCreated": {
+   "state": "ACTIVE",
+   "revision": "onscaneventcreated-00022-dep",
+   "updated": "2026-11-27T13:58:50.574216428Z"
+  },
+  "listLearnerRequestsFn": {
+   "state": "ACTIVE",
+   "revision": "listlearnerrequestsfn-00001-vul",
+   "updated": "2026-10-28T06:11:43.916127119Z"
+  },
+  "issueActivationCodesFn": {
+   "state": "ACTIVE",
+   "revision": "issueactivationcodesfn-00019-liy",
+   "updated": "2026-10-28T02:18:04.157069132Z"
+  },
+  "revokeLinkFn": {
+   "state": "ACTIVE",
+   "revision": "revokelinkfn-00015-nub",
+   "updated": "2026-10-12T00:33:34.707953891Z"
+  },
+  "correctEventFn": {
+   "state": "ACTIVE",
+   "revision": "correcteventfn-00015-vep",
+   "updated": "2026-10-12T00:33:27.230090607Z"
+  },
+  "requestTempPassesFn": {
+   "state": "ACTIVE",
+   "revision": "requesttemppassesfn-00001-qen",
+   "updated": "2026-11-28T09:10:40.934306439Z"
+  },
+  "resolveLearnerRequestFn": {
+   "state": "ACTIVE",
+   "revision": "resolvelearnerrequestfn-00002-hax",
+   "updated": "2026-10-30T15:08:23.411094087Z"
+  },
+  "assignSchoolRoleFn": {
+   "state": "ACTIVE",
+   "revision": "assignschoolrolefn-00006-nen",
+   "updated": "2026-10-20T20:50:56.651128601Z"
+  },
+  "revokeAdvisorySlipFn": {
+   "state": "ACTIVE",
+   "revision": "revokeadvisoryslipfn-00002-mok",
+   "updated": "2026-10-20T20:50:52.652264930Z"
+  },
+  "deleteKioskFn": {
+   "state": "ACTIVE",
+   "revision": "deletekioskfn-00001-jun",
+   "updated": "2026-11-24T12:59:54.525608960Z"
+  },
+  "deleteStaffUserFn": {
+   "state": "ACTIVE",
+   "revision": "deletestaffuserfn-00008-roc",
+   "updated": "2026-11-28T09:24:37.962046960Z"
+  },
+  "previewAdvisorySlipFn": {
+   "state": "ACTIVE",
+   "revision": "previewadvisoryslipfn-00003-jif",
+   "updated": "2026-10-20T23:22:26.806762584Z"
+  },
+  "revokeTempPassFn": {
+   "state": "ACTIVE",
+   "revision": "revoketemppassfn-00001-zuf",
+   "updated": "2026-11-27T13:58:47.024291494Z"
+  },
+  "changeOwnPasswordFn": {
+   "state": "ACTIVE",
+   "revision": "changeownpasswordfn-00008-dov",
+   "updated": "2026-11-28T09:24:37.444857404Z"
+  },
+  "pruneDevicesJob": {
+   "state": "ACTIVE",
+   "revision": "prunedevicesjob-00014-lih",
+   "updated": "2026-10-10T14:16:16.431304161Z"
+  },
+  "getCoordinatorSectionOptionsFn": {
+   "state": "ACTIVE",
+   "revision": "getcoordinatorsectionoptionsfn-00001-wub",
+   "updated": "2026-10-15T05:39:05.489236257Z"
+  },
+  "declineTempPassRequestFn": {
+   "state": "ACTIVE",
+   "revision": "declinetemppassrequestfn-00001-tic",
+   "updated": "2026-11-28T09:10:40.175841799Z"
+  },
+  "revokeSchoolRoleFn": {
+   "state": "ACTIVE",
+   "revision": "revokeschoolrolefn-00006-fem",
+   "updated": "2026-10-20T20:50:56.523508847Z"
+  },
+  "provisionKioskFn": {
+   "state": "ACTIVE",
+   "revision": "provisionkioskfn-00013-rex",
+   "updated": "2026-10-12T00:33:29.160881901Z"
+  },
+  "listAdvisoryStatusFn": {
+   "state": "ACTIVE",
+   "revision": "listadvisorystatusfn-00002-cav",
+   "updated": "2026-10-20T20:51:03.823818492Z"
+  },
+  "setAdvisoryRequestsEnabledFn": {
+   "state": "ACTIVE",
+   "revision": "setadvisoryrequestsenabledfn-00002-reb",
+   "updated": "2026-10-20T21:45:02.619814528Z"
+  },
+  "resetStaffPasswordFn": {
+   "state": "ACTIVE",
+   "revision": "resetstaffpasswordfn-00008-xak",
+   "updated": "2026-11-28T09:24:38.126672642Z"
+  },
+  "publishAnnouncementsJob": {
+   "state": "ACTIVE",
+   "revision": "publishannouncementsjob-00009-kup",
+   "updated": "2026-10-20T20:50:56.029822654Z"
+  },
+  "getTempPassRequestsFn": {
+   "state": "ACTIVE",
+   "revision": "gettemppassrequestsfn-00001-leg",
+   "updated": "2026-11-28T09:10:40.941262637Z"
+  },
+  "withdrawLearnerRequestFn": {
+   "state": "ACTIVE",
+   "revision": "withdrawlearnerrequestfn-00001-xuf",
+   "updated": "2026-10-28T06:11:42.764148182Z"
+  },
+  "onStudentWritten": {
+   "state": "ACTIVE",
+   "revision": "onstudentwritten-00001-nej",
+   "updated": "2026-11-27T13:59:07.485994654Z"
+  },
+  "announcementAudienceCountFn": {
+   "state": "ACTIVE",
+   "revision": "announcementaudiencecountfn-00010-qof",
+   "updated": "2026-10-20T20:51:03.993789500Z"
+  },
+  "withdrawTempPassRequestFn": {
+   "state": "ACTIVE",
+   "revision": "withdrawtemppassrequestfn-00001-vah",
+   "updated": "2026-11-28T09:10:42.711992049Z"
+  },
+  "getSchoolPendingCountFn": {
+   "state": "ACTIVE",
+   "revision": "getschoolpendingcountfn-00002-wef",
+   "updated": "2026-10-20T20:50:49.635311236Z"
+  },
+  "createStaffUserFn": {
+   "state": "ACTIVE",
+   "revision": "createstaffuserfn-00008-qax",
+   "updated": "2026-11-28T09:24:37.924544550Z"
+  },
+  "deactivateKioskFn": {
+   "state": "ACTIVE",
+   "revision": "deactivatekioskfn-00015-nin",
+   "updated": "2026-10-12T00:33:28.036016328Z"
+  },
+  "deleteGuardianAccountFn": {
+   "state": "ACTIVE",
+   "revision": "deleteguardianaccountfn-00019-fec",
+   "updated": "2026-10-28T06:11:45.605983695Z"
+  },
+  "expireLinksJob": {
+   "state": "ACTIVE",
+   "revision": "expirelinksjob-00016-tiz",
+   "updated": "2026-10-18T08:42:24.805952641Z"
+  },
+  "addManualEventFn": {
+   "state": "ACTIVE",
+   "revision": "addmanualeventfn-00015-sef",
+   "updated": "2026-10-12T00:33:27.328113416Z"
+  },
+  "onAnnouncementWritten": {
+   "state": "ACTIVE",
+   "revision": "onannouncementwritten-00009-nar",
+   "updated": "2026-10-20T20:51:04.750258071Z"
+  },
+  "withdrawSchoolRequestFn": {
+   "state": "ACTIVE",
+   "revision": "withdrawschoolrequestfn-00002-ref",
+   "updated": "2026-10-20T20:50:53.252859135Z"
+  },
+  "correctLinkRelationshipFn": {
+   "state": "ACTIVE",
+   "revision": "correctlinkrelationshipfn-00001-tug",
+   "updated": "2026-10-18T09:48:47.007850549Z"
+  },
+  "getSchoolRosterFn": {
+   "state": "ACTIVE",
+   "revision": "getschoolrosterfn-00003-teq",
+   "updated": "2026-11-27T13:58:46.827703600Z"
+  },
+  "getPortalAnnouncementFn": {
+   "state": "ACTIVE",
+   "revision": "getportalannouncementfn-00004-lab",
+   "updated": "2026-10-20T20:50:56.860758569Z"
+  },
+  "listTempPassRequestsFn": {
+   "state": "ACTIVE",
+   "revision": "listtemppassrequestsfn-00001-mij",
+   "updated": "2026-11-28T09:10:40.994049208Z"
+  },
+  "resolveReportFn": {
+   "state": "ACTIVE",
+   "revision": "resolvereportfn-00015-vap",
+   "updated": "2026-10-12T00:33:27.147619022Z"
+  },
+  "getPortalAnnouncementsFn": {
+   "state": "ACTIVE",
+   "revision": "getportalannouncementsfn-00004-den",
+   "updated": "2026-10-20T20:50:49.729501941Z"
+  },
+  "markTempPassRequestsPrintedFn": {
+   "state": "ACTIVE",
+   "revision": "marktemppassrequestsprintedfn-00001-suf",
+   "updated": "2026-11-28T09:10:40.957412305Z"
+  },
+  "replaceAdviserFn": {
+   "state": "ACTIVE",
+   "revision": "replaceadviserfn-00004-foj",
+   "updated": "2026-10-20T20:50:56.146399715Z"
+  },
+  "updateStaffUserFn": {
+   "state": "ACTIVE",
+   "revision": "updatestaffuserfn-00008-bid",
+   "updated": "2026-11-28T09:24:39.972981262Z"
+  },
+  "getFamilyAttendanceFn": {
+   "state": "ACTIVE",
+   "revision": "getfamilyattendancefn-00003-gun",
+   "updated": "2026-10-18T13:34:32.637787088Z"
+  },
+  "reissueActivationCodeFn": {
+   "state": "ACTIVE",
+   "revision": "reissueactivationcodefn-00002-puf",
+   "updated": "2026-10-13T05:37:47.392234418Z"
+  },
+  "resetKioskPasswordFn": {
+   "state": "ACTIVE",
+   "revision": "resetkioskpasswordfn-00013-lek",
+   "updated": "2026-10-12T00:33:27.027360978Z"
+  },
+  "submitReportFn": {
+   "state": "ACTIVE",
+   "revision": "submitreportfn-00017-fir",
+   "updated": "2026-10-18T08:42:13.511308986Z"
+  },
+  "revokeCodeFn": {
+   "state": "ACTIVE",
+   "revision": "revokecodefn-00015-fes",
+   "updated": "2026-10-12T00:33:30.001680044Z"
+  },
+  "setKioskModeFn": {
+   "state": "ACTIVE",
+   "revision": "setkioskmodefn-00001-cec",
+   "updated": "2026-11-24T12:59:55.905711928Z"
+  },
+  "requestSchoolRoleFn": {
+   "state": "ACTIVE",
+   "revision": "requestschoolrolefn-00008-ruz",
+   "updated": "2026-10-20T23:22:31.200782911Z"
+  },
+  "markSchoolOpenedFn": {
+   "state": "ACTIVE",
+   "revision": "markschoolopenedfn-00002-rog",
+   "updated": "2026-10-20T20:50:47.712129911Z"
+  },
+  "onAttendanceCorrectionCreated": {
+   "state": "ACTIVE",
+   "revision": "onattendancecorrectioncreated-00002-kag",
+   "updated": "2026-10-18T08:42:23.094898669Z"
+  },
+  "onGuardianLinkWritten": {
+   "state": "ACTIVE",
+   "revision": "onguardianlinkwritten-00007-tor",
+   "updated": "2026-10-18T08:42:13.321786363Z"
+  },
+  "resolveSchoolRolesFn": {
+   "state": "ACTIVE",
+   "revision": "resolveschoolrolesfn-00004-puf",
+   "updated": "2026-10-20T20:50:55.276769163Z"
+  },
+  "saveStudentPhotoFn": {
+   "state": "ACTIVE",
+   "revision": "savestudentphotofn-00002-fer",
+   "updated": "2026-11-28T09:10:42.386959636Z"
+  },
+  "updateCoordinatorSectionFn": {
+   "state": "ACTIVE",
+   "revision": "updatecoordinatorsectionfn-00002-xof",
+   "updated": "2026-10-19T13:41:11.717988050Z"
+  },
+  "issueAdvisorySlipsFn": {
+   "state": "ACTIVE",
+   "revision": "issueadvisoryslipsfn-00002-rub",
+   "updated": "2026-10-20T20:50:54.397666162Z"
+  },
+  "resolveAccessRequestFn": {
+   "state": "ACTIVE",
+   "revision": "resolveaccessrequestfn-00018-vev",
+   "updated": "2026-10-18T09:48:57.049070934Z"
+  },
+  "getLearnerRequestCountFn": {
+   "state": "ACTIVE",
+   "revision": "getlearnerrequestcountfn-00001-fic",
+   "updated": "2026-10-28T06:11:39.656968118Z"
+  },
+  "setSessionAbsenceFn": {
+   "state": "ACTIVE",
+   "revision": "setsessionabsencefn-00002-yox",
+   "updated": "2026-10-18T08:42:14.245098141Z"
+  },
+  "setStaffUserDisabledFn": {
+   "state": "ACTIVE",
+   "revision": "setstaffuserdisabledfn-00008-hip",
+   "updated": "2026-11-28T09:24:37.656845219Z"
+  },
+  "getSchoolContextFn": {
+   "state": "ACTIVE",
+   "revision": "getschoolcontextfn-00007-weq",
+   "updated": "2026-10-20T21:44:59.503034094Z"
+  },
+  "retireSubjectTeachersFn": {
+   "state": "ACTIVE",
+   "revision": "retiresubjectteachersfn-00001-nor",
+   "updated": "2026-10-20T20:50:41.371659881Z"
+  },
+  "getLearnerRequestsFn": {
+   "state": "ACTIVE",
+   "revision": "getlearnerrequestsfn-00001-juv",
+   "updated": "2026-10-28T06:11:44.388999194Z"
+  },
+  "requestLearnerRemovalFn": {
+   "state": "ACTIVE",
+   "revision": "requestlearnerremovalfn-00001-rur",
+   "updated": "2026-10-28T06:11:45.158187589Z"
+  },
+  "activateCodeFn": {
+   "state": "ACTIVE",
+   "revision": "activatecodefn-00021-yih",
+   "updated": "2026-10-18T09:49:00.679664231Z"
+  },
+  "setActivationRestrictedFn": {
+   "state": "ACTIVE",
+   "revision": "setactivationrestrictedfn-00015-ref",
+   "updated": "2026-10-12T00:33:29.812944880Z"
+  },
+  "reconcileEventsJob": {
+   "state": "ACTIVE",
+   "revision": "reconcileeventsjob-00017-hef",
+   "updated": "2026-10-18T08:42:08.694732667Z"
+  },
+  "acceptConsentFn": {
+   "state": "ACTIVE",
+   "revision": "acceptconsentfn-00016-wux",
+   "updated": "2026-10-13T01:44:14.048864941Z"
+  },
+  "getSchoolLearnerHistoryFn": {
+   "state": "ACTIVE",
+   "revision": "getschoollearnerhistoryfn-00001-doh",
+   "updated": "2026-10-21T13:18:07.739330252Z"
+  },
+  "requestLearnerAddFn": {
+   "state": "ACTIVE",
+   "revision": "requestlearneraddfn-00001-lej",
+   "updated": "2026-10-28T06:11:44.807861768Z"
+  },
+  "exportSchoolSf2Fn": {
+   "state": "ACTIVE",
+   "revision": "exportschoolsf2fn-00001-law",
+   "updated": "2026-10-28T06:11:31.780765287Z"
+  },
+  "fulfilTempPassRequestsFn": {
+   "state": "ACTIVE",
+   "revision": "fulfiltemppassrequestsfn-00001-zir",
+   "updated": "2026-11-28T09:10:40.138614130Z"
+  },
+  "changeLinkRelationshipFn": {
+   "state": "ACTIVE",
+   "revision": "changelinkrelationshipfn-00004-fer",
+   "updated": "2026-10-18T09:48:56.723016827Z"
+  },
+  "redeemAdvisorySlipFn": {
+   "state": "ACTIVE",
+   "revision": "redeemadvisoryslipfn-00003-sav",
+   "updated": "2026-10-20T23:22:32.163301632Z"
+  },
+  "getSchoolLearnerAttendanceFn": {
+   "state": "ACTIVE",
+   "revision": "getschoollearnerattendancefn-00001-quj",
+   "updated": "2026-10-21T13:18:04.963785737Z"
+  },
+  "issueTempPassFn": {
+   "state": "ACTIVE",
+   "revision": "issuetemppassfn-00002-juj",
+   "updated": "2026-11-28T09:10:40.683385483Z"
+  },
+  "endSchoolYearFn": {
+   "state": "ACTIVE",
+   "revision": "endschoolyearfn-00012-wuw",
+   "updated": "2026-10-28T06:11:46.378153190Z"
+  },
+  "onEnrollmentWritten": {
+   "state": "ACTIVE",
+   "revision": "onenrollmentwritten-00001-xej",
+   "updated": "2026-11-27T13:59:09.851008531Z"
+  },
+  "registerKioskFn": {
+   "state": "ACTIVE",
+   "revision": "registerkioskfn-00016-wod",
+   "updated": "2026-11-24T12:59:58.944854626Z"
+  },
+  "onParentPortalSettingsChanged": {
+   "state": "ACTIVE",
+   "revision": "onparentportalsettingschanged-00014-jof",
+   "updated": "2026-10-10T14:16:21.180509113Z"
+  },
+  "requestAccessFn": {
+   "state": "ACTIVE",
+   "revision": "requestaccessfn-00015-vov",
+   "updated": "2026-10-12T00:33:41.010639633Z"
+  },
+  "savePortalAnnouncementFn": {
+   "state": "ACTIVE",
+   "revision": "saveportalannouncementfn-00003-laq",
+   "updated": "2026-10-20T20:50:56.611780279Z"
+  },
+  "resolveSchoolRoleFn": {
+   "state": "ACTIVE",
+   "revision": "resolveschoolrolefn-00006-siz",
+   "updated": "2026-10-20T20:50:56.686066592Z"
+  },
+  "sendAttendanceUpdatesJob": {
+   "state": "ACTIVE",
+   "revision": "sendattendanceupdatesjob-00001-sid",
+   "updated": "2026-10-18T08:42:12.964018561Z"
+  }
+ },
+ "hosting:bnhs-sims": [
+  {
+   "time": "2026-11-28T09:20:20.123Z",
+   "version": "bd77dc983b08d1e8",
+   "message": "Adviser pass requests, Logistic Operator, four passes per sheet (PR 109)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-27T14:05:40.639Z",
+   "version": "628b6aa03e5fd26c",
+   "message": "Student photos and temporary ID passes (PR 107)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-26T06:56:22.403Z",
+   "version": "1680e6bacdf293c9",
+   "message": "ID Cards: back to 0.5mm dashed section borders (PR 106)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-26T06:50:37.966Z",
+   "version": "931c9b8793de72c9",
+   "message": "ID Cards: never clip the Saved batch color key (PR 105)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-26T06:42:33.250Z",
+   "version": "a69a39f8f4f8d22a",
+   "message": "ID Cards: 0.8mm dashed section borders on Saved batch prints (PR 104)",
+   "by": "bnhs.ictservices@gmail.com"
+  }
+ ],
+ "hosting:bnhs-parent": [
+  {
+   "time": "2026-11-28T09:22:32.715Z",
+   "version": "7d96a7a961a7678d",
+   "message": "Parent App: advisers request temporary passes (PR 109)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-27T14:17:06.611Z",
+   "version": "a5bcf5096a1ea7dd",
+   "message": "Parent App: learner photos (PR 107)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-10-28T07:00:27.642Z",
+   "version": "88863933447e311b",
+   "message": "Parent App: center the Class tab action buttons (PR 97)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-10-28T06:42:50.040Z",
+   "version": "443a01dd827ae128",
+   "message": "Parent App: SF2 export and learner add/remove requests (PR 95)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-10-21T13:19:47.160Z",
+   "version": "3a2ec84399ae7ae2",
+   "message": "Adviser learner history and flagging in Class tab (PR 88, master cb9e0db)",
+   "by": "bnhs.ictservices@gmail.com"
+  }
+ ],
+ "hosting:bnhs-student-kiosk": [
+  {
+   "time": "2026-11-27T14:03:24.511Z",
+   "version": "af3b911fde2bd2c5",
+   "message": "Kiosk accepts temporary ID passes (kiosk PR 9)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-24T13:45:36.806Z",
+   "version": "a49e53df3c72e454",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-24T13:39:24.322Z",
+   "version": "2f89571a436463ea",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-24T13:24:15.224Z",
+   "version": "c80cd656ab43cbe4",
+   "message": "Kiosk: check-in and two-way Entrance/Exit sync with SIMS (PR 7)",
+   "by": "bnhs.ictservices@gmail.com"
+  },
+  {
+   "time": "2026-11-19T12:35:07.276Z",
+   "version": "c990fd6e5babc0ef",
+   "by": "bnhs.ictservices@gmail.com"
+  }
+ ],
+ "firestoreRuleset": "projects/bnhs-sims/rulesets/aac1e3ad-f121-418b-801c-8b60137450f8",
+ "firestoreRulesUpdated": "2026-11-28T09:16:48.484544Z",
+ "indexes": []
+}
