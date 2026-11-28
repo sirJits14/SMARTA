@@ -1,0 +1,22 @@
+{
+  "siteKeySet": true,
+  "siteKeyFoundIn": [
+    "assets/firebase-BN6t3e8w.js"
+  ],
+  "debugTokenValueFoundIn": "no debug token in env file",
+  "emulatorStrings": {
+    "127.0.0.1:8080": 0,
+    "'127.0.0.1',5001": 0,
+    "127.0.0.1:9099": 0,
+    "localhost:5174": 0
+  },
+  "appCheckDebugGlobalMentions": 4,
+  "baseline": {
+    "siteKeyFoundIn": [
+      "assets/firebase-BN6t3e8w.js"
+    ],
+    "debugTokenValueFoundIn": "no debug token in env file",
+    "appCheckDebugGlobalMentions": 4
+  }
+}
+BUNDLE CHECK: PASS
