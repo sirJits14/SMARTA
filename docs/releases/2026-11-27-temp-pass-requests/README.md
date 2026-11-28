@@ -10,10 +10,19 @@ a record) before each step. The kiosk needs no change.
 ## Before release
 
 - [ ] Tell JHS/SHS Academic Coordinators that ID Cards and the Photo button move to Grade Level
-      Coordinators and the new Logistic Operator. They lose pass access as soon as the rules publish.
+      Coordinators and the new Logistic Operator. They lose pass and photo access when the new functions
+      go live in step 2 (the current SIMS then shows them errors until step 4), so do steps 2-4 close
+      together.
 - [ ] Decide who the Logistic Operator will be. **Do not create the account until step 5 is done.**
+      Their account must use an email address that does NOT also sign in to the Parent App (as an
+      adviser or parent). Until every school-mode function is redeployed with the new role list, such
+      a person is refused ("Staff only") in school mode and announcements.
 
 ## Order
+
+> **WARNING: no Parent App deploy from `master` may happen until steps 1-2 are live.** Merged
+> `master` includes the "Request temporary pass" button, which would call functions that do not exist
+> yet. This also applies to any unrelated Parent deploy after the merge. Say so in the release record.
 
 ### 1. Firestore indexes
 
@@ -34,8 +43,11 @@ contain `staffRoles.js`, `tempPass.js` and `tempPassRequests.js`.
 - [ ] Changed account functions (6), so the new role is accepted: `createStaffUserFn`,
       `updateStaffUserFn`, `setStaffUserDisabledFn`, `resetStaffPasswordFn`, `deleteStaffUserFn`,
       `changeOwnPasswordFn`. **Without `changeOwnPasswordFn` a new Logistic Operator cannot replace
-      the temporary password and cannot sign in.** First compare each live source with the prepared
-      tree: these have not been redeployed by the pass releases.
+      the temporary password and cannot sign in.**
+- [ ] **Gate:** before redeploying the six account functions, download or compare each one's live
+      source against the prepared tree (these have not been redeployed by the pass releases). Record
+      the live revisions and the source diff in the new release record under
+      `docs/audits/deployments/`. Stop if the diff contains anything but this feature.
 - [ ] Do **not** include `onScanEventCreated`. Its live copy carries a hand-applied pass check; the
       prepared tree does not unless `apply-pass-check.mjs` from the 2026-11-27 release is run again.
 - [ ] Any other function keeps the old role list and refuses a Logistic Operator, which is intended.
@@ -54,6 +66,11 @@ that the new rules refuse.
 
 - [ ] Never publish a root build. Port this feature onto the live release tree
       (`port-sims.mjs` in the 2026-11-27 record describes it). Check there:
+  - three files are hand-ported: `src/lib/access.js`, `src/pages/IDCardsPage.jsx` and
+    `src/pages/StudentsPage.jsx` (the tree has no `src/lib/staffQueries.js`);
+  - `StudentsPage` must use `studentListGrades(me)` for its roster scope and grade options, or a
+    Logistic Operator gets an empty list;
+  - copy `src/App.jsx` (the `homePage` change), or a Logistic Operator lands on the Dashboard;
   - the tree has no `staffQueries`; pass panels read whole collections, so keep the Grade Level
     Coordinator's `temp_passes` query filtered by grade;
   - a Logistic Operator must trigger **no** read of schedules, attendance, announcements, learner
@@ -84,6 +101,9 @@ that the new rules refuse.
 
 ## Known limitations
 
+- The Logistic Operator's account must use an email address that does NOT also sign in to the Parent
+  App (as an adviser or parent). Until every school-mode function is redeployed with the new role
+  list, such a person is refused ("Staff only") in school mode and announcements.
 - A request that has been prepared cannot be withdrawn or declined while its pass is live, unless the
   learner can no longer be requested (for example, moved to another class). Mark it printed instead.
 - The Requests list shows at most 200 requests at a time and says so.

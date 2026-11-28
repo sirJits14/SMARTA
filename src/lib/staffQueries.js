@@ -17,7 +17,8 @@ function logisticQuery(path, schoolYear) {
 export function staffCollectionQuery(path, { me, schoolYear, sectionId, date } = {}) {
   if (!me) return null;
   if (roleOf(me) === 'logistic') return logisticQuery(path, schoolYear);
-  // Pass staff differ from roster staff: grade level coordinators get none.
+  // Pass staff differ from roster staff: grade level coordinators query temp_passes by their grade,
+  // and logistic operators (handled above) read the whole collection.
   if (path === 'temp_passes') {
     const grades = passGrades(me);
     if (grades === null) return query(collection(db, path));

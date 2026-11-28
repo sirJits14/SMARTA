@@ -88,7 +88,7 @@ describe('skipReasonText', () => {
     }
     expect(skipReasonText('something-new')).toBe('could not be prepared');
     expect(skipReasonText('not-pending')).toBe('the request was already handled');
-    expect(skipReasonText('requested')).toBe('Has a waiting request — print it from Requests');
+    expect(skipReasonText('requested')).toBe('has a waiting request; print it from Requests');
   });
 });
 
