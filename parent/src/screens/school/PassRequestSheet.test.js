@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import S from '../../strings.js';
-import { PassRequestList, PassRequestHistory } from './PassRequestSheet.jsx';
+import { PassRequestAnswer, PassRequestList, PassRequestHistory } from './PassRequestSheet.jsx';
 
 vi.mock('../../firebase.js', () => ({ app: {}, db: {}, auth: { currentUser: null }, callable: () => async () => ({ data: {} }) }));
 
@@ -42,6 +42,23 @@ describe('PassRequestList', () => {
     expect(replace).toContain(`>${S.passRequestDamaged}<`);
     expect(inputs(row(html, 'ABAD, BEN'), 'radio')).toEqual([]);
   });
+  it('names the learner in each Lost or Damaged question for screen readers', () => {
+    expect(row(list(), 'CRUZ, CARLA')).toContain(`<legend><span class="sr-only">CRUZ, CARLA: </span>${S.passRequestReplaceHint}</legend>`);
+  });
+  it('holds the send while a ticked learner with a pass has no Lost or Damaged choice, and says so', () => {
+    const one = list({ picks: { S1: '', S2: '' } });
+    expect(sendButton(one)).toContain('disabled=""');
+    expect(one).toContain('Choose Lost or Damaged for 1 ticked learner, or untick them.');
+    const two = list({ learners: [...learners, { studentId: 'S4', displayName: 'EVA, ELLA', hasPhoto: true, hasActivePass: true, blocker: null }], picks: { S2: '', S4: 'new' } });
+    expect(sendButton(two)).toContain('disabled=""');
+    expect(two).toContain('Choose Lost or Damaged for 2 ticked learners, or untick them.');
+    // In the foot, beside the button it holds back.
+    expect(one.indexOf('class="pass-foot"')).toBeLessThan(one.indexOf('Choose Lost or Damaged for'));
+  });
+  it('says nothing about a choice once every ticked learner can be sent', () => {
+    // A learner who is unticked or blocked needs no choice.
+    for (const picks of [{}, { S1: '' }, { S2: 'lost' }, { S1: '', S3: '' }]) expect(list({ picks }), JSON.stringify(picks)).not.toContain('Choose Lost or Damaged for');
+  });
   it('counts only the learners ready to send', () => {
     expect(sendButton(list())).toContain(`${S.passRequestSend} (0)`);
     expect(sendButton(list())).toContain('disabled=""');
@@ -79,6 +96,26 @@ describe('PassRequestList', () => {
   it('shows an error beside the send button, and says when the class is empty', () => {
     expect(list({ error: 'You already have 40 requests waiting.' })).toContain('You already have 40 requests waiting.');
     expect(list({ learners: [] })).toContain(S.sf2NoLearners);
+  });
+});
+
+describe('PassRequestAnswer', () => {
+  const answer = (props) => renderToStaticMarkup(createElement(PassRequestAnswer, { answer: null, error: '', ...props }));
+  it('is empty before anything was sent or withdrawn', () => {
+    expect(answer()).toBe('');
+  });
+  it('announces why a withdrawal failed', () => {
+    const html = answer({ error: 'This pass is already being printed. Ask the ID office.' });
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('This pass is already being printed. Ask the ID office.');
+  });
+  it('shows what was sent and who was skipped', () => {
+    const html = answer({ answer: { message: S.passRequestSent, skipped: [{ studentId: 'S2', name: 'CRUZ, CARLA', text: S.passBlockedRequested }] } });
+    expect(html).toContain(S.passRequestSent);
+    expect(html).toContain(S.passRequestSkipped);
+    expect(html).toContain('CRUZ, CARLA');
+    expect(html).toContain(S.passBlockedRequested);
+    expect(answer({ answer: { message: S.passRequestSent, skipped: [] } })).not.toContain(S.passRequestSkipped);
   });
 });
 

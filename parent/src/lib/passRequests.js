@@ -28,6 +28,13 @@ export function passItems(learners, picks) {
   return items.slice(0, MAX_PENDING_PASS_REQUESTS);
 }
 
+// Ticked learners with an active pass who still need Lost or Damaged. Nothing is sent while there are any,
+// so a ticked learner is never left out without the adviser knowing.
+export function unchosenCount(learners, picks) {
+  return (learners || []).filter(({ studentId, blocker, hasActivePass }) => !blocker && hasActivePass
+    && Object.hasOwn(picks, studentId) && !REPLACE_REASONS.includes(picks[studentId])).length;
+}
+
 // After the list reloads: unticks learners who became blocked or left, and forgets a Lost or Damaged
 // choice once there is no pass to replace. Returns the same object when nothing changes.
 export function prunePicks(picks, learners) {

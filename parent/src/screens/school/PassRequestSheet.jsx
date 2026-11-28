@@ -4,7 +4,7 @@ import { callable } from '../../firebase.js';
 import { schoolError } from '../../lib/school.js';
 import { usePassRequests } from '../../hooks/usePassRequests.js';
 import {
-  REPLACE_LABEL, STATUS_LABEL, blockerText, createOneAtATime, passItems, prunePicks, sendOutcome,
+  REPLACE_LABEL, STATUS_LABEL, blockerText, createOneAtATime, passItems, prunePicks, sendOutcome, unchosenCount,
 } from '../../lib/passRequests.js';
 import { MAX_PENDING_PASS_REQUESTS, PASS_NOTE_MAX, REPLACE_REASONS } from '../../../../shared/tempPassRequests.js';
 import { Banner, Btn, Spinner } from '../../components/ui.jsx';
@@ -14,6 +14,7 @@ import Sheet from '../../components/Sheet.jsx';
 // `loading` holds the send while the list is being refreshed.
 export function PassRequestList({ learners, picks, note, busy, loading, error, onToggle, onChoose, onNote, onSend, onClose }) {
   const count = passItems(learners, picks).length;
+  const unchosen = unchosenCount(learners, picks);
   const full = learners.filter((l) => !l.blocker && Object.hasOwn(picks, l.studentId)).length >= MAX_PENDING_PASS_REQUESTS;
   return (
     <>
@@ -34,7 +35,7 @@ export function PassRequestList({ learners, picks, note, busy, loading, error, o
                 </label>
                 {hasActivePass && !blocker && (
                   <fieldset className="pass-replace" disabled={locked}>
-                    <legend>{S.passRequestReplaceHint}</legend>
+                    <legend><span className="sr-only">{displayName}: </span>{S.passRequestReplaceHint}</legend>
                     {REPLACE_REASONS.map((reason) => (
                       <label key={reason}>
                         <input type="radio" name={`pass-reason-${studentId}`} value={reason} disabled={locked}
@@ -55,12 +56,29 @@ export function PassRequestList({ learners, picks, note, busy, loading, error, o
         <span className="p-field-hint pass-count">{`${note.length}/${PASS_NOTE_MAX}`}</span>
       </label>
       <div className="pass-foot">
-        {/* In the foot, so a failed send or the 40-learner limit is seen beside the button. */}
+        {/* In the foot, so what holds the send back (or why it failed) is seen beside the button. */}
         {error && <Banner tone="danger">{error}</Banner>}
+        {unchosen > 0 && <Banner tone="warn">{(unchosen === 1 ? S.passRequestChooseOne : S.passRequestChooseMany).replace('{n}', unchosen)}</Banner>}
         {full && <Banner>{S.passRequestLimit.replace('{n}', MAX_PENDING_PASS_REQUESTS)}</Banner>}
         <Btn variant="ghost" disabled={busy} onClick={onClose}>{S.requestsClose}</Btn>
-        <Btn disabled={busy || loading || count === 0} onClick={onSend}>{busy ? S.learnerSending : `${S.passRequestSend} (${count})`}</Btn>
+        <Btn disabled={busy || loading || unchosen > 0 || count === 0} onClick={onSend}>{busy ? S.learnerSending : `${S.passRequestSend} (${count})`}</Btn>
       </div>
+    </>
+  );
+}
+
+// What came of the last send or withdrawal. `error` is given only when no button foot is on screen to show it.
+export function PassRequestAnswer({ answer, error }) {
+  return (
+    <>
+      {error && <Banner tone="danger">{error}</Banner>}
+      {answer?.message && <Banner>{answer.message}</Banner>}
+      {answer?.skipped.length > 0 && (
+        <div role="alert" className="p-banner p-banner--warn pass-skipped">
+          <span>{S.passRequestSkipped}</span>
+          <ul>{answer.skipped.map((s) => <li key={s.studentId}>{s.name}: {s.text}</li>)}</ul>
+        </div>
+      )}
     </>
   );
 }
@@ -103,9 +121,12 @@ export default function PassRequestSheet({ sectionId, classLabel, onClose }) {
   const [answer, setAnswer] = useState(null); // { message, skipped }
   const [once] = useState(createOneAtATime);
   const answerBox = useRef(null);
+  const choosing = view === 'choose';
+  // A failed send shows beside the Send button. Without that foot (Sent requests, or no list) it joins the answer.
+  const answerError = choosing && learners ? '' : error;
   useEffect(() => { if (learners) setPicks((current) => prunePicks(current, learners)); }, [learners]);
-  // The list is long and the send button is at its foot, so the answer at the top is brought into view.
-  useEffect(() => { if (answer) answerBox.current?.scrollIntoView?.({ block: 'nearest' }); }, [answer]);
+  // Send is at the foot of a long list and Withdraw far down a long history, so the answer at the top is brought into view.
+  useEffect(() => { if (answer || answerError) answerBox.current?.scrollIntoView?.({ block: 'nearest' }); }, [answer, answerError]);
 
   const run = async (work) => {
     const outcome = await once(() => { setBusy(true); setError(''); setAnswer(null); return work(); }, refresh);
@@ -116,7 +137,7 @@ export default function PassRequestSheet({ sectionId, classLabel, onClose }) {
   };
   const send = () => {
     const items = passItems(learners, picks);
-    if (!items.length) return;
+    if (!items.length || unchosenCount(learners, picks)) return;
     run(async () => {
       const { data } = await callable('requestTempPassesFn')({ sectionId, items, note: note.trim() });
       setPicks({}); setNote('');
@@ -135,7 +156,6 @@ export default function PassRequestSheet({ sectionId, classLabel, onClose }) {
   });
   const choose = (studentId, reason) => setPicks((current) => ({ ...current, [studentId]: reason }));
   const show = (next) => { setView(next); setError(''); setAnswer(null); };
-  const choosing = view === 'choose';
 
   return (
     <Sheet title={S.passRequestTitle} hint={choosing ? `${classLabel} · ${S.passRequestHint}` : classLabel} busy={busy} onClose={onClose}>
@@ -144,18 +164,10 @@ export default function PassRequestSheet({ sectionId, classLabel, onClose }) {
         <button type="button" aria-pressed={!choosing} disabled={busy} onClick={() => show('sent')}>{S.passRequestHistory}</button>
       </div>
       <div ref={answerBox} className="pass-answer">
-        {answer?.message && <Banner>{answer.message}</Banner>}
-        {answer?.skipped.length > 0 && (
-          <div role="alert" className="p-banner p-banner--warn pass-skipped">
-            <span>{S.passRequestSkipped}</span>
-            <ul>{answer.skipped.map((s) => <li key={s.studentId}>{s.name}: {s.text}</li>)}</ul>
-          </div>
-        )}
+        <PassRequestAnswer answer={answer} error={answerError} />
       </div>
       {loadError && <Banner tone="danger" action={<Btn variant="ghost" onClick={refresh}>{S.passRequestRetry}</Btn>}>{loadError}</Banner>}
       {!learners && loading && <Spinner label={S.loading} />}
-      {/* A failed action stays visible even when the list could not be loaded or the other view is open. */}
-      {error && !(choosing && learners) && <Banner tone="danger">{error}</Banner>}
       {choosing && learners && (
         <PassRequestList learners={learners} picks={picks} note={note} busy={busy} loading={loading} error={error}
           onToggle={toggle} onChoose={choose} onNote={setNote} onSend={send} onClose={onClose} />

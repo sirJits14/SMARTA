@@ -413,6 +413,8 @@ const S = {
   passRequestReplaceHint: 'Already has a pass. Why is a new one needed?',
   passRequestNote: 'Note (optional)',
   passRequestSend: 'Send request',
+  passRequestChooseOne: 'Choose Lost or Damaged for {n} ticked learner, or untick them.',
+  passRequestChooseMany: 'Choose Lost or Damaged for {n} ticked learners, or untick them.',
   passRequestSent: 'Request sent.',
   passRequestSkipped: 'Not sent:',
   passRequestChoiceChanged: 'The Lost or Damaged choice no longer fits',

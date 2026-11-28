@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import S from '../strings.js';
-import { blockerText, createOneAtATime, passItems, passListFor, prunePicks, sendOutcome, skipText } from './passRequests.js';
+import { blockerText, createOneAtATime, passItems, passListFor, prunePicks, sendOutcome, skipText, unchosenCount } from './passRequests.js';
 
 const learner = (studentId, extra = {}) => ({ studentId, displayName: `NAME ${studentId}`, hasPhoto: true, hasActivePass: false, blocker: null, ...extra });
 
@@ -51,6 +51,19 @@ describe('passItems', () => {
     const items = passItems(many, picks);
     expect(items).toHaveLength(40);
     expect(items[0].studentId).toBe('S0');
+  });
+});
+
+describe('unchosenCount', () => {
+  const learners = [learner('A'), learner('B', { hasActivePass: true }), learner('C', { hasActivePass: true, blocker: 'official-printed' }), learner('D', { hasActivePass: true })];
+  it('counts the ticked learners with a pass who have no Lost or Damaged choice', () => {
+    expect(unchosenCount(learners, { B: '', D: 'new' })).toBe(2);
+    expect(unchosenCount(learners, { B: 'lost', D: '' })).toBe(1);
+    expect(unchosenCount(learners, { B: 'lost', D: 'damaged' })).toBe(0);
+  });
+  it('ignores learners who are unticked, blocked, without a pass or not in the list', () => {
+    expect(unchosenCount(learners, { A: '', C: '', Z: '' })).toBe(0);
+    expect(unchosenCount(null, { B: '' })).toBe(0);
   });
 });
 

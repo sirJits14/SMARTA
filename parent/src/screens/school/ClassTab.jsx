@@ -15,7 +15,7 @@ import ClassActions from './ClassActions.jsx';
 import { sf2MonthOptions, base64ToFile, saveFile, saveWithFallback } from '../../lib/sf2.js';
 import { useLearnerRequests } from '../../hooks/useLearnerRequests.js';
 import { addPayload, pendingRemovalIds, pendingRequests, prefillFrom } from '../../lib/learnerRequests.js';
-import { canManagePhotos } from '../../lib/studentPhoto.js';
+import { canManagePhotos, canRequestPasses } from '../../lib/studentPhoto.js';
 import S from '../../strings.js';
 import './ClassTab.css';
 
@@ -96,7 +96,7 @@ export default function ClassTab({ sections, ended, navigate }) {
   const photosOpen = canPhotos && photosFor === validSection;
   // Temporary pass requests belong to one class too, and wait for that class's list to be on screen.
   const [passesFor, setPassesFor] = useState('');
-  const canPasses = !ended && Boolean(validSection) && roster?.section?.id === validSection;
+  const canPasses = canRequestPasses(roster, validSection, ended);
   const passesOpen = canPasses && passesFor === validSection;
   // Returning from the share sheet, file picker or camera prompt fires focus, so the roster must not reload behind a sheet.
   sheetOpen.current = Boolean(sheet) || sf2Open || photosOpen || passesOpen;

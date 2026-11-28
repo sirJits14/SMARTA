@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPhotoCache, photoDataUrl, photoVersion, canManagePhotos, photoCountText } from './studentPhoto.js';
+import { createPhotoCache, photoDataUrl, photoVersion, canManagePhotos, canRequestPasses, photoCountText } from './studentPhoto.js';
 
 const photo = (text) => ({ photo: { contentBase64: text, updatedAt: 1 } });
 const deferred = () => {
@@ -95,6 +95,21 @@ describe('photo helpers', () => {
     expect(canManagePhotos(roster, 'b', false)).toBe(false);
     expect(canManagePhotos({ section: { id: 'a' } }, 'a', false)).toBe(false);
     expect(canManagePhotos(null, 'a', false)).toBe(false);
+  });
+  it('offers pass requests for the class whose list is on screen, while the year runs', () => {
+    const roster = { section: { id: 'a' } };
+    expect(canRequestPasses(roster, 'a', false)).toBe(true);
+    // Asking for a pass does not depend on being allowed to change photos.
+    expect(canRequestPasses({ ...roster, canEditPhotos: false }, 'a', false)).toBe(true);
+  });
+  it('offers no pass request while another class, or nothing, is on screen', () => {
+    expect(canRequestPasses({ section: { id: 'a' } }, 'b', false)).toBe(false);
+    expect(canRequestPasses(null, 'a', false)).toBe(false);
+    expect(canRequestPasses({}, '', false)).toBe(false);
+    expect(canRequestPasses(null, undefined, false)).toBe(false);
+  });
+  it('offers no pass request once the school year has ended', () => {
+    expect(canRequestPasses({ section: { id: 'a' } }, 'a', true)).toBe(false);
   });
   it('counts the learners with a photo', () => {
     expect(photoCountText(2, 40)).toBe('2 of 40 have a photo');
