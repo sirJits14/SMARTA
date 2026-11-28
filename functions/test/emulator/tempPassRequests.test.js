@@ -211,6 +211,30 @@ describe('getTempPassRequests (3)', () => {
     expect(requests).toHaveLength(50);
     expect(requests[0].id).toBe('R54');
   });
+  // The caller's requests for SEC1, one second apart: `rows` is [id, status, second].
+  const seedRequests = async (rows) => {
+    const batch = db().batch();
+    for (const [id, status, second] of rows) batch.set(db().doc(`temp_pass_requests/${id}`), { studentId: 'S1', sectionId: 'SEC1', sectionName: 'Rizal', gradeLevel: 7, status,
+      requestedByUid: 'adv', schoolYear: year, reason: 'new', createdAt: Timestamp.fromMillis(Date.UTC(2026, 9, 1) + second * 1000) });
+    await batch.commit();
+  };
+  const history = (count, from) => Array.from({ length: count }, (_, i) => [`R${i}`, ['printed', 'declined', 'withdrawn'][i % 3], from + i]);
+  it('never drops a waiting request behind newer history, so it can still be withdrawn', async () => {
+    await seedRequests([['OLD', 'pending', 0], ...history(55, 1)]);
+    const { requests } = await getTempPassRequests(school('adv'), { sectionId: 'SEC1' });
+    // The waiting one plus the newest 49 others, still newest first.
+    expect(requests.map((r) => r.id)).toEqual([...Array.from({ length: 49 }, (_, i) => `R${54 - i}`), 'OLD']);
+    expect(requests.at(-1)).toMatchObject({ status: 'pending', prepared: false });
+    expect(await withdrawTempPassRequest(school('adv'), { requestId: 'OLD' })).toEqual({ ok: true });
+  });
+  it('keeps all 40 waiting requests and fills the rest with the newest history, in one newest-first order', async () => {
+    // 20 old waiting requests, 30 decided ones, then 20 new waiting requests.
+    const waiting = (prefix, from) => Array.from({ length: 20 }, (_, i) => [`${prefix}${i}`, 'pending', from + i]);
+    await seedRequests([...waiting('A', 0), ...history(30, 20), ...waiting('B', 50)]);
+    const { requests } = await getTempPassRequests(school('adv'), { sectionId: 'SEC1' });
+    const ids = (prefix, high, count) => Array.from({ length: count }, (_, i) => `${prefix}${high - i}`);
+    expect(requests.map((r) => r.id)).toEqual([...ids('B', 19, 20), ...ids('R', 29, 10), ...ids('A', 19, 20)]);
+  });
 });
 
 describe('printer callables (4)', () => {

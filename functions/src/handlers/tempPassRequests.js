@@ -191,9 +191,12 @@ export async function getTempPassRequests(deps, input) {
       studentId, displayName: fullName(student), hasPhoto: !!student.photo?.path, hasActivePass: isActivePassFor(pass, student, schoolYear),
       blocker: passRequestBlocker({ student, enrollment, sectionId: input.sectionId, schoolYear, pendingRequest }),
     }));
-  const latest = mine.docs
-    .sort((a, b) => (millis(b.data().createdAt) ?? 0) - (millis(a.data().createdAt) ?? 0))
-    .slice(0, ADVISER_LIST);
+  const newest = mine.docs.sort((a, b) => (millis(b.data().createdAt) ?? 0) - (millis(a.data().createdAt) ?? 0));
+  // Every waiting request is returned, however old, so it can still be withdrawn; the newest of the others
+  // fill the list up to ADVISER_LIST rows. The order stays newest first.
+  const isWaiting = (d) => d.data().status === 'pending';
+  const history = new Set(newest.filter((d) => !isWaiting(d)).slice(0, Math.max(0, ADVISER_LIST - newest.filter(isWaiting).length)));
+  const latest = newest.filter((d) => isWaiting(d) || history.has(d));
   // Only a waiting request with a code can be prepared; its learner's pass and record decide (see isPrepared).
   const preparedIds = [...new Set(latest.map((d) => d.data()).filter((r) => r.status === 'pending' && r.passCode && identifier(r.studentId))
     .map((r) => r.studentId))];
