@@ -27,6 +27,8 @@ export const LIMITS = {
   studentPhoto: { windowMs: 60 * 60 * 1000, max: 300 },
   // Temporary passes: one call per print batch (up to 200 learners each).
   tempPass: { windowMs: 60 * 60 * 1000, max: 300 },
+  // Adviser requests for temporary passes: one call per class batch (up to 40 learners).
+  tempPassRequest: { windowMs: 60 * 60 * 1000, max: 60 },
 };
 export const MAX_OPEN_REQUESTS = 3;
 

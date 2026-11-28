@@ -1,7 +1,8 @@
 import { tempPassBlocker, isOfficialCardPrinted } from '../../shared/tempPass.js';
 
 // Temporary ID pass helpers for the SIMS (spec 2026-11-27).
-export const PASSES_PER_SHEET = 9;
+// 85 × 134.8 mm passes, two across and two down on A4 (spec 2026-11-27 requests).
+export const PASSES_PER_SHEET = 4;
 
 const row = (key, label, tone, printable) => ({ key, label, tone, printable });
 
@@ -16,10 +17,10 @@ export function passRowStatus({ student, enrollment, section, schoolYear, pass }
   if (blocker === 'not-enrolled' || blocker === 'not-found') return row('not-enrolled', 'Not enrolled', 'neutral', false);
   const thisYear = pass && pass.schoolYear === schoolYear;
   if (!blocker && thisYear && pass.status === 'active' && pass.lrn === student.lrn) return row('active', 'Active', 'success', true);
-  if (blocker === 'no-photo') return row('no-photo', 'Missing photo', 'warning', false);
   if (thisYear && pass.status === 'revoked') return row('revoked', 'Revoked', 'danger', true);
   if (thisYear && pass.status === 'superseded') return row('superseded', 'Superseded', 'neutral', true);
-  return row('ready', 'Ready', 'info', true);
+  // A learner without a photo still prints: the card carries a frame to attach one.
+  return student?.photo?.path ? row('ready', 'Ready', 'info', true) : row('ready', 'Ready · no photo', 'info', true);
 }
 
 // A rough width (0.66 em per character) decides whether to shrink; when it does,
@@ -45,10 +46,11 @@ const SKIP_REASONS = {
   inactive: 'learner is not active',
   'no-lrn': 'no LRN on record',
   'official-printed': 'official ID already issued',
-  'no-photo': 'no photo on record',
   'out-of-scope': 'outside the grades you manage',
   'photo-unavailable': 'the photo could not be loaded',
   'qr-failed': 'the QR code could not be made',
+  'not-pending': 'the request was already handled',
+  requested: 'has a waiting request; print it from Requests',
 };
 export const skipReasonText = (reason) => SKIP_REASONS[reason] ?? 'could not be prepared';
 
@@ -108,9 +110,11 @@ export function livePreviewCheck(items, livePasses, confirmed) {
 }
 
 // Everything a prepared preview was built from: any change discards it.
-// learners: [{ id, name, lrn }] for the selected learners, as they would print.
+// learners: [{ id, name, lrn, requestId?, photo?, sectionLine? }] for the selected learners, as they
+// would print (photo: the record's photo path, so adding or removing one prepares the card again).
 export const previewKey = ({ sectionId, learners, principalName, principalTitle }) =>
-  JSON.stringify([sectionId ?? '', learners.map(({ id, name, lrn }) => [id, name, lrn]), principalName, principalTitle]);
+  JSON.stringify([sectionId ?? '', learners.map(({ id, name, lrn, requestId, photo, sectionLine }) =>
+    [id, name, lrn, requestId ?? '', photo ?? '', sectionLine ?? '']), principalName, principalTitle]);
 
 // Wraps work so a run that has been superseded (isCurrent() false) ends quietly
 // instead of reporting its error against the newer selection.

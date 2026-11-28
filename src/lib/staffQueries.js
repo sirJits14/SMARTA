@@ -1,12 +1,24 @@
 import { collection, query, where } from 'firebase/firestore';
 import { db } from '../firebase.js';
-import { scopedGrades } from '../../shared/staffRoles.js';
+import { roleOf, scopedGrades } from '../../shared/staffRoles.js';
 import { passGrades } from '../../shared/tempPass.js';
+
+const isSchoolYear = (value) => typeof value === 'string' && /^[0-9]{4}-[0-9]{4}$/.test(value);
+
+// Everything a logistic operator may query, across all grades. Learners are limited to this school year.
+function logisticQuery(path, schoolYear) {
+  if (path === 'students') {
+    return isSchoolYear(schoolYear) ? query(collection(db, path), where('scopeSchoolYear', '==', schoolYear)) : null;
+  }
+  return ['sections', 'enrollments', 'temp_passes'].includes(path) ? query(collection(db, path)) : null;
+}
 
 // Queries must prove the same grade boundary as the Firestore read rules.
 export function staffCollectionQuery(path, { me, schoolYear, sectionId, date } = {}) {
   if (!me) return null;
-  // Pass staff differ from roster staff: grade level coordinators get none.
+  if (roleOf(me) === 'logistic') return logisticQuery(path, schoolYear);
+  // Pass staff differ from roster staff: grade level coordinators query temp_passes by their grade,
+  // and logistic operators (handled above) read the whole collection.
   if (path === 'temp_passes') {
     const grades = passGrades(me);
     if (grades === null) return query(collection(db, path));
@@ -24,7 +36,7 @@ export function staffCollectionQuery(path, { me, schoolYear, sectionId, date } =
   if (allowed === null) return query(collection(db, path));
   if (!allowed.length) return null;
   if (path === 'students') {
-    if (typeof schoolYear !== 'string' || !/^[0-9]{4}-[0-9]{4}$/.test(schoolYear)) return null;
+    if (!isSchoolYear(schoolYear)) return null;
     return query(collection(db, path), where('scopeSchoolYear', '==', schoolYear), where('gradeLevel', 'in', allowed));
   }
   if (['sections', 'enrollments', 'student_attendance'].includes(path)) {

@@ -4,7 +4,7 @@ import { ResourceState } from '../components/ui.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useDocResource } from '../hooks/useCollection.js';
 import InstallAppCard from '../components/InstallAppCard.jsx';
-import { updateSettings } from '../data/settings.js';
+import { updateSettings, PICKUP_PLACE_MAX } from '../data/settings.js';
 import { T, S } from '../styles.js';
 import { Btn, Inp, Field, Card } from '../components/ui.jsx';
 
@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const action = useAsyncAction();
   const settingsResource = useDocResource('settings/app');
   const settings = settingsResource.data;
-  const [f, setF] = useState({ schoolId: '', schoolName: '', principalName: '', principalTitle: '' });
+  const [f, setF] = useState({ schoolId: '', schoolName: '', principalName: '', principalTitle: '', passPickupPlace: '' });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const initedRef = useRef(false);
@@ -27,7 +27,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!settingsResource.loading && !settingsResource.error && !initedRef.current) {
       setF({ schoolId: settings?.schoolId || '', schoolName: settings?.schoolName || '',
-        principalName: settings?.principalName || '', principalTitle: settings?.principalTitle || '' });
+        principalName: settings?.principalName || '', principalTitle: settings?.principalTitle || '',
+        passPickupPlace: settings?.passPickupPlace || '' });
       initedRef.current = true;
     }
   }, [settings, settingsResource.loading, settingsResource.error]);
@@ -58,6 +59,8 @@ export default function SettingsPage() {
         <Field label="Principal's name"><Inp value={f.principalName} placeholder="PAUL O. ORONG" aria-describedby="settings-principal-hint" onChange={(e) => set('principalName', e.target.value)} /></Field>
         <Field label="Principal's title"><Inp value={f.principalTitle} placeholder="Secondary Principal IV" aria-describedby="settings-principal-hint" onChange={(e) => set('principalTitle', e.target.value)} /></Field>
         <p id="settings-principal-hint" style={{ margin: '-4px 0 8px', fontFamily: T.body, fontSize: 12, color: T.inkMuted }}>Printed on temporary ID passes.</p>
+        <Field label="Pass pick-up place"><Inp value={f.passPickupPlace} maxLength={PICKUP_PLACE_MAX} placeholder="Logistics Office, Admin Building" aria-describedby="settings-pickup-hint" onChange={(e) => set('passPickupPlace', e.target.value)} /></Field>
+        <p id="settings-pickup-hint" style={{ margin: '-4px 0 8px', fontFamily: T.body, fontSize: 12, color: T.inkMuted }}>Shown to advisers when their requested passes are ready.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
           {saved && <span style={{ fontFamily: T.body, fontSize: 'var(--sims-field-font, 13px)', color: T.present, fontWeight: 600 }}>Saved ✓</span>}
           <Btn onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Btn>

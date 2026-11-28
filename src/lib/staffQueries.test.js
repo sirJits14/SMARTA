@@ -47,15 +47,35 @@ describe('staff collection query authorization filters', () => {
       expect(queryEqual(staffCollectionQuery('temp_passes', { me, schoolYear }), query(collection(db, 'temp_passes')))).toBe(true);
     }
   });
-  it.each([[{ role: 'jhs_coord' }, [7, 8, 9, 10]], [{ role: 'shs_coord' }, [11, 12]]])('lists only the pass grades of %j', (me, allowed) => {
+  it.each([[{ role: 'glc', gradeLevel: 8 }, [8]], [{ role: 'glc', gradeLevel: '11' }, [11]]])('lists only the pass grades of %j', (me, allowed) => {
     expect(queryEqual(staffCollectionQuery('temp_passes', { me, schoolYear }),
       query(collection(db, 'temp_passes'), where('gradeLevel', 'in', allowed)))).toBe(true);
   });
-  it.each([{ role: 'glc', gradeLevel: 8 }, { role: 'unknown' }, undefined])('never lists temporary passes for %j', me => {
+  it.each([{ role: 'jhs_coord' }, { role: 'shs_coord' }, { role: 'glc' }, { role: 'unknown' }, undefined])('never lists temporary passes for %j', me => {
     expect(staffCollectionQuery('temp_passes', { me, schoolYear })).toBeNull();
   });
   it('does not expose an unsupported collection to coordinators', () => {
     expect(staffCollectionQuery('guardians', { me: { role: 'jhs_coord' }, schoolYear })).toBeNull();
+  });
+});
+
+describe('logistic operator queries', () => {
+  const me = { role: 'logistic' };
+  it.each(['sections', 'enrollments', 'temp_passes'])('lists the whole %s collection', path => {
+    expect(queryEqual(staffCollectionQuery(path, { me, schoolYear }), query(collection(db, path)))).toBe(true);
+  });
+  it('lists only this school year’s learners, of every grade', () => {
+    expect(queryEqual(staffCollectionQuery('students', { me, schoolYear }),
+      query(collection(db, 'students'), where('scopeSchoolYear', '==', schoolYear)))).toBe(true);
+  });
+  it.each([undefined, null, '', '2026-27', 2026, '2026-2027\n'])('does not read learners without a canonical active school year (%s)', year => {
+    expect(staffCollectionQuery('students', { me, schoolYear: year })).toBeNull();
+  });
+  it.each(['student_attendance', 'schedules', 'announcements', 'guardians', 'guardian_links', 'users', 'id_card_batch', 'kiosks'])('never queries %s', path => {
+    expect(staffCollectionQuery(path, { me, schoolYear })).toBeNull();
+  });
+  it('never queries a selected attendance day', () => {
+    expect(staffCollectionQuery('student_attendance', { me, schoolYear, sectionId: 'G8', date: '2026-10-10' })).toBeNull();
   });
 });
 

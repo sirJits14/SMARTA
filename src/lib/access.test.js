@@ -56,24 +56,40 @@ describe('pages', () => {
     expect(isAdmin(admin)).toBe(true);
     expect(allowedPages(admin)).toEqual(expect.arrayContaining(['dashboard', 'enroll', 'guardians', 'announcements', 'settings', 'accounts', 'learnerRequests']));
   });
-  it('coordinators open the shared pages, including Announcements and Learner requests', () => {
-    expect(allowedPages(glc8)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements']);
+  const academicPages = ['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements'];
+  const gradePages = ['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'idcards', 'announcements'];
+  const logistic = { role: 'logistic' };
+  it('grade level coordinators open the shared pages and ID Cards', () => {
+    expect(allowedPages(glc8)).toEqual(gradePages);
+    expect(canOpen(glc8, 'idcards')).toBe(true);
     expect(canOpen(glc8, 'learnerRequests')).toBe(true);
     expect(canOpen(glc8, 'attendance')).toBe(true);
     expect(canOpen(glc8, 'enroll')).toBe(false);
     expect(canOpen({ role: 'teacher' }, 'dashboard')).toBe(false);
+  });
+  it('academic coordinators open the shared pages but not ID Cards', () => {
+    for (const me of [jhs, { role: 'shs_coord' }]) {
+      expect(allowedPages(me)).toEqual(academicPages);
+      expect(canOpen(me, 'idcards')).toBe(false);
+    }
+  });
+  it('logistic operators open ID Cards and Students only, in that order', () => {
+    expect(allowedPages(logistic)).toEqual(['idcards', 'students']);
+    for (const page of ['dashboard', 'learnerRequests', 'sections', 'schedules', 'attendance', 'announcements', 'enroll', 'guardians', 'settings', 'accounts']) {
+      expect(canOpen(logistic, page)).toBe(false);
+    }
+    expect(isAdmin(logistic)).toBe(false);
+  });
+  it('starts each role on the first page it can open', () => {
+    expect(access.homePage(logistic)).toBe('idcards');
+    for (const me of [admin, {}, jhs, { role: 'shs_coord' }, glc8]) expect(access.homePage(me)).toBe('dashboard');
+    for (const me of [null, { role: 'teacher' }]) expect(access.homePage(me)).toBe('dashboard');
   });
   it('no coordinator role is an administrator or reaches admin-only pages', () => {
     for (const me of [jhs, { role: 'shs_coord' }, glc8]) {
       expect(isAdmin(me)).toBe(false);
       for (const page of ['enroll', 'guardians', 'settings', 'accounts']) expect(canOpen(me, page)).toBe(false);
     }
-  });
-  it('lets academic coordinators, but not grade level coordinators, open ID Cards for temporary passes', () => {
-    expect(allowedPages(jhs)).toEqual(['dashboard', 'students', 'learnerRequests', 'sections', 'schedules', 'attendance', 'idcards', 'announcements']);
-    expect(canOpen({ role: 'shs_coord' }, 'idcards')).toBe(true);
-    expect(canOpen(glc8, 'idcards')).toBe(false);
-    expect(canOpen({ role: 'teacher' }, 'idcards')).toBe(false);
   });
   it('a profile with no role is still an administrator (pre-roles accounts)', () => {
     expect(isAdmin({})).toBe(true);
@@ -88,6 +104,17 @@ describe('grade controls', () => {
     expect(singleGrade(glc8)).toBe(8);
     expect(singleGrade(jhs)).toBeNull();
     expect(singleGrade(admin)).toBeNull();
+  });
+  it('lists every grade on the Students page for logistic operators, who have no general grade scope', () => {
+    const logistic = { role: 'logistic' };
+    expect(access.grades(logistic)).toEqual([]);
+    expect(access.studentListGrades(logistic)).toBeNull();
+    expect(access.studentListGrades(admin)).toBeNull();
+    expect(access.studentListGrades(jhs)).toEqual([7, 8, 9, 10]);
+    expect(access.studentListGrades(glc8)).toEqual([8]);
+    for (const me of [null, { role: 'teacher' }]) expect(access.studentListGrades(me)).toEqual([]);
+    expect(canIssueAdvisorySlip(logistic, { gradeLevel: 8 })).toBe(false);
+    expect(access.canEditSection(logistic, { gradeLevel: 8, schoolYear: '2026-2027' }, '2026-2027')).toBe(false);
   });
 });
 
@@ -148,11 +175,11 @@ describe('canIssueAdvisorySlip', () => {
 });
 
 describe('learner photos', () => {
-  it('lets administrators and academic coordinators manage them, not grade coordinators', () => {
-    for (const me of [{ role: 'admin' }, { role: 'registrar' }, { role: 'jhs_coord' }, { role: 'shs_coord' }]) {
+  it('lets administrators, grade level coordinators and logistic operators manage them, not academic coordinators', () => {
+    for (const me of [{ role: 'admin' }, { role: 'registrar' }, { role: 'glc', gradeLevel: 8 }, { role: 'logistic' }]) {
       expect(access.canManagePhotos(me)).toBe(true);
     }
-    for (const me of [{ role: 'glc', gradeLevel: 8 }, { role: 'subject_teacher' }, null]) {
+    for (const me of [{ role: 'jhs_coord' }, { role: 'shs_coord' }, { role: 'glc' }, { role: 'subject_teacher' }, null]) {
       expect(access.canManagePhotos(me)).toBe(false);
     }
   });

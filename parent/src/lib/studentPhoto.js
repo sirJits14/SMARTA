@@ -35,5 +35,9 @@ export const photoVersion = (learner, error, studentId) => (
 export const canManagePhotos = (roster, sectionId, ended) => (
   !ended && roster?.canEditPhotos === true && roster.section?.id === sectionId
 );
+// Temporary pass requests act on one class: offered only while that class's list is the one on screen.
+export const canRequestPasses = (roster, sectionId, ended) => (
+  !ended && Boolean(sectionId) && roster?.section?.id === sectionId
+);
 
 export const photoCountText = (done, total) => S.photoCount.replace('{n}', done).replace('{total}', total);

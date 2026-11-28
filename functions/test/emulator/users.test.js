@@ -30,6 +30,12 @@ describe('createStaffUser', () => {
     await createStaffUser(ctx(), { name: 'Ben Dy', email: 'jhs@bnhs.edu', role: 'jhs_coord' });
     expect(await profile('jhs@bnhs.edu')).toMatchObject({ role: 'jhs_coord', gradeLevel: null });
   });
+  it('creates logistic operators without a grade', async () => {
+    const log = { name: 'Lia Go', email: 'log@bnhs.edu', role: 'logistic' };
+    await expect(createStaffUser(ctx(), { ...log, gradeLevel: 8 })).rejects.toMatchObject({ code: 'invalid-argument' });
+    await createStaffUser(ctx(), log);
+    expect(await profile('log@bnhs.edu')).toMatchObject({ role: 'logistic', gradeLevel: null });
+  });
   it('rejects duplicates and bad role/grade combinations', async () => {
     await expect(createStaffUser(ctx(), { ...glc8, email: ADMIN })).rejects.toMatchObject({ code: 'already-exists' });
     await createStaffUser(ctx(), glc8);
@@ -49,6 +55,10 @@ describe('updateStaffUser', () => {
     await updateStaffUser(ctx(), { email: 'glc8@bnhs.edu', role: 'shs_coord' });
     expect(await profile('glc8@bnhs.edu')).toMatchObject({ role: 'shs_coord', gradeLevel: null });
     expect(await auditActions()).toContain('staff.updated');
+  });
+  it('clears the grade when a glc becomes a logistic operator', async () => {
+    await updateStaffUser(ctx(), { email: 'glc8@bnhs.edu', role: 'logistic' });
+    expect(await profile('glc8@bnhs.edu')).toMatchObject({ role: 'logistic', gradeLevel: null });
   });
   it('lets an admin rename but not re-role themselves', async () => {
     await updateStaffUser(ctx(), { email: ADMIN, name: 'Head Registrar' });

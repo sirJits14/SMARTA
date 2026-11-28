@@ -57,6 +57,8 @@ service cloud.firestore {
     // before roles existed (no role, or 'registrar') are administrators.
     function role() { return profile().get('role', 'admin'); }
     function isAdmin() { return isStaff() && (role() == null || role() in ['admin', 'registrar', '']); }
+    // Prints passes and uploads photos for every grade; no other staff access.
+    function isLogistic() { return isStaff() && role() == 'logistic'; }
     function coordinatorGrades() {
       let p = profile();
       let r = p.get('role', 'admin');
@@ -73,9 +75,9 @@ service cloud.firestore {
     function coordinatorMayReadGrade() {
       return isStaff() && coordinatorCoversGrade(resource.data.get('gradeLevel', null));
     }
-    // Mirrors passGrades() in shared/tempPass.js: GLCs do not handle passes.
+    // Mirrors passGrades() in shared/tempPass.js.
     function coordinatorMayReadPass() {
-      return isStaff() && role() in ['jhs_coord', 'shs_coord'] && coordinatorCoversGrade(resource.data.get('gradeLevel', null));
+      return isStaff() && role() == 'glc' && coordinatorCoversGrade(resource.data.get('gradeLevel', null));
     }
     function coordinatorMayReadStudent() {
       let year = get(/databases/$(database)/documents/settings/app).data.get('currentSchoolYear', null);
@@ -152,13 +154,13 @@ service cloud.firestore {
     // Coordinator queries must prove grade scope from trusted metadata.
     // Full student records additionally require the active school year.
     match /students/{id} {
-      allow read: if isAdmin() || isKiosk() || coordinatorMayReadStudent();
+      allow read: if isAdmin() || isKiosk() || isLogistic() || coordinatorMayReadStudent();
       allow create, update: if isAdmin() && validStudentScopeWrite();
       allow delete: if isAdmin();
     }
-    match /enrollments/{id} { allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade(); allow write: if isAdmin(); }
+    match /enrollments/{id} { allow read: if isAdmin() || isKiosk() || isLogistic() || coordinatorMayReadGrade(); allow write: if isAdmin(); }
     match /sections/{id} {
-      allow read: if isAdmin() || isKiosk() || coordinatorMayReadGrade();
+      allow read: if isAdmin() || isKiosk() || isLogistic() || coordinatorMayReadGrade();
       // School Access owns this marker. Clients cannot forge or remove it.
       allow create: if isAdmin() && !request.resource.data.keys().hasAny(['schoolAdviserUid']);
       allow update: if isAdmin()
@@ -171,7 +173,7 @@ service cloud.firestore {
     match /id_card_batch/{studentId} { allow read, write: if isAdmin(); }
     // Temporary ID passes (spec 2026-11-27). Functions write them.
     match /temp_passes/{studentId} {
-      allow read: if isAdmin() || coordinatorMayReadPass() || (isKiosk() && resource.data.status == 'active');
+      allow read: if isAdmin() || isLogistic() || coordinatorMayReadPass() || (isKiosk() && resource.data.status == 'active');
       allow write: if false;
     }
     match /settings/app     { allow read: if isStaff() || isKiosk(); allow write: if isAdmin(); }
@@ -339,7 +341,7 @@ service cloud.firestore {
     match /announcements/{id} {
       // Portal reads use callables that verify live family links and assignments.
       // Cached audience keys cannot establish access, including for legacy posts.
-      allow get, list: if isStaff();
+      allow get, list: if isStaff() && role() != 'logistic';
       allow create: if isStaff() && validPost(request.resource.data)
         && !request.resource.data.audience.keys().hasAny(['roles', 'sectionIds'])
         && postKeysInScope(request.resource.data.audienceKeys)
@@ -386,6 +388,9 @@ service cloud.firestore {
     match /school_role_requests/{id} { allow read, write: if false; }
     // Adviser requests to add or remove a learner (spec 2026-10-22). Callables only.
     match /learner_change_requests/{id} { allow read, write: if false; }
+    // Adviser requests for temporary ID passes, and the locks that serialize filings. Callables only.
+    match /temp_pass_requests/{id} { allow read, write: if false; }
+    match /temp_pass_request_locks/{id} { allow read, write: if false; }
     match /school_adviser_locks/{id} { allow read, write: if false; }
     match /advisory_slips/{id} { allow read, write: if false; }
     match /attendance_corrections/{id} { allow read, write: if false; }

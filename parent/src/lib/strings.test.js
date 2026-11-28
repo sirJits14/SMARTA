@@ -89,6 +89,18 @@ describe('strings', () => {
     for (const k of ['classActions', 'sf2Button', 'sf2Title', 'sf2Hint', 'sf2Month', 'sf2Download', 'sf2Preparing', 'sf2Close', 'sf2NoLearners', 'sf2NoMonths', 'sf2Ready', 'sf2Save', 'sf2Failed', 'sf2SaveFailed'])
       expect(typeof S[k], k).toBe('string');
   });
+  it('has the temporary pass request strings', () => {
+    expect(S).toMatchObject({
+      passRequestButton: 'Request temporary pass', passRequestTitle: 'Request temporary passes',
+      passRequestHint: 'Choose learners who need a temporary ID pass. Learners without a photo can be included.',
+      passRequestNoPhoto: 'No photo', passRequestLost: 'Lost', passRequestDamaged: 'Damaged',
+      passRequestReplaceHint: 'Already has a pass. Why is a new one needed?', passRequestNote: 'Note (optional)', passRequestSend: 'Send request',
+      passRequestSent: 'Request sent.', passRequestHistory: 'Sent requests', passRequestWaiting: 'Waiting', passRequestPrinted: 'Printed',
+      passRequestDeclined: 'Declined', passRequestWithdrawn: 'Withdrawn', passRequestWithdraw: 'Withdraw', passRequestPreparing: 'Being printed',
+      passRequestEmpty: 'No temporary pass requests yet.', passBlockedOfficial: 'Has an official ID', passBlockedRequested: 'Request already waiting',
+      passBlockedNoLrn: 'No LRN on record', passBlockedInactive: 'Not active', passBlockedNotInClass: 'Not in this class',
+    });
+  });
   it('has the learner request strings', () => {
     for (const k of ['addLearnerButton', 'addLearnerTitle', 'addLearnerHint', 'learnerSectionLearner', 'learnerLrn', 'learnerLastName', 'learnerFirstName',
       'learnerMiddleName', 'learnerExt', 'learnerSex', 'learnerMale', 'learnerFemale', 'learnerChoose', 'learnerBirthdate', 'learnerEnrollType',

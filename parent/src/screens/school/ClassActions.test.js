@@ -24,6 +24,13 @@ describe('ClassActions', () => {
     expect(html).toContain(S.photosButton);
     expect(render({ onSf2() {}, onAddLearner() {} })).not.toContain(S.photosButton);
   });
+  it('offers a temporary pass request only when it can open it', () => {
+    const html = render({ onPassRequest() {} });
+    expect(html).toContain(`aria-label="${S.classActions}"`);
+    expect(html).toContain('p-btn--ghost');
+    expect(html).toContain(S.passRequestButton);
+    expect(render({ onPhotos() {}, onSf2() {}, onAddLearner() {} })).not.toContain('Request temporary pass');
+  });
   it('disables the SF2 button and says why', () => {
     const html = render({ onSf2() {}, sf2Hint: S.sf2NoLearners });
     expect(html).toContain('disabled=""');

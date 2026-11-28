@@ -41,6 +41,7 @@ export default function Icon({ name, filled = false, size = 24, strokeWidth = 1.
       {name === 'leave' && <><path d="M10 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /><path d="M16 16l4-4-4-4" /><path d="M20 12H9" /></>}
       {name === 'clock' && <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>}
       {name === 'camera' && <><path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></>}
+      {name === 'idCard' && <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="11" r="2" /><path d="M5.8 16a2.8 2.8 0 0 1 5.4 0M14 10h4M14 14h4" /></>}
       {name === 'calendar' && <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>}
     </svg>
   );

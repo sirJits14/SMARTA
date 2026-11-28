@@ -29,6 +29,8 @@ describe('school access presentation', () => {
   it('sends a learner request note to the Class tab', () => {
     expect(inboxDestination({ type: 'learner_request' })).toBe('/school');
     expect(inboxDestination({ type: 'learner_request', rejected: true })).toBe('/school');
+    expect(inboxDestination({ type: 'temp_pass_request', status: 'printed' })).toBe('/school');
+    expect(inboxDestination({ type: 'temp_pass_request', status: 'declined', requestId: 'r1' })).toBe('/school');
   });
   it('keeps each school access request status on its own label', () => {
     expect(REQUEST_STATUS.pending).toBe('Waiting for review');

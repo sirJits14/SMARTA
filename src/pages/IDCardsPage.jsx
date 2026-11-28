@@ -2,17 +2,23 @@ import { useState } from 'react';
 import { useCollectionResource, useSchoolYearEnrollments, useStaffCollectionResource } from '../hooks/useCollection.js';
 import { ResourceState } from '../components/ui.jsx';
 import { isAdmin } from '../lib/access.js';
+import { canManagePasses } from '../../shared/tempPass.js';
 import { S } from '../styles.js';
 import BySectionTab from './idCards/BySectionTab.jsx';
 import SavedBatchTab from './idCards/SavedBatchTab.jsx';
 import TempPassesTab from './idCards/TempPassesTab.jsx';
+import PassRequestsTab, { requestsTabLabel, usePassRequestList } from './idCards/PassRequestsTab.jsx';
+
+export { requestsTabLabel };
 
 // 'queue' is kept as the key so a remembered tab still opens the batch.
-const ADMIN_TABS = [['section', 'By section'], ['queue', 'Saved batch'], ['temp', 'Temporary passes']];
-// Academic coordinators handle temporary passes only.
-const COORDINATOR_TABS = [['temp', 'Temporary passes']];
+const ADMIN_TABS = [['section', 'By section'], ['queue', 'Saved batch'], ['requests', 'Requests'], ['temp', 'Temporary passes']];
+// Grade level coordinators and logistic operators handle temporary passes only.
+const PASS_TABS = [['requests', 'Requests'], ['temp', 'Temporary passes']];
+const PASS_TAB_KEYS = ['requests', 'temp'];
 const STORAGE = 'sims.idCards.tab';
 const readTab = (tabs) => {
+  if (!tabs.length) return '';
   try { const v = localStorage.getItem(STORAGE); return tabs.some(([k]) => k === v) ? v : tabs[0][0]; }
   catch { return tabs[0][0]; }
 };
@@ -31,9 +37,10 @@ function OfficialCardsPanel({ tab, me, schoolYear }) {
     : <ResourceState resources={[batchResource]}><SavedBatchTab {...data} batchDocs={batchResource.data} /></ResourceState>;
 }
 
-// Temporary passes read through the grade-scoped staff queries, so a
-// coordinator never asks for rows outside their grades.
-function TempPassesPanel({ me, schoolYear }) {
+// Requests and temporary passes read through the staff-scoped queries, so a grade level
+// coordinator never asks for rows outside their grade and a logistic operator reads only
+// sections, enrollments, learners and passes (plus settings/app in the tabs).
+function PassesPanel({ tab, me, schoolYear, pending }) {
   const scope = { me, schoolYear };
   const resources = [
     useStaffCollectionResource('sections', scope),
@@ -43,17 +50,33 @@ function TempPassesPanel({ me, schoolYear }) {
   ];
   if (resources.some(r => r.loading || r.error)) return <ResourceState resources={resources}/>;
   const [sections, enrollments, students, passes] = resources.map(r => r.data);
-  return <TempPassesTab me={me} schoolYear={schoolYear} sections={sections} enrollments={enrollments} students={students} passes={passes} />;
+  const data = { me, schoolYear, sections, enrollments, students, passes, pending, onRequestsChanged: pending.reload };
+  return tab === 'requests' ? <PassRequestsTab {...data} /> : <TempPassesTab {...data} />;
 }
 
 export default function IDCardsPage({ me, schoolYear }) {
-  const tabs = isAdmin(me) ? ADMIN_TABS : COORDINATOR_TABS;
+  const printer = canManagePasses(me);
+  const tabs = isAdmin(me) ? ADMIN_TABS : printer ? PASS_TABS : [];
   const [chosen, setTabState] = useState(() => readTab(tabs));
-  const tab = tabs.some(([k]) => k === chosen) ? chosen : tabs[0][0];
+  const tab = tabs.some(([k]) => k === chosen) ? chosen : tabs[0]?.[0];
+  // Waiting requests: counted on the tab and shared by both pass tabs.
+  const pending = usePassRequestList('pending', printer);
   const setTab = (next) => {
     setTabState(next);
+    // Both pass tabs route learners with a waiting request through it, so they need a fresh list.
+    if (PASS_TAB_KEYS.includes(next) && printer) pending.reload();
     try { localStorage.setItem(STORAGE, next); } catch { /* the tab still switches without storage */ }
   };
+  const labelOf = (k, label) => (k === 'requests' ? requestsTabLabel(pending.requests.length, pending.truncated) : label);
+
+  if (!tab) {
+    return (
+      <div>
+        <div className="id-cards-heading" style={S.plate}><h1 style={S.h1}>ID Cards</h1></div>
+        <p role="status">ID cards and temporary passes are handled by administrators, grade level coordinators and logistic operators.</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -74,12 +97,14 @@ export default function IDCardsPage({ me, schoolYear }) {
               if (next === null) return;
               event.preventDefault(); setTab(tabs[next][0]);
               document.getElementById(`id-cards-tab-${tabs[next][0]}`)?.focus();
-            }}>{label}</button>;
+            }}>{labelOf(k, label)}</button>;
         })}
       </div>
 
       <div key={tab} role="tabpanel" id={`id-cards-panel-${tab}`} aria-labelledby={`id-cards-tab-${tab}`} className="sims-page-transition">
-        {tab === 'temp' ? <TempPassesPanel me={me} schoolYear={schoolYear} /> : <OfficialCardsPanel tab={tab} me={me} schoolYear={schoolYear} />}
+        {PASS_TAB_KEYS.includes(tab)
+          ? <PassesPanel tab={tab} me={me} schoolYear={schoolYear} pending={pending} />
+          : <OfficialCardsPanel tab={tab} me={me} schoolYear={schoolYear} />}
       </div>
     </div>
   );

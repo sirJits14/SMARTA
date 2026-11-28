@@ -17,7 +17,7 @@
 .class-actions .class-note { margin: 0; text-align: center; }
 .class-sheet { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; }
 .class-chip { display: inline-flex; flex: 0 0 auto; align-items: center; padding: 2px 10px; border-radius: 999px; background: var(--t-tint); color: var(--t-primary-deep); font-size: 12px; font-weight: 500; white-space: nowrap; }
-.class-chip--rejected { background: var(--t-feedback-bg); color: var(--t-feedback-ink); }
+.class-chip--rejected, .class-chip--declined { background: var(--t-feedback-bg); color: var(--t-feedback-ink); }
 .class-chip--withdrawn { background: var(--t-hover); color: var(--t-nav-ink); }
 .class-link--quiet { color: var(--t-muted); }
 .learner-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; }
@@ -58,9 +58,27 @@
 .photo-zoom { width: 100%; height: 44px; margin: 0; accent-color: var(--t-primary); }
 .photo-file { position: absolute; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 /* Stays at the foot of the sheet while a long class list or a tall cropper scrolls behind it. */
-.photo-foot { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; gap: 8px; margin: 0 -16px calc(-16px - env(safe-area-inset-bottom)); padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--t-border); background: var(--t-dialog); }
-.photo-foot .p-btn { flex: 1 1 0; }
-.photo-foot .p-banner { flex: 1 0 100%; box-sizing: border-box; margin: 0; }
+.photo-foot, .pass-foot { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; gap: 8px; margin: 0 -16px calc(-16px - env(safe-area-inset-bottom)); padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--t-border); background: var(--t-dialog); }
+.photo-foot .p-btn, .pass-foot .p-btn { flex: 1 1 0; }
+.photo-foot .p-banner, .pass-foot .p-banner { flex: 1 0 100%; box-sizing: border-box; margin: 0; }
+/* Temporary pass requests: the two views, the class list and what the server answered. */
+.class-session-switch.pass-switch { display: flex; margin-bottom: 12px; }
+.pass-switch button { flex: 1 1 0; }
+.pass-switch button:disabled { cursor: default; opacity: 0.6; }
+.pass-list { margin: 0 0 16px; padding: 0; list-style: none; }
+.pass-row { padding: 4px 0; border-top: 1px solid var(--t-border); }
+.pass-row:first-child { border-top: 0; }
+.pass-pick { display: flex; align-items: center; gap: 12px; min-height: 48px; cursor: pointer; }
+.pass-pick input { flex: 0 0 auto; width: 22px; height: 22px; margin: 0; scroll-margin-bottom: 96px; }
+.pass-pick input:disabled { cursor: not-allowed; }
+.pass-replace { display: flex; flex-wrap: wrap; gap: 0 24px; min-width: 0; margin: 0; padding: 0 0 4px 34px; border: 0; }
+.pass-replace legend { padding: 0; color: var(--t-muted); font-size: 13px; line-height: 1.4; }
+.pass-replace label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.pass-replace input { width: 20px; height: 20px; margin: 0; scroll-margin-bottom: 96px; }
+.pass-count { text-align: right; font-variant-numeric: tabular-nums; }
+.p-banner.pass-skipped { display: block; }
+.pass-skipped ul { margin: 4px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
+.pass-answer { scroll-margin-top: 16px; }
 .class-group { margin: 0 0 20px; }
 .class-group-title, .class-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; margin: 0 0 4px; color: var(--t-muted); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .class-group > summary { min-height: 44px; cursor: pointer; list-style: none; }

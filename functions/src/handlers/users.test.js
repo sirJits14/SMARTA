@@ -24,6 +24,10 @@ describe('roleAndGrade', () => {
     expect(roleAndGrade('jhs_coord', null)).toEqual({ role: 'jhs_coord', gradeLevel: null });
     expect(() => roleAndGrade('admin', 8)).toThrow(/only to a Grade Level Coordinator/);
   });
+  it('takes a logistic operator without a grade', () => {
+    expect(roleAndGrade('logistic', null)).toEqual({ role: 'logistic', gradeLevel: null });
+    expect(() => roleAndGrade('logistic', 8)).toThrow(expect.objectContaining({ code: 'invalid-argument' }));
+  });
   it('rejects unknown roles', () => expect(() => roleAndGrade('registrar', null)).toThrow(/not a valid choice/));
 });
 
