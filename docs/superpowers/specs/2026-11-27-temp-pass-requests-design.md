@@ -1,7 +1,7 @@
 # Adviser requests for temporary ID passes — Design
 
 Date: 2026-11-27
-Status: Approved in brainstorming. Not built, not deployed.
+Status: Approved in brainstorming; implementation requested 2026-11-27. Not deployed.
 Builds on: [2026-11-27-temp-student-id-pass-design.md](2026-11-27-temp-student-id-pass-design.md) (live since 2026-11-27).
 Reference card: [assets/2026-11-27-temp-id-pass-reference.png](assets/2026-11-27-temp-id-pass-reference.png)
 
@@ -63,6 +63,18 @@ Pass printers are decided by `passGrades()` in `shared/tempPass.js`: admin → a
 administrator scope (announcements to everyone, advisory slips for every section, session review),
 which a Logistic Operator must not get. Only pass, photo and the student, section and enrollment
 reads a pass needs use the wider scope.
+
+## Decisions made while building
+
+- A prepared request (its pass is issued and live) cannot be withdrawn, and cannot be declined unless
+  the learner can no longer be requested. `prepared` is returned with each request.
+- `issueTempPassFn` skips a learner who has a waiting request (reason `requested`), so the section
+  tab cannot reprint a lost code.
+- Preparing a Lost request again returns the replacement code instead of rotating it a second time.
+- A Logistic Operator cannot read attendance, schedules or announcements, including on production rules.
+- The header's green shape now ends behind the 1 × 1 inch photo area.
+- Server-only collection `temp_pass_request_locks` serialises filing (one waiting request per
+  learner, at most 40 per adviser).
 
 ## Out of scope
 
